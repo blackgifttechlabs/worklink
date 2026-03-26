@@ -595,6 +595,62 @@ document.addEventListener('DOMContentLoaded', () => {
     accountDeleteOverlay.hidden = true;
   }
 
+  function promptAccountSignIn() {
+    if (accountAuthOverlay) {
+      openAccountPanel();
+      return;
+    }
+    window.alert('Please sign in first.');
+  }
+
+  function slugifyProductId(value) {
+    return String(value || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function getProductFromCard(card) {
+    const title = card.querySelector('.product-info h3')?.textContent?.trim() || 'SoftGiggles product';
+    const price = card.querySelector('.price')?.textContent?.trim() || '';
+    const image = card.querySelector('.product-img img')?.getAttribute('src') || '';
+    const category = document.querySelector('.page-header h1')?.textContent?.trim() || 'Catalog';
+    return {
+      id: slugifyProductId(title),
+      name: title,
+      price,
+      image,
+      category
+    };
+  }
+
+  async function handleCartAction(card, button, successLabel) {
+    const authHelper = getAuthHelper();
+    const account = readAccount();
+    if (!authHelper || !account || !account.loggedIn) {
+      promptAccountSignIn();
+      return;
+    }
+
+    setButtonLoading(button, true);
+    try {
+      const product = getProductFromCard(card);
+      await authHelper.addToCart(product);
+      const defaultLabel = button.dataset.defaultLabel || button.textContent;
+      button.textContent = successLabel;
+      button.classList.add('is-added');
+      window.setTimeout(() => {
+        button.textContent = defaultLabel;
+        button.classList.remove('is-added');
+      }, 1200);
+    } catch (error) {
+      window.alert(error.message || 'Could not add item to cart.');
+    } finally {
+      setButtonLoading(button, false);
+    }
+  }
+
   function logoutAccount() {
     try {
       localStorage.removeItem(accountStorageKey);
@@ -800,24 +856,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Wishlist toggle
   document.querySelectorAll('.wishlist-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      btn.textContent = btn.textContent === '♡' ? '♥' : '♡';
-      btn.style.color = btn.textContent === '♥' ? '#e53e3e' : '#999';
+      const authHelper = getAuthHelper();
+      const account = readAccount();
+      if (!authHelper || !account || !account.loggedIn) {
+        promptAccountSignIn();
+        return;
+      }
+      setButtonLoading(btn, true);
+      try {
+        const card = btn.closest('.product-card');
+        if (!card) return;
+        const product = getProductFromCard(card);
+        const result = await authHelper.toggleWishlist(product);
+        btn.textContent = result.saved ? '♥' : '♡';
+        btn.style.color = result.saved ? '#e53e3e' : '#999';
+      } catch (error) {
+        window.alert(error.message || 'Could not update wishlist.');
+      } finally {
+        setButtonLoading(btn, false);
+      }
     });
   });
 
-  // Quick add button feedback
-  document.querySelectorAll('.quick-add').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const orig = btn.textContent;
-      btn.textContent = '✓ Added!';
-      btn.style.background = 'rgba(45,179,74,0.9)';
-      setTimeout(() => {
-        btn.textContent = orig;
-        btn.style.background = '';
-      }, 1500);
-    });
+  document.querySelectorAll('.catalog-grid .product-card').forEach((card) => {
+    const quickAddBtn = card.querySelector('.quick-add');
+    const productInfo = card.querySelector('.product-info');
+
+    if (quickAddBtn) {
+      quickAddBtn.textContent = 'Add to Cart';
+      quickAddBtn.dataset.defaultLabel = 'Add to Cart';
+      quickAddBtn.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        await handleCartAction(card, quickAddBtn, 'Added');
+      });
+    }
+
+    if (productInfo && !productInfo.querySelector('.product-actions-row')) {
+      const actionsRow = document.createElement('div');
+      actionsRow.className = 'product-actions-row';
+
+      const addToCartBtn = document.createElement('button');
+      addToCartBtn.type = 'button';
+      addToCartBtn.className = 'order-online-btn';
+      addToCartBtn.textContent = 'Add to Cart';
+      addToCartBtn.dataset.defaultLabel = 'Add to Cart';
+      addToCartBtn.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        await handleCartAction(card, addToCartBtn, 'Added');
+      });
+
+      const orderOnlineBtn = document.createElement('button');
+      orderOnlineBtn.type = 'button';
+      orderOnlineBtn.className = 'order-online-btn';
+      orderOnlineBtn.textContent = 'Order Online';
+      orderOnlineBtn.dataset.defaultLabel = 'Order Online';
+      orderOnlineBtn.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        await handleCartAction(card, orderOnlineBtn, 'Queued');
+      });
+
+      actionsRow.append(addToCartBtn, orderOnlineBtn);
+      productInfo.appendChild(actionsRow);
+      if (quickAddBtn) quickAddBtn.remove();
+    }
   });
 });

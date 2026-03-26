@@ -1250,6 +1250,10 @@ nav {
   transition: opacity 0.2s;
 }
 .product-card:hover .quick-add { opacity: 1; }
+.catalog-grid .quick-add {
+  opacity: 1;
+  background: rgba(17, 24, 39, 0.92);
+}
 
 .wishlist-btn {
   position: absolute;
@@ -1279,6 +1283,9 @@ nav {
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   font-weight: 900;
 }
+.catalog-grid .add-btn {
+  display: none;
+}
 
 .product-info {
   padding: 12px;
@@ -1293,6 +1300,26 @@ nav {
   font-size: 14px;
   font-weight: 900;
   color: var(--black);
+}
+.product-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.order-online-btn {
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+}
+.quick-add.is-added,
+.order-online-btn.is-added {
+  background: var(--green);
+  color: #fff;
 }
 
 /* ========== CONTEST BANNER ========== */

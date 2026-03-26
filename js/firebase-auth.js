@@ -12,6 +12,14 @@ import {
   signOut as firebaseSignOut,
   updateProfile
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js';
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  getFirestore,
+  serverTimestamp,
+  setDoc
+} from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBMZPxfNdkSOForFOfW3GhaZpvZTYPMpeg',
@@ -24,6 +32,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const storageKey = 'softgiggles_account';
 
@@ -66,6 +75,92 @@ function persistUser(user) {
   } catch (error) {
     // Ignore storage issues.
   }
+}
+
+function getStoredAccount() {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function slugifyIdentifier(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'softgiggles-shopper';
+}
+
+function getAccountPayload(user = auth.currentUser) {
+  const stored = getStoredAccount();
+  const name = stored?.name || fallbackNameFromUser(user);
+  const email = stored?.email || user?.email || '';
+  const phone = stored?.phone || user?.phoneNumber || '';
+  const providerId = stored?.provider || user?.providerData?.[0]?.providerId || 'firebase';
+  return {
+    uid: user?.uid || stored?.uid || '',
+    name,
+    email,
+    phone,
+    provider: providerId
+  };
+}
+
+function getCartDocId(account) {
+  return slugifyIdentifier(account.name || account.email || account.phone || account.uid);
+}
+
+async function syncUserDocument(account, extra = {}) {
+  if (!account.uid) return;
+  const userRef = doc(db, 'users', account.uid);
+  await setDoc(userRef, {
+    uid: account.uid,
+    name: account.name,
+    email: account.email || '',
+    phone: account.phone || '',
+    provider: account.provider,
+    cartCount: extra.cartCount ?? 0,
+    wishlistCount: extra.wishlistCount ?? 0,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+async function readCartState(account) {
+  const cartRef = doc(db, 'cart', getCartDocId(account));
+  const snapshot = await getDoc(cartRef);
+  const data = snapshot.exists() ? snapshot.data() : {};
+  return {
+    cartRef,
+    cartItems: Array.isArray(data.cartItems) ? data.cartItems : [],
+    wishlistItems: Array.isArray(data.wishlistItems) ? data.wishlistItems : []
+  };
+}
+
+async function writeCartState(account, cartItems, wishlistItems) {
+  const cartRef = doc(db, 'cart', getCartDocId(account));
+  await setDoc(cartRef, {
+    ownerName: account.name,
+    accountDetails: {
+      uid: account.uid,
+      name: account.name,
+      email: account.email || '',
+      phone: account.phone || '',
+      provider: account.provider
+    },
+    cartItems,
+    wishlistItems,
+    cartCount: cartItems.length,
+    wishlistCount: wishlistItems.length,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  await syncUserDocument(account, {
+    cartCount: cartItems.length,
+    wishlistCount: wishlistItems.length
+  });
 }
 
 function dispatchAuthChange(user) {
@@ -126,11 +221,51 @@ async function deleteProfile() {
   if (!auth.currentUser) {
     throw new Error('No signed-in user found.');
   }
+  const account = getAccountPayload(auth.currentUser);
+  if (account.uid) {
+    await deleteDoc(doc(db, 'users', account.uid));
+  }
+  await deleteDoc(doc(db, 'cart', getCartDocId(account)));
   await deleteUser(auth.currentUser);
+}
+
+async function addToCart(product) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to add items to your cart.');
+  }
+  const account = getAccountPayload(auth.currentUser);
+  const { cartItems, wishlistItems } = await readCartState(account);
+  const exists = cartItems.some((item) => item.id === product.id);
+  const nextCartItems = exists
+    ? cartItems.map((item) => item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item)
+    : [...cartItems, { ...product, quantity: 1, addedAt: new Date().toISOString() }];
+  await writeCartState(account, nextCartItems, wishlistItems);
+  return { cartCount: nextCartItems.length };
+}
+
+async function toggleWishlist(product) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to manage your wishlist.');
+  }
+  const account = getAccountPayload(auth.currentUser);
+  const { cartItems, wishlistItems } = await readCartState(account);
+  const exists = wishlistItems.some((item) => item.id === product.id);
+  const nextWishlistItems = exists
+    ? wishlistItems.filter((item) => item.id !== product.id)
+    : [...wishlistItems, { ...product, savedAt: new Date().toISOString() }];
+  await writeCartState(account, cartItems, nextWishlistItems);
+  return {
+    saved: !exists,
+    wishlistCount: nextWishlistItems.length
+  };
 }
 
 onAuthStateChanged(auth, (user) => {
   persistUser(user);
+  if (user) {
+    const account = getAccountPayload(user);
+    syncUserDocument(account).catch(() => {});
+  }
   dispatchAuthChange(user);
 });
 
@@ -141,5 +276,7 @@ window.softGigglesAuth = {
   sendPhoneCode,
   verifyPhoneCode,
   signOut,
-  deleteProfile
+  deleteProfile,
+  addToCart,
+  toggleWishlist
 };
