@@ -400,6 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountGoogleBtn = document.querySelector('.account-google-btn');
   const accountPhoneToggle = document.querySelector('.account-phone-toggle');
   const accountEmailToggle = document.querySelector('.account-email-toggle');
+  const accountGoogleCard = document.querySelector('.account-method-google');
+  const accountPhoneCard = document.querySelector('.account-method-phone');
+  const accountEmailCard = document.querySelector('.account-method-email');
+  const accountMethodDivider = document.querySelector('.account-method-divider');
   const accountPhoneFormWrap = document.querySelector('.account-phone-form-wrap');
   const accountPhoneInput = document.getElementById('account-phone');
   const accountPhoneSubmit = document.querySelector('.account-phone-submit');
@@ -408,12 +412,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPhoneVerify = document.querySelector('.account-phone-verify');
   const accountEmailFormWrap = document.querySelector('.account-email-form-wrap');
   const accountEmailForm = document.getElementById('account-email-form');
+  const accountNameInput = document.getElementById('account-name');
   const accountModeSwitch = document.querySelector('.account-mode-switch');
+  const accountChangeMethodBtns = document.querySelectorAll('.account-change-method');
   const accountModeInput = document.getElementById('account-mode');
+  const accountSuccessToast = document.getElementById('account-success-toast');
   const accountHeading = document.querySelector('.account-auth-heading');
   const accountSubtext = document.querySelector('.account-auth-subtext');
   const accountSwitchLabel = document.querySelector('.account-switch-label');
-  const accountSubmitBtn = document.querySelector('.account-submit-btn');
+  const accountSubmitBtn = document.querySelector('.account-email-form .account-submit-btn');
   const accountNameRow = document.querySelector('.account-name-row');
   const accountDashboard = document.getElementById('account-dashboard');
   const accountGuestCard = document.getElementById('account-guest-card');
@@ -421,6 +428,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountProfileName = document.getElementById('account-profile-name');
   const accountProfileEmail = document.getElementById('account-profile-email');
   const accountPageLogout = document.querySelector('.account-side-logout');
+  const accountDeleteLink = document.querySelector('.account-delete-link');
+  const accountDeleteOverlay = document.getElementById('account-delete-overlay');
+  const accountDeleteClose = document.querySelector('.account-delete-close');
+  const accountDeleteCancel = document.querySelector('.account-delete-cancel');
+  const accountDeleteConfirm = document.querySelector('.account-delete-confirm');
+  const accountDeleteInput = document.getElementById('account-delete-confirmation');
+  const accountDeleteLabel = document.getElementById('account-delete-label');
+  const accountDeleteTargetLabel = document.getElementById('account-delete-target-label');
 
   function readAccount() {
     try {
@@ -459,6 +474,45 @@ document.addEventListener('DOMContentLoaded', () => {
     return window.softGigglesAuth || null;
   }
 
+  function setMethodVisibility(method) {
+    if (!accountGoogleCard || !accountPhoneCard || !accountEmailCard) return;
+
+    const showAll = method === 'all';
+    accountGoogleCard.classList.toggle('is-hidden', !showAll);
+    accountPhoneCard.classList.toggle('is-hidden', !(showAll || method === 'phone'));
+    accountEmailCard.classList.toggle('is-hidden', !(showAll || method === 'email'));
+
+    if (accountMethodDivider) {
+      accountMethodDivider.classList.toggle('is-hidden', !(showAll || method === 'email'));
+    }
+  }
+
+  function showAccountSuccess(message = 'Signed in successfully', callback) {
+    if (!accountSuccessToast) {
+      if (typeof callback === 'function') callback();
+      return;
+    }
+    const label = accountSuccessToast.querySelector('span');
+    if (label) label.textContent = message;
+    accountSuccessToast.hidden = false;
+    requestAnimationFrame(() => {
+      accountSuccessToast.classList.add('is-visible');
+    });
+    window.setTimeout(() => {
+      accountSuccessToast.classList.remove('is-visible');
+      window.setTimeout(() => {
+        accountSuccessToast.hidden = true;
+        if (typeof callback === 'function') callback();
+      }, 220);
+    }, 1200);
+  }
+
+  function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    button.classList.toggle('is-loading', isLoading);
+    button.disabled = isLoading;
+  }
+
   function syncAccountMode(mode) {
     if (!accountModeInput) return;
     accountModeInput.value = mode;
@@ -471,8 +525,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (accountSwitchLabel) accountSwitchLabel.textContent = isSignup ? 'Already have an account?' : 'New here?';
     if (accountModeSwitch) accountModeSwitch.textContent = isSignup ? 'Sign in' : 'Sign up';
-    if (accountSubmitBtn) accountSubmitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
-    if (accountNameRow) accountNameRow.hidden = !isSignup;
+    if (accountSubmitBtn) {
+      accountSubmitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
+      accountSubmitBtn.classList.toggle('account-submit-signup', isSignup);
+      accountSubmitBtn.classList.toggle('account-submit-signin', !isSignup);
+    }
+    if (accountNameRow) {
+      accountNameRow.hidden = !isSignup;
+      accountNameRow.style.display = isSignup ? '' : 'none';
+    }
+    if (accountNameInput) {
+      accountNameInput.disabled = !isSignup;
+      accountNameInput.required = isSignup;
+      if (!isSignup) accountNameInput.value = '';
+    }
   }
 
   function applyAccountToPage() {
@@ -488,6 +554,45 @@ document.addEventListener('DOMContentLoaded', () => {
     if (accountDisplayName) accountDisplayName.textContent = name;
     if (accountProfileName) accountProfileName.textContent = name;
     if (accountProfileEmail) accountProfileEmail.textContent = email;
+  }
+
+  function getDeleteIdentifier(account) {
+    if (!account) return { label: 'Email address', value: '' };
+    const provider = String(account.provider || '');
+    const phone = String(account.phone || '').trim();
+    const email = String(account.email || '').trim();
+    if (provider.includes('phone') || (!email && phone)) {
+      return { label: 'Phone number', value: phone };
+    }
+    return { label: 'Email address', value: email };
+  }
+
+  function syncDeleteConfirmationState() {
+    const account = readAccount();
+    const expected = getDeleteIdentifier(account).value;
+    const typed = String(accountDeleteInput?.value || '').trim();
+    if (accountDeleteConfirm) {
+      accountDeleteConfirm.disabled = !expected || typed !== expected;
+    }
+  }
+
+  function openDeleteModal() {
+    if (!accountDeleteOverlay) return;
+    const account = readAccount();
+    const target = getDeleteIdentifier(account);
+    if (accountDeleteLabel) accountDeleteLabel.textContent = target.label;
+    if (accountDeleteTargetLabel) accountDeleteTargetLabel.textContent = target.value || 'No identifier found';
+    if (accountDeleteInput) {
+      accountDeleteInput.value = '';
+      accountDeleteInput.placeholder = `Type your ${target.label.toLowerCase()} exactly`;
+    }
+    syncDeleteConfirmationState();
+    accountDeleteOverlay.hidden = false;
+  }
+
+  function closeDeleteModal() {
+    if (!accountDeleteOverlay) return;
+    accountDeleteOverlay.hidden = true;
   }
 
   function logoutAccount() {
@@ -520,15 +625,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountEmailToggle && accountEmailFormWrap) {
     accountEmailToggle.addEventListener('click', () => {
-      accountEmailFormWrap.classList.toggle('is-open');
+      const willOpen = !accountEmailFormWrap.classList.contains('is-open');
+      accountEmailFormWrap.classList.toggle('is-open', willOpen);
       if (accountPhoneFormWrap) accountPhoneFormWrap.classList.remove('is-open');
+      setMethodVisibility(willOpen ? 'email' : 'all');
     });
   }
 
   if (accountPhoneToggle && accountPhoneFormWrap) {
     accountPhoneToggle.addEventListener('click', () => {
-      accountPhoneFormWrap.classList.toggle('is-open');
+      const willOpen = !accountPhoneFormWrap.classList.contains('is-open');
+      accountPhoneFormWrap.classList.toggle('is-open', willOpen);
       if (accountEmailFormWrap) accountEmailFormWrap.classList.remove('is-open');
+      setMethodVisibility(willOpen ? 'phone' : 'all');
     });
   }
 
@@ -537,18 +646,33 @@ document.addEventListener('DOMContentLoaded', () => {
       const nextMode = accountModeInput.value === 'signup' ? 'signin' : 'signup';
       syncAccountMode(nextMode);
       if (accountEmailFormWrap) accountEmailFormWrap.classList.add('is-open');
+      if (accountPhoneFormWrap) accountPhoneFormWrap.classList.remove('is-open');
+      setMethodVisibility('email');
     });
   }
+
+  accountChangeMethodBtns.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (accountEmailFormWrap) accountEmailFormWrap.classList.remove('is-open');
+      if (accountPhoneFormWrap) accountPhoneFormWrap.classList.remove('is-open');
+      if (accountCodeRow) accountCodeRow.hidden = true;
+      if (accountPhoneVerify) accountPhoneVerify.hidden = true;
+      setMethodVisibility('all');
+    });
+  });
 
   if (accountGoogleBtn) {
     accountGoogleBtn.addEventListener('click', async () => {
       const authHelper = getAuthHelper();
       if (!authHelper) return;
+      setButtonLoading(accountGoogleBtn, true);
       try {
         await authHelper.signInWithGoogle();
-        window.location.reload();
+        showAccountSuccess('Signed in successfully', () => window.location.reload());
       } catch (error) {
         window.alert(error.message || 'Google sign-in failed.');
+      } finally {
+        setButtonLoading(accountGoogleBtn, false);
       }
     });
   }
@@ -562,16 +686,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const email = String(formData.get('email') || '').trim();
       const password = String(formData.get('password') || '');
       const typedName = String(formData.get('name') || '').trim();
+      const isSignup = accountModeInput.value === 'signup';
+      setButtonLoading(accountSubmitBtn, true);
 
       try {
-        if (accountModeInput.value === 'signup') {
+        if (isSignup) {
           await authHelper.signUpWithEmail(typedName, email, password);
         } else {
           await authHelper.signInWithEmail(email, password);
         }
-        window.location.reload();
+        showAccountSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully', () => window.location.reload());
       } catch (error) {
         window.alert(error.message || 'Email authentication failed.');
+      } finally {
+        setButtonLoading(accountSubmitBtn, false);
       }
     });
   }
@@ -580,12 +708,15 @@ document.addEventListener('DOMContentLoaded', () => {
     accountPhoneSubmit.addEventListener('click', async () => {
       const authHelper = getAuthHelper();
       if (!authHelper) return;
+      setButtonLoading(accountPhoneSubmit, true);
       try {
         await authHelper.sendPhoneCode(accountPhoneInput.value.trim());
         if (accountCodeRow) accountCodeRow.hidden = false;
         if (accountPhoneVerify) accountPhoneVerify.hidden = false;
       } catch (error) {
         window.alert(error.message || 'Could not send verification code.');
+      } finally {
+        setButtonLoading(accountPhoneSubmit, false);
       }
     });
   }
@@ -594,11 +725,14 @@ document.addEventListener('DOMContentLoaded', () => {
     accountPhoneVerify.addEventListener('click', async () => {
       const authHelper = getAuthHelper();
       if (!authHelper) return;
+      setButtonLoading(accountPhoneVerify, true);
       try {
         await authHelper.verifyPhoneCode(accountPhoneCode.value.trim());
-        window.location.reload();
+        showAccountSuccess('Signed in successfully', () => window.location.reload());
       } catch (error) {
         window.alert(error.message || 'Verification failed.');
+      } finally {
+        setButtonLoading(accountPhoneVerify, false);
       }
     });
   }
@@ -614,7 +748,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (accountDeleteLink) {
+    accountDeleteLink.addEventListener('click', openDeleteModal);
+  }
+
+  if (accountDeleteInput) {
+    accountDeleteInput.addEventListener('input', syncDeleteConfirmationState);
+  }
+
+  [accountDeleteClose, accountDeleteCancel].forEach((button) => {
+    if (!button) return;
+    button.addEventListener('click', closeDeleteModal);
+  });
+
+  if (accountDeleteOverlay) {
+    accountDeleteOverlay.addEventListener('click', (event) => {
+      if (event.target === accountDeleteOverlay) closeDeleteModal();
+    });
+  }
+
+  if (accountDeleteConfirm) {
+    accountDeleteConfirm.addEventListener('click', async () => {
+      const authHelper = getAuthHelper();
+      if (!authHelper) return;
+      setButtonLoading(accountDeleteConfirm, true);
+      try {
+        await authHelper.deleteProfile();
+        showAccountSuccess('Profile deleted successfully', () => {
+          window.location.href = '../index.html';
+        });
+      } catch (error) {
+        window.alert(error.message || 'Profile deletion failed. You may need to sign in again before deleting your profile.');
+      } finally {
+        setButtonLoading(accountDeleteConfirm, false);
+      }
+    });
+  }
+
   syncAccountMode('signin');
+  setMethodVisibility('all');
   applyAccountToPage();
 
   // Filter group collapse

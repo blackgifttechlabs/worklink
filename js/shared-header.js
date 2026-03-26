@@ -268,52 +268,64 @@ function renderAccountPanel() {
         <h3 class="account-auth-heading">Welcome</h3>
         <p class="account-auth-subtext">Create an account or sign in to continue.</p>
       </div>
-      <div class="account-auth-actions">
-        <button type="button" class="account-auth-btn account-google-btn">
-          <i class="fa-brands fa-google"></i>
-          <span>Sign in with Google</span>
-        </button>
-        <button type="button" class="account-auth-btn account-phone-toggle">
-          <i class="fa-solid fa-mobile-screen-button"></i>
-          <span>Continue with Phone</span>
-        </button>
-        <button type="button" class="account-auth-btn account-email-toggle">
-          <i class="fa-regular fa-envelope"></i>
-          <span>Use Email</span>
-        </button>
-      </div>
-      <div class="account-phone-form-wrap">
-        <form class="account-phone-form" id="account-phone-form">
-          <div class="account-form-row">
-            <label for="account-phone">Phone number</label>
-            <input id="account-phone" name="phone" type="tel" placeholder="+263 77 123 4567" />
+      <div class="account-auth-methods">
+        <section class="account-auth-method-card account-method-google">
+          <div class="account-method-label">Fast sign in</div>
+          <button type="button" class="account-auth-btn account-google-btn">
+            <span class="google-mark" aria-hidden="true"><span class="google-g">G</span></span>
+            <span>Continue with Google</span>
+          </button>
+        </section>
+        <section class="account-auth-method-card account-method-phone">
+          <div class="account-method-label">Phone verification</div>
+          <button type="button" class="account-auth-btn account-phone-toggle">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            <span>Use phone number</span>
+          </button>
+          <div class="account-phone-form-wrap">
+            <form class="account-phone-form" id="account-phone-form">
+              <button type="button" class="account-change-method">Change login method</button>
+              <div class="account-form-row">
+                <label for="account-phone">Phone number</label>
+                <input id="account-phone" name="phone" type="tel" placeholder="+263 77 123 4567" />
+              </div>
+              <button type="button" class="account-submit-btn account-phone-submit" id="account-phone-submit">Send verification code</button>
+              <div class="account-form-row account-code-row" hidden>
+                <label for="account-phone-code">Verification code</label>
+                <input id="account-phone-code" name="code" type="text" inputmode="numeric" placeholder="123456" />
+              </div>
+              <button type="button" class="account-submit-btn account-phone-verify" hidden>Verify code</button>
+              <p class="account-auth-hint">Firebase will send an SMS code after the reCAPTCHA check.</p>
+              <div id="account-recaptcha-container"></div>
+            </form>
           </div>
-          <button type="button" class="account-submit-btn account-phone-submit" id="account-phone-submit">Send verification code</button>
-          <div class="account-form-row account-code-row" hidden>
-            <label for="account-phone-code">Verification code</label>
-            <input id="account-phone-code" name="code" type="text" inputmode="numeric" placeholder="123456" />
+        </section>
+        <div class="account-method-divider"><span>or use email</span></div>
+        <section class="account-auth-method-card account-method-email">
+          <div class="account-method-label">Email and password</div>
+          <button type="button" class="account-auth-btn account-email-toggle">
+            <i class="fa-regular fa-envelope"></i>
+            <span>Use Email</span>
+          </button>
+          <div class="account-email-form-wrap">
+            <form class="account-email-form" id="account-email-form">
+              <button type="button" class="account-change-method">Change login method</button>
+              <div class="account-form-row account-name-row" hidden>
+                <label for="account-name">Full name</label>
+                <input id="account-name" name="name" type="text" placeholder="Black Gift" />
+              </div>
+              <div class="account-form-row">
+                <label for="account-email">Email address</label>
+                <input id="account-email" name="email" type="email" placeholder="hello@softgiggles.com" required />
+              </div>
+              <div class="account-form-row">
+                <label for="account-password">Password</label>
+                <input id="account-password" name="password" type="password" placeholder="Enter password" required />
+              </div>
+              <button type="submit" class="account-submit-btn">Sign In</button>
+            </form>
           </div>
-          <button type="button" class="account-submit-btn account-phone-verify" hidden>Verify code</button>
-          <p class="account-auth-hint">Firebase will send an SMS code after the reCAPTCHA check.</p>
-          <div id="account-recaptcha-container"></div>
-        </form>
-      </div>
-      <div class="account-email-form-wrap">
-        <form class="account-email-form" id="account-email-form">
-          <div class="account-form-row account-name-row" hidden>
-            <label for="account-name">Full name</label>
-            <input id="account-name" name="name" type="text" placeholder="Black Gift" />
-          </div>
-          <div class="account-form-row">
-            <label for="account-email">Email address</label>
-            <input id="account-email" name="email" type="email" placeholder="hello@softgiggles.com" required />
-          </div>
-          <div class="account-form-row">
-            <label for="account-password">Password</label>
-            <input id="account-password" name="password" type="password" placeholder="Enter password" required />
-          </div>
-          <button type="submit" class="account-submit-btn">Sign In</button>
-        </form>
+        </section>
       </div>
       <p class="account-auth-switch-copy">
         <span class="account-switch-label">New here?</span>
@@ -323,6 +335,12 @@ function renderAccountPanel() {
       <input type="hidden" id="account-mode" value="signin" />
       <input type="hidden" id="account-stored-email" value="${accountEmail}" />
     </aside>
+  </div>
+  <div class="account-success-toast" id="account-success-toast" hidden>
+    <div class="account-success-toast-inner">
+      <i class="fa-solid fa-check"></i>
+      <span>Signed in successfully</span>
+    </div>
   </div>`;
 }
 
@@ -526,17 +544,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (accountMenuHost && accountDropdown) {
+    let accountDropdownCloseTimer = null;
+
+    const clearAccountCloseTimer = () => {
+      if (!accountDropdownCloseTimer) return;
+      window.clearTimeout(accountDropdownCloseTimer);
+      accountDropdownCloseTimer = null;
+    };
+
     const openAccountDropdown = () => {
       if (!accountMenuHost.classList.contains('is-logged-in')) return;
+      clearAccountCloseTimer();
       accountMenuHost.classList.add('is-open');
     };
 
     const closeAccountDropdown = () => {
-      accountMenuHost.classList.remove('is-open');
+      clearAccountCloseTimer();
+      accountDropdownCloseTimer = window.setTimeout(() => {
+        accountMenuHost.classList.remove('is-open');
+      }, 180);
     };
 
     accountMenuHost.addEventListener('mouseenter', openAccountDropdown);
     accountMenuHost.addEventListener('mouseleave', closeAccountDropdown);
+    accountDropdown.addEventListener('mouseenter', openAccountDropdown);
+    accountDropdown.addEventListener('mouseleave', closeAccountDropdown);
 
     accountTriggers.forEach((trigger) => {
       trigger.addEventListener('click', (event) => {

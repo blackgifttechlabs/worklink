@@ -62,6 +62,23 @@
   </section>
 </main>
 
+<div class="account-delete-overlay" id="account-delete-overlay" hidden>
+  <div class="account-delete-modal">
+    <button type="button" class="account-delete-close" aria-label="Close delete modal">×</button>
+    <h3>Delete SoftGiggles Profile</h3>
+    <p class="account-delete-copy">Type your account identifier exactly to confirm permanent deletion.</p>
+    <div class="account-delete-target" id="account-delete-target-label"></div>
+    <div class="account-form-row">
+      <label for="account-delete-confirmation" id="account-delete-label">Email address</label>
+      <input id="account-delete-confirmation" type="text" autocomplete="off" placeholder="Type it exactly as shown" />
+    </div>
+    <div class="account-delete-actions">
+      <button type="button" class="account-delete-cancel">Cancel</button>
+      <button type="button" class="account-delete-confirm" disabled>Delete Profile</button>
+    </div>
+  </div>
+</div>
+
 <div id="site-footer"></div>
 
 <script src="../js/shared-header.js"></script>

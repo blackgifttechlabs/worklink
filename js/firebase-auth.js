@@ -1,6 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js';
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -121,6 +122,13 @@ async function signOut() {
   await firebaseSignOut(auth);
 }
 
+async function deleteProfile() {
+  if (!auth.currentUser) {
+    throw new Error('No signed-in user found.');
+  }
+  await deleteUser(auth.currentUser);
+}
+
 onAuthStateChanged(auth, (user) => {
   persistUser(user);
   dispatchAuthChange(user);
@@ -132,5 +140,6 @@ window.softGigglesAuth = {
   signUpWithEmail,
   sendPhoneCode,
   verifyPhoneCode,
-  signOut
+  signOut,
+  deleteProfile
 };
