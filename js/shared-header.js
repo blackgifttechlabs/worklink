@@ -7,8 +7,21 @@ function getBasePath() {
   return '';
 }
 
+function getStoredAccount() {
+  try {
+    const raw = localStorage.getItem('softgiggles_account');
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 function renderHeader() {
   const base = getBasePath();
+  const account = getStoredAccount();
+  const isLoggedIn = Boolean(account && account.loggedIn);
+  const accountName = account && account.name ? account.name : 'Black Gift';
+  const accountEmail = account && account.email ? account.email : 'blackgifttechlabs@gmail.com';
   return `
   <header>
     <div class="header-inner">
@@ -29,15 +42,47 @@ function renderHeader() {
         <input type="text" placeholder="Search for products and brands" />
       </div>
       <div class="header-actions">
-        <a href="#" class="a-plus-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          A+ Account
-        </a>
-        <a href="#">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Account
-        </a>
-        <a href="#">
+        <div class="account-menu-host ${isLoggedIn ? 'is-logged-in' : 'is-logged-out'}">
+          <a href="${isLoggedIn ? `${base}pages/account.html` : '#'}" class="a-plus-btn account-trigger" data-account-trigger="a-plus">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            A+ Account
+          </a>
+          <a href="${isLoggedIn ? `${base}pages/account.html` : '#'}" class="account-trigger account-link" data-account-trigger="account">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            ${isLoggedIn ? accountName.split(' ')[0] : 'Account'}
+          </a>
+          ${isLoggedIn ? `
+            <div class="account-dropdown" aria-hidden="true">
+              <div class="account-dropdown-greeting">Hi, ${accountName}</div>
+              <a href="${base}pages/account.html" class="account-dropdown-item">
+                <i class="fa-regular fa-user"></i>
+                <span>Profile</span>
+              </a>
+              <a href="#" class="account-dropdown-item">
+                <i class="fa-solid fa-cube"></i>
+                <span>Order History</span>
+              </a>
+              <a href="#" class="account-dropdown-item">
+                <i class="fa-solid fa-rectangle-list"></i>
+                <span>A+ Account</span>
+              </a>
+              <a href="#" class="account-dropdown-item">
+                <i class="fa-regular fa-book-open"></i>
+                <span>Address Book</span>
+              </a>
+              <a href="#" class="account-dropdown-item">
+                <i class="fa-solid fa-tag"></i>
+                <span>Lay-by’s</span>
+              </a>
+              <a href="#" class="account-dropdown-item">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span>More</span>
+              </a>
+              <button type="button" class="account-dropdown-logout">Log Out</button>
+            </div>
+          ` : ''}
+        </div>
+        <a href="${base}pages/wishlist.html">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
           Wishlist
         </a>
@@ -207,6 +252,80 @@ function renderHeader() {
   </nav>`;
 }
 
+function renderAccountPanel() {
+  const base = getBasePath();
+  const account = getStoredAccount();
+  const accountEmail = account && account.email ? account.email : 'blackgifttechlabs@gmail.com';
+  return `
+  <div class="account-auth-overlay" id="account-auth-overlay" hidden>
+    <aside class="account-auth-panel" aria-modal="true" role="dialog" aria-labelledby="account-auth-title">
+      <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
+      <h2 id="account-auth-title">Log In/Register</h2>
+      <div class="account-auth-hero">
+        <img src="${base}images/mobilegirls.jpg" alt="SoftGiggles sign in" />
+      </div>
+      <div class="account-auth-copy">
+        <h3 class="account-auth-heading">Welcome</h3>
+        <p class="account-auth-subtext">Create an account or sign in to continue.</p>
+      </div>
+      <div class="account-auth-actions">
+        <button type="button" class="account-auth-btn account-google-btn">
+          <i class="fa-brands fa-google"></i>
+          <span>Sign in with Google</span>
+        </button>
+        <button type="button" class="account-auth-btn account-phone-toggle">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>Continue with Phone</span>
+        </button>
+        <button type="button" class="account-auth-btn account-email-toggle">
+          <i class="fa-regular fa-envelope"></i>
+          <span>Use Email</span>
+        </button>
+      </div>
+      <div class="account-phone-form-wrap">
+        <form class="account-phone-form" id="account-phone-form">
+          <div class="account-form-row">
+            <label for="account-phone">Phone number</label>
+            <input id="account-phone" name="phone" type="tel" placeholder="+263 77 123 4567" />
+          </div>
+          <button type="button" class="account-submit-btn account-phone-submit" id="account-phone-submit">Send verification code</button>
+          <div class="account-form-row account-code-row" hidden>
+            <label for="account-phone-code">Verification code</label>
+            <input id="account-phone-code" name="code" type="text" inputmode="numeric" placeholder="123456" />
+          </div>
+          <button type="button" class="account-submit-btn account-phone-verify" hidden>Verify code</button>
+          <p class="account-auth-hint">Firebase will send an SMS code after the reCAPTCHA check.</p>
+          <div id="account-recaptcha-container"></div>
+        </form>
+      </div>
+      <div class="account-email-form-wrap">
+        <form class="account-email-form" id="account-email-form">
+          <div class="account-form-row account-name-row" hidden>
+            <label for="account-name">Full name</label>
+            <input id="account-name" name="name" type="text" placeholder="Black Gift" />
+          </div>
+          <div class="account-form-row">
+            <label for="account-email">Email address</label>
+            <input id="account-email" name="email" type="email" placeholder="hello@softgiggles.com" required />
+          </div>
+          <div class="account-form-row">
+            <label for="account-password">Password</label>
+            <input id="account-password" name="password" type="password" placeholder="Enter password" required />
+          </div>
+          <button type="submit" class="account-submit-btn">Sign In</button>
+        </form>
+      </div>
+      <p class="account-auth-switch-copy">
+        <span class="account-switch-label">New here?</span>
+        <button type="button" class="account-mode-switch">Sign up</button>
+      </p>
+      <p class="account-auth-note">By continuing, you agree to our Terms and Privacy Policy.</p>
+      <input type="hidden" id="account-mode" value="signin" />
+      <input type="hidden" id="account-stored-email" value="${accountEmail}" />
+    </aside>
+  </div>`;
+}
+
 function renderFooter() {
   const base = getBasePath();
   return `
@@ -215,8 +334,8 @@ function renderFooter() {
       <div class="footer-col">
         <h4>Account</h4>
         <ul>
-          <li><a href="#">My Profile</a></li>
-          <li><a href="#">Wishlist</a></li>
+          <li><a href="${base}pages/account.html">My Profile</a></li>
+          <li><a href="${base}pages/wishlist.html">Wishlist</a></li>
           <li><a href="#">Order History</a></li>
         </ul>
       </div>
@@ -306,6 +425,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!document.getElementById('cookie-banner')) {
     document.body.insertAdjacentHTML('beforeend', renderCookieBanner());
   }
+  if (!document.getElementById('account-auth-overlay')) {
+    document.body.insertAdjacentHTML('beforeend', renderAccountPanel());
+  }
+  if (!document.getElementById('firebase-auth-script')) {
+    const moduleScript = document.createElement('script');
+    moduleScript.type = 'module';
+    moduleScript.id = 'firebase-auth-script';
+    moduleScript.src = `${getBasePath()}js/firebase-auth.js`;
+    document.body.appendChild(moduleScript);
+  }
 
   if (!headerEl) return;
 
@@ -314,6 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const navEl = headerEl.querySelector('#site-nav');
   const overlayEl = headerEl.querySelector('.mobile-nav-overlay');
   const submenuToggles = headerEl.querySelectorAll('.mobile-submenu-toggle');
+  const accountMenuHost = headerEl.querySelector('.account-menu-host');
+  const accountTriggers = headerEl.querySelectorAll('.account-trigger');
+  const accountDropdown = headerEl.querySelector('.account-dropdown');
+  const dropdownLogoutBtn = headerEl.querySelector('.account-dropdown-logout');
   const mobileQuery = window.matchMedia('(max-width: 768px)');
   const desktopQuery = window.matchMedia('(min-width: 769px)');
   let lastScrollY = window.scrollY;
@@ -391,6 +524,57 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuToggle && menuToggle.contains(target)) return;
     setMobileMenuState(false);
   });
+
+  if (accountMenuHost && accountDropdown) {
+    const openAccountDropdown = () => {
+      if (!accountMenuHost.classList.contains('is-logged-in')) return;
+      accountMenuHost.classList.add('is-open');
+    };
+
+    const closeAccountDropdown = () => {
+      accountMenuHost.classList.remove('is-open');
+    };
+
+    accountMenuHost.addEventListener('mouseenter', openAccountDropdown);
+    accountMenuHost.addEventListener('mouseleave', closeAccountDropdown);
+
+    accountTriggers.forEach((trigger) => {
+      trigger.addEventListener('click', (event) => {
+        if (!accountMenuHost.classList.contains('is-logged-in')) return;
+        if (mobileQuery.matches) {
+          event.preventDefault();
+          const willOpen = !accountMenuHost.classList.contains('is-open');
+          accountMenuHost.classList.toggle('is-open', willOpen);
+          return;
+        }
+        if (trigger.classList.contains('account-link')) return;
+        event.preventDefault();
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!accountMenuHost.classList.contains('is-open')) return;
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (accountMenuHost.contains(target)) return;
+      closeAccountDropdown();
+    });
+  }
+
+  if (dropdownLogoutBtn) {
+    dropdownLogoutBtn.addEventListener('click', () => {
+      if (window.softGigglesAuth && typeof window.softGigglesAuth.signOut === 'function') {
+        window.softGigglesAuth.signOut();
+        return;
+      }
+      try {
+        localStorage.removeItem('softgiggles_account');
+      } catch (error) {
+        // Ignore storage issues.
+      }
+      window.location.reload();
+    });
+  }
 
   window.addEventListener('resize', () => {
     syncMobileNav();

@@ -1,5 +1,60 @@
 // Nav mega dropdown hover logic
 document.addEventListener('DOMContentLoaded', () => {
+  const SEARCH_ITEMS = [
+    'Onesies and Bodysuits',
+    'Sleepers and Footies',
+    'Rompers and Coveralls',
+    'Graphic Tees and Polos',
+    'Cargo Pants and Joggers',
+    'Shorts and Overalls',
+    'Sets and Tracksuits',
+    'Cardigans and Hoodies',
+    'Bunting Suits and Jackets',
+    'Socks and Booties',
+    'Beanies and Baseball Caps',
+    'Bow Ties and Braces',
+    'Rompers and Sunsuits',
+    'Dresses and Skirts',
+    'Leggings and Ruffle Pants',
+    'Bloomers and Diaper Covers',
+    'Tunics and Blouses',
+    'Sweaters and Cardigans',
+    'Coats and Pram Suits',
+    'Socks and Tights',
+    'Headbands and Soft Bows',
+    'Sun Hats and Bonnets',
+    'Grey or Navy Trousers',
+    'Button-Down Shirts',
+    'Polo Shirts',
+    'School Blazers',
+    'Backpacks and Satchels',
+    'Insulated Lunch Boxes',
+    'Water Bottles',
+    'Pencil Cases',
+    'Fleece Babygrow Yellow',
+    'Fleece Babygrow Natural',
+    'Fleece Babygrow Light Pink',
+    'Babygrow Grey',
+    'Babygrow Natural',
+    'Tiny winter dress',
+    'Tiny winter shoes',
+    'Tiny warm winter hat',
+    'Toddler Girls',
+    'Toddler Boys',
+    'Girls Jackets',
+    'Girls Shoes',
+    'Boys Jackets',
+    'Boys Shoes',
+    'Fleece Tops',
+    'Jackets',
+    'Shop Dresses',
+    'Shop Shoes',
+    'Shop Hats',
+    'Toys',
+    'Sale',
+    'Promotions'
+  ];
+
   const cookieBanner = document.getElementById('cookie-banner');
   const cookieAccept = document.querySelector('.cookie-accept');
   const cookieDecline = document.querySelector('.cookie-decline');
@@ -47,6 +102,239 @@ document.addEventListener('DOMContentLoaded', () => {
     cookieDecline.addEventListener('click', () => saveCookieChoice('declined'));
   }
 
+  let searchModal = document.getElementById('search-coming-modal');
+  let searchSuggestions = document.getElementById('search-suggestions');
+  let activeSearchInput = null;
+
+  if (!searchModal) {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="search-coming-overlay" id="search-coming-modal" hidden>
+        <div class="search-coming-dialog">
+          <button type="button" class="search-coming-close" aria-label="Close search modal">×</button>
+          <h3>Search coming soon</h3>
+          <p>We are still building search. Suggestions are available, but full search will be live soon.</p>
+        </div>
+      </div>
+    `);
+    searchModal = document.getElementById('search-coming-modal');
+  }
+
+  if (!searchSuggestions) {
+    document.body.insertAdjacentHTML('beforeend', `<div class="search-suggestions" id="search-suggestions" hidden></div>`);
+    searchSuggestions = document.getElementById('search-suggestions');
+  }
+
+  function hideSearchSuggestions() {
+    if (!searchSuggestions) return;
+    searchSuggestions.hidden = true;
+    searchSuggestions.innerHTML = '';
+    activeSearchInput = null;
+  }
+
+  function openSearchModal() {
+    if (!searchModal) return;
+    searchModal.hidden = false;
+    requestAnimationFrame(() => searchModal.classList.add('is-visible'));
+  }
+
+  function closeSearchModal() {
+    if (!searchModal) return;
+    searchModal.classList.remove('is-visible');
+    setTimeout(() => {
+      searchModal.hidden = true;
+    }, 180);
+  }
+
+  function positionSearchSuggestions(input) {
+    if (!searchSuggestions || !input) return;
+    const rect = input.closest('.search-bar').getBoundingClientRect();
+    searchSuggestions.style.top = `${window.scrollY + rect.bottom + 8}px`;
+    searchSuggestions.style.left = `${window.scrollX + rect.left}px`;
+    searchSuggestions.style.width = `${rect.width}px`;
+  }
+
+  function escapeHtml(value) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function highlightMatch(text, query) {
+    const safeText = escapeHtml(text);
+    if (!query) return safeText;
+
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const start = lowerText.indexOf(lowerQuery);
+
+    if (start === -1) return safeText;
+
+    const end = start + query.length;
+    const before = escapeHtml(text.slice(0, start));
+    const match = escapeHtml(text.slice(start, end));
+    const after = escapeHtml(text.slice(end));
+    return `${before}<span class="search-match">${match}</span>${after}`;
+  }
+
+  function renderSearchSuggestions(input) {
+    if (!searchSuggestions) return;
+    const rawQuery = input.value.trim();
+    const query = rawQuery.toLowerCase();
+    const matches = SEARCH_ITEMS.filter(item => item.toLowerCase().includes(query)).slice(0, 8);
+
+    if (!query) {
+      searchSuggestions.innerHTML = '';
+      searchSuggestions.hidden = true;
+      searchSuggestions.classList.remove('is-visible');
+      return;
+    }
+
+    if (!matches.length) {
+      searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">No suggestions found</button>`;
+    } else {
+      searchSuggestions.innerHTML = matches.map(item => `
+        <button type="button" class="search-suggestion" data-value="${item}">
+          <span class="search-suggestion-icon">⌕</span>
+          <span>${highlightMatch(item, rawQuery)}</span>
+        </button>
+      `).join('');
+    }
+
+    positionSearchSuggestions(input);
+    searchSuggestions.hidden = false;
+    activeSearchInput = input;
+    requestAnimationFrame(() => {
+      if (searchSuggestions && !searchSuggestions.hidden) {
+        searchSuggestions.classList.add('is-visible');
+      }
+    });
+  }
+
+  document.querySelectorAll('.search-bar input').forEach(input => {
+    input.addEventListener('focus', () => {
+      if (input.value.trim()) renderSearchSuggestions(input);
+    });
+
+    input.addEventListener('input', () => {
+      renderSearchSuggestions(input);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        hideSearchSuggestions();
+        openSearchModal();
+      }
+    });
+  });
+
+  if (searchSuggestions) {
+    searchSuggestions.addEventListener('mousedown', (event) => {
+      const button = event.target.closest('.search-suggestion');
+      if (!button || button.classList.contains('is-empty')) return;
+      event.preventDefault();
+      const value = button.getAttribute('data-value') || '';
+      if (activeSearchInput) activeSearchInput.value = value;
+      hideSearchSuggestions();
+      openSearchModal();
+    });
+  }
+
+  if (searchModal) {
+    searchModal.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target === searchModal || target.closest('.search-coming-close')) {
+        closeSearchModal();
+      }
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    if (activeSearchInput && searchSuggestions && !searchSuggestions.hidden) {
+      positionSearchSuggestions(activeSearchInput);
+    }
+  });
+
+  window.addEventListener('scroll', () => {
+    if (activeSearchInput && searchSuggestions && !searchSuggestions.hidden) {
+      positionSearchSuggestions(activeSearchInput);
+    }
+  }, { passive: true });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (searchSuggestions && searchSuggestions.contains(target)) return;
+    if (target instanceof HTMLElement && target.closest('.search-bar')) return;
+    hideSearchSuggestions();
+  });
+
+  const mobileFilterToggle = document.querySelector('.mobile-filter-toggle');
+  const filtersCloseBtn = document.querySelector('.filters-close-btn');
+  const catalogMobileOverlay = document.querySelector('.catalog-mobile-overlay');
+  const sortDropdowns = document.querySelectorAll('.sort-dropdown');
+
+  if (mobileFilterToggle) {
+    mobileFilterToggle.addEventListener('click', () => {
+      document.body.classList.add('mobile-filters-open');
+    });
+  }
+
+  if (filtersCloseBtn) {
+    filtersCloseBtn.addEventListener('click', () => {
+      document.body.classList.remove('mobile-filters-open');
+    });
+  }
+
+  if (catalogMobileOverlay) {
+    catalogMobileOverlay.addEventListener('click', () => {
+      document.body.classList.remove('mobile-filters-open');
+      sortDropdowns.forEach(dropdown => {
+        dropdown.classList.remove('is-open');
+        const toggle = dropdown.querySelector('button[aria-expanded]');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  sortDropdowns.forEach(dropdown => {
+    const toggle = dropdown.querySelector('button[aria-expanded]');
+    const options = dropdown.querySelectorAll('.mobile-sort-option, .desktop-sort-option');
+
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const willOpen = !dropdown.classList.contains('is-open');
+        sortDropdowns.forEach(other => {
+          if (other !== dropdown) {
+            other.classList.remove('is-open');
+            const otherToggle = other.querySelector('button[aria-expanded]');
+            if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+        dropdown.classList.toggle('is-open', willOpen);
+        toggle.setAttribute('aria-expanded', String(willOpen));
+      });
+    }
+
+    options.forEach(option => {
+      option.addEventListener('click', () => {
+        options.forEach(item => item.classList.remove('is-active'));
+        option.classList.add('is-active');
+        if (toggle) {
+          const label = option.textContent.trim();
+          const labelSpan = toggle.querySelector('span');
+          if (labelSpan) labelSpan.textContent = label;
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+        dropdown.classList.remove('is-open');
+      });
+    });
+  });
+
   // Smooth image placeholder fallback
   document.querySelectorAll('img').forEach(img => {
     img.addEventListener('error', function() {
@@ -66,13 +354,268 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Grid toggle
-  const toggleBtns = document.querySelectorAll('.grid-toggle');
-  toggleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      toggleBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+
+    sortDropdowns.forEach(dropdown => {
+      if (!dropdown.classList.contains('is-open')) return;
+      if (dropdown.contains(target)) return;
+      dropdown.classList.remove('is-open');
+      const toggle = dropdown.querySelector('button[aria-expanded]');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
     });
   });
+
+  const toggleBtns = document.querySelectorAll('.grid-toggle');
+  const catalogGrid = document.querySelector('.catalog-grid');
+  toggleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view || 'grid';
+      toggleBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (catalogGrid) {
+        catalogGrid.dataset.view = view;
+      }
+    });
+  });
+
+  const wishlistTrendingRow = document.querySelector('.wishlist-trending-row');
+  document.querySelectorAll('.wishlist-scroll-btn').forEach((button, index) => {
+    button.addEventListener('click', () => {
+      if (!wishlistTrendingRow) return;
+      const direction = index === 0 ? -1 : 1;
+      wishlistTrendingRow.scrollBy({
+        left: direction * 260,
+        behavior: 'smooth'
+      });
+    });
+  });
+
+  const accountStorageKey = 'softgiggles_account';
+  const accountAuthOverlay = document.getElementById('account-auth-overlay');
+  const accountAuthClose = document.querySelector('.account-auth-close');
+  const accountAuthPanel = document.querySelector('.account-auth-panel');
+  const accountLoggedOutTriggers = document.querySelectorAll('.account-menu-host.is-logged-out .account-trigger, .account-guest-open');
+  const accountGoogleBtn = document.querySelector('.account-google-btn');
+  const accountPhoneToggle = document.querySelector('.account-phone-toggle');
+  const accountEmailToggle = document.querySelector('.account-email-toggle');
+  const accountPhoneFormWrap = document.querySelector('.account-phone-form-wrap');
+  const accountPhoneInput = document.getElementById('account-phone');
+  const accountPhoneSubmit = document.querySelector('.account-phone-submit');
+  const accountCodeRow = document.querySelector('.account-code-row');
+  const accountPhoneCode = document.getElementById('account-phone-code');
+  const accountPhoneVerify = document.querySelector('.account-phone-verify');
+  const accountEmailFormWrap = document.querySelector('.account-email-form-wrap');
+  const accountEmailForm = document.getElementById('account-email-form');
+  const accountModeSwitch = document.querySelector('.account-mode-switch');
+  const accountModeInput = document.getElementById('account-mode');
+  const accountHeading = document.querySelector('.account-auth-heading');
+  const accountSubtext = document.querySelector('.account-auth-subtext');
+  const accountSwitchLabel = document.querySelector('.account-switch-label');
+  const accountSubmitBtn = document.querySelector('.account-submit-btn');
+  const accountNameRow = document.querySelector('.account-name-row');
+  const accountDashboard = document.getElementById('account-dashboard');
+  const accountGuestCard = document.getElementById('account-guest-card');
+  const accountDisplayName = document.getElementById('account-display-name');
+  const accountProfileName = document.getElementById('account-profile-name');
+  const accountProfileEmail = document.getElementById('account-profile-email');
+  const accountPageLogout = document.querySelector('.account-side-logout');
+
+  function readAccount() {
+    try {
+      const raw = localStorage.getItem(accountStorageKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeAccount(account) {
+    try {
+      localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    } catch (error) {
+      // Ignore storage issues to avoid blocking UI.
+    }
+  }
+
+  function openAccountPanel() {
+    if (!accountAuthOverlay) return;
+    accountAuthOverlay.hidden = false;
+    requestAnimationFrame(() => {
+      accountAuthOverlay.classList.add('is-visible');
+    });
+  }
+
+  function closeAccountPanel() {
+    if (!accountAuthOverlay) return;
+    accountAuthOverlay.classList.remove('is-visible');
+    setTimeout(() => {
+      accountAuthOverlay.hidden = true;
+    }, 240);
+  }
+
+  function getAuthHelper() {
+    return window.softGigglesAuth || null;
+  }
+
+  function syncAccountMode(mode) {
+    if (!accountModeInput) return;
+    accountModeInput.value = mode;
+    const isSignup = mode === 'signup';
+    if (accountHeading) accountHeading.textContent = isSignup ? 'Create Account' : 'Welcome';
+    if (accountSubtext) {
+      accountSubtext.textContent = isSignup
+        ? 'Set up your SoftGiggles account to save your favourites and shop faster.'
+        : 'Create an account or sign in to continue.';
+    }
+    if (accountSwitchLabel) accountSwitchLabel.textContent = isSignup ? 'Already have an account?' : 'New here?';
+    if (accountModeSwitch) accountModeSwitch.textContent = isSignup ? 'Sign in' : 'Sign up';
+    if (accountSubmitBtn) accountSubmitBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
+    if (accountNameRow) accountNameRow.hidden = !isSignup;
+  }
+
+  function applyAccountToPage() {
+    const account = readAccount();
+    if (!accountDashboard || !accountGuestCard) return;
+    const isLoggedIn = Boolean(account && account.loggedIn);
+    accountDashboard.hidden = !isLoggedIn;
+    accountGuestCard.hidden = isLoggedIn;
+    if (!isLoggedIn) return;
+
+    const name = account.name || 'Black Gift';
+    const email = account.email || 'blackgifttechlabs@gmail.com';
+    if (accountDisplayName) accountDisplayName.textContent = name;
+    if (accountProfileName) accountProfileName.textContent = name;
+    if (accountProfileEmail) accountProfileEmail.textContent = email;
+  }
+
+  function logoutAccount() {
+    try {
+      localStorage.removeItem(accountStorageKey);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+    window.location.reload();
+  }
+
+  accountLoggedOutTriggers.forEach(trigger => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      openAccountPanel();
+    });
+  });
+
+  if (accountAuthClose) {
+    accountAuthClose.addEventListener('click', closeAccountPanel);
+  }
+
+  if (accountAuthOverlay) {
+    accountAuthOverlay.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target === accountAuthOverlay) closeAccountPanel();
+    });
+  }
+
+  if (accountEmailToggle && accountEmailFormWrap) {
+    accountEmailToggle.addEventListener('click', () => {
+      accountEmailFormWrap.classList.toggle('is-open');
+      if (accountPhoneFormWrap) accountPhoneFormWrap.classList.remove('is-open');
+    });
+  }
+
+  if (accountPhoneToggle && accountPhoneFormWrap) {
+    accountPhoneToggle.addEventListener('click', () => {
+      accountPhoneFormWrap.classList.toggle('is-open');
+      if (accountEmailFormWrap) accountEmailFormWrap.classList.remove('is-open');
+    });
+  }
+
+  if (accountModeSwitch && accountModeInput) {
+    accountModeSwitch.addEventListener('click', () => {
+      const nextMode = accountModeInput.value === 'signup' ? 'signin' : 'signup';
+      syncAccountMode(nextMode);
+      if (accountEmailFormWrap) accountEmailFormWrap.classList.add('is-open');
+    });
+  }
+
+  if (accountGoogleBtn) {
+    accountGoogleBtn.addEventListener('click', async () => {
+      const authHelper = getAuthHelper();
+      if (!authHelper) return;
+      try {
+        await authHelper.signInWithGoogle();
+        window.location.reload();
+      } catch (error) {
+        window.alert(error.message || 'Google sign-in failed.');
+      }
+    });
+  }
+
+  if (accountEmailForm && accountModeInput) {
+    accountEmailForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const authHelper = getAuthHelper();
+      if (!authHelper) return;
+      const formData = new FormData(accountEmailForm);
+      const email = String(formData.get('email') || '').trim();
+      const password = String(formData.get('password') || '');
+      const typedName = String(formData.get('name') || '').trim();
+
+      try {
+        if (accountModeInput.value === 'signup') {
+          await authHelper.signUpWithEmail(typedName, email, password);
+        } else {
+          await authHelper.signInWithEmail(email, password);
+        }
+        window.location.reload();
+      } catch (error) {
+        window.alert(error.message || 'Email authentication failed.');
+      }
+    });
+  }
+
+  if (accountPhoneSubmit && accountPhoneInput) {
+    accountPhoneSubmit.addEventListener('click', async () => {
+      const authHelper = getAuthHelper();
+      if (!authHelper) return;
+      try {
+        await authHelper.sendPhoneCode(accountPhoneInput.value.trim());
+        if (accountCodeRow) accountCodeRow.hidden = false;
+        if (accountPhoneVerify) accountPhoneVerify.hidden = false;
+      } catch (error) {
+        window.alert(error.message || 'Could not send verification code.');
+      }
+    });
+  }
+
+  if (accountPhoneVerify && accountPhoneCode) {
+    accountPhoneVerify.addEventListener('click', async () => {
+      const authHelper = getAuthHelper();
+      if (!authHelper) return;
+      try {
+        await authHelper.verifyPhoneCode(accountPhoneCode.value.trim());
+        window.location.reload();
+      } catch (error) {
+        window.alert(error.message || 'Verification failed.');
+      }
+    });
+  }
+
+  if (accountPageLogout) {
+    accountPageLogout.addEventListener('click', async () => {
+      const authHelper = getAuthHelper();
+      if (authHelper) {
+        await authHelper.signOut();
+        return;
+      }
+      logoutAccount();
+    });
+  }
+
+  syncAccountMode('signin');
+  applyAccountToPage();
 
   // Filter group collapse
   document.querySelectorAll('.filter-group-header').forEach(header => {

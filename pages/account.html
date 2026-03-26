@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account – SoftGiggles</title>
+  <link rel="icon" type="image/png" href="../images/logo/baby-giggles-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="account-page">
+  <section class="account-guest-card" id="account-guest-card" hidden>
+    <div class="account-guest-inner">
+      <i class="fa-regular fa-user-circle"></i>
+      <h1>Sign in to view your profile</h1>
+      <p>Your saved details, order history, and address book will appear here once you log in.</p>
+      <button type="button" class="account-guest-open">Sign In or Register</button>
+    </div>
+  </section>
+
+  <section class="account-dashboard" id="account-dashboard" hidden>
+    <div class="account-hero-banner">
+      <img src="../images/girls.jpg" alt="SoftGiggles account" />
+      <div class="account-hero-chip">Hi, <span id="account-display-name">Black Gift</span></div>
+    </div>
+
+    <div class="account-dashboard-layout">
+      <aside class="account-side-nav">
+        <a href="#" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>Profile</span></a>
+        <a href="#" class="account-side-link"><i class="fa-solid fa-cube"></i><span>Order History</span></a>
+        <a href="#" class="account-side-link"><i class="fa-solid fa-rectangle-list"></i><span>A+ Account</span></a>
+        <a href="#" class="account-side-link"><i class="fa-regular fa-book-open"></i><span>Address Book</span></a>
+        <a href="#" class="account-side-link"><i class="fa-solid fa-tag"></i><span>Lay-by’s</span></a>
+        <a href="#" class="account-side-link"><i class="fa-solid fa-ellipsis"></i><span>More</span></a>
+        <button type="button" class="account-side-logout">Log Out</button>
+      </aside>
+
+      <section class="account-profile-card">
+        <h2>Profile Details</h2>
+        <div class="account-detail-box">
+          <span>Name</span>
+          <strong id="account-profile-name">Black Gift</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Email Address</span>
+          <strong id="account-profile-email">blackgifttechlabs@gmail.com</strong>
+        </div>
+        <label class="account-marketing-row">
+          <input type="checkbox" />
+          <span>Keep me updated on offers and marketing news</span>
+        </label>
+        <button type="button" class="account-delete-link">Delete SoftGiggles Profile</button>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="../js/shared-header.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

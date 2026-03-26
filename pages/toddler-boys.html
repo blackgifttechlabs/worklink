@@ -13,9 +13,16 @@
   <style>
     .page-accent { color: #3b82f6; }
     .page-accent-bg { background: linear-gradient(135deg,#dbeafe 0%,#e0f2fe 100%); }
+    .filter-accent { --green: #3b82f6; --green-dark: #1d4ed8; }
+    .filter-accent .girls-featured-card { background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); }
+    .filter-accent .girls-featured-tag { color: #1d4ed8; }
+    .filter-accent .girls-featured-primary { background: #3b82f6; }
+    .filter-accent .girls-featured-primary:hover { background: #1d4ed8; }
+    .filter-accent .girls-featured-secondary { border-color: #3b82f6; color: #3b82f6; }
+    .filter-accent .girls-featured-image { background: linear-gradient(135deg,#f8fbff 0%,#e0f2fe 100%); }
   </style>
 </head>
-<body>
+<body class="filter-accent">
 
 <div id="site-header"></div>
 
@@ -34,55 +41,47 @@
 </div>
 
 <!-- FEATURED BANNER -->
-<div style="max-width:1400px;margin:28px auto 0;padding:0 24px;">
-  <div style="background:linear-gradient(135deg,#dbeafe,#bae6fd);border-radius:20px;display:flex;align-items:center;overflow:hidden;min-height:200px;padding:32px 48px;gap:32px;">
-    <div style="flex:1;">
-      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#1d4ed8;margin-bottom:8px;">New Arrivals</div>
-      <h2 style="font-size:32px;font-weight:900;margin-bottom:10px;color:#111;">Built for<br>Adventure 🚀</h2>
-      <p style="color:#666;margin-bottom:20px;">Durable, comfy styles that keep up with little boys on the move.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn-primary" style="background:#3b82f6;">Tracksuits</button>
-        <button class="btn-secondary" style="border-color:#3b82f6;color:#3b82f6;">Tees &amp; Tops</button>
+<div class="girls-featured-wrap">
+  <div class="girls-featured-card filter-accent">
+    <div class="girls-featured-copy">
+      <div class="girls-featured-tag">New Arrivals</div>
+      <h2>Built for Adventure</h2>
+      <p>Comfy layers and everyday essentials for little boys always on the move.</p>
+      <div class="girls-featured-actions">
+        <button class="btn-primary girls-featured-primary" type="button">Tracksuits</button>
+        <button class="btn-secondary girls-featured-secondary" type="button">Tees &amp; Tops</button>
       </div>
     </div>
-    <div style="display:flex;gap:16px;">
-      <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg" width="90" height="140">
-        <circle cx="60" cy="40" r="32" fill="#93c5fd"/>
-        <path d="M60 40 Q28 40 24 70 L18 150 Q18 180 60 180 Q102 180 102 150 L96 70 Q92 40 60 40" fill="#374151"/>
-        <rect x="34" y="110" width="52" height="8" fill="#4b5563" opacity="0.5"/>
-        <path d="M36 28 Q34 10 50 16 Q48 4 60 6 Q72 4 70 16 Q86 10 84 28" fill="#0a0500"/>
-        <circle cx="50" cy="38" r="4" fill="#333"/>
-        <circle cx="70" cy="38" r="4" fill="#333"/>
-        <path d="M50 50 Q60 58 70 50" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="42" cy="182" rx="14" ry="7" fill="#374151"/>
-        <ellipse cx="78" cy="182" rx="14" ry="7" fill="#374151"/>
-      </svg>
-      <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg" width="90" height="140">
-        <circle cx="60" cy="40" r="32" fill="#93c5fd"/>
-        <path d="M60 40 Q28 40 24 70 L18 150 Q18 180 60 180 Q102 180 102 150 L96 70 Q92 40 60 40" fill="#b45309"/>
-        <path d="M42 55 L60 72 L78 55" stroke="#78350f" stroke-width="5" fill="none"/>
-        <path d="M36 28 Q34 10 50 16 Q48 4 60 6 Q72 4 70 16 Q86 10 84 28" fill="#0a0500"/>
-        <circle cx="50" cy="38" r="4" fill="#333"/>
-        <circle cx="70" cy="38" r="4" fill="#333"/>
-        <path d="M50 50 Q60 58 70 50" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="42" cy="182" rx="14" ry="7" fill="#92400e"/>
-        <ellipse cx="78" cy="182" rx="14" ry="7" fill="#92400e"/>
-      </svg>
-      <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg" width="90" height="140">
-        <circle cx="60" cy="40" r="32" fill="#93c5fd"/>
-        <path d="M60 40 Q28 40 24 70 L18 150 Q18 180 60 180 Q102 180 102 150 L96 70 Q92 40 60 40" fill="#1d4ed8"/>
-        <!-- paw patrol -->
-        <circle cx="60" cy="95" r="14" fill="white" opacity="0.8"/>
-        <circle cx="56" cy="91" r="3" fill="#333"/>
-        <circle cx="64" cy="91" r="3" fill="#333"/>
-        <path d="M55 101 Q60 107 65 101" stroke="#e53e3e" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M36 28 Q34 10 50 16 Q48 4 60 6 Q72 4 70 16 Q86 10 84 28" fill="#0a0500"/>
-        <circle cx="50" cy="38" r="4" fill="#333"/>
-        <circle cx="70" cy="38" r="4" fill="#333"/>
-        <path d="M50 50 Q60 58 70 50" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="42" cy="182" rx="14" ry="7" fill="#1e40af"/>
-        <ellipse cx="78" cy="182" rx="14" ry="7" fill="#1e40af"/>
-      </svg>
+    <div class="girls-featured-image">
+      <div class="girls-category-marquee">
+        <div class="girls-category-track">
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child2.avif" alt="Onesies and Bodysuits" /></div><span>Onesies and Bodysuits</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child3.avif" alt="Sleepers and Footies" /></div><span>Sleepers and Footies</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child5.avif" alt="Rompers and Coveralls" /></div><span>Rompers and Coveralls</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child6.avif" alt="Graphic Tees and Polos" /></div><span>Graphic Tees and Polos</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child1.avif" alt="Cargo Pants and Joggers" /></div><span>Cargo Pants and Joggers</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child4.avif" alt="Shorts and Overalls" /></div><span>Shorts and Overalls</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child7.avif" alt="Sets and Tracksuits" /></div><span>Sets and Tracksuits</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child8.webp" alt="Cardigans and Hoodies" /></div><span>Cardigans and Hoodies</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child5.avif" alt="Bunting Suits and Jackets" /></div><span>Bunting Suits and Jackets</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child2.avif" alt="Socks and Booties" /></div><span>Socks and Booties</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child3.avif" alt="Beanies and Baseball Caps" /></div><span>Beanies and Baseball Caps</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child4.avif" alt="Bow Ties and Braces" /></div><span>Bow Ties and Braces</span></div>
+
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child2.avif" alt="Onesies and Bodysuits" /></div><span>Onesies and Bodysuits</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child3.avif" alt="Sleepers and Footies" /></div><span>Sleepers and Footies</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child5.avif" alt="Rompers and Coveralls" /></div><span>Rompers and Coveralls</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child6.avif" alt="Graphic Tees and Polos" /></div><span>Graphic Tees and Polos</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child1.avif" alt="Cargo Pants and Joggers" /></div><span>Cargo Pants and Joggers</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child4.avif" alt="Shorts and Overalls" /></div><span>Shorts and Overalls</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child7.avif" alt="Sets and Tracksuits" /></div><span>Sets and Tracksuits</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child8.webp" alt="Cardigans and Hoodies" /></div><span>Cardigans and Hoodies</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child5.avif" alt="Bunting Suits and Jackets" /></div><span>Bunting Suits and Jackets</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child2.avif" alt="Socks and Booties" /></div><span>Socks and Booties</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child3.avif" alt="Beanies and Baseball Caps" /></div><span>Beanies and Baseball Caps</span></div>
+          <div class="girls-mini-category"><div class="girls-mini-category-img"><img src="../images/categories/child4.avif" alt="Bow Ties and Braces" /></div><span>Bow Ties and Braces</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -90,9 +89,14 @@
 <!-- MAIN LAYOUT -->
 <div class="catalog-layout">
 
+  <div class="catalog-mobile-overlay"></div>
+
   <!-- FILTERS -->
   <aside class="filters-panel">
-    <h3>Filters</h3>
+    <div class="filters-mobile-header">
+      <h3>Filters</h3>
+      <button type="button" class="filters-close-btn" aria-label="Close filters">×</button>
+    </div>
 
     <div class="filter-group">
       <div class="filter-group-header">
@@ -166,42 +170,51 @@
   <div class="catalog-main">
     <div class="catalog-toolbar">
       <span class="results-count">Showing 1–48 of 312 products</span>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <select class="sort-select">
-          <option>Relevance</option>
-          <option>Price: Low to High</option>
-          <option>Price: High to Low</option>
-          <option>New Arrivals</option>
-          <option>Best Sellers</option>
-        </select>
+      <div class="catalog-toolbar-actions">
+        <button type="button" class="mobile-filter-toggle">
+          <span>Filters</span>
+          <i class="fa-solid fa-sliders"></i>
+        </button>
+        <div class="sort-dropdown mobile-sort">
+          <button type="button" class="mobile-sort-toggle" aria-expanded="false">
+            <span>Relevance</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="mobile-sort-menu">
+            <button type="button" class="mobile-sort-option is-active">Relevance</button>
+            <button type="button" class="mobile-sort-option">Price: Low to High</button>
+            <button type="button" class="mobile-sort-option">Price: High to Low</button>
+            <button type="button" class="mobile-sort-option">New Arrivals</button>
+            <button type="button" class="mobile-sort-option">Best Sellers</button>
+          </div>
+        </div>
+        <div class="sort-dropdown desktop-sort">
+          <button type="button" class="desktop-sort-toggle" aria-expanded="false">
+            <span>Relevance</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="desktop-sort-menu">
+            <button type="button" class="desktop-sort-option is-active">Relevance</button>
+            <button type="button" class="desktop-sort-option">Price: Low to High</button>
+            <button type="button" class="desktop-sort-option">Price: High to Low</button>
+            <button type="button" class="desktop-sort-option">New Arrivals</button>
+            <button type="button" class="desktop-sort-option">Best Sellers</button>
+          </div>
+        </div>
         <div class="grid-toggles">
-          <button class="grid-toggle active">⊞</button>
-          <button class="grid-toggle">⊟</button>
+          <button type="button" class="grid-toggle active" data-view="grid" aria-label="Grid view"><i class="fa-solid fa-grip"></i></button>
+          <button type="button" class="grid-toggle" data-view="list" aria-label="List view"><i class="fa-solid fa-list"></i></button>
         </div>
       </div>
     </div>
 
-    <div class="catalog-grid">
+    <div class="catalog-grid" data-view="grid">
 
       <!-- Product 1 -->
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#f0f4ff,#e0e7ff);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#1e40af"/>
-              <!-- airplane graphic -->
-              <path d="M30 70 L70 70 M50 56 L50 84" stroke="white" stroke-width="3" opacity="0.7"/>
-              <path d="M36 70 L50 62 L64 70" fill="white" opacity="0.7"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#1e40af" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <ellipse cx="32" cy="122" rx="11" ry="6" fill="#1e3a8a"/>
-              <ellipse cx="68" cy="122" rx="11" ry="6" fill="#1e3a8a"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0013.jpg" alt="Airplane Knitwear Brown" />
           <span class="product-badge">New</span>
           <button class="quick-add">Quick Add</button>
         </div>
@@ -212,24 +225,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#7f1d1d"/>
-              <!-- bear graphic -->
-              <circle cx="50" cy="74" r="12" fill="#a78bfa" opacity="0.8"/>
-              <circle cx="44" cy="68" r="5" fill="#8b5cf6" opacity="0.7"/>
-              <circle cx="56" cy="68" r="5" fill="#8b5cf6" opacity="0.7"/>
-              <circle cx="44" cy="72" r="2" fill="#333" opacity="0.9"/>
-              <circle cx="56" cy="72" r="2" fill="#333" opacity="0.9"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#7f1d1d" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <ellipse cx="32" cy="122" rx="11" ry="6" fill="#7f1d1d"/>
-              <ellipse cx="68" cy="122" rx="11" ry="6" fill="#450a0a"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0014.jpg" alt="2 Pack Bear Tracktops Burgundy" />
           <span class="product-badge">2 Pack</span>
           <button class="quick-add">Quick Add</button>
         </div>
@@ -240,24 +236,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#fef9c3,#fde68a);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <!-- fleece yellow babygrow style hoodie -->
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#fbbf24"/>
-              <circle cx="24" cy="20" r="10" fill="#f59e0b"/>
-              <circle cx="76" cy="20" r="10" fill="#f59e0b"/>
-              <circle cx="24" cy="20" r="5" fill="#fde68a"/>
-              <circle cx="76" cy="20" r="5" fill="#fde68a"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <ellipse cx="50" cy="36" rx="6" ry="4" fill="#f97316"/>
-              <ellipse cx="32" cy="122" rx="11" ry="6" fill="#f59e0b"/>
-              <ellipse cx="68" cy="122" rx="11" ry="6" fill="#f59e0b"/>
-              <line x1="50" y1="58" x2="50" y2="115" stroke="#d97706" stroke-width="2.5"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0016.jpg" alt="Spider-Man Bomber Jacket Burgundy" />
           <span class="product-badge">Buy 2 Save 30%</span>
           <button class="quick-add">Quick Add</button>
         </div>
@@ -268,23 +247,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#1d4ed8"/>
-              <!-- Paw Patrol logo area -->
-              <circle cx="50" cy="78" r="14" fill="white" opacity="0.85"/>
-              <circle cx="46" cy="73" r="3" fill="#333"/>
-              <circle cx="54" cy="73" r="3" fill="#333"/>
-              <path d="M45 82 Q50 89 55 82" stroke="#dc2626" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#1e40af" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <ellipse cx="32" cy="122" rx="11" ry="6" fill="#1e3a8a"/>
-              <ellipse cx="68" cy="122" rx="11" ry="6" fill="#d97706"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0017.jpg" alt="Paw Patrol 2 Pack Tracktops" />
           <button class="quick-add">Quick Add</button>
         </div>
         <div class="product-info"><h3>Paw Patrol 2 Pack Tracktops</h3><span class="price">R 189.95</span></div>
@@ -294,22 +257,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 90 Q14 108 50 108 Q86 108 86 90 L82 52 Q78 28 50 28" fill="#166534"/>
-              <!-- tracksuit bottoms -->
-              <rect x="28" y="106" width="18" height="24" rx="4" fill="#14532d"/>
-              <rect x="54" y="106" width="18" height="24" rx="4" fill="#14532d"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#14532d" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <rect x="38" y="60" width="24" height="20" rx="4" fill="#15803d" opacity="0.5"/>
-              <ellipse cx="32" cy="132" rx="11" ry="6" fill="#1e3a8a"/>
-              <ellipse cx="68" cy="132" rx="11" ry="6" fill="#1e3a8a"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0018.jpg" alt="Boys Tracksuit Olive Green" />
           <button class="quick-add">Quick Add</button>
         </div>
         <div class="product-info"><h3>Boys Tracksuit Olive Green</h3><span class="price">R 229.95</span></div>
@@ -319,25 +267,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <!-- denim jacket -->
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#3b82f6"/>
-              <path d="M36 40 L50 56 L64 40" stroke="#1d4ed8" stroke-width="4" fill="none"/>
-              <rect x="28" y="60" width="12" height="16" rx="2" fill="#2563eb"/>
-              <rect x="60" y="60" width="12" height="16" rx="2" fill="#2563eb"/>
-              <!-- stitching lines -->
-              <line x1="28" y1="75" x2="28" y2="100" stroke="#1d4ed8" stroke-width="1.5" stroke-dasharray="3,3"/>
-              <line x1="72" y1="75" x2="72" y2="100" stroke="#1d4ed8" stroke-width="1.5" stroke-dasharray="3,3"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#1e40af" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <ellipse cx="32" cy="122" rx="11" ry="6" fill="#93c5fd"/>
-              <ellipse cx="68" cy="122" rx="11" ry="6" fill="#93c5fd"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0019.jpg" alt="Boys Denim Jacket Blue" />
           <button class="quick-add">Quick Add</button>
         </div>
         <div class="product-info"><h3>Boys Denim Jacket Blue</h3><span class="price">R 299.95</span></div>
@@ -347,20 +277,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#f5f5f5,#e5e7eb);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 90 Q14 110 50 110 Q86 110 86 90 L82 52 Q78 28 50 28" fill="#6b7280"/>
-              <!-- shorts -->
-              <path d="M18 90 L18 118 L42 118 L50 96 L58 118 L82 118 L82 90 Z" fill="#4b5563"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#374151" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <ellipse cx="32" cy="120" rx="11" ry="6" fill="#1e293b"/>
-              <ellipse cx="68" cy="120" rx="11" ry="6" fill="#1e293b"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0020.jpg" alt="Boys Cargo Shorts Charcoal" />
           <button class="quick-add">Quick Add</button>
         </div>
         <div class="product-info"><h3>Boys Cargo Shorts Charcoal</h3><span class="price">R 149.95</span></div>
@@ -370,24 +287,7 @@
       <div class="product-card">
         <div class="product-img" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">
           <button class="add-btn">+</button><button class="wishlist-btn">♡</button>
-          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" width="90" height="118">
-              <circle cx="50" cy="28" r="22" fill="#93c5fd"/>
-              <path d="M50 28 Q22 28 18 52 L14 100 Q14 120 50 120 Q86 120 86 100 L82 52 Q78 28 50 28" fill="#b45309"/>
-              <!-- shoe illustration -->
-              <ellipse cx="32" cy="122" rx="14" ry="8" fill="#78350f"/>
-              <ellipse cx="68" cy="122" rx="14" ry="8" fill="#78350f"/>
-              <rect x="22" y="118" width="20" height="6" rx="3" fill="#92400e"/>
-              <rect x="58" y="118" width="20" height="6" rx="3" fill="#92400e"/>
-              <!-- laces -->
-              <line x1="26" y1="120" x2="38" y2="118" stroke="white" stroke-width="1.5"/>
-              <line x1="62" y1="120" x2="74" y2="118" stroke="white" stroke-width="1.5"/>
-              <path d="M36 28 Q34 10 50 16 Q48 4 50 6 Q52 4 50 16 Q66 10 64 28" fill="#0a0500"/>
-              <circle cx="42" cy="26" r="3.5" fill="#333"/>
-              <circle cx="58" cy="26" r="3.5" fill="#333"/>
-              <path d="M42 35 Q50 42 58 35" stroke="#78350f" stroke-width="2" fill="none" stroke-linecap="round"/>
-            </svg>
-          </div>
+          <img src="../images/products/IMG-20260310-WA0021.jpg" alt="Boys Sneakers Tan" />
           <button class="quick-add">Quick Add</button>
         </div>
         <div class="product-info"><h3>Boys Sneakers Tan</h3><span class="price">R 239.95</span></div>
