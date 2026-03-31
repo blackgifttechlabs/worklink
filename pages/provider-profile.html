@@ -15,7 +15,51 @@
   <div id="site-header"></div>
 
   <main class="provider-profile-page" data-provider-profile-page>
-    <div class="specialists-empty">Loading provider profile...</div>
+    <section class="provider-profile-shell">
+      <section class="provider-profile-hero">
+        <div class="provider-profile-banner" data-provider-banner></div>
+        <div class="provider-profile-summary">
+          <div class="provider-profile-avatar-ring">
+            <img src="../images/logo/logo.png" alt="Provider profile" data-provider-avatar />
+          </div>
+          <div class="provider-profile-summary-main">
+            <div class="provider-profile-summary-top">
+              <div>
+                <div class="provider-profile-handle" data-provider-handle>@provider</div>
+                <h1 data-provider-name>Loading provider...</h1>
+              </div>
+              <div class="provider-profile-actions">
+                <a href="#" class="provider-profile-action" data-provider-message-link>Message</a>
+                <a href="#" class="provider-profile-action secondary" data-provider-whatsapp-link target="_blank" rel="noreferrer">WhatsApp</a>
+              </div>
+            </div>
+            <div class="provider-profile-stats">
+              <div><strong data-provider-post-count>0</strong><span>posts</span></div>
+              <div><strong data-provider-rating>0.0 ★</strong><span>rating</span></div>
+              <div><strong data-provider-jobs>0</strong><span>jobs done</span></div>
+            </div>
+            <div class="provider-profile-bio-card">
+              <p class="provider-profile-title" data-provider-title></p>
+              <p class="provider-profile-address" data-provider-address></p>
+              <p class="provider-profile-bio" data-provider-bio></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="provider-profile-highlights" data-provider-highlights></section>
+
+      <section class="provider-profile-gallery-head">
+        <div class="provider-profile-gallery-tab is-active">
+          <i class="fa-solid fa-table-cells-large"></i>
+          <span>Previous Work</span>
+        </div>
+      </section>
+
+      <section class="provider-profile-gallery" data-provider-post-grid>
+        <div class="specialists-empty">Loading provider profile...</div>
+      </section>
+    </section>
   </main>
 
   <div id="site-footer"></div>

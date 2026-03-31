@@ -43,9 +43,17 @@
       <div class="category-circles specialists-categories-row" data-specialist-categories></div>
     </section>
 
-    <section class="specialists-layout">
+    <section class="specialists-layout" data-specialists-layout>
       <aside class="specialists-sidebar">
-        <h2>Service Categories</h2>
+        <div class="specialists-sidebar-head">
+          <div>
+            <p class="specialists-sidebar-label">Browse</p>
+            <h2>Service Categories</h2>
+          </div>
+          <button type="button" class="specialists-sidebar-toggle" data-specialists-sidebar-toggle aria-label="Collapse sidebar">
+            <i class="fa-solid fa-angles-left"></i>
+          </button>
+        </div>
         <div data-specialist-sidebar></div>
       </aside>
 

@@ -359,6 +359,10 @@ async function saveProviderProfile(profileInput = {}) {
   const account = getAccountPayload(auth.currentUser);
   const userRef = doc(db, 'users', account.uid);
   const existingUserDoc = await getUserDocument(account.uid);
+  const existingProviderProfile = await getProviderProfileByUid(
+    account.uid,
+    existingUserDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
+  ).catch(() => null);
   const province = normalizeProvince(profileInput.province);
   const provinceSlug = slugifyIdentifier(province);
   const providerPublicId = existingUserDoc?.providerPublicId || await getOrCreateProviderPublicId(account.uid);
@@ -389,6 +393,8 @@ async function saveProviderProfile(profileInput = {}) {
     primaryCategory: String(profileInput.primaryCategory || '').trim(),
     specialty: String(profileInput.specialty || '').trim(),
     bio: String(profileInput.bio || '').trim(),
+    profileImageData: String(profileInput.profileImageData || existingProviderProfile?.profileImageData || '').trim(),
+    bannerImageData: String(profileInput.bannerImageData || existingProviderProfile?.bannerImageData || '').trim(),
     averageRating: Number(profileInput.averageRating || 4.8),
     reviewCount: Number(profileInput.reviewCount || 12),
     completedJobs: Number(profileInput.completedJobs || 8),

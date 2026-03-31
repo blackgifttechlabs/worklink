@@ -80,6 +80,8 @@
       averageRating: 4.9,
       reviewCount: 28,
       completedJobs: 46,
+      profileImageData: 'images/categories/home-services.png',
+      bannerImageData: 'images/sections/findme.png',
       posts: [
         { id: 'rutendo-1', imageData: 'images/categories/home-services.png', caption: 'Fresh lawn cut and trimmed edges for a family home.' },
         { id: 'rutendo-2', imageData: 'images/sections/findme.png', caption: 'Weekend garden clean-up before a family event.' }
@@ -101,6 +103,8 @@
       averageRating: 4.8,
       reviewCount: 19,
       completedJobs: 31,
+      profileImageData: 'images/categories/beauty-and-wellness.png',
+      bannerImageData: 'images/sections/findme.png',
       posts: [
         { id: 'ashley-1', imageData: 'images/categories/beauty-and-wellness.png', caption: 'Short nude set with chrome details.' },
         { id: 'ashley-2', imageData: 'images/categories/photography.png', caption: 'Birthday set with glitter accent nails.' }
@@ -122,6 +126,8 @@
       averageRating: 4.7,
       reviewCount: 14,
       completedJobs: 22,
+      profileImageData: 'images/categories/business.png',
+      bannerImageData: 'images/sections/findme.png',
       posts: [
         { id: 'tapiwa-1', imageData: 'images/categories/business.png', caption: 'Client site refresh for a local plumbing company.' },
         { id: 'tapiwa-2', imageData: 'images/categories/plumbing.png', caption: 'Mobile-first landing page for home services leads.' }
@@ -140,6 +146,15 @@
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function getStoredAccount() {
@@ -172,27 +187,56 @@
     return SPECIALIST_CATEGORIES.find((category) => category.label === label) || SPECIALIST_CATEGORIES[0];
   }
 
+  function resolveMediaSrc(value, fallback = '') {
+    const source = String(value || '').trim();
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.png`;
+    if (/^(data:|https?:|blob:|\/)/.test(source)) return source;
+    return `${getBase()}${source}`;
+  }
+
+  function buildWhatsAppLink(number, providerName = '') {
+    const digits = String(number || '').replace(/[^0-9]/g, '');
+    const text = providerName ? `Hi ${providerName}, I found you on WorkLinkUp.` : 'Hi, I found you on WorkLinkUp.';
+    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  }
+
+  function buildProviderHandle(name) {
+    return `@${String(name || 'provider').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`;
+  }
+
+  function normalizeProvider(provider) {
+    const provinceSlug = provider.provinceSlug || slugify(provider.province || 'harare');
+    const specialty = provider.specialty || 'Specialist';
+    const primaryCategory = provider.primaryCategory || getCategoryConfig('').label;
+    const city = provider.city || provider.address || provider.province || '';
+    return {
+      ...provider,
+      provinceSlug,
+      specialty,
+      primaryCategory,
+      city,
+      averageRating: Number(provider.averageRating || 4.7),
+      reviewCount: Number(provider.reviewCount || 0),
+      completedJobs: Number(provider.completedJobs || 0),
+      bio: provider.bio || 'WorkLinkUp specialist ready to help.',
+      profileImageData: provider.profileImageData || getCategoryConfig(primaryCategory).image,
+      bannerImageData: provider.bannerImageData || 'images/sections/findme.png',
+      profileUrl: `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`,
+      messageUrl: `${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`
+    };
+  }
+
   function createCircleCardsMarkup(base, isLoop = false) {
     const cards = SPECIALIST_CATEGORIES.map((category) => `
       <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
         <div class="category-circle-img">
-          <img src="${base}${category.image}" alt="${category.label}" />
+          <img src="${base}${category.image}" alt="${escapeHtml(category.label)}" />
         </div>
-        <span>${category.label}</span>
+        <span>${escapeHtml(category.label)}</span>
       </a>
     `).join('');
 
-    if (!isLoop) return cards;
-    return `${cards}${cards}`;
-  }
-
-  function mapSampleProvider(provider) {
-    return {
-      ...provider,
-      profileUrl: `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provider.provinceSlug)}`,
-      messageUrl: `${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provider.provinceSlug)}`,
-      posts: provider.posts || []
-    };
+    return isLoop ? `${cards}${cards}` : cards;
   }
 
   async function getProviders() {
@@ -214,14 +258,7 @@
       if (!seenUids.has(provider.uid)) merged.push(provider);
     });
 
-    return merged.map((provider) => ({
-      ...provider,
-      averageRating: Number(provider.averageRating || 4.7),
-      reviewCount: Number(provider.reviewCount || 0),
-      completedJobs: Number(provider.completedJobs || 0),
-      profileUrl: `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provider.provinceSlug || slugify(provider.province || 'harare'))}`,
-      messageUrl: `${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provider.provinceSlug || slugify(provider.province || 'harare'))}`
-    }));
+    return merged.map(normalizeProvider);
   }
 
   async function getProviderByIdentity(uid, provinceSlug) {
@@ -229,13 +266,14 @@
     if (authHelper && typeof authHelper.getProviderProfileByUid === 'function') {
       try {
         const remoteProvider = await authHelper.getProviderProfileByUid(uid, provinceSlug);
-        if (remoteProvider) return remoteProvider;
+        if (remoteProvider) return normalizeProvider(remoteProvider);
       } catch (error) {
         // Fall back to samples below.
       }
     }
 
-    return SAMPLE_PROVIDERS.find((provider) => provider.uid === uid) || null;
+    const sampleProvider = SAMPLE_PROVIDERS.find((provider) => provider.uid === uid) || null;
+    return sampleProvider ? normalizeProvider(sampleProvider) : null;
   }
 
   async function getPostsForProvider(uid, provinceSlug) {
@@ -252,151 +290,112 @@
     return SAMPLE_PROVIDERS.find((provider) => provider.uid === uid)?.posts || [];
   }
 
-  function injectProviderExperienceStyles() {
-    if (document.getElementById('provider-experience-styles')) return;
+  function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
+    return SPECIALIST_CATEGORIES.map((category, index) => `
+      <div class="service-filter-group">
+        <button type="button" class="service-filter-toggle" data-filter-group="${escapeHtml(category.label)}" aria-expanded="${index === 0 ? 'true' : 'false'}">
+          <span>${escapeHtml(category.label)}</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="service-filter-links" ${index === 0 ? '' : 'hidden'}>
+          <button type="button" class="${selectedCategory === category.label && !selectedSubservice ? 'is-active' : ''}" data-filter-category="${escapeHtml(category.label)}">All ${escapeHtml(category.label)}</button>
+          ${category.subservices.map((service) => `
+            <button type="button" class="${selectedSubservice === service ? 'is-active' : ''}" data-filter-subservice="${escapeHtml(service)}" data-parent-category="${escapeHtml(category.label)}">
+              ${escapeHtml(service)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
 
-    const style = document.createElement('style');
-    style.id = 'provider-experience-styles';
-    style.textContent = `
-      .specialists-page { max-width: 1380px; margin: 0 auto; padding: 32px 24px 72px; }
-      .specialists-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
-      .specialists-search-shell { display: grid; gap: 14px; }
-      .specialists-search-row { display: flex; gap: 12px; align-items: center; }
-      .specialists-search-row .search-bar { max-width: none; }
-      .specialists-rating-filter { display: flex; flex-wrap: wrap; gap: 10px; }
-      .specialists-rating-chip, .specialists-filter-btn, .specialists-view-btn, .provider-contact-btn, .provider-message-btn, .provider-post-submit, .messages-send-btn, .provider-profile-action, .sheet-close-btn, .provider-onboarding-next, .provider-onboarding-back, .provider-onboarding-submit { min-height: 48px; border-radius: 20px; border: 1px solid rgba(26, 50, 99, 0.12); font-weight: 800; font-family: 'Google Sans', sans-serif; }
-      .specialists-rating-chip { background: rgba(255,255,255,0.88); color: var(--brand-ink); padding: 0 18px; }
-      .specialists-rating-chip.is-active, .specialists-filter-btn, .provider-post-submit, .messages-send-btn, .provider-onboarding-next, .provider-onboarding-submit { background: linear-gradient(180deg, #076fe5 0%, #0558b8 100%); color: #fff; border-color: transparent; }
-      .specialists-filter-btn { padding: 0 18px; display: none; }
-      .specialists-categories-shell { margin-top: 28px; overflow: hidden; }
-      .specialists-categories-row { display: flex; gap: 16px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; }
-      .specialist-category-chip { min-width: 116px; }
-      .specialists-layout { margin-top: 30px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
-      .specialists-sidebar, .provider-profile-aside, .messages-sidebar, .provider-post-composer, .provider-post-feed-card, .provider-profile-main, .messages-thread, .account-provider-card, .specialist-card { background: rgba(255,255,255,0.92); border: 1px solid rgba(26, 50, 99, 0.08); border-radius: 28px; box-shadow: 0 20px 42px rgba(26, 50, 99, 0.08); }
-      .specialists-sidebar { padding: 22px 18px; position: sticky; top: 108px; }
-      .specialists-sidebar h2, .specialists-results-head h1, .provider-profile-main h1, .messages-empty h2, .provider-post-shell h1, .provider-onboarding-head h2 { color: var(--brand-ink); }
-      .service-filter-group + .service-filter-group { margin-top: 10px; border-top: 1px solid rgba(26, 50, 99, 0.08); padding-top: 10px; }
-      .service-filter-toggle { width: 100%; border: none; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: 15px; font-weight: 800; color: var(--brand-ink); }
-      .service-filter-links { display: grid; gap: 6px; padding: 2px 0 8px 0; }
-      .service-filter-links[hidden] { display: none !important; }
-      .service-filter-links button { border: none; background: transparent; text-align: left; color: #64748b; padding: 8px 10px; border-radius: 16px; font-size: 14px; }
-      .service-filter-links button.is-active, .service-filter-links button:hover { background: rgba(7, 111, 229, 0.08); color: #076fe5; }
-      .specialists-results-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
-      .specialists-results-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-      .specialist-card { padding: 18px; display: grid; gap: 16px; }
-      .specialist-card-head { display: flex; justify-content: space-between; gap: 14px; align-items: start; }
-      .specialist-card h3 { font-size: 22px; font-weight: 900; color: var(--brand-ink); }
-      .specialist-id-badge, .provider-meta-chip, .provider-profile-id { min-height: 32px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; background: rgba(7, 111, 229, 0.08); color: #076fe5; font-size: 12px; font-weight: 800; }
-      .specialist-card p { color: #64748b; line-height: 1.55; }
-      .specialist-meta-row, .provider-meta-row { display: flex; flex-wrap: wrap; gap: 10px; }
-      .specialists-view-btn, .provider-contact-btn, .provider-message-btn, .provider-profile-action { display: inline-flex; align-items: center; justify-content: center; padding: 0 18px; text-decoration: none; }
-      .specialists-view-btn, .provider-contact-btn, .provider-post-submit, .messages-send-btn, .provider-onboarding-next, .provider-onboarding-submit { background: linear-gradient(180deg, #076fe5 0%, #0558b8 100%); color: #fff; border: none; }
-      .provider-message-btn, .provider-profile-action.secondary, .provider-onboarding-back { background: rgba(255,255,255,0.94); color: var(--brand-ink); }
-      .specialist-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-      .specialists-empty { padding: 42px 20px; text-align: center; border-radius: 28px; background: rgba(255,255,255,0.88); border: 1px dashed rgba(26, 50, 99, 0.16); color: #64748b; }
-      .provider-profile-page, .provider-post-shell, .messages-page { max-width: 1380px; margin: 0 auto; padding: 32px 24px 72px; }
-      .provider-profile-layout, .provider-post-layout, .messages-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; align-items: start; }
-      .provider-profile-aside, .provider-profile-main { padding: 24px; }
-      .provider-profile-aside { position: sticky; top: 108px; display: grid; gap: 18px; }
-      .provider-profile-name { font-size: 28px; font-weight: 900; color: var(--brand-ink); }
-      .provider-profile-grid { display: grid; gap: 14px; }
-      .provider-profile-detail { padding: 16px 18px; border-radius: 22px; background: rgba(7,111,229,0.04); }
-      .provider-profile-detail span { display: block; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-      .provider-profile-work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
-      .provider-work-card { border-radius: 24px; overflow: hidden; border: 1px solid rgba(26, 50, 99, 0.08); background: #fff; }
-      .provider-work-card img { width: 100%; aspect-ratio: 4 / 4.5; object-fit: cover; }
-      .provider-work-card p { padding: 14px; color: #475569; }
-      .provider-post-layout { grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); }
-      .provider-post-composer, .provider-post-feed-card { padding: 22px; }
-      .provider-post-composer { position: sticky; top: 108px; display: grid; gap: 16px; }
-      .provider-post-preview { border-radius: 24px; overflow: hidden; border: 1px dashed rgba(26, 50, 99, 0.18); background: rgba(7,111,229,0.04); min-height: 240px; display: flex; align-items: center; justify-content: center; color: #64748b; }
-      .provider-post-preview img { width: 100%; height: 100%; object-fit: cover; }
-      .provider-post-composer input[type="file"], .provider-post-composer textarea, .messages-compose-input, .provider-onboarding-form input, .provider-onboarding-form select, .provider-onboarding-form textarea { width: 100%; border: 1px solid rgba(26,50,99,0.12); border-radius: 20px; background: rgba(255,255,255,0.96); padding: 14px 16px; font-family: 'Google Sans', sans-serif; }
-      .provider-post-composer textarea, .provider-onboarding-form textarea { min-height: 120px; resize: vertical; }
-      .provider-post-feed { display: grid; gap: 18px; }
-      .provider-post-feed-card img { width: 100%; border-radius: 24px; margin-top: 16px; aspect-ratio: 4 / 4.8; object-fit: cover; }
-      .provider-post-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .provider-post-card-head strong { font-size: 18px; color: var(--brand-ink); }
-      .messages-layout { min-height: calc(100vh - 220px); }
-      .messages-sidebar { padding: 18px; display: grid; gap: 12px; }
-      .messages-sidebar h1 { font-size: 28px; font-weight: 900; color: var(--brand-ink); }
-      .messages-chat-list { display: grid; gap: 8px; }
-      .messages-chat-item { width: 100%; border: none; background: transparent; padding: 14px; border-radius: 20px; text-align: left; }
-      .messages-chat-item.is-active, .messages-chat-item:hover { background: rgba(7,111,229,0.08); }
-      .messages-thread { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; min-height: 620px; }
-      .messages-thread-head { padding: 18px 22px; border-bottom: 1px solid rgba(26, 50, 99, 0.08); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .messages-thread-body { padding: 22px; display: grid; gap: 12px; align-content: start; background: linear-gradient(180deg, rgba(7,111,229,0.02) 0%, rgba(250,185,91,0.05) 100%); overflow-y: auto; }
-      .message-bubble { max-width: 74%; padding: 14px 16px; border-radius: 20px; line-height: 1.5; font-size: 15px; }
-      .message-bubble.is-mine { margin-left: auto; background: #dcf6c9; color: #16302d; border-bottom-right-radius: 6px; }
-      .message-bubble.is-theirs { background: #fff; color: #253858; border-bottom-left-radius: 6px; border: 1px solid rgba(26,50,99,0.08); }
-      .messages-thread-compose { padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border-top: 1px solid rgba(26, 50, 99, 0.08); background: #fff; }
-      .messages-empty { display: grid; place-items: center; padding: 48px 20px; text-align: center; color: #64748b; }
-      .provider-onboarding-overlay[hidden] { display: none !important; }
-      .provider-onboarding-overlay { position: fixed; inset: 0; z-index: 2100; background: rgba(15, 23, 42, 0.28); backdrop-filter: blur(14px); padding: 28px; }
-      .provider-onboarding-modal { position: relative; width: min(980px, calc(100vw - 56px)); max-height: calc(100vh - 56px); margin: 0 auto; background: rgba(252,250,247,0.98); border-radius: 40px; border: 1px solid rgba(26,50,99,0.08); box-shadow: 0 30px 60px rgba(15,23,42,0.18); overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
-      .provider-onboarding-help { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: rgba(7,111,229,0.08); color: #076fe5; }
-      .provider-onboarding-close { position: absolute; top: 18px; right: 18px; width: 42px; height: 42px; border-radius: 999px; border: none; background: rgba(26,50,99,0.06); color: var(--brand-ink); font-size: 26px; }
-      .provider-onboarding-head { padding: 70px 34px 20px; }
-      .provider-onboarding-head p { color: #64748b; margin-top: 8px; max-width: 620px; }
-      .provider-onboarding-progress { display: none; justify-content: center; gap: 8px; margin-top: 16px; }
-      .provider-onboarding-progress span { width: 44px; height: 5px; border-radius: 999px; background: rgba(26,50,99,0.1); }
-      .provider-onboarding-progress span.is-active { background: #076fe5; }
-      .provider-onboarding-form { padding: 0 34px 24px; overflow-y: auto; }
-      .provider-onboarding-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-      .provider-onboarding-step { padding: 22px; border-radius: 28px; background: rgba(255,255,255,0.9); border: 1px solid rgba(26,50,99,0.08); display: grid; gap: 14px; align-content: start; }
-      .provider-onboarding-step h3 { font-size: 20px; color: var(--brand-ink); }
-      .provider-onboarding-step p { color: #64748b; }
-      .provider-onboarding-row { display: grid; gap: 8px; }
-      .provider-onboarding-row label { font-size: 13px; font-weight: 800; color: #253858; }
-      .provider-onboarding-footer { display: flex; justify-content: space-between; gap: 12px; padding: 20px 34px 28px; border-top: 1px solid rgba(26,50,99,0.08); background: rgba(252,250,247,0.94); }
-      .provider-onboarding-actions { display: flex; gap: 12px; margin-left: auto; }
-      .provider-onboarding-back { padding: 0 18px; }
-      .provider-onboarding-next, .provider-onboarding-submit { padding: 0 22px; }
-      .provider-onboarding-submit[hidden], .provider-onboarding-next[hidden], .provider-onboarding-back[hidden] { display: none !important; }
-      .providers-mobile-sheet[hidden] { display: none !important; }
-      .providers-mobile-sheet { position: fixed; inset: auto 0 0 0; z-index: 2050; padding: 0 10px 10px; }
-      .providers-mobile-sheet-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.24); backdrop-filter: blur(10px); }
-      .providers-mobile-sheet-panel { position: relative; margin: 0 auto; width: min(100%, 560px); background: rgba(252,250,247,0.98); border-radius: 28px 28px 0 0; box-shadow: 0 -24px 42px rgba(15,23,42,0.18); padding: 16px 18px 22px; max-height: 76vh; overflow-y: auto; }
-      .providers-mobile-sheet-handle { width: 58px; height: 5px; border-radius: 999px; background: rgba(26,50,99,0.18); margin: 0 auto 14px; }
-      @media (max-width: 980px) {
-        .specialists-layout, .provider-profile-layout, .provider-post-layout, .messages-layout { grid-template-columns: 1fr; }
-        .specialists-sidebar, .provider-profile-aside, .provider-post-composer, .messages-sidebar { position: static; }
-        .specialists-results-grid, .provider-profile-work-grid { grid-template-columns: 1fr; }
-        .provider-onboarding-modal { width: calc(100vw - 24px); max-height: calc(100vh - 16px); border-radius: 30px; }
-        .provider-onboarding-steps { grid-template-columns: 1fr; }
-      }
-      @media (max-width: 768px) {
-        .specialists-page, .provider-profile-page, .provider-post-shell, .messages-page { padding: 20px 16px 48px; }
-        .specialists-topbar { grid-template-columns: 1fr; }
-        .specialists-search-row { display: grid; grid-template-columns: 1fr auto; }
-        .specialists-filter-btn { display: inline-flex; align-items: center; justify-content: center; }
-        .specialists-sidebar { display: none; }
-        .specialists-categories-shell { margin-top: 18px; }
-        .specialists-categories-row.is-marquee { width: max-content; animation: specialists-marquee 22s linear infinite; overflow: visible; }
-        .specialist-category-chip { min-width: 88px; padding: 6px 2px 8px; }
-        .specialist-category-chip .category-circle-img { width: 70px; height: 70px; }
-        .specialist-category-chip span { font-size: 12px; max-width: 78px; }
-        .messages-thread { min-height: calc(100vh - 210px); }
-        .provider-onboarding-overlay { padding: 0; display: grid; align-items: end; }
-        .provider-onboarding-modal { width: 100%; max-height: 100vh; border-radius: 28px 28px 0 0; }
-        .provider-onboarding-head { padding: 74px 20px 14px; }
-        .provider-onboarding-progress { display: flex; }
-        .provider-onboarding-form { padding: 0 20px 20px; }
-        .provider-onboarding-steps { display: block; }
-        .provider-onboarding-step { display: none; padding: 20px; border-radius: 24px; }
-        .provider-onboarding-step.is-active { display: grid; }
-        .provider-onboarding-footer { padding: 16px 20px 22px; }
-      }
-      @keyframes specialists-marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(-50%); }
-      }
-    `;
-    document.head.appendChild(style);
+  function filterProviders(providers, state) {
+    return providers.filter((provider) => {
+      const categoryMatch = !state.category || provider.primaryCategory === state.category;
+      const subserviceMatch = !state.subservice || String(provider.specialty || '').toLowerCase().includes(state.subservice.toLowerCase());
+      const ratingMatch = !state.rating || Number(provider.averageRating || 0) >= state.rating;
+      const searchHaystack = `${provider.displayName} ${provider.primaryCategory} ${provider.specialty} ${provider.city} ${provider.province} ${provider.bio} ${provider.address}`.toLowerCase();
+      const searchMatch = !state.search || searchHaystack.includes(state.search.toLowerCase());
+      return categoryMatch && subserviceMatch && ratingMatch && searchMatch;
+    });
+  }
+
+  function renderProviderCards(host, providers) {
+    if (!host) return;
+    if (!providers.length) {
+      host.innerHTML = `<div class="specialists-empty">No specialists match this filter yet. Try another category or rating.</div>`;
+      return;
+    }
+
+    host.innerHTML = providers.map((provider) => `
+      <article class="specialist-card">
+        <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png'))}');">
+          <div class="specialist-card-rating">${provider.averageRating.toFixed(1)} ★</div>
+          <img class="specialist-card-avatar" src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png'))}" alt="${escapeHtml(provider.displayName)} profile image" />
+          <div class="specialist-card-banner-copy">
+            <h3>${escapeHtml(provider.displayName)}</h3>
+            <p>${escapeHtml(provider.specialty)}</p>
+          </div>
+        </div>
+        <div class="specialist-card-body">
+          <div class="specialist-card-location">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>${escapeHtml(provider.address || `${provider.city}, ${provider.province}`)}</span>
+          </div>
+          <div class="specialist-card-tags">
+            <span class="provider-meta-chip">${escapeHtml(provider.primaryCategory)}</span>
+            <span class="provider-meta-chip">${escapeHtml(provider.experience || 'Experienced')}</span>
+          </div>
+          <p>${escapeHtml(provider.bio)}</p>
+          <div class="specialist-actions">
+            <a href="${escapeHtml(buildWhatsAppLink(provider.whatsappNumber, provider.displayName))}" class="provider-contact-btn" target="_blank" rel="noreferrer">WhatsApp</a>
+            <a href="${escapeHtml(provider.profileUrl)}" class="specialists-view-btn">View Their Work</a>
+          </div>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  async function readImageAsBase64(file, options = {}) {
+    if (!file) return '';
+    const {
+      maxWidth = 1280,
+      maxHeight = 1280,
+      quality = 0.82
+    } = options;
+
+    const sourceDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Could not read that image.'));
+      reader.readAsDataURL(file);
+    });
+
+    const image = await new Promise((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error('Could not process that image.'));
+      nextImage.src = sourceDataUrl;
+    });
+
+    const widthRatio = maxWidth / image.width;
+    const heightRatio = maxHeight / image.height;
+    const ratio = Math.min(1, widthRatio, heightRatio);
+    const targetWidth = Math.max(1, Math.round(image.width * ratio));
+    const targetHeight = Math.max(1, Math.round(image.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) return sourceDataUrl;
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+    return canvas.toDataURL('image/jpeg', quality);
   }
 
   function ensureOnboardingModal(base) {
     if (document.getElementById('provider-onboarding-overlay')) return;
+
     document.body.insertAdjacentHTML('beforeend', `
       <div class="provider-onboarding-overlay" id="provider-onboarding-overlay" hidden>
         <div class="provider-onboarding-modal">
@@ -406,65 +405,100 @@
           <button type="button" class="provider-onboarding-close" aria-label="Close onboarding">×</button>
           <div class="provider-onboarding-head">
             <h2>Complete your provider profile</h2>
-            <p>Add the basics so clients can find you, trust you, and reach you quickly on WorkLinkUp.</p>
-            <div class="provider-onboarding-progress">
-              <span class="is-active" data-onboarding-dot="0"></span>
-              <span data-onboarding-dot="1"></span>
-              <span data-onboarding-dot="2"></span>
+            <p>Add the basics first, then your service details, then the images clients will recognize.</p>
+            <div class="provider-onboarding-progressbar">
+              <span data-onboarding-progress-fill></span>
+            </div>
+            <div class="provider-onboarding-progress-meta">
+              <strong data-onboarding-progress-label>Step 1 of 4</strong>
+              <div class="provider-onboarding-progress-dots">
+                <span class="is-active" data-onboarding-dot="0"></span>
+                <span data-onboarding-dot="1"></span>
+                <span data-onboarding-dot="2"></span>
+                <span data-onboarding-dot="3"></span>
+              </div>
             </div>
           </div>
           <form class="provider-onboarding-form" id="provider-onboarding-form">
             <div class="provider-onboarding-steps">
               <section class="provider-onboarding-step is-active" data-onboarding-step="0">
-                <h3>Who you are</h3>
-                <p>Start with the details clients need first.</p>
-                <div class="provider-onboarding-row">
-                  <label for="provider-full-name">Full name</label>
-                  <input id="provider-full-name" name="fullName" type="text" placeholder="Tinashe Moyo" required />
-                </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-whatsapp">WhatsApp number</label>
-                  <input id="provider-whatsapp" name="whatsappNumber" type="tel" placeholder="+263 77 123 4567" required />
-                </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-province">Province</label>
-                  <select id="provider-province" name="province" required>
-                    ${ZIMBABWE_PROVINCES.map((province) => `<option value="${province}">${province}</option>`).join('')}
-                  </select>
+                <span class="provider-onboarding-step-tag">Step 1</span>
+                <h3>Basic details</h3>
+                <p>These are the first things people use to identify and contact you.</p>
+                <div class="provider-onboarding-grid">
+                  <div class="provider-onboarding-row">
+                    <label for="provider-full-name">Full name</label>
+                    <input id="provider-full-name" name="fullName" type="text" placeholder="Tinashe Moyo" required />
+                  </div>
+                  <div class="provider-onboarding-row">
+                    <label for="provider-whatsapp">WhatsApp number</label>
+                    <input id="provider-whatsapp" name="whatsappNumber" type="tel" placeholder="+263 77 123 4567" required />
+                  </div>
+                  <div class="provider-onboarding-row">
+                    <label for="provider-province">Province</label>
+                    <select id="provider-province" name="province" required>
+                      ${ZIMBABWE_PROVINCES.map((province) => `<option value="${province}">${province}</option>`).join('')}
+                    </select>
+                  </div>
                 </div>
               </section>
               <section class="provider-onboarding-step" data-onboarding-step="1">
+                <span class="provider-onboarding-step-tag">Step 2</span>
                 <h3>Where you work</h3>
-                <p>Keep it clear and simple so the right clients can find you.</p>
-                <div class="provider-onboarding-row">
-                  <label for="provider-city">City / suburb</label>
-                  <input id="provider-city" name="city" type="text" placeholder="Avondale, Harare" required />
-                </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-address">Address or service area</label>
-                  <input id="provider-address" name="address" type="text" placeholder="Serves Harare north and CBD" required />
+                <p>Keep the location simple so clients know the area you cover.</p>
+                <div class="provider-onboarding-grid">
+                  <div class="provider-onboarding-row">
+                    <label for="provider-city">City / suburb</label>
+                    <input id="provider-city" name="city" type="text" placeholder="Avondale, Harare" required />
+                  </div>
+                  <div class="provider-onboarding-row provider-onboarding-row-span">
+                    <label for="provider-address">Address or service area</label>
+                    <input id="provider-address" name="address" type="text" placeholder="Serves Harare north and CBD" required />
+                  </div>
+                  <div class="provider-onboarding-row">
+                    <label for="provider-experience">Experience</label>
+                    <input id="provider-experience" name="experience" type="text" placeholder="4 years" required />
+                  </div>
                 </div>
               </section>
               <section class="provider-onboarding-step" data-onboarding-step="2">
+                <span class="provider-onboarding-step-tag">Step 3</span>
                 <h3>What you do</h3>
-                <p>Tell people your main service, specialty, and experience.</p>
-                <div class="provider-onboarding-row">
-                  <label for="provider-category">Main category</label>
-                  <select id="provider-category" name="primaryCategory" required>
-                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}">${category.label}</option>`).join('')}
-                  </select>
+                <p>Choose the category people should find you under and describe your specialty clearly.</p>
+                <div class="provider-onboarding-grid">
+                  <div class="provider-onboarding-row">
+                    <label for="provider-category">Main category</label>
+                    <select id="provider-category" name="primaryCategory" required>
+                      ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}">${category.label}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="provider-onboarding-row">
+                    <label for="provider-specialty">Specialty</label>
+                    <input id="provider-specialty" name="specialty" type="text" placeholder="Plumber, Nail Technician, Tutor..." required />
+                  </div>
+                  <div class="provider-onboarding-row provider-onboarding-row-span">
+                    <label for="provider-bio">Short bio</label>
+                    <textarea id="provider-bio" name="bio" placeholder="What kind of work do you do best?" required></textarea>
+                  </div>
                 </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-specialty">Specialty</label>
-                  <input id="provider-specialty" name="specialty" type="text" placeholder="Plumber, Nail Technician, Tutor..." required />
-                </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-experience">Experience</label>
-                  <input id="provider-experience" name="experience" type="text" placeholder="4 years" required />
-                </div>
-                <div class="provider-onboarding-row">
-                  <label for="provider-bio">Short bio</label>
-                  <textarea id="provider-bio" name="bio" placeholder="What kind of work do you do best?" required></textarea>
+              </section>
+              <section class="provider-onboarding-step" data-onboarding-step="3">
+                <span class="provider-onboarding-step-tag">Step 4</span>
+                <h3>Your images</h3>
+                <p>Add a clear profile photo and a banner image. They will be stored in base64 and rendered from your provider profile.</p>
+                <div class="provider-onboarding-media-grid">
+                  <label class="provider-onboarding-upload-card">
+                    <span class="provider-onboarding-upload-preview provider-onboarding-upload-preview-avatar" data-profile-image-preview></span>
+                    <strong>Profile image</strong>
+                    <span>Square image for your avatar</span>
+                    <input type="file" id="provider-profile-image" accept="image/*" />
+                  </label>
+                  <label class="provider-onboarding-upload-card">
+                    <span class="provider-onboarding-upload-preview provider-onboarding-upload-preview-banner" data-banner-image-preview></span>
+                    <strong>Banner image</strong>
+                    <span>Wide image for your profile and specialist card</span>
+                    <input type="file" id="provider-banner-image" accept="image/*" />
+                  </label>
                 </div>
               </section>
             </div>
@@ -482,9 +516,16 @@
     `);
   }
 
+  function updateUploadPreview(target, imageData, mode) {
+    if (!target) return;
+    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.png' : 'images/sections/findme.png');
+    target.innerHTML = `<img src="${escapeHtml(src)}" alt="" />`;
+  }
+
   async function setupOnboarding() {
     const base = getBase();
     ensureOnboardingModal(base);
+
     const overlay = document.getElementById('provider-onboarding-overlay');
     const form = document.getElementById('provider-onboarding-form');
     if (!overlay || !form) return;
@@ -495,87 +536,167 @@
     const submitBtn = overlay.querySelector('.provider-onboarding-submit');
     const steps = Array.from(overlay.querySelectorAll('.provider-onboarding-step'));
     const dots = Array.from(overlay.querySelectorAll('[data-onboarding-dot]'));
-    const mobileQuery = window.matchMedia('(max-width: 768px)');
+    const progressFill = overlay.querySelector('[data-onboarding-progress-fill]');
+    const progressLabel = overlay.querySelector('[data-onboarding-progress-label]');
+    const profilePreview = overlay.querySelector('[data-profile-image-preview]');
+    const bannerPreview = overlay.querySelector('[data-banner-image-preview]');
+    const profileInput = overlay.querySelector('#provider-profile-image');
+    const bannerInput = overlay.querySelector('#provider-banner-image');
+    const uploadState = {
+      profileImageData: '',
+      bannerImageData: ''
+    };
     let activeStep = 0;
 
-    function syncSteps() {
-      if (!mobileQuery.matches) {
-        steps.forEach((step) => step.classList.add('is-active'));
-        if (nextBtn) nextBtn.hidden = true;
-        if (backBtn) backBtn.hidden = true;
-        if (submitBtn) submitBtn.hidden = false;
-        return;
-      }
+    function getField(name) {
+      return form.elements.namedItem(name);
+    }
 
+    function syncSteps() {
       steps.forEach((step, index) => {
         step.classList.toggle('is-active', index === activeStep);
       });
       dots.forEach((dot, index) => {
-        dot.classList.toggle('is-active', index === activeStep);
+        dot.classList.toggle('is-active', index <= activeStep);
       });
-      if (backBtn) backBtn.hidden = activeStep === 0;
-      if (nextBtn) nextBtn.hidden = activeStep === steps.length - 1;
-      if (submitBtn) submitBtn.hidden = activeStep !== steps.length - 1;
+
+      const progressPercent = ((activeStep + 1) / steps.length) * 100;
+      if (progressFill instanceof HTMLElement) progressFill.style.width = `${progressPercent}%`;
+      if (progressLabel instanceof HTMLElement) progressLabel.textContent = `Step ${activeStep + 1} of ${steps.length}`;
+      if (backBtn instanceof HTMLElement) backBtn.hidden = activeStep === 0;
+      if (nextBtn instanceof HTMLElement) nextBtn.hidden = activeStep === steps.length - 1;
+      if (submitBtn instanceof HTMLElement) submitBtn.hidden = activeStep !== steps.length - 1;
+    }
+
+    function validateActiveStep() {
+      const currentStep = steps[activeStep];
+      if (!(currentStep instanceof HTMLElement)) return true;
+      const fields = Array.from(currentStep.querySelectorAll('input[required], select[required], textarea[required]'));
+      for (const field of fields) {
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+          if (!field.reportValidity()) return false;
+        }
+      }
+      return true;
+    }
+
+    function resetFileInputs() {
+      if (profileInput instanceof HTMLInputElement) profileInput.value = '';
+      if (bannerInput instanceof HTMLInputElement) bannerInput.value = '';
     }
 
     function openOnboarding(prefill = {}) {
-      form.fullName.value = prefill.name || '';
-      form.whatsappNumber.value = prefill.whatsappNumber || prefill.phone || '';
-      form.province.value = prefill.providerProvince || 'Harare';
-      form.city.value = prefill.city || '';
-      form.address.value = prefill.address || '';
-      form.primaryCategory.value = prefill.primaryCategory || SPECIALIST_CATEGORIES[0].label;
-      form.specialty.value = prefill.specialty || '';
-      form.experience.value = prefill.experience || '';
-      form.bio.value = prefill.bio || '';
+      const fullNameField = getField('fullName');
+      const whatsappField = getField('whatsappNumber');
+      const provinceField = getField('province');
+      const cityField = getField('city');
+      const addressField = getField('address');
+      const experienceField = getField('experience');
+      const categoryField = getField('primaryCategory');
+      const specialtyField = getField('specialty');
+      const bioField = getField('bio');
+
+      if (fullNameField) fullNameField.value = prefill.displayName || prefill.name || '';
+      if (whatsappField) whatsappField.value = prefill.whatsappNumber || prefill.phone || '';
+      if (provinceField) provinceField.value = prefill.province || prefill.providerProvince || 'Harare';
+      if (cityField) cityField.value = prefill.city || '';
+      if (addressField) addressField.value = prefill.address || '';
+      if (experienceField) experienceField.value = prefill.experience || '';
+      if (categoryField) categoryField.value = prefill.primaryCategory || SPECIALIST_CATEGORIES[0].label;
+      if (specialtyField) specialtyField.value = prefill.specialty || '';
+      if (bioField) bioField.value = prefill.bio || '';
+      uploadState.profileImageData = String(prefill.profileImageData || '').trim();
+      uploadState.bannerImageData = String(prefill.bannerImageData || '').trim();
+      updateUploadPreview(profilePreview, uploadState.profileImageData, 'avatar');
+      updateUploadPreview(bannerPreview, uploadState.bannerImageData, 'banner');
+      resetFileInputs();
       activeStep = 0;
       syncSteps();
       overlay.hidden = false;
-      document.body.classList.add('mobile-search-open');
+      document.body.classList.add('provider-onboarding-open');
     }
 
     function closeOnboarding() {
       overlay.hidden = true;
-      document.body.classList.remove('mobile-search-open');
+      document.body.classList.remove('provider-onboarding-open');
     }
 
     closeBtn?.addEventListener('click', closeOnboarding);
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closeOnboarding();
     });
+
     nextBtn?.addEventListener('click', () => {
+      if (!validateActiveStep()) return;
       activeStep = Math.min(activeStep + 1, steps.length - 1);
       syncSteps();
     });
+
     backBtn?.addEventListener('click', () => {
       activeStep = Math.max(activeStep - 1, 0);
       syncSteps();
     });
-    mobileQuery.addEventListener('change', syncSteps);
-    syncSteps();
+
+    profileInput?.addEventListener('change', async () => {
+      const file = profileInput.files?.[0];
+      if (!file) return;
+      try {
+        uploadState.profileImageData = await readImageAsBase64(file, {
+          maxWidth: 720,
+          maxHeight: 720,
+          quality: 0.84
+        });
+        updateUploadPreview(profilePreview, uploadState.profileImageData, 'avatar');
+      } catch (error) {
+        window.alert(error.message || 'Could not process that profile image.');
+      }
+    });
+
+    bannerInput?.addEventListener('change', async () => {
+      const file = bannerInput.files?.[0];
+      if (!file) return;
+      try {
+        uploadState.bannerImageData = await readImageAsBase64(file, {
+          maxWidth: 1600,
+          maxHeight: 900,
+          quality: 0.82
+        });
+        updateUploadPreview(bannerPreview, uploadState.bannerImageData, 'banner');
+      } catch (error) {
+        window.alert(error.message || 'Could not process that banner image.');
+      }
+    });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
+      if (!validateActiveStep()) return;
+      if (!uploadState.profileImageData || !uploadState.bannerImageData) {
+        window.alert('Add both your profile image and banner image before saving.');
+        return;
+      }
       const authHelper = await waitForAuthHelper();
       if (!authHelper || typeof authHelper.saveProviderProfile !== 'function') return;
 
       const formData = new FormData(form);
-      submitBtn.disabled = true;
+      const payload = Object.fromEntries(formData.entries());
+      payload.profileImageData = uploadState.profileImageData;
+      payload.bannerImageData = uploadState.bannerImageData;
+
+      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
       try {
-        await authHelper.saveProviderProfile(Object.fromEntries(formData.entries()));
+        await authHelper.saveProviderProfile(payload);
         closeOnboarding();
         window.location.reload();
       } catch (error) {
         window.alert(error.message || 'Could not save your provider profile.');
       } finally {
-        submitBtn.disabled = false;
+        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
       }
     });
 
     async function maybePromptOnboarding() {
       const account = getStoredAccount();
       if (!account?.loggedIn) return;
-      if (account.providerProfileComplete) return;
       if (window.location.pathname.endsWith('/help.html')) return;
 
       const authHelper = await waitForAuthHelper();
@@ -584,87 +705,25 @@
       try {
         const userDoc = await authHelper.getUserDocument(account.uid);
         if (userDoc?.providerProfileComplete) return;
+        let providerProfile = null;
+        if (typeof authHelper.getProviderProfileByUid === 'function') {
+          providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug);
+        }
         openOnboarding({
+          ...(userDoc || {}),
+          ...(providerProfile || {}),
           name: userDoc?.name || account.name,
-          phone: userDoc?.phone || account.phone,
-          whatsappNumber: userDoc?.whatsappNumber || account.whatsappNumber,
-          providerProvince: userDoc?.providerProvince || account.providerProvince,
-          city: userDoc?.city || '',
-          address: userDoc?.address || '',
-          primaryCategory: userDoc?.primaryCategory || '',
-          specialty: userDoc?.specialty || '',
-          experience: userDoc?.experience || '',
-          bio: userDoc?.bio || ''
+          phone: userDoc?.phone || account.phone
         });
       } catch (error) {
         openOnboarding(account);
       }
     }
 
+    syncSteps();
     window.addEventListener('softgiggles-auth-changed', maybePromptOnboarding);
     window.addEventListener('worklinkup:prompt-onboarding', maybePromptOnboarding);
     maybePromptOnboarding();
-  }
-
-  function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
-    return SPECIALIST_CATEGORIES.map((category, index) => `
-      <div class="service-filter-group">
-        <button type="button" class="service-filter-toggle" data-filter-group="${category.label}" aria-expanded="${index === 0 ? 'true' : 'false'}">
-          <span>${category.label}</span>
-          <i class="fa-solid fa-chevron-down"></i>
-        </button>
-        <div class="service-filter-links" ${index === 0 ? '' : 'hidden'}>
-          <button type="button" class="${selectedCategory === category.label && !selectedSubservice ? 'is-active' : ''}" data-filter-category="${category.label}">All ${category.label}</button>
-          ${category.subservices.map((service) => `
-            <button type="button" class="${selectedSubservice === service ? 'is-active' : ''}" data-filter-subservice="${service}" data-parent-category="${category.label}">
-              ${service}
-            </button>
-          `).join('')}
-        </div>
-      </div>
-    `).join('');
-  }
-
-  function filterProviders(providers, state) {
-    return providers.filter((provider) => {
-      const categoryMatch = !state.category || provider.primaryCategory === state.category;
-      const subserviceMatch = !state.subservice || String(provider.specialty || '').toLowerCase().includes(state.subservice.toLowerCase());
-      const ratingMatch = !state.rating || Number(provider.averageRating || 0) >= state.rating;
-      const searchHaystack = `${provider.displayName} ${provider.primaryCategory} ${provider.specialty} ${provider.city} ${provider.province} ${provider.bio}`.toLowerCase();
-      const searchMatch = !state.search || searchHaystack.includes(state.search.toLowerCase());
-      return categoryMatch && subserviceMatch && ratingMatch && searchMatch;
-    });
-  }
-
-  function renderProviderCards(host, providers) {
-    if (!host) return;
-    if (!providers.length) {
-      host.innerHTML = `<div class="specialists-empty">No specialists match this filter yet. Try another category or rating.</div>`;
-      return;
-    }
-
-    host.innerHTML = providers.map((provider) => `
-      <article class="specialist-card">
-        <div class="specialist-card-head">
-          <div>
-            <div class="specialist-id-badge">${provider.providerPublicId || '#0000'}</div>
-            <h3>${provider.displayName}</h3>
-          </div>
-          <div class="provider-meta-chip">${Number(provider.averageRating || 0).toFixed(1)} ★</div>
-        </div>
-        <p>${provider.bio || 'WorkLinkUp specialist ready to help.'}</p>
-        <div class="specialist-meta-row">
-          <span class="provider-meta-chip">${provider.primaryCategory}</span>
-          <span class="provider-meta-chip">${provider.specialty}</span>
-          <span class="provider-meta-chip">${provider.city || provider.province}</span>
-          <span class="provider-meta-chip">${provider.experience || 'Experienced'}</span>
-        </div>
-        <div class="specialist-actions">
-          <a href="${provider.profileUrl}" class="specialists-view-btn">View Their Work</a>
-          <a href="${provider.messageUrl}" class="provider-message-btn">Message</a>
-        </div>
-      </article>
-    `).join('');
   }
 
   async function renderSpecialistsPage() {
@@ -675,8 +734,10 @@
     const providers = await getProviders();
     const categoriesHost = page.querySelector('[data-specialist-categories]');
     const sidebarHost = page.querySelector('[data-specialist-sidebar]');
-    const mobileSheet = page.querySelector('[data-specialists-sheet]');
-    const mobileSheetBody = page.querySelector('[data-specialists-sheet-body]');
+    const sidebarLayout = page.querySelector('[data-specialists-layout]');
+    const sidebarToggle = page.querySelector('[data-specialists-sidebar-toggle]');
+    const mobileSheet = document.querySelector('[data-specialists-sheet]');
+    const mobileSheetBody = document.querySelector('[data-specialists-sheet-body]');
     const resultsHost = page.querySelector('[data-specialists-results]');
     const totalHost = page.querySelector('[data-specialists-total]');
     const searchInput = page.querySelector('[data-specialists-search]');
@@ -684,6 +745,7 @@
     const filterBtn = page.querySelector('[data-open-specialists-sheet]');
     const sheetCloseBtn = page.querySelector('[data-close-specialists-sheet]');
     const currentCategory = new URLSearchParams(window.location.search).get('category') || '';
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
     const state = {
       category: currentCategory,
       subservice: '',
@@ -691,10 +753,14 @@
       search: ''
     };
 
-    if (categoriesHost) {
-      const mobileLoop = window.matchMedia('(max-width: 768px)').matches;
+    function renderCategoryRail() {
+      if (!categoriesHost) return;
+      const mobileLoop = mobileQuery.matches;
       categoriesHost.classList.toggle('is-marquee', mobileLoop);
       categoriesHost.innerHTML = createCircleCardsMarkup(base, mobileLoop);
+      categoriesHost.querySelectorAll('[data-category-chip]').forEach((chip) => {
+        chip.classList.toggle('is-active', chip.getAttribute('data-category-chip') === state.category);
+      });
     }
 
     function renderFilters() {
@@ -704,6 +770,8 @@
     }
 
     function bindFilterInteractions(scope) {
+      if (!scope) return;
+
       scope.querySelectorAll('[data-filter-group]').forEach((button) => {
         button.addEventListener('click', () => {
           const links = button.nextElementSibling;
@@ -735,17 +803,24 @@
     function update() {
       const filtered = filterProviders(providers, state);
       renderFilters();
-      if (sidebarHost) bindFilterInteractions(sidebarHost);
-      if (mobileSheetBody) bindFilterInteractions(mobileSheetBody);
+      bindFilterInteractions(sidebarHost);
+      bindFilterInteractions(mobileSheetBody);
       renderProviderCards(resultsHost, filtered);
       if (totalHost) totalHost.textContent = `${filtered.length} specialist${filtered.length === 1 ? '' : 's'}`;
+
       page.querySelectorAll('[data-category-chip]').forEach((chip) => {
         chip.classList.toggle('is-active', chip.getAttribute('data-category-chip') === state.category);
       });
+
       ratingButtons.forEach((button) => {
         button.classList.toggle('is-active', Number(button.getAttribute('data-rating-filter') || 0) === state.rating);
       });
     }
+
+    renderCategoryRail();
+    renderFilters();
+    bindFilterInteractions(sidebarHost);
+    bindFilterInteractions(mobileSheetBody);
 
     categoriesHost?.addEventListener('click', (event) => {
       const chip = event.target.closest('[data-category-chip]');
@@ -779,16 +854,42 @@
     });
 
     mobileSheet?.addEventListener('click', (event) => {
-      const backdrop = event.target.closest('.providers-mobile-sheet-backdrop');
-      if (backdrop) mobileSheet.hidden = true;
+      if (event.target.closest('.providers-mobile-sheet-backdrop')) {
+        mobileSheet.hidden = true;
+      }
     });
 
+    sidebarToggle?.addEventListener('click', () => {
+      if (!(sidebarLayout instanceof HTMLElement)) return;
+      sidebarLayout.classList.toggle('is-sidebar-collapsed');
+    });
+
+    mobileQuery.addEventListener('change', renderCategoryRail);
     update();
   }
 
-  async function renderProviderProfilePage() {
-    const host = document.querySelector('[data-provider-profile-page]');
+  function renderProviderHighlights(host, provider) {
     if (!host) return;
+    const items = [
+      provider.primaryCategory,
+      provider.specialty,
+      provider.city || provider.province,
+      provider.experience || 'Experienced'
+    ];
+
+    host.innerHTML = items.map((item) => `
+      <article class="provider-highlight-card">
+        <span class="provider-highlight-card-ring">
+          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png'))}" alt="" />
+        </span>
+        <strong>${escapeHtml(item)}</strong>
+      </article>
+    `).join('');
+  }
+
+  async function renderProviderProfilePage() {
+    const page = document.querySelector('[data-provider-profile-page]');
+    if (!page) return;
 
     const params = new URLSearchParams(window.location.search);
     const uid = params.get('uid') || '';
@@ -797,44 +898,58 @@
     const posts = await getPostsForProvider(uid, provinceSlug);
 
     if (!provider) {
-      host.innerHTML = `<div class="specialists-empty">That provider profile could not be found.</div>`;
+      page.innerHTML = `<div class="specialists-empty">That provider profile could not be found.</div>`;
       return;
     }
 
-    host.innerHTML = `
-      <div class="provider-profile-layout">
-        <aside class="provider-profile-aside">
-          <div class="provider-profile-id">${provider.providerPublicId || '#0000'}</div>
-          <div class="provider-profile-name">${provider.displayName}</div>
-          <div class="provider-meta-row">
-            <span class="provider-meta-chip">${Number(provider.averageRating || 0).toFixed(1)} ★</span>
-            <span class="provider-meta-chip">${provider.primaryCategory}</span>
-            <span class="provider-meta-chip">${provider.specialty}</span>
-          </div>
-          <p>${provider.bio || ''}</p>
-          <a href="https://wa.me/${String(provider.whatsappNumber || '').replace(/[^0-9]/g, '')}" class="provider-contact-btn" target="_blank" rel="noreferrer">${provider.whatsappNumber || 'Contact on WhatsApp'}</a>
-          <a href="${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provider.provinceSlug || provinceSlug)}" class="provider-message-btn">Message Provider</a>
-        </aside>
-        <section class="provider-profile-main">
-          <h1>${provider.displayName}</h1>
-          <div class="provider-profile-grid">
-            <div class="provider-profile-detail"><span>Province</span><strong>${provider.province}</strong></div>
-            <div class="provider-profile-detail"><span>City / area</span><strong>${provider.city || provider.address}</strong></div>
-            <div class="provider-profile-detail"><span>Experience</span><strong>${provider.experience || 'Experienced specialist'}</strong></div>
-            <div class="provider-profile-detail"><span>Completed jobs</span><strong>${provider.completedJobs || 0}</strong></div>
-          </div>
-          <h2 style="margin-top:26px;">Previous Work</h2>
-          <div class="provider-profile-work-grid">
-            ${posts.length ? posts.map((post) => `
-              <article class="provider-work-card">
-                <img src="${post.imageData.startsWith('data:') || post.imageData.startsWith('http') ? post.imageData : `${getBase()}${post.imageData}`}" alt="${provider.displayName} work" />
-                <p>${post.caption || 'Work posted by the provider.'}</p>
-              </article>
-            `).join('') : `<div class="specialists-empty">No work posts yet. Search coming soon, posts coming soon.</div>`}
-          </div>
-        </section>
-      </div>
-    `;
+    const banner = page.querySelector('[data-provider-banner]');
+    const avatar = page.querySelector('[data-provider-avatar]');
+    const handle = page.querySelector('[data-provider-handle]');
+    const name = page.querySelector('[data-provider-name]');
+    const title = page.querySelector('[data-provider-title]');
+    const address = page.querySelector('[data-provider-address]');
+    const bio = page.querySelector('[data-provider-bio]');
+    const postCount = page.querySelector('[data-provider-post-count]');
+    const rating = page.querySelector('[data-provider-rating]');
+    const jobs = page.querySelector('[data-provider-jobs]');
+    const messageLink = page.querySelector('[data-provider-message-link]');
+    const whatsappLink = page.querySelector('[data-provider-whatsapp-link]');
+    const highlights = page.querySelector('[data-provider-highlights]');
+    const postGrid = page.querySelector('[data-provider-post-grid]');
+
+    if (banner instanceof HTMLElement) {
+      banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png')}')`;
+    }
+    if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png');
+    if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(provider.displayName);
+    if (name instanceof HTMLElement) name.textContent = provider.displayName;
+    if (title instanceof HTMLElement) title.textContent = `${provider.specialty} • ${provider.primaryCategory}`;
+    if (address instanceof HTMLElement) address.textContent = provider.address || `${provider.city}, ${provider.province}`;
+    if (bio instanceof HTMLElement) bio.textContent = provider.bio;
+    if (postCount instanceof HTMLElement) postCount.textContent = String(posts.length);
+    if (rating instanceof HTMLElement) rating.textContent = `${provider.averageRating.toFixed(1)} ★`;
+    if (jobs instanceof HTMLElement) jobs.textContent = String(provider.completedJobs || 0);
+    if (messageLink instanceof HTMLAnchorElement) messageLink.href = provider.messageUrl;
+    if (whatsappLink instanceof HTMLAnchorElement) {
+      whatsappLink.href = buildWhatsAppLink(provider.whatsappNumber, provider.displayName);
+      whatsappLink.textContent = provider.whatsappNumber || 'WhatsApp';
+    }
+
+    renderProviderHighlights(highlights, provider);
+
+    if (postGrid) {
+      postGrid.innerHTML = posts.length
+        ? posts.map((post) => `
+          <article class="provider-gallery-card">
+            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="${escapeHtml(provider.displayName)} work" />
+            <div class="provider-gallery-card-copy">
+              <strong>${escapeHtml(provider.displayName)}</strong>
+              <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
+            </div>
+          </article>
+        `).join('')
+        : `<div class="specialists-empty">No work posts yet. Their previous work will appear here.</div>`;
+    }
   }
 
   async function renderPostsPage() {
@@ -856,6 +971,7 @@
       return;
     }
 
+    const normalizedProfile = normalizeProvider(profile);
     const feedHost = page.querySelector('[data-provider-post-feed]');
     const form = page.querySelector('[data-provider-post-form]');
     const preview = page.querySelector('[data-provider-post-preview]');
@@ -863,30 +979,39 @@
     let previewImageData = '';
 
     async function refreshPosts() {
-      const posts = await authHelper.listProviderPosts(profile.uid, profile.provinceSlug);
+      const posts = await authHelper.listProviderPosts(normalizedProfile.uid, normalizedProfile.provinceSlug);
       feedHost.innerHTML = posts.length
         ? posts.map((post) => `
           <article class="provider-post-feed-card">
             <div class="provider-post-card-head">
-              <strong>${profile.displayName}</strong>
-              <span class="provider-meta-chip">${profile.providerPublicId}</span>
+              <div class="provider-post-author">
+                <img src="${escapeHtml(resolveMediaSrc(normalizedProfile.profileImageData, 'images/logo/logo.png'))}" alt="${escapeHtml(normalizedProfile.displayName)}" />
+                <div>
+                  <strong>${escapeHtml(normalizedProfile.displayName)}</strong>
+                  <span>${escapeHtml(normalizedProfile.specialty)}</span>
+                </div>
+              </div>
             </div>
-            <p>${post.caption || ''}</p>
-            <img src="${post.imageData.startsWith('data:') || post.imageData.startsWith('http') ? post.imageData : `${getBase()}${post.imageData}`}" alt="Provider post" />
+            <p>${escapeHtml(post.caption || '')}</p>
+            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Provider post" />
           </article>
         `).join('')
         : `<div class="specialists-empty">Your posts will appear here once you upload your first piece of work.</div>`;
     }
 
-    fileInput?.addEventListener('change', () => {
+    fileInput?.addEventListener('change', async () => {
       const file = fileInput.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewImageData = String(reader.result || '');
-        preview.innerHTML = `<img src="${previewImageData}" alt="Preview" />`;
-      };
-      reader.readAsDataURL(file);
+      try {
+        previewImageData = await readImageAsBase64(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.82
+        });
+        preview.innerHTML = `<img src="${escapeHtml(previewImageData)}" alt="Preview" />`;
+      } catch (error) {
+        window.alert(error.message || 'Could not process that image.');
+      }
     });
 
     form?.addEventListener('submit', async (event) => {
@@ -959,9 +1084,9 @@
 
       chatList.innerHTML = conversations.length
         ? conversations.map((conversation) => `
-          <button type="button" class="messages-chat-item ${conversation.peerUid === activePeerUid ? 'is-active' : ''}" data-chat-peer="${conversation.peerUid}">
-            <strong>${conversation.peerName}</strong>
-            <div>${conversation.lastMessage}</div>
+          <button type="button" class="messages-chat-item ${conversation.peerUid === activePeerUid ? 'is-active' : ''}" data-chat-peer="${escapeHtml(conversation.peerUid)}">
+            <strong>${escapeHtml(conversation.peerName)}</strong>
+            <div>${escapeHtml(conversation.lastMessage)}</div>
           </button>
         `).join('')
         : `<div class="specialists-empty">No messages yet. Start by viewing a provider profile.</div>`;
@@ -989,9 +1114,9 @@
       const messages = await authHelper.listMessagesWithUser(activePeerUid);
       threadBody.innerHTML = messages.length
         ? messages.map((message) => `
-          <div class="message-bubble ${message.fromUid === account.uid ? 'is-mine' : 'is-theirs'}">${message.text}</div>
+          <div class="message-bubble ${message.fromUid === account.uid ? 'is-mine' : 'is-theirs'}">${escapeHtml(message.text)}</div>
         `).join('')
-        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${activePeerName}.</p></div></div>`;
+        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(activePeerName)}.</p></div></div>`;
       threadBody.scrollTop = threadBody.scrollHeight;
     }
 
@@ -1040,6 +1165,7 @@
       const experienceEl = document.getElementById('account-profile-experience');
       const categoryEl = document.getElementById('account-profile-category');
       const specialtyEl = document.getElementById('account-profile-specialty');
+
       if (providerIdEl) providerIdEl.textContent = userDoc?.providerPublicId || providerProfile?.providerPublicId || 'Pending';
       if (provinceEl) provinceEl.textContent = userDoc?.providerProvince || providerProfile?.province || 'Not set';
       if (whatsappEl) whatsappEl.textContent = userDoc?.whatsappNumber || providerProfile?.whatsappNumber || 'Not set';
@@ -1052,7 +1178,6 @@
   }
 
   function initialize() {
-    injectProviderExperienceStyles();
     setupOnboarding();
     renderSpecialistsPage();
     renderProviderProfilePage();
