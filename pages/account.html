@@ -37,11 +37,9 @@
     <div class="account-dashboard-layout">
       <aside class="account-side-nav">
         <a href="#" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>Profile</span></a>
-        <a href="#" class="account-side-link"><i class="fa-regular fa-address-book"></i><span>Saved People</span></a>
-        <a href="#" class="account-side-link"><i class="fa-solid fa-briefcase"></i><span>Job Requests</span></a>
-        <a href="#" class="account-side-link"><i class="fa-solid fa-paper-plane"></i><span>Applications</span></a>
-        <a href="#" class="account-side-link"><i class="fa-regular fa-message"></i><span>Messages</span></a>
-        <a href="#" class="account-side-link"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
+        <a href="my-posts.html" class="account-side-link"><i class="fa-regular fa-images"></i><span>My Posts</span></a>
+        <a href="messages.html" class="account-side-link"><i class="fa-regular fa-message"></i><span>Messages</span></a>
+        <a href="specialists.html" class="account-side-link"><i class="fa-solid fa-magnifying-glass"></i><span>Browse Specialists</span></a>
         <button type="button" class="account-side-logout">Log Out</button>
       </aside>
 
@@ -54,6 +52,34 @@
         <div class="account-detail-box">
           <span>Email Address</span>
           <strong id="account-profile-email">you@example.com</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Provider ID</span>
+          <strong id="account-provider-id">Pending</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Province</span>
+          <strong id="account-profile-province">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>WhatsApp Number</span>
+          <strong id="account-profile-whatsapp">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Experience</span>
+          <strong id="account-profile-experience">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Main Category</span>
+          <strong id="account-profile-category">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Specialty</span>
+          <strong id="account-profile-specialty">Not set</strong>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+          <a href="my-posts.html" class="provider-profile-action">Go to My Posts</a>
+          <a href="messages.html" class="provider-profile-action secondary">Open Messages</a>
         </div>
         <label class="account-marketing-row">
           <input type="checkbox" />

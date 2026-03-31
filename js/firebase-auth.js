@@ -14,12 +14,19 @@ import {
   updateProfile
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js';
 import {
+  addDoc,
+  collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
+  query,
+  runTransaction,
   serverTimestamp,
-  setDoc
+  setDoc,
+  where
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -36,6 +43,19 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const storageKey = 'softgiggles_account';
+const PROVIDER_COUNTER_START = 3383;
+const ZIMBABWE_PROVINCES = [
+  'Bulawayo',
+  'Harare',
+  'Manicaland',
+  'Mashonaland Central',
+  'Mashonaland East',
+  'Mashonaland West',
+  'Masvingo',
+  'Matabeleland North',
+  'Matabeleland South',
+  'Midlands'
+];
 
 let recaptchaVerifier = null;
 let phoneConfirmationResult = null;
@@ -61,11 +81,13 @@ function fallbackNameFromUser(user) {
 
 function persistUser(user) {
   try {
+    const existing = getStoredAccount() || {};
     if (!user) {
       localStorage.removeItem(storageKey);
       return;
     }
     localStorage.setItem(storageKey, JSON.stringify({
+      ...existing,
       loggedIn: true,
       uid: user.uid,
       name: fallbackNameFromUser(user),
@@ -106,7 +128,46 @@ function getAccountPayload(user = auth.currentUser) {
     name,
     email,
     phone,
-    provider: providerId
+    provider: providerId,
+    providerProfileComplete: Boolean(stored?.providerProfileComplete),
+    providerProvince: stored?.providerProvince || '',
+    providerProvinceSlug: stored?.providerProvinceSlug || '',
+    providerPublicId: stored?.providerPublicId || '',
+    whatsappNumber: stored?.whatsappNumber || ''
+  };
+}
+
+function persistAccountDetails(extra = {}) {
+  try {
+    const current = getStoredAccount() || {};
+    localStorage.setItem(storageKey, JSON.stringify({
+      ...current,
+      ...extra
+    }));
+  } catch (error) {
+    // Ignore storage issues.
+  }
+}
+
+function normalizeProvince(value) {
+  const clean = String(value || '').trim();
+  if (!clean) return 'Harare';
+  const exactMatch = ZIMBABWE_PROVINCES.find((province) => province.toLowerCase() === clean.toLowerCase());
+  return exactMatch || clean;
+}
+
+function createConversationId(firstUid, secondUid) {
+  return [String(firstUid || ''), String(secondUid || '')]
+    .filter(Boolean)
+    .sort()
+    .join('__');
+}
+
+function mapProviderProfile(snapshot) {
+  const data = snapshot.data();
+  return {
+    uid: snapshot.id,
+    ...data
   };
 }
 
@@ -125,6 +186,11 @@ async function syncUserDocument(account, extra = {}) {
     provider: account.provider,
     cartCount: extra.cartCount ?? 0,
     wishlistCount: extra.wishlistCount ?? 0,
+    providerProfileComplete: extra.providerProfileComplete ?? account.providerProfileComplete ?? false,
+    providerProvince: extra.providerProvince ?? account.providerProvince ?? '',
+    providerProvinceSlug: extra.providerProvinceSlug ?? account.providerProvinceSlug ?? '',
+    providerPublicId: extra.providerPublicId ?? account.providerPublicId ?? '',
+    whatsappNumber: extra.whatsappNumber ?? account.whatsappNumber ?? '',
     updatedAt: serverTimestamp()
   }, { merge: true });
 }
@@ -218,6 +284,263 @@ async function resetPassword(email) {
   await sendPasswordResetEmail(auth, email);
 }
 
+async function getUserDocument(uid = auth.currentUser?.uid) {
+  if (!uid) return null;
+  const snapshot = await getDoc(doc(db, 'users', uid));
+  return snapshot.exists() ? snapshot.data() : null;
+}
+
+async function getOrCreateProviderPublicId(uid) {
+  if (!uid) throw new Error('No signed-in user found.');
+
+  const userRef = doc(db, 'users', uid);
+  const counterRef = doc(db, 'systemCounters', 'providers');
+
+  return runTransaction(db, async (transaction) => {
+    const userSnapshot = await transaction.get(userRef);
+    if (userSnapshot.exists() && userSnapshot.data().providerPublicId) {
+      return userSnapshot.data().providerPublicId;
+    }
+
+    const counterSnapshot = await transaction.get(counterRef);
+    const nextNumber = (counterSnapshot.exists() ? Number(counterSnapshot.data().lastNumber || PROVIDER_COUNTER_START) : PROVIDER_COUNTER_START) + 1;
+    const providerPublicId = `#${nextNumber}`;
+
+    transaction.set(counterRef, {
+      lastNumber: nextNumber,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    transaction.set(userRef, {
+      uid,
+      providerPublicId,
+      providerIdNumber: nextNumber,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    return providerPublicId;
+  });
+}
+
+async function getProviderProfileByUid(uid, knownProvinceSlug = '') {
+  if (!uid) return null;
+
+  if (knownProvinceSlug) {
+    const directSnapshot = await getDoc(doc(db, 'providers', knownProvinceSlug, 'profiles', uid));
+    if (directSnapshot.exists()) return mapProviderProfile(directSnapshot);
+  }
+
+  const userDoc = await getUserDocument(uid);
+  const provinceSlug = userDoc?.providerProvinceSlug || '';
+  if (provinceSlug) {
+    const directSnapshot = await getDoc(doc(db, 'providers', provinceSlug, 'profiles', uid));
+    if (directSnapshot.exists()) return mapProviderProfile(directSnapshot);
+  }
+
+  const grouped = await getDocs(query(collectionGroup(db, 'profiles'), where('uid', '==', uid)));
+  if (grouped.empty) return null;
+  return mapProviderProfile(grouped.docs[0]);
+}
+
+async function listProviderPosts(uid, provinceSlug = '') {
+  const providerProfile = await getProviderProfileByUid(uid, provinceSlug);
+  if (!providerProfile) return [];
+  const postsSnapshot = await getDocs(collection(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'posts'));
+  return postsSnapshot.docs
+    .map((snapshot) => ({ id: snapshot.id, ...snapshot.data() }))
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+async function saveProviderProfile(profileInput = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const account = getAccountPayload(auth.currentUser);
+  const userRef = doc(db, 'users', account.uid);
+  const existingUserDoc = await getUserDocument(account.uid);
+  const province = normalizeProvince(profileInput.province);
+  const provinceSlug = slugifyIdentifier(province);
+  const providerPublicId = existingUserDoc?.providerPublicId || await getOrCreateProviderPublicId(account.uid);
+  const displayName = normalizeName(profileInput.fullName || account.name);
+  const providerRef = doc(db, 'providers', provinceSlug, 'profiles', account.uid);
+
+  if (existingUserDoc?.providerProvinceSlug && existingUserDoc.providerProvinceSlug !== provinceSlug) {
+    await deleteDoc(doc(db, 'providers', existingUserDoc.providerProvinceSlug, 'profiles', account.uid)).catch(() => {});
+  }
+
+  await setDoc(doc(db, 'providers', provinceSlug), {
+    province,
+    provinceSlug,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  const providerProfile = {
+    uid: account.uid,
+    providerPublicId,
+    displayName,
+    email: account.email || '',
+    whatsappNumber: String(profileInput.whatsappNumber || account.phone || '').trim(),
+    address: String(profileInput.address || '').trim(),
+    city: String(profileInput.city || '').trim(),
+    province,
+    provinceSlug,
+    experience: String(profileInput.experience || '').trim(),
+    primaryCategory: String(profileInput.primaryCategory || '').trim(),
+    specialty: String(profileInput.specialty || '').trim(),
+    bio: String(profileInput.bio || '').trim(),
+    averageRating: Number(profileInput.averageRating || 4.8),
+    reviewCount: Number(profileInput.reviewCount || 12),
+    completedJobs: Number(profileInput.completedJobs || 8),
+    createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
+    updatedAtMs: Date.now(),
+    createdAt: existingUserDoc?.createdAt || serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(providerRef, providerProfile, { merge: true });
+  await setDoc(userRef, {
+    uid: account.uid,
+    name: displayName,
+    email: account.email || '',
+    phone: providerProfile.whatsappNumber,
+    providerProfileComplete: true,
+    providerProvince: province,
+    providerProvinceSlug: provinceSlug,
+    providerPublicId,
+    whatsappNumber: providerProfile.whatsappNumber,
+    address: providerProfile.address,
+    city: providerProfile.city,
+    experience: providerProfile.experience,
+    primaryCategory: providerProfile.primaryCategory,
+    specialty: providerProfile.specialty,
+    bio: providerProfile.bio,
+    createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  persistAccountDetails({
+    name: displayName,
+    phone: providerProfile.whatsappNumber,
+    providerProfileComplete: true,
+    providerProvince: province,
+    providerProvinceSlug: provinceSlug,
+    providerPublicId,
+    whatsappNumber: providerProfile.whatsappNumber
+  });
+
+  return providerProfile;
+}
+
+async function listProviders() {
+  const snapshot = await getDocs(collectionGroup(db, 'profiles'));
+  return snapshot.docs
+    .map(mapProviderProfile)
+    .sort((first, second) => Number(second.averageRating || 0) - Number(first.averageRating || 0));
+}
+
+async function createProviderPost(payload = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const providerProfile = await getProviderProfileByUid(auth.currentUser.uid);
+  if (!providerProfile) {
+    throw new Error('Complete your provider profile before posting.');
+  }
+
+  const postsRef = collection(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'posts');
+  const now = Date.now();
+  const postPayload = {
+    providerUid: providerProfile.uid,
+    providerPublicId: providerProfile.providerPublicId,
+    providerName: providerProfile.displayName,
+    provinceSlug: providerProfile.provinceSlug,
+    caption: String(payload.caption || '').trim(),
+    imageData: String(payload.imageData || '').trim(),
+    createdAtMs: now,
+    updatedAtMs: now,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  const created = await addDoc(postsRef, postPayload);
+  return {
+    id: created.id,
+    ...postPayload
+  };
+}
+
+async function sendMessageToProvider(payload = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const sender = getAccountPayload(auth.currentUser);
+  const recipientProfile = await getProviderProfileByUid(payload.toUid, payload.toProvinceSlug);
+  const recipientName = recipientProfile?.displayName || String(payload.toName || 'Provider').trim();
+  const recipientProvinceSlug = recipientProfile?.provinceSlug || String(payload.toProvinceSlug || '').trim();
+
+  const conversationId = createConversationId(sender.uid, payload.toUid);
+  const now = Date.now();
+  const messagePayload = {
+    conversationId,
+    participants: [sender.uid, payload.toUid].sort(),
+    fromUid: sender.uid,
+    toUid: payload.toUid,
+    fromName: sender.name,
+    toName: recipientName,
+    fromProvinceSlug: sender.providerProvinceSlug || '',
+    toProvinceSlug: recipientProvinceSlug,
+    text: String(payload.text || '').trim(),
+    createdAtMs: now,
+    createdAt: serverTimestamp()
+  };
+
+  if (!messagePayload.text) {
+    throw new Error('Type a message first.');
+  }
+
+  const created = await addDoc(collection(db, 'messages'), messagePayload);
+  return {
+    id: created.id,
+    ...messagePayload
+  };
+}
+
+async function listMessagesWithUser(peerUid) {
+  if (!auth.currentUser || !peerUid) return [];
+  const conversationId = createConversationId(auth.currentUser.uid, peerUid);
+  const snapshot = await getDocs(query(collection(db, 'messages'), where('conversationId', '==', conversationId)));
+  return snapshot.docs
+    .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+    .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
+}
+
+async function listConversations() {
+  if (!auth.currentUser) return [];
+  const snapshot = await getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', auth.currentUser.uid)));
+  const conversations = new Map();
+
+  snapshot.docs.forEach((docSnapshot) => {
+    const data = docSnapshot.data();
+    const existing = conversations.get(data.conversationId);
+    if (!existing || Number(data.createdAtMs || 0) > Number(existing.createdAtMs || 0)) {
+      const peerUid = data.fromUid === auth.currentUser.uid ? data.toUid : data.fromUid;
+      const peerName = data.fromUid === auth.currentUser.uid ? data.toName : data.fromName;
+      conversations.set(data.conversationId, {
+        conversationId: data.conversationId,
+        peerUid,
+        peerName,
+        lastMessage: data.text,
+        createdAtMs: data.createdAtMs
+      });
+    }
+  });
+
+  return Array.from(conversations.values()).sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
 async function signOut() {
   await firebaseSignOut(auth);
   try {
@@ -276,6 +599,20 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     const account = getAccountPayload(user);
     syncUserDocument(account).catch(() => {});
+    getUserDocument(user.uid)
+      .then((userDoc) => {
+        if (!userDoc) return;
+        persistAccountDetails({
+          name: userDoc.name || account.name,
+          phone: userDoc.phone || account.phone,
+          providerProfileComplete: Boolean(userDoc.providerProfileComplete),
+          providerProvince: userDoc.providerProvince || '',
+          providerProvinceSlug: userDoc.providerProvinceSlug || '',
+          providerPublicId: userDoc.providerPublicId || '',
+          whatsappNumber: userDoc.whatsappNumber || ''
+        });
+      })
+      .catch(() => {});
   }
   dispatchAuthChange(user);
 });
@@ -290,5 +627,14 @@ window.softGigglesAuth = {
   signOut,
   deleteProfile,
   addToCart,
-  toggleWishlist
+  toggleWishlist,
+  getUserDocument,
+  getProviderProfileByUid,
+  saveProviderProfile,
+  listProviders,
+  listProviderPosts,
+  createProviderPost,
+  sendMessageToProvider,
+  listMessagesWithUser,
+  listConversations
 };

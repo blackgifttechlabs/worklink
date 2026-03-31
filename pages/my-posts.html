@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Posts – WorkLinkUp</title>
+  <link rel="icon" type="image/png" href="../images/logo/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="provider-post-shell" data-provider-posts-page>
+    <span class="section-eyebrow">My Posts</span>
+    <h1 style="margin:14px 0 24px;">Share your work like a portfolio feed</h1>
+    <div class="provider-post-layout">
+      <aside class="provider-post-composer">
+        <h2>Create a post</h2>
+        <p>Post an image of your previous work and write a short caption so clients can trust what you do.</p>
+        <form data-provider-post-form class="provider-post-form">
+          <div class="provider-post-preview" data-provider-post-preview>Your image preview will appear here.</div>
+          <input type="file" accept="image/*" data-provider-post-image />
+          <textarea placeholder="Write a caption for this work..." data-provider-post-caption></textarea>
+          <button type="submit" class="provider-post-submit">Post to My Work</button>
+        </form>
+      </aside>
+      <section class="provider-post-feed" data-provider-post-feed></section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="../js/shared-header.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>

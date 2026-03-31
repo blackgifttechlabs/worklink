@@ -553,6 +553,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1200);
   }
 
+  function finalizeAuthSuccess(message) {
+    showAccountSuccess(message, () => {
+      closeAccountPanel();
+      window.dispatchEvent(new CustomEvent('worklinkup:prompt-onboarding'));
+      window.setTimeout(() => {
+        const onboardingOverlay = document.getElementById('provider-onboarding-overlay');
+        if (!onboardingOverlay || onboardingOverlay.hidden) {
+          window.location.reload();
+        }
+      }, 420);
+    });
+  }
+
   function setButtonLoading(button, isLoading) {
     if (!button) return;
     button.classList.toggle('is-loading', isLoading);
@@ -581,8 +594,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isSignup = mode === 'signup';
     if (accountHeading) accountHeading.textContent = 'Welcome';
     if (accountSubtext) accountSubtext.textContent = 'Create an account or sign in to continue with WorkLinkUp.';
-    if (accountSwitchLabel) accountSwitchLabel.textContent = isSignup ? 'Already have an account?' : 'Need an account?';
-    if (accountModeSwitch) accountModeSwitch.textContent = isSignup ? 'Sign in' : 'Sign up';
+    if (accountSwitchLabel) accountSwitchLabel.textContent = isSignup ? 'Already have an account?' : 'Joining us for the first time?';
+    if (accountModeSwitch) accountModeSwitch.textContent = isSignup ? 'Sign In' : 'Create Account';
     if (accountSubmitBtn) {
       accountSubmitBtn.classList.toggle('account-submit-signup', isSignup);
       accountSubmitBtn.classList.toggle('account-submit-signin', !isSignup);
@@ -1088,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setButtonLoading(accountGoogleBtn, true);
       try {
         await authHelper.signInWithGoogle();
-        showAccountSuccess('Signed in successfully', () => window.location.reload());
+        finalizeAuthSuccess('Signed in successfully');
       } catch (error) {
         window.alert(error.message || 'Google sign-in failed.');
       } finally {
@@ -1115,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           await authHelper.signInWithEmail(email, password);
         }
-        showAccountSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully', () => window.location.reload());
+        finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
       } catch (error) {
         window.alert(error.message || 'Email authentication failed.');
       } finally {

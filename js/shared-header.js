@@ -47,7 +47,7 @@ function renderHeader() {
         <input type="text" placeholder="Search gardeners, plumbers, therapists, programmers..." data-search-context="inline" />
       </div>
       <div class="header-actions">
-        <a href="${base}index.html#service-types">
+        <a href="${base}pages/specialists.html">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
           Browse
         </a>
@@ -61,10 +61,12 @@ function renderHeader() {
           </svg>
         </button>
         <div class="account-menu-host ${isLoggedIn ? 'is-logged-in' : 'is-logged-out'}">
-          <a href="${isLoggedIn ? `${base}pages/account.html` : '#'}" class="a-plus-btn account-trigger" data-account-trigger="a-plus">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
-            Create Profile
-          </a>
+          ${isLoggedIn ? '' : `
+            <a href="#" class="a-plus-btn account-trigger" data-account-trigger="a-plus">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+              Create Profile
+            </a>
+          `}
           <a href="${isLoggedIn ? `${base}pages/account.html` : '#'}" class="account-trigger account-link" data-account-trigger="account">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             ${isLoggedIn ? firstName : 'Account'}
@@ -76,19 +78,11 @@ function renderHeader() {
                 <i class="fa-regular fa-user"></i>
                 <span>My Profile</span>
               </a>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
-                <i class="fa-regular fa-address-book"></i>
-                <span>Saved People</span>
+              <a href="${base}pages/my-posts.html" class="account-dropdown-item">
+                <i class="fa-regular fa-images"></i>
+                <span>My Posts</span>
               </a>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
-                <i class="fa-solid fa-briefcase"></i>
-                <span>Job Requests</span>
-              </a>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
-                <i class="fa-solid fa-paper-plane"></i>
-                <span>Applications</span>
-              </a>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
+              <a href="${base}pages/messages.html" class="account-dropdown-item">
                 <i class="fa-regular fa-message"></i>
                 <span>Messages</span>
               </a>
@@ -258,6 +252,12 @@ function renderAccountPanel() {
     <aside class="account-auth-panel" aria-modal="true" role="dialog" aria-labelledby="account-auth-title">
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
+        <div class="account-brand-lockup" aria-hidden="true">
+          <img src="${base}images/logo/logo.png" alt="" class="account-brand-logo" />
+          <span class="account-brand-wordmark">
+            <span class="logo-work">Work</span><span class="logo-link">Link</span>
+          </span>
+        </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
         <p class="account-auth-subtext">Create an account or sign in to continue with WorkLinkUp.</p>
       </div>
@@ -278,6 +278,7 @@ function renderAccountPanel() {
                 <label for="account-password">Password</label>
                 <input id="account-password" name="password" type="password" placeholder="Enter password" required />
               </div>
+              <button type="button" class="account-forgot-password account-form-inline-link">Forgot password?</button>
               <button type="submit" class="account-submit-btn account-submit-signin">
                 <span class="account-btn-label">Sign In</span>
               </button>
@@ -290,10 +291,10 @@ function renderAccountPanel() {
           <span class="google-mark" aria-hidden="true"><span class="google-g">G</span></span>
           <span class="account-btn-label">Sign in with Google</span>
         </button>
-        <div class="account-auth-switch-copy account-inline-actions">
-          <button type="button" class="account-mode-switch">Sign up</button>
-          <button type="button" class="account-forgot-password">Forgot password</button>
-        </div>
+        <p class="account-auth-switch-copy">
+          <span class="account-switch-label">Joining us for the first time?</span>
+          <button type="button" class="account-mode-switch">Create Account</button>
+        </p>
       </div>
       <p class="account-auth-note">By continuing, you agree to our Terms and Privacy Policy.</p>
       <input type="hidden" id="account-mode" value="signin" />
@@ -435,11 +436,28 @@ function injectSharedHeaderOverrides() {
     body.mobile-search-open { overflow: hidden; }
     .a-plus-btn { background: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.22); }
     .a-plus-btn:hover, .a-plus-btn:focus-visible { background: #0558b8 !important; }
-    .account-auth-panel { width: min(32vw, 470px); min-width: 360px; padding: 30px 20px 24px; }
+    .account-auth-panel { width: min(32vw, 470px); min-width: 360px; padding: 30px 20px 24px; border-radius: 20px 0 0 20px; }
     .account-auth-copy { text-align: left; margin: 28px 0 18px; }
+    .account-brand-lockup { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .account-brand-logo { width: auto; height: 26px; }
+    .account-brand-wordmark { display: inline-flex; align-items: baseline; font-size: 29px; font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
     .account-email-form-wrap, .account-email-form-wrap.is-open { max-height: none; opacity: 1; margin-top: 0; overflow: visible; }
-    .account-inline-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .account-inline-actions button { min-height: 48px; border-radius: 16px; border: 1px solid rgba(26, 50, 99, 0.12); background: rgba(255, 255, 255, 0.94); color: var(--brand-ink); font-size: 15px; font-weight: 800; }
+    .account-auth-method-card,
+    .account-auth-btn,
+    .account-submit-btn,
+    .account-form-row input,
+    .account-inline-actions button,
+    .account-google-btn,
+    .account-search-result,
+    .account-auth-close { border-radius: 20px; }
+    .account-auth-method-card { border-radius: 20px; }
+    .account-form-row input { border-radius: 20px; }
+    .account-auth-btn,
+    .account-submit-btn { border-radius: 20px; }
+    .account-form-inline-link { justify-self: start; border: none; background: transparent; padding: 0; color: #076fe5; font-size: 14px; font-weight: 700; }
+    .account-auth-switch-copy { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; text-align: left; }
+    .account-switch-label { color: #64748b; }
+    .account-mode-switch { border: none; background: transparent; padding: 0; color: #076fe5; font-weight: 800; }
     .account-submit-btn.account-submit-signin { background: linear-gradient(180deg, #076fe5 0%, #0558b8 100%); }
     .account-submit-btn.account-submit-signup { background: linear-gradient(180deg, #0f84ff 0%, #076fe5 100%); color: #fff; }
     .account-submit-btn.has-jimu-loader .account-btn-label { opacity: 0; }
@@ -459,8 +477,9 @@ function injectSharedHeaderOverrides() {
       .mobile-search-overlay { padding: 68px 10px 14px; }
       .mobile-search-panel { width: calc(100vw - 20px); border-radius: 24px; }
       .mobile-search-results { max-height: calc(100vh - 220px); }
-      .account-auth-panel { width: 100%; min-width: 0; padding: 24px 16px 20px; }
-      .account-inline-actions { grid-template-columns: 1fr; }
+      .account-auth-panel { width: 100%; min-width: 0; padding: 24px 16px 20px; border-radius: 20px 20px 0 0; }
+      .account-brand-wordmark { font-size: 24px; }
+      .account-auth-switch-copy { align-items: flex-start; flex-direction: column; gap: 2px; }
     }
   `;
 
@@ -518,6 +537,12 @@ document.addEventListener('DOMContentLoaded', () => {
     moduleScript.id = 'firebase-auth-script';
     moduleScript.src = `${getBasePath()}js/firebase-auth.js`;
     document.body.appendChild(moduleScript);
+  }
+  if (!document.getElementById('providers-ui-script')) {
+    const uiScript = document.createElement('script');
+    uiScript.id = 'providers-ui-script';
+    uiScript.src = `${getBasePath()}js/providers-ui.js`;
+    document.body.appendChild(uiScript);
   }
 
   if (!headerEl) return;
