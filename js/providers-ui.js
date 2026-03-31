@@ -3,49 +3,49 @@
     {
       key: 'home-services',
       label: 'Home Services',
-      image: 'images/categories/home-services.png',
+      image: 'images/categories/home-services.jpg',
       subservices: ['Gardener', 'Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman']
     },
     {
       key: 'beauty-wellness',
       label: 'Beauty & Wellness',
-      image: 'images/categories/beauty-and-wellness.png',
+      image: 'images/categories/beauty-and-wellness.jpg',
       subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist']
     },
     {
       key: 'digital-business',
       label: 'Digital & Business',
-      image: 'images/categories/business.png',
+      image: 'images/categories/business.jpg',
       subservices: ['Programmer', 'Designer', 'Photographer', 'Videographer', 'Social Media Manager']
     },
     {
       key: 'plumbing',
       label: 'Plumbing',
-      image: 'images/categories/plumbing.png',
+      image: 'images/categories/plumbing.jpg',
       subservices: ['Leak Repairs', 'Blocked Drains', 'Tank Cleaning']
     },
     {
       key: 'security-services',
       label: 'Security Services',
-      image: 'images/categories/security-services.png',
+      image: 'images/categories/security-services.jpg',
       subservices: ['Guarding', 'Alarm Setup', 'Gate Monitoring']
     },
     {
       key: 'tutoring',
       label: 'Tutoring',
-      image: 'images/categories/tutoring.png',
+      image: 'images/categories/tutoring.jpg',
       subservices: ['Maths Tutor', 'Science Tutor', 'Exam Prep']
     },
     {
       key: 'childcare',
       label: 'Childcare',
-      image: 'images/categories/childcare.png',
+      image: 'images/categories/childcare.jpg',
       subservices: ['Babysitting', 'Nanny Support', 'After-school Care']
     },
     {
       key: 'photography',
       label: 'Photography',
-      image: 'images/categories/photography.png',
+      image: 'images/categories/photography.jpg',
       subservices: ['Events', 'Brand Shoots', 'Product Photography']
     }
   ];
@@ -117,7 +117,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.png`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.jpg`;
     if (/^(data:|https?:|blob:|\/)/.test(source)) return source;
     return `${getBase()}${source}`;
   }
@@ -247,7 +247,7 @@
       <article class="specialist-card">
         <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png'))}');">
           <div class="specialist-card-rating">${provider.averageRating.toFixed(1)} ★</div>
-          <img class="specialist-card-avatar" src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png'))}" alt="${escapeHtml(provider.displayName)} profile image" />
+          <img class="specialist-card-avatar" src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)} profile image" />
           <div class="specialist-card-banner-copy">
             <h3>${escapeHtml(provider.displayName)}</h3>
             <p>${escapeHtml(provider.specialty)}</p>
@@ -437,7 +437,7 @@
 
   function updateUploadPreview(target, imageData, mode) {
     if (!target) return;
-    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.png' : 'images/sections/findme.png');
+    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.jpg' : 'images/sections/findme.png');
     target.innerHTML = `<img src="${escapeHtml(src)}" alt="" />`;
   }
 
@@ -657,12 +657,16 @@
     const sidebarToggle = page.querySelector('[data-specialists-sidebar-toggle]');
     const mobileSheet = document.querySelector('[data-specialists-sheet]');
     const mobileSheetBody = document.querySelector('[data-specialists-sheet-body]');
+    const mobileRatingSheet = document.querySelector('[data-specialists-rating-sheet]');
+    const mobileRatingOptions = Array.from(document.querySelectorAll('[data-specialists-rating-sheet] [data-rating-filter]'));
     const resultsHost = page.querySelector('[data-specialists-results]');
     const totalHost = page.querySelector('[data-specialists-total]');
     const searchInput = page.querySelector('[data-specialists-search]');
     const ratingButtons = Array.from(page.querySelectorAll('[data-rating-filter]'));
     const filterBtn = page.querySelector('[data-open-specialists-sheet]');
+    const ratingSheetBtn = page.querySelector('[data-open-specialists-rating-sheet]');
     const sheetCloseBtn = page.querySelector('[data-close-specialists-sheet]');
+    const ratingSheetCloseBtn = page.querySelector('[data-close-specialists-rating-sheet]');
     const currentCategory = new URLSearchParams(window.location.search).get('category') || '';
     const mobileQuery = window.matchMedia('(max-width: 768px)');
     const providers = [];
@@ -735,6 +739,9 @@
       ratingButtons.forEach((button) => {
         button.classList.toggle('is-active', Number(button.getAttribute('data-rating-filter') || 0) === state.rating);
       });
+      mobileRatingOptions.forEach((button) => {
+        button.classList.toggle('is-active', Number(button.getAttribute('data-rating-filter') || 0) === state.rating);
+      });
     }
 
     renderCategoryRail();
@@ -759,6 +766,15 @@
       });
     });
 
+    mobileRatingOptions.forEach((button) => {
+      button.addEventListener('click', () => {
+        const ratingValue = Number(button.getAttribute('data-rating-filter') || 0);
+        state.rating = ratingValue;
+        update();
+        if (mobileRatingSheet) mobileRatingSheet.hidden = true;
+      });
+    });
+
     searchInput?.addEventListener('input', () => {
       state.search = searchInput.value.trim();
       update();
@@ -769,13 +785,28 @@
       mobileSheet.hidden = false;
     });
 
+    ratingSheetBtn?.addEventListener('click', () => {
+      if (!mobileRatingSheet) return;
+      mobileRatingSheet.hidden = false;
+    });
+
     sheetCloseBtn?.addEventListener('click', () => {
       if (mobileSheet) mobileSheet.hidden = true;
+    });
+
+    ratingSheetCloseBtn?.addEventListener('click', () => {
+      if (mobileRatingSheet) mobileRatingSheet.hidden = true;
     });
 
     mobileSheet?.addEventListener('click', (event) => {
       if (event.target.closest('.providers-mobile-sheet-backdrop')) {
         mobileSheet.hidden = true;
+      }
+    });
+
+    mobileRatingSheet?.addEventListener('click', (event) => {
+      if (event.target.closest('.providers-mobile-sheet-backdrop')) {
+        mobileRatingSheet.hidden = true;
       }
     });
 
@@ -812,7 +843,7 @@
     host.innerHTML = items.map((item) => `
       <article class="provider-highlight-card">
         <span class="provider-highlight-card-ring">
-          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png'))}" alt="" />
+          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="" />
         </span>
         <strong>${escapeHtml(item)}</strong>
       </article>
@@ -1016,7 +1047,7 @@
       if (banner instanceof HTMLElement) {
         banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png')}')`;
       }
-      if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.png');
+      if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
       if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(freshProvider.displayName);
       if (name instanceof HTMLElement) name.textContent = freshProvider.displayName;
       if (title instanceof HTMLElement) title.textContent = `${freshProvider.specialty} • ${freshProvider.primaryCategory}`;
@@ -1141,7 +1172,7 @@
           <article class="provider-post-feed-card">
             <div class="provider-post-card-head">
               <div class="provider-post-author">
-                <img src="${escapeHtml(resolveMediaSrc(normalizedProfile.profileImageData, 'images/logo/logo.png'))}" alt="${escapeHtml(normalizedProfile.displayName)}" />
+                <img src="${escapeHtml(resolveMediaSrc(normalizedProfile.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(normalizedProfile.displayName)}" />
                 <div>
                   <strong>${escapeHtml(normalizedProfile.displayName)}</strong>
                   <span>${escapeHtml(normalizedProfile.specialty)}</span>

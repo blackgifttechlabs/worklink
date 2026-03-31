@@ -1053,6 +1053,19 @@ footer {
   gap: 14px;
 }
 
+.specialists-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.specialists-title-actions {
+  display: none;
+  align-items: center;
+  gap: 10px;
+}
+
 .specialists-rating-filter {
   display: flex;
   flex-wrap: wrap;
@@ -1117,6 +1130,10 @@ footer {
 }
 
 .specialists-filter-btn {
+  display: none;
+}
+
+.specialists-rating-sheet-btn {
   display: none;
 }
 
@@ -1193,9 +1210,34 @@ footer {
 }
 
 .specialists-page-title {
-  color: #076fe5;
+  color: #003153;
   font-size: 34px;
   font-weight: 900;
+}
+
+.specialists-icon-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #003153;
+  box-shadow: none;
+}
+
+.specialists-icon-btn.specialists-filter-btn,
+.specialists-icon-btn.specialists-rating-sheet-btn {
+  background: transparent;
+  color: #003153;
+  border: 0;
+}
+
+.specialists-icon-btn i {
+  font-size: 20px;
 }
 
 .specialists-search-line {
@@ -1318,7 +1360,7 @@ footer {
 
 .specialists-results-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -2361,6 +2403,40 @@ footer {
   box-shadow: 0 -24px 42px rgba(15, 23, 42, 0.18);
 }
 
+.providers-mobile-sheet-panel-compact {
+  width: min(100%, 420px);
+}
+
+.specialists-mobile-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.specialists-rating-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.specialists-rating-option {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(7, 111, 229, 0.06);
+  color: var(--brand-ink);
+  text-align: left;
+  padding: 0 16px;
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 700;
+}
+
+.specialists-rating-option.is-active {
+  background: rgba(7, 111, 229, 0.14);
+  color: #076fe5;
+}
+
 .providers-mobile-sheet-handle {
   width: 58px;
   height: 5px;
@@ -2380,7 +2456,10 @@ footer {
 }
 
 @media (max-width: 1100px) {
-  .specialists-results-grid,
+  .specialists-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .provider-profile-gallery {
     grid-template-columns: 1fr 1fr;
   }
@@ -2425,13 +2504,25 @@ footer {
 
   .specialists-page {
     padding: 0 0 48px;
+    overflow-x: hidden;
   }
 
   .specialists-search-line {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
   }
 
   .specialists-filter-btn {
+    display: inline-flex;
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+
+  .specialists-rating-sheet-btn {
+    display: inline-flex;
+  }
+
+  .specialists-title-actions {
     display: inline-flex;
   }
 
@@ -2445,6 +2536,8 @@ footer {
 
   .specialists-main {
     padding: 20px 16px 0;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   .specialists-categories-shell {
@@ -2472,9 +2565,87 @@ footer {
     font-size: 12px;
   }
 
+  .specialists-page-title {
+    font-size: 26px;
+  }
+
+  .specialists-title-row,
+  .specialists-title-actions,
+  .specialists-results,
   .specialists-results-grid,
+  .specialist-card {
+    min-width: 0;
+  }
+
+  .specialists-rating-filter {
+    display: none;
+  }
+
   .specialists-results-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .specialist-card-banner {
+    min-height: 150px;
+    padding: 12px 12px 14px;
+  }
+
+  .specialist-card-avatar {
+    width: 52px;
+    height: 52px;
+    top: 12px;
+    left: 12px;
+    border-radius: 12px;
+    border-width: 3px;
+  }
+
+  .specialist-card-rating {
+    top: 10px;
+    right: 10px;
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .specialist-card-banner-copy {
+    padding-top: 56px;
+  }
+
+  .specialist-card-banner-copy h3 {
+    font-size: 16px;
+  }
+
+  .specialist-card-banner-copy p {
+    font-size: 12px;
+  }
+
+  .specialist-card-body {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .specialist-card-location,
+  .specialist-card-body p {
+    font-size: 12px;
+  }
+
+  .provider-meta-chip {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .specialist-actions {
+    gap: 8px;
+  }
+
+  .specialist-actions a {
+    width: 100%;
+    min-height: 38px;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .provider-profile-gallery {

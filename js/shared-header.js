@@ -35,7 +35,7 @@ function renderHeader() {
           </svg>
         </button>
         <a href="${base}index.html" class="logo" aria-label="WorkLinkUp home">
-          <img src="${base}images/logo/logo.png" alt="WorkLinkUp" class="logo-image" />
+          <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" class="logo-image" />
           <span class="logo-wordmark" aria-hidden="true">
             <span class="logo-work">Work</span><span class="logo-link">Link</span>
           </span>
@@ -50,10 +50,6 @@ function renderHeader() {
         <input type="text" placeholder="Search gardeners, plumbers, therapists, programmers..." data-search-context="inline" />
       </div>
       <div class="header-actions">
-        <a href="${base}pages/specialists.html">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
-          Browse
-        </a>
         <a href="${base}index.html#how-it-works" class="header-how-link">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9Z"/><path d="m9 12 2 2 4-4"/></svg>
           How It Works
@@ -256,7 +252,7 @@ function renderAccountPanel() {
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
         <div class="account-brand-lockup" aria-hidden="true">
-          <img src="${base}images/logo/logo.png" alt="" class="account-brand-logo" />
+          <img src="${base}images/logo/logo.jpg" alt="" class="account-brand-logo" />
           <span class="account-brand-wordmark">
             <span class="logo-work">Work</span><span class="logo-link">Link</span>
           </span>

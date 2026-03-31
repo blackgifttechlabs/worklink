@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Find Specialists – WorkLinkUp</title>
-  <link rel="icon" type="image/png" href="../images/logo/logo.png" />
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
@@ -32,7 +32,17 @@
       <div class="specialists-main">
         <section class="specialists-topbar">
           <div class="specialists-search-shell">
-            <h2 class="specialists-page-title">Find Specialist</h2>
+            <div class="specialists-title-row">
+              <h2 class="specialists-page-title">Find Specialist</h2>
+              <div class="specialists-title-actions">
+                <button type="button" class="specialists-icon-btn specialists-filter-btn" data-open-specialists-sheet aria-label="Open categories">
+                  <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+                <button type="button" class="specialists-icon-btn specialists-rating-sheet-btn" data-open-specialists-rating-sheet aria-label="Filter by rating">
+                  <i class="fa-solid fa-star-half-stroke"></i>
+                </button>
+              </div>
+            </div>
             <div class="specialists-search-line">
               <div class="search-bar">
                 <span class="search-icon" aria-hidden="true">
@@ -46,9 +56,6 @@
                 <button type="button" class="specialists-rating-chip" data-rating-filter="5">5.0+</button>
                 <button type="button" class="specialists-rating-chip" data-rating-filter="4.5">4.5+</button>
                 <button type="button" class="specialists-rating-chip" data-rating-filter="4">4.0+</button>
-                <button type="button" class="specialists-filter-btn" data-open-specialists-sheet>
-                  <i class="fa-solid fa-sliders"></i>&nbsp;Filters
-                </button>
               </div>
             </div>
           </div>
@@ -83,6 +90,23 @@
         <button type="button" class="sheet-close-btn" data-close-specialists-sheet>Close</button>
       </div>
       <div data-specialists-sheet-body></div>
+    </div>
+  </div>
+
+  <div class="providers-mobile-sheet" data-specialists-rating-sheet hidden>
+    <div class="providers-mobile-sheet-backdrop"></div>
+    <div class="providers-mobile-sheet-panel providers-mobile-sheet-panel-compact">
+      <div class="providers-mobile-sheet-handle"></div>
+      <div class="specialists-mobile-sheet-head">
+        <strong>Filter by Rating</strong>
+        <button type="button" class="sheet-close-btn" data-close-specialists-rating-sheet>Close</button>
+      </div>
+      <div class="specialists-rating-picker" data-specialists-rating-sheet-body>
+        <button type="button" class="specialists-rating-option" data-rating-filter="0">All ratings</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="5">5.0 and above</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="4.5">4.5 and above</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="4">4.0 and above</button>
+      </div>
     </div>
   </div>
 
