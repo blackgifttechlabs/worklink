@@ -63,78 +63,6 @@
     'Midlands'
   ];
 
-  const SAMPLE_PROVIDERS = [
-    {
-      uid: 'sample-rutendo',
-      providerPublicId: '#3384',
-      displayName: 'Rutendo Moyo',
-      whatsappNumber: '+263779882110',
-      city: 'Borrowdale',
-      address: 'Borrowdale, Harare',
-      province: 'Harare',
-      provinceSlug: 'harare',
-      experience: '6 years',
-      primaryCategory: 'Home Services',
-      specialty: 'Gardener',
-      bio: 'Garden maintenance, hedge shaping, and quick clean-ups for homes and offices.',
-      averageRating: 4.9,
-      reviewCount: 28,
-      completedJobs: 46,
-      profileImageData: 'images/categories/home-services.png',
-      bannerImageData: 'images/sections/findme.png',
-      posts: [
-        { id: 'rutendo-1', imageData: 'images/categories/home-services.png', caption: 'Fresh lawn cut and trimmed edges for a family home.' },
-        { id: 'rutendo-2', imageData: 'images/sections/findme.png', caption: 'Weekend garden clean-up before a family event.' }
-      ]
-    },
-    {
-      uid: 'sample-ashley',
-      providerPublicId: '#3385',
-      displayName: 'Ashley Dube',
-      whatsappNumber: '+263771110220',
-      city: 'Khumalo',
-      address: 'Khumalo, Bulawayo',
-      province: 'Bulawayo',
-      provinceSlug: 'bulawayo',
-      experience: '4 years',
-      primaryCategory: 'Beauty & Wellness',
-      specialty: 'Nail Technician',
-      bio: 'Gel, acrylic, and soft glam sets for home visits and studio appointments.',
-      averageRating: 4.8,
-      reviewCount: 19,
-      completedJobs: 31,
-      profileImageData: 'images/categories/beauty-and-wellness.png',
-      bannerImageData: 'images/sections/findme.png',
-      posts: [
-        { id: 'ashley-1', imageData: 'images/categories/beauty-and-wellness.png', caption: 'Short nude set with chrome details.' },
-        { id: 'ashley-2', imageData: 'images/categories/photography.png', caption: 'Birthday set with glitter accent nails.' }
-      ]
-    },
-    {
-      uid: 'sample-tapiwa',
-      providerPublicId: '#3386',
-      displayName: 'Tapiwa Muchengeti',
-      whatsappNumber: '+263774220510',
-      city: 'Mutare CBD',
-      address: 'Mutare CBD, Manicaland',
-      province: 'Manicaland',
-      provinceSlug: 'manicaland',
-      experience: '8 years',
-      primaryCategory: 'Digital & Business',
-      specialty: 'Programmer',
-      bio: 'Small business websites, booking forms, and landing pages built fast.',
-      averageRating: 4.7,
-      reviewCount: 14,
-      completedJobs: 22,
-      profileImageData: 'images/categories/business.png',
-      bannerImageData: 'images/sections/findme.png',
-      posts: [
-        { id: 'tapiwa-1', imageData: 'images/categories/business.png', caption: 'Client site refresh for a local plumbing company.' },
-        { id: 'tapiwa-2', imageData: 'images/categories/plumbing.png', caption: 'Mobile-first landing page for home services leads.' }
-      ]
-    }
-  ];
-
   function getBase() {
     if (typeof getBasePath === 'function') return getBasePath();
     return window.location.pathname.includes('/pages/') ? '../' : '';
@@ -241,24 +169,13 @@
 
   async function getProviders() {
     const authHelper = await waitForAuthHelper();
-    let remoteProviders = [];
-
-    if (authHelper && typeof authHelper.listProviders === 'function') {
-      try {
-        remoteProviders = await authHelper.listProviders();
-      } catch (error) {
-        remoteProviders = [];
-      }
+    if (!authHelper || typeof authHelper.listProviders !== 'function') return [];
+    try {
+      const remoteProviders = await authHelper.listProviders();
+      return remoteProviders.map(normalizeProvider);
+    } catch (error) {
+      return [];
     }
-
-    const merged = [...remoteProviders];
-    const seenUids = new Set(remoteProviders.map((provider) => provider.uid));
-
-    SAMPLE_PROVIDERS.forEach((provider) => {
-      if (!seenUids.has(provider.uid)) merged.push(provider);
-    });
-
-    return merged.map(normalizeProvider);
   }
 
   async function getProviderByIdentity(uid, provinceSlug) {
@@ -272,8 +189,7 @@
       }
     }
 
-    const sampleProvider = SAMPLE_PROVIDERS.find((provider) => provider.uid === uid) || null;
-    return sampleProvider ? normalizeProvider(sampleProvider) : null;
+    return null;
   }
 
   async function getPostsForProvider(uid, provinceSlug) {
@@ -287,7 +203,7 @@
       }
     }
 
-    return SAMPLE_PROVIDERS.find((provider) => provider.uid === uid)?.posts || [];
+    return [];
   }
 
   function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
@@ -348,7 +264,10 @@
           </div>
           <p>${escapeHtml(provider.bio)}</p>
           <div class="specialist-actions">
-            <a href="${escapeHtml(buildWhatsAppLink(provider.whatsappNumber, provider.displayName))}" class="provider-contact-btn" target="_blank" rel="noreferrer">WhatsApp</a>
+            <a href="${escapeHtml(buildWhatsAppLink(provider.whatsappNumber, provider.displayName))}" class="provider-contact-btn whatsapp-btn" target="_blank" rel="noreferrer">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>WhatsApp</span>
+            </a>
             <a href="${escapeHtml(provider.profileUrl)}" class="specialists-view-btn">View Their Work</a>
           </div>
         </div>
@@ -731,10 +650,10 @@
     if (!page) return;
 
     const base = getBase();
-    const providers = await getProviders();
     const categoriesHost = page.querySelector('[data-specialist-categories]');
     const sidebarHost = page.querySelector('[data-specialist-sidebar]');
     const sidebarLayout = page.querySelector('[data-specialists-layout]');
+    const mainColumn = page.querySelector('.specialists-main');
     const sidebarToggle = page.querySelector('[data-specialists-sidebar-toggle]');
     const mobileSheet = document.querySelector('[data-specialists-sheet]');
     const mobileSheetBody = document.querySelector('[data-specialists-sheet-body]');
@@ -746,6 +665,7 @@
     const sheetCloseBtn = page.querySelector('[data-close-specialists-sheet]');
     const currentCategory = new URLSearchParams(window.location.search).get('category') || '';
     const mobileQuery = window.matchMedia('(max-width: 768px)');
+    const providers = [];
     const state = {
       category: currentCategory,
       subservice: '',
@@ -865,7 +785,19 @@
     });
 
     mobileQuery.addEventListener('change', renderCategoryRail);
-    update();
+
+    try {
+      if (page instanceof HTMLElement) page.classList.add('is-loading');
+      const remoteProviders = await getProviders();
+      providers.splice(0, providers.length, ...remoteProviders);
+      update();
+    } finally {
+      if (page instanceof HTMLElement) page.classList.remove('is-loading');
+    }
+
+    if (mainColumn instanceof HTMLElement) {
+      mainColumn.style.minHeight = 'calc(100vh - 88px)';
+    }
   }
 
   function renderProviderHighlights(host, provider) {
@@ -887,6 +819,162 @@
     `).join('');
   }
 
+  function getProviderDialogElements() {
+    const overlay = document.querySelector('[data-provider-dialog-overlay]');
+    const body = document.querySelector('[data-provider-dialog-body]');
+    const closeBtn = document.querySelector('[data-provider-dialog-close]');
+    return { overlay, body, closeBtn };
+  }
+
+  function closeProviderDialog() {
+    const { overlay, body } = getProviderDialogElements();
+    if (overlay instanceof HTMLElement) overlay.hidden = true;
+    if (body instanceof HTMLElement) body.innerHTML = '';
+    document.body.classList.remove('provider-dialog-open');
+  }
+
+  function openProviderDialog(markup, onReady) {
+    const { overlay, body, closeBtn } = getProviderDialogElements();
+    if (!(overlay instanceof HTMLElement) || !(body instanceof HTMLElement)) return;
+    body.innerHTML = markup;
+    overlay.hidden = false;
+    document.body.classList.add('provider-dialog-open');
+
+    closeBtn?.addEventListener('click', closeProviderDialog, { once: true });
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeProviderDialog();
+    }, { once: true });
+
+    if (typeof onReady === 'function') onReady(body);
+  }
+
+  async function openProfileEditor(provider, onSaved) {
+    const authHelper = await waitForAuthHelper();
+    if (!authHelper || typeof authHelper.updateProviderProfile !== 'function') return;
+
+    openProviderDialog(`
+      <div class="provider-dialog-card">
+        <h3>Edit your profile</h3>
+        <p>Update the details finders see on your artisan profile.</p>
+        <form class="provider-editor-form" data-provider-editor-form>
+          <div class="provider-editor-grid">
+            <label><span>Full name</span><input name="fullName" type="text" value="${escapeHtml(provider.displayName || '')}" required /></label>
+            <label><span>WhatsApp number</span><input name="whatsappNumber" type="tel" value="${escapeHtml(provider.whatsappNumber || '')}" required /></label>
+            <label><span>Province</span>
+              <select name="province" required>
+                ${ZIMBABWE_PROVINCES.map((provinceName) => `<option value="${provinceName}" ${provinceName === provider.province ? 'selected' : ''}>${provinceName}</option>`).join('')}
+              </select>
+            </label>
+            <label><span>City / suburb</span><input name="city" type="text" value="${escapeHtml(provider.city || '')}" required /></label>
+            <label class="provider-editor-span"><span>Address</span><input name="address" type="text" value="${escapeHtml(provider.address || '')}" required /></label>
+            <label><span>Experience</span><input name="experience" type="text" value="${escapeHtml(provider.experience || '')}" required /></label>
+            <label><span>Category</span>
+              <select name="primaryCategory" required>
+                ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
+              </select>
+            </label>
+            <label><span>Specialty</span><input name="specialty" type="text" value="${escapeHtml(provider.specialty || '')}" required /></label>
+            <label class="provider-editor-span"><span>Bio</span><textarea name="bio" required>${escapeHtml(provider.bio || '')}</textarea></label>
+            <label><span>Profile image</span><input type="file" name="profileImageFile" accept="image/*" /></label>
+            <label><span>Banner image</span><input type="file" name="bannerImageFile" accept="image/*" /></label>
+          </div>
+          <div class="provider-editor-actions">
+            <button type="button" class="provider-profile-action secondary" data-provider-dialog-cancel>Cancel</button>
+            <button type="submit" class="provider-profile-action">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    `, (body) => {
+      const form = body.querySelector('[data-provider-editor-form]');
+      const cancelBtn = body.querySelector('[data-provider-dialog-cancel]');
+      cancelBtn?.addEventListener('click', closeProviderDialog);
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const profileImageFile = formData.get('profileImageFile');
+        const bannerImageFile = formData.get('bannerImageFile');
+        const payload = Object.fromEntries(Array.from(formData.entries()).filter(([key]) => !key.endsWith('File')));
+        payload.profileImageData = provider.profileImageData || '';
+        payload.bannerImageData = provider.bannerImageData || '';
+
+        if (profileImageFile instanceof File && profileImageFile.size) {
+          payload.profileImageData = await readImageAsBase64(profileImageFile, { maxWidth: 720, maxHeight: 720, quality: 0.84 });
+        }
+        if (bannerImageFile instanceof File && bannerImageFile.size) {
+          payload.bannerImageData = await readImageAsBase64(bannerImageFile, { maxWidth: 1600, maxHeight: 900, quality: 0.82 });
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+        try {
+          await authHelper.updateProviderProfile(payload);
+          closeProviderDialog();
+          if (typeof onSaved === 'function') onSaved();
+        } catch (error) {
+          window.alert(error.message || 'Could not update your profile.');
+        } finally {
+          if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function openPostEditor(post, onSaved) {
+    const authHelper = await waitForAuthHelper();
+    if (!authHelper || typeof authHelper.updateProviderPost !== 'function') return;
+
+    openProviderDialog(`
+      <div class="provider-dialog-card">
+        <h3>Edit post</h3>
+        <p>Update the caption or replace the image for this work post.</p>
+        <form class="provider-editor-form" data-provider-post-editor-form>
+          <div class="provider-post-preview provider-dialog-image-preview" data-provider-post-editor-preview>
+            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Post preview" />
+          </div>
+          <label><span>Caption</span><textarea name="caption" required>${escapeHtml(post.caption || '')}</textarea></label>
+          <label><span>Replace image</span><input type="file" name="imageFile" accept="image/*" /></label>
+          <div class="provider-editor-actions">
+            <button type="button" class="provider-profile-action secondary" data-provider-dialog-cancel>Cancel</button>
+            <button type="submit" class="provider-profile-action">Save Post</button>
+          </div>
+        </form>
+      </div>
+    `, (body) => {
+      const form = body.querySelector('[data-provider-post-editor-form]');
+      const cancelBtn = body.querySelector('[data-provider-dialog-cancel]');
+      const preview = body.querySelector('[data-provider-post-editor-preview]');
+      let nextImageData = post.imageData;
+
+      cancelBtn?.addEventListener('click', closeProviderDialog);
+      form?.querySelector('input[name="imageFile"]')?.addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        nextImageData = await readImageAsBase64(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.82 });
+        if (preview instanceof HTMLElement) {
+          preview.innerHTML = `<img src="${escapeHtml(nextImageData)}" alt="Post preview" />`;
+        }
+      });
+
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+        try {
+          await authHelper.updateProviderPost(post.id, {
+            caption: form.querySelector('textarea[name="caption"]')?.value || '',
+            imageData: nextImageData
+          });
+          closeProviderDialog();
+          if (typeof onSaved === 'function') onSaved();
+        } catch (error) {
+          window.alert(error.message || 'Could not update that post.');
+        } finally {
+          if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+        }
+      });
+    });
+  }
+
   async function renderProviderProfilePage() {
     const page = document.querySelector('[data-provider-profile-page]');
     if (!page) return;
@@ -894,13 +982,15 @@
     const params = new URLSearchParams(window.location.search);
     const uid = params.get('uid') || '';
     const provinceSlug = params.get('province') || '';
+    const account = getStoredAccount();
     const provider = await getProviderByIdentity(uid, provinceSlug);
-    const posts = await getPostsForProvider(uid, provinceSlug);
 
     if (!provider) {
       page.innerHTML = `<div class="specialists-empty">That provider profile could not be found.</div>`;
       return;
     }
+
+    const isOwner = Boolean(account?.loggedIn && account.uid === provider.uid);
 
     const banner = page.querySelector('[data-provider-banner]');
     const avatar = page.querySelector('[data-provider-avatar]');
@@ -914,42 +1004,108 @@
     const jobs = page.querySelector('[data-provider-jobs]');
     const messageLink = page.querySelector('[data-provider-message-link]');
     const whatsappLink = page.querySelector('[data-provider-whatsapp-link]');
+    const editProfileBtn = page.querySelector('[data-provider-edit-profile]');
     const highlights = page.querySelector('[data-provider-highlights]');
     const postGrid = page.querySelector('[data-provider-post-grid]');
 
-    if (banner instanceof HTMLElement) {
-      banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png')}')`;
-    }
-    if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(provider.profileImageData, 'images/logo/logo.png');
-    if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(provider.displayName);
-    if (name instanceof HTMLElement) name.textContent = provider.displayName;
-    if (title instanceof HTMLElement) title.textContent = `${provider.specialty} • ${provider.primaryCategory}`;
-    if (address instanceof HTMLElement) address.textContent = provider.address || `${provider.city}, ${provider.province}`;
-    if (bio instanceof HTMLElement) bio.textContent = provider.bio;
-    if (postCount instanceof HTMLElement) postCount.textContent = String(posts.length);
-    if (rating instanceof HTMLElement) rating.textContent = `${provider.averageRating.toFixed(1)} ★`;
-    if (jobs instanceof HTMLElement) jobs.textContent = String(provider.completedJobs || 0);
-    if (messageLink instanceof HTMLAnchorElement) messageLink.href = provider.messageUrl;
-    if (whatsappLink instanceof HTMLAnchorElement) {
-      whatsappLink.href = buildWhatsAppLink(provider.whatsappNumber, provider.displayName);
-      whatsappLink.textContent = provider.whatsappNumber || 'WhatsApp';
+    async function refreshProfile() {
+      const freshProvider = await getProviderByIdentity(uid, provinceSlug);
+      const posts = await getPostsForProvider(uid, provinceSlug);
+      if (!freshProvider) return;
+
+      if (banner instanceof HTMLElement) {
+        banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png')}')`;
+      }
+      if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.png');
+      if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(freshProvider.displayName);
+      if (name instanceof HTMLElement) name.textContent = freshProvider.displayName;
+      if (title instanceof HTMLElement) title.textContent = `${freshProvider.specialty} • ${freshProvider.primaryCategory}`;
+      if (address instanceof HTMLElement) address.textContent = freshProvider.address || `${freshProvider.city}, ${freshProvider.province}`;
+      if (bio instanceof HTMLElement) bio.textContent = freshProvider.bio;
+      if (postCount instanceof HTMLElement) postCount.textContent = String(posts.length);
+      if (rating instanceof HTMLElement) rating.textContent = `${freshProvider.averageRating.toFixed(1)} ★`;
+      if (jobs instanceof HTMLElement) jobs.textContent = String(freshProvider.completedJobs || 0);
+      if (messageLink instanceof HTMLAnchorElement) messageLink.href = freshProvider.messageUrl;
+      if (messageLink instanceof HTMLElement) messageLink.hidden = isOwner;
+      if (whatsappLink instanceof HTMLAnchorElement) {
+        whatsappLink.href = buildWhatsAppLink(freshProvider.whatsappNumber, freshProvider.displayName);
+        whatsappLink.innerHTML = `<i class="fa-brands fa-whatsapp"></i><span>${escapeHtml(freshProvider.whatsappNumber || 'WhatsApp')}</span>`;
+        whatsappLink.hidden = false;
+      }
+      if (editProfileBtn instanceof HTMLButtonElement) {
+        editProfileBtn.hidden = !isOwner;
+        editProfileBtn.onclick = () => openProfileEditor(freshProvider, refreshProfile);
+      }
+
+      renderProviderHighlights(highlights, freshProvider);
+
+      if (postGrid) {
+        postGrid.innerHTML = posts.length
+          ? posts.map((post) => `
+            <article class="provider-gallery-card">
+              ${isOwner ? `
+                <button type="button" class="provider-post-menu-toggle" data-post-menu-toggle="${escapeHtml(post.id)}" aria-label="Post options">
+                  <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <div class="provider-post-menu" data-post-menu="${escapeHtml(post.id)}" hidden>
+                  <button type="button" data-post-view="${escapeHtml(post.id)}">View</button>
+                  <button type="button" data-post-edit="${escapeHtml(post.id)}">Edit</button>
+                  <button type="button" data-post-delete="${escapeHtml(post.id)}">Delete</button>
+                </div>
+              ` : ''}
+              <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="${escapeHtml(freshProvider.displayName)} work" />
+              <div class="provider-gallery-card-copy">
+                <strong>${escapeHtml(freshProvider.displayName)}</strong>
+                <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
+              </div>
+            </article>
+          `).join('')
+          : `<div class="specialists-empty">No work posts yet. Their previous work will appear here.</div>`;
+      }
+
+      if (isOwner && postGrid) {
+        postGrid.querySelectorAll('[data-post-menu-toggle]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const postId = button.getAttribute('data-post-menu-toggle');
+            postGrid.querySelectorAll('[data-post-menu]').forEach((menu) => {
+              menu.hidden = menu.getAttribute('data-post-menu') !== postId ? true : !menu.hidden;
+            });
+          });
+        });
+
+        posts.forEach((post) => {
+          postGrid.querySelector(`[data-post-view="${post.id}"]`)?.addEventListener('click', () => {
+            openProviderDialog(`
+              <div class="provider-dialog-card provider-dialog-card-wide">
+                <img class="provider-dialog-hero-image" src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Work preview" />
+                <div class="provider-dialog-copy">
+                  <h3>${escapeHtml(freshProvider.displayName)}</h3>
+                  <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
+                </div>
+              </div>
+            `);
+          });
+
+          postGrid.querySelector(`[data-post-edit="${post.id}"]`)?.addEventListener('click', () => {
+            openPostEditor(post, refreshProfile);
+          });
+
+          postGrid.querySelector(`[data-post-delete="${post.id}"]`)?.addEventListener('click', async () => {
+            const authHelper = await waitForAuthHelper();
+            if (!authHelper || typeof authHelper.deleteProviderPost !== 'function') return;
+            if (!window.confirm('Delete this post permanently?')) return;
+            try {
+              await authHelper.deleteProviderPost(post.id);
+              refreshProfile();
+            } catch (error) {
+              window.alert(error.message || 'Could not delete that post.');
+            }
+          });
+        });
+      }
     }
 
-    renderProviderHighlights(highlights, provider);
-
-    if (postGrid) {
-      postGrid.innerHTML = posts.length
-        ? posts.map((post) => `
-          <article class="provider-gallery-card">
-            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="${escapeHtml(provider.displayName)} work" />
-            <div class="provider-gallery-card-copy">
-              <strong>${escapeHtml(provider.displayName)}</strong>
-              <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
-            </div>
-          </article>
-        `).join('')
-        : `<div class="specialists-empty">No work posts yet. Their previous work will appear here.</div>`;
-    }
+    refreshProfile();
   }
 
   async function renderPostsPage() {

@@ -22,6 +22,9 @@ function renderHeader() {
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
   const firstName = accountName.split(' ')[0];
+  const providerProfileHref = isLoggedIn && account?.providerProfileComplete && account?.uid && account?.providerProvinceSlug
+    ? `${base}pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(account.providerProvinceSlug)}`
+    : `${base}pages/account.html`;
   return `
   <header>
     <div class="header-inner">
@@ -67,14 +70,14 @@ function renderHeader() {
               Create Profile
             </a>
           `}
-          <a href="${isLoggedIn ? `${base}pages/account.html` : '#'}" class="account-trigger account-link" data-account-trigger="account">
+          <a href="${isLoggedIn ? providerProfileHref : '#'}" class="account-trigger account-link" data-account-trigger="account">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             ${isLoggedIn ? firstName : 'Account'}
           </a>
           ${isLoggedIn ? `
             <div class="account-dropdown" aria-hidden="true">
               <div class="account-dropdown-greeting">Hi, ${accountName}</div>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
+              <a href="${providerProfileHref}" class="account-dropdown-item">
                 <i class="fa-regular fa-user"></i>
                 <span>My Profile</span>
               </a>

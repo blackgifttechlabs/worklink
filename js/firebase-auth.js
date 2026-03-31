@@ -351,6 +351,10 @@ async function listProviderPosts(uid, provinceSlug = '') {
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 }
 
+function getProviderPostRef(providerProfile, postId) {
+  return doc(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'posts', postId);
+}
+
 async function saveProviderProfile(profileInput = {}) {
   if (!auth.currentUser) {
     throw new Error('Please sign in first.');
@@ -438,6 +442,10 @@ async function saveProviderProfile(profileInput = {}) {
   return providerProfile;
 }
 
+async function updateProviderProfile(profileInput = {}) {
+  return saveProviderProfile(profileInput);
+}
+
 async function listProviders() {
   const snapshot = await getDocs(collectionGroup(db, 'profiles'));
   return snapshot.docs
@@ -475,6 +483,51 @@ async function createProviderPost(payload = {}) {
     id: created.id,
     ...postPayload
   };
+}
+
+async function updateProviderPost(postId, payload = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+  if (!postId) {
+    throw new Error('No post selected.');
+  }
+
+  const providerProfile = await getProviderProfileByUid(auth.currentUser.uid);
+  if (!providerProfile) {
+    throw new Error('Complete your provider profile before editing posts.');
+  }
+
+  const nextPayload = {
+    caption: String(payload.caption || '').trim(),
+    updatedAtMs: Date.now(),
+    updatedAt: serverTimestamp()
+  };
+
+  if (payload.imageData) {
+    nextPayload.imageData = String(payload.imageData).trim();
+  }
+
+  await setDoc(getProviderPostRef(providerProfile, postId), nextPayload, { merge: true });
+  const updatedSnapshot = await getDoc(getProviderPostRef(providerProfile, postId));
+  return updatedSnapshot.exists() ? { id: updatedSnapshot.id, ...updatedSnapshot.data() } : null;
+}
+
+async function deleteProviderPost(postId) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+  if (!postId) {
+    throw new Error('No post selected.');
+  }
+
+  const providerProfile = await getProviderProfileByUid(auth.currentUser.uid);
+  if (!providerProfile) {
+    throw new Error('Complete your provider profile before deleting posts.');
+  }
+
+  await deleteDoc(getProviderPostRef(providerProfile, postId));
+  return { deleted: true, postId };
 }
 
 async function sendMessageToProvider(payload = {}) {
@@ -637,9 +690,12 @@ window.softGigglesAuth = {
   getUserDocument,
   getProviderProfileByUid,
   saveProviderProfile,
+  updateProviderProfile,
   listProviders,
   listProviderPosts,
   createProviderPost,
+  updateProviderPost,
+  deleteProviderPost,
   sendMessageToProvider,
   listMessagesWithUser,
   listConversations

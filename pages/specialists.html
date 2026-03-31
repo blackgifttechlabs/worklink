@@ -15,34 +15,6 @@
   <div id="site-header"></div>
 
   <main class="specialists-page" data-specialists-page>
-    <section class="specialists-topbar">
-      <div class="specialists-search-shell">
-        <span class="section-eyebrow">Find Specialist</span>
-        <div class="specialists-search-row">
-          <div class="search-bar">
-            <span class="search-icon" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
-              </svg>
-            </span>
-            <input type="text" placeholder="Search by service, city, or provider" data-specialists-search />
-          </div>
-          <button type="button" class="specialists-filter-btn" data-open-specialists-sheet>
-            <i class="fa-solid fa-sliders"></i>&nbsp;Filters
-          </button>
-        </div>
-        <div class="specialists-rating-filter">
-          <button type="button" class="specialists-rating-chip" data-rating-filter="5">5.0+</button>
-          <button type="button" class="specialists-rating-chip" data-rating-filter="4.5">4.5+</button>
-          <button type="button" class="specialists-rating-chip" data-rating-filter="4">4.0+</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="specialists-categories-shell">
-      <div class="category-circles specialists-categories-row" data-specialist-categories></div>
-    </section>
-
     <section class="specialists-layout" data-specialists-layout>
       <aside class="specialists-sidebar">
         <div class="specialists-sidebar-head">
@@ -57,14 +29,47 @@
         <div data-specialist-sidebar></div>
       </aside>
 
-      <div class="specialists-results">
-        <div class="specialists-results-head">
-          <div>
-            <h1>Available Specialists</h1>
+      <div class="specialists-main">
+        <section class="specialists-topbar">
+          <div class="specialists-search-shell">
+            <h2 class="specialists-page-title">Find Specialist</h2>
+            <div class="specialists-search-line">
+              <div class="search-bar">
+                <span class="search-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
+                  </svg>
+                </span>
+                <input type="text" placeholder="Search by service, city, or provider" data-specialists-search />
+              </div>
+              <div class="specialists-rating-filter">
+                <button type="button" class="specialists-rating-chip" data-rating-filter="5">5.0+</button>
+                <button type="button" class="specialists-rating-chip" data-rating-filter="4.5">4.5+</button>
+                <button type="button" class="specialists-rating-chip" data-rating-filter="4">4.0+</button>
+                <button type="button" class="specialists-filter-btn" data-open-specialists-sheet>
+                  <i class="fa-solid fa-sliders"></i>&nbsp;Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="specialists-categories-shell">
+          <div class="category-circles specialists-categories-row" data-specialist-categories></div>
+        </section>
+
+        <section class="specialists-results">
+          <div class="specialists-results-head">
+            <h3>Available Specialists</h3>
             <p data-specialists-total>0 specialists</p>
           </div>
-        </div>
-        <div class="specialists-results-grid" data-specialists-results></div>
+          <div class="specialists-results-grid" data-specialists-results>
+            <article class="specialist-card specialist-card-skeleton"></article>
+            <article class="specialist-card specialist-card-skeleton"></article>
+            <article class="specialist-card specialist-card-skeleton"></article>
+            <article class="specialist-card specialist-card-skeleton"></article>
+          </div>
+        </section>
       </div>
     </section>
   </main>
