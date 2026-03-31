@@ -503,6 +503,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function openAccountPanel() {
     if (!accountAuthOverlay) return;
     accountAuthOverlay.hidden = false;
+    if (typeof window.ensureWorkLinkAuth === 'function') {
+      window.ensureWorkLinkAuth().catch(() => {});
+    }
     requestAnimationFrame(() => {
       accountAuthOverlay.classList.add('is-visible');
     });
@@ -518,6 +521,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getAuthHelper() {
     return window.softGigglesAuth || null;
+  }
+
+  async function getAuthHelperReady() {
+    const existing = getAuthHelper();
+    if (existing) return existing;
+    if (typeof window.ensureWorkLinkAuth === 'function') {
+      try {
+        return await window.ensureWorkLinkAuth();
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
   }
 
   function setMethodVisibility(method) {
@@ -1063,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountForgotPasswordBtn && accountEmailInput) {
     accountForgotPasswordBtn.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
       const email = accountEmailInput.value.trim();
       if (!email) {
@@ -1096,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountGoogleBtn) {
     accountGoogleBtn.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       setButtonLoading(accountGoogleBtn, true);
       try {
@@ -1113,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (accountEmailForm && accountModeInput) {
     accountEmailForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       const formData = new FormData(accountEmailForm);
       const email = String(formData.get('email') || '').trim();
@@ -1139,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountPhoneSubmit && accountPhoneInput) {
     accountPhoneSubmit.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       setButtonLoading(accountPhoneSubmit, true);
       try {
@@ -1156,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountPhoneVerify && accountPhoneCode) {
     accountPhoneVerify.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       setButtonLoading(accountPhoneVerify, true);
       try {
@@ -1172,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountPageLogout) {
     accountPageLogout.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (authHelper) {
         try {
           await authHelper.signOut();
@@ -1207,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountDeleteConfirm) {
     accountDeleteConfirm.addEventListener('click', async () => {
-      const authHelper = getAuthHelper();
+      const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       setButtonLoading(accountDeleteConfirm, true);
       try {

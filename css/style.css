@@ -5534,6 +5534,19 @@ header {
   border-top-color: currentColor;
   animation: account-spin 0.75s linear infinite;
 }
+
+.account-submit-btn.has-jimu-loader::after {
+  content: none;
+}
+
+.account-submit-btn.has-jimu-loader {
+  opacity: 1;
+  overflow: hidden;
+}
+
+.account-submit-btn.has-jimu-loader .loader {
+  pointer-events: none;
+}
 .account-google-btn.is-loading::after {
   border-color: rgba(17, 24, 39, 0.18);
   border-top-color: #111827;

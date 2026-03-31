@@ -16,6 +16,92 @@ function getStoredAccount() {
   }
 }
 
+function pageNeedsProvidersUi(pathname = window.location.pathname) {
+  return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname);
+}
+
+function pageNeedsEagerAuth(pathname = window.location.pathname) {
+  return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname);
+}
+
+function ensureFirebaseAuthScript() {
+  if (window.softGigglesAuth) {
+    return Promise.resolve(window.softGigglesAuth);
+  }
+
+  if (window.__worklinkAuthPromise) {
+    return window.__worklinkAuthPromise;
+  }
+
+  window.__worklinkAuthPromise = new Promise((resolve, reject) => {
+    let moduleScript = document.getElementById('firebase-auth-script');
+
+    function resolveAuthHelper() {
+      if (window.softGigglesAuth) {
+        resolve(window.softGigglesAuth);
+        return true;
+      }
+      return false;
+    }
+
+    if (resolveAuthHelper()) return;
+
+    if (!moduleScript) {
+      moduleScript = document.createElement('script');
+      moduleScript.type = 'module';
+      moduleScript.id = 'firebase-auth-script';
+      moduleScript.src = `${getBasePath()}js/firebase-auth.js`;
+      document.body.appendChild(moduleScript);
+    }
+
+    moduleScript.addEventListener('load', () => {
+      if (resolveAuthHelper()) return;
+
+      const startedAt = Date.now();
+      const intervalId = window.setInterval(() => {
+        if (resolveAuthHelper()) {
+          window.clearInterval(intervalId);
+          return;
+        }
+
+        if (Date.now() - startedAt > 10000) {
+          window.clearInterval(intervalId);
+          reject(new Error('Auth helper did not load in time.'));
+        }
+      }, 120);
+    }, { once: true });
+
+    moduleScript.addEventListener('error', () => {
+      reject(new Error('Could not load auth script.'));
+    }, { once: true });
+  });
+
+  return window.__worklinkAuthPromise;
+}
+
+function ensureProvidersUiScript() {
+  if (window.__worklinkProvidersPromise) {
+    return window.__worklinkProvidersPromise;
+  }
+
+  window.__worklinkProvidersPromise = new Promise((resolve, reject) => {
+    let uiScript = document.getElementById('providers-ui-script');
+    if (!uiScript) {
+      uiScript = document.createElement('script');
+      uiScript.id = 'providers-ui-script';
+      uiScript.src = `${getBasePath()}js/providers-ui.js`;
+      document.body.appendChild(uiScript);
+    }
+
+    uiScript.addEventListener('load', () => resolve(true), { once: true });
+    uiScript.addEventListener('error', () => reject(new Error('Could not load provider UI script.')), { once: true });
+  });
+
+  return window.__worklinkProvidersPromise;
+}
+
+window.ensureWorkLinkAuth = ensureFirebaseAuthScript;
+
 function renderHeader() {
   const base = getBasePath();
   const account = getStoredAccount();
@@ -29,11 +115,6 @@ function renderHeader() {
   <header>
     <div class="header-inner">
       <div class="mobile-header-left">
-        <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-            <path d="M4 7h16M4 12h16M4 17h16"/>
-          </svg>
-        </button>
         <a href="${base}index.html" class="logo" aria-label="WorkLinkUp home">
           <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" class="logo-image" />
           <span class="logo-wordmark" aria-hidden="true">
@@ -93,6 +174,11 @@ function renderHeader() {
             </div>
           ` : ''}
         </div>
+        <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path d="M4 7h16M4 12h16M4 17h16"/>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -416,8 +502,8 @@ function injectSharedHeaderOverrides() {
     .search-bar:focus-within { border-color: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.18); }
     .search-match { color: #076fe5; background: rgba(7, 111, 229, 0.12); }
     .header-actions { justify-self: end; gap: 18px; }
-    .header-actions a, .mobile-search-trigger { color: var(--text-muted); }
-    .header-actions a:hover, .mobile-search-trigger:hover { color: #076fe5; }
+    .header-actions a, .mobile-search-trigger, .mobile-menu-toggle { color: var(--text-muted); }
+    .header-actions a:hover, .mobile-search-trigger:hover, .mobile-menu-toggle:hover { color: #076fe5; }
     .header-how-link { display: inline-flex; }
     .mobile-search-trigger { display: none; }
     .mobile-search-overlay[hidden] { display: none !important; }
@@ -472,7 +558,7 @@ function injectSharedHeaderOverrides() {
       .desktop-search-bar, .header-how-link { display: none !important; }
       .mobile-search-trigger { display: inline-flex; }
       .header-actions { gap: 12px; }
-      .header-actions a, .mobile-search-trigger { font-size: 0; gap: 0; }
+      .header-actions a, .mobile-search-trigger, .mobile-menu-toggle { font-size: 0; gap: 0; }
       .mobile-search-overlay { padding: 68px 10px 14px; }
       .mobile-search-panel { width: calc(100vw - 20px); border-radius: 24px; }
       .mobile-search-results { max-height: calc(100vh - 220px); }
@@ -530,18 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!document.getElementById('cart-drawer-overlay')) {
     document.body.insertAdjacentHTML('beforeend', renderCartDrawer());
   }
-  if (!document.getElementById('firebase-auth-script')) {
-    const moduleScript = document.createElement('script');
-    moduleScript.type = 'module';
-    moduleScript.id = 'firebase-auth-script';
-    moduleScript.src = `${getBasePath()}js/firebase-auth.js`;
-    document.body.appendChild(moduleScript);
+  if (pageNeedsEagerAuth()) {
+    ensureFirebaseAuthScript().catch(() => {});
   }
-  if (!document.getElementById('providers-ui-script')) {
-    const uiScript = document.createElement('script');
-    uiScript.id = 'providers-ui-script';
-    uiScript.src = `${getBasePath()}js/providers-ui.js`;
-    document.body.appendChild(uiScript);
+  if (pageNeedsProvidersUi()) {
+    ensureProvidersUiScript().catch(() => {});
   }
 
   if (!headerEl) return;
