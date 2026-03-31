@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openSearchModal(prefill = '') {
     if (!searchModal) return;
     searchModal.hidden = false;
+    document.body.classList.add('mobile-search-open');
     if (searchModalInput) searchModalInput.value = prefill;
     renderSearchModalResults(prefill);
     requestAnimationFrame(() => {
@@ -159,8 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeSearchModal() {
     if (!searchModal) return;
     searchModal.classList.remove('is-visible');
+    document.body.classList.remove('mobile-search-open');
     setTimeout(() => {
       searchModal.hidden = true;
+      if (searchModalInput) searchModalInput.value = '';
+      renderSearchModalResults('');
     }, 180);
   }
 

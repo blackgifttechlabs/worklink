@@ -397,6 +397,76 @@ function renderCookieBanner() {
   </div>`;
 }
 
+function injectSharedHeaderOverrides() {
+  if (document.getElementById('worklinkup-runtime-overrides')) return;
+
+  const style = document.createElement('style');
+  style.id = 'worklinkup-runtime-overrides';
+  style.textContent = `
+    header { position: relative; z-index: 2; }
+    .header-inner { max-width: none; width: 100%; padding: 0 28px; grid-template-columns: minmax(0, 1fr) minmax(360px, 560px) minmax(0, 1fr); gap: 18px; height: 72px; }
+    .mobile-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; justify-self: start; }
+    .logo { align-items: center; gap: 12px; font-size: 0; white-space: nowrap; }
+    .logo-image { height: 34px; width: auto; }
+    .logo-wordmark { display: inline-flex; align-items: baseline; font-size: 31px; font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
+    .logo-work { color: #076fe5; }
+    .logo-link { color: rgba(7, 111, 229, 0.42); }
+    .desktop-search-bar { justify-self: center; width: 100%; max-width: 560px; }
+    .search-bar { border-color: rgba(7, 111, 229, 0.14); background: rgba(255, 255, 255, 0.86); }
+    .search-bar:focus-within { border-color: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.18); }
+    .search-match { color: #076fe5; background: rgba(7, 111, 229, 0.12); }
+    .header-actions { justify-self: end; gap: 18px; }
+    .header-actions a, .mobile-search-trigger { color: var(--text-muted); }
+    .header-actions a:hover, .mobile-search-trigger:hover { color: #076fe5; }
+    .header-how-link { display: inline-flex; }
+    .mobile-search-trigger { display: none; }
+    .mobile-search-overlay[hidden] { display: none !important; }
+    .mobile-search-overlay { position: fixed; inset: 0; z-index: 1750; padding: 80px 12px 16px; background: rgba(15, 23, 42, 0.18); backdrop-filter: blur(16px); opacity: 0; pointer-events: none; transition: opacity 0.24s ease; }
+    .mobile-search-overlay.is-visible { opacity: 1; pointer-events: auto; }
+    .mobile-search-panel { width: min(100%, 620px); margin: 0 auto; background: rgba(252, 250, 247, 0.98); border: 1px solid rgba(26, 50, 99, 0.08); border-radius: 28px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16); overflow: hidden; transform: translateY(28px) scale(0.96); opacity: 0; transform-origin: top center; transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease; }
+    .mobile-search-overlay.is-visible .mobile-search-panel { transform: translateY(0) scale(1); opacity: 1; }
+    .mobile-search-head { display: flex; align-items: center; gap: 12px; padding: 14px; }
+    .mobile-search-toast-bar { max-width: none; width: 100%; transform: scale(0.98); transform-origin: top center; transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
+    .mobile-search-overlay.is-visible .mobile-search-toast-bar { transform: scale(1); }
+    .mobile-search-close { border: none; background: transparent; color: #132647; font-size: 30px; line-height: 1; padding: 0; }
+    .mobile-search-copy { padding: 0 18px 10px; }
+    .mobile-search-results { display: grid; gap: 10px; padding: 0 14px 16px; max-height: min(62vh, 470px); overflow-y: auto; }
+    .mobile-search-result { border: 1px solid rgba(26, 50, 99, 0.08); border-radius: 18px; background: #fff; padding: 12px; }
+    body.mobile-search-open { overflow: hidden; }
+    .a-plus-btn { background: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.22); }
+    .a-plus-btn:hover, .a-plus-btn:focus-visible { background: #0558b8 !important; }
+    .account-auth-panel { width: min(32vw, 470px); min-width: 360px; padding: 30px 20px 24px; }
+    .account-auth-copy { text-align: left; margin: 28px 0 18px; }
+    .account-email-form-wrap, .account-email-form-wrap.is-open { max-height: none; opacity: 1; margin-top: 0; overflow: visible; }
+    .account-inline-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .account-inline-actions button { min-height: 48px; border-radius: 16px; border: 1px solid rgba(26, 50, 99, 0.12); background: rgba(255, 255, 255, 0.94); color: var(--brand-ink); font-size: 15px; font-weight: 800; }
+    .account-submit-btn.account-submit-signin { background: linear-gradient(180deg, #076fe5 0%, #0558b8 100%); }
+    .account-submit-btn.account-submit-signup { background: linear-gradient(180deg, #0f84ff 0%, #076fe5 100%); color: #fff; }
+    .account-submit-btn.has-jimu-loader .account-btn-label { opacity: 0; }
+    @media (min-width: 769px) {
+      nav { position: relative; z-index: 1; }
+      #site-header.desktop-nav-hidden nav { transform: translateY(calc(-100% - 8px)); opacity: 1; }
+    }
+    @media (max-width: 768px) {
+      .header-inner { height: 60px; padding: 0 16px; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; }
+      .logo { gap: 8px; }
+      .logo-wordmark { font-size: 22px; }
+      .logo-image { height: 22px; }
+      .desktop-search-bar, .header-how-link { display: none !important; }
+      .mobile-search-trigger { display: inline-flex; }
+      .header-actions { gap: 12px; }
+      .header-actions a, .mobile-search-trigger { font-size: 0; gap: 0; }
+      .mobile-search-overlay { padding: 68px 10px 14px; }
+      .mobile-search-panel { width: calc(100vw - 20px); border-radius: 24px; }
+      .mobile-search-results { max-height: calc(100vh - 220px); }
+      .account-auth-panel { width: 100%; min-width: 0; padding: 24px 16px 20px; }
+      .account-inline-actions { grid-template-columns: 1fr; }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 function renderCartDrawer() {
   const base = getBasePath();
   return `
@@ -428,6 +498,7 @@ function renderCartDrawer() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  injectSharedHeaderOverrides();
   const headerEl = document.getElementById('site-header');
   if (headerEl) headerEl.innerHTML = renderHeader();
   const footerEl = document.getElementById('site-footer');
@@ -477,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncMobileNav() {
     if (!mobileQuery.matches) {
       setMobileMenuState(false);
-      if (mobileSearchOverlay) mobileSearchOverlay.hidden = true;
+      closeMobileSearch(true);
       headerEl.querySelectorAll('.nav-item.mobile-submenu-open').forEach((item) => {
         item.classList.remove('mobile-submenu-open');
       });
@@ -496,6 +567,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.scrollY <= 12) {
       headerEl.classList.remove('desktop-nav-hidden');
     }
+  }
+
+  function closeMobileSearch(immediate = false) {
+    if (!mobileSearchOverlay) return;
+    mobileSearchOverlay.classList.remove('is-visible');
+    document.body.classList.remove('mobile-search-open');
+
+    const finalize = () => {
+      mobileSearchOverlay.hidden = true;
+      if (mobileSearchInput) mobileSearchInput.value = '';
+    };
+
+    if (immediate) {
+      finalize();
+      return;
+    }
+
+    window.setTimeout(finalize, 220);
+  }
+
+  function openMobileSearch() {
+    if (!mobileSearchOverlay) return;
+    setMobileMenuState(false);
+    mobileSearchOverlay.hidden = false;
+    document.body.classList.add('mobile-search-open');
+    requestAnimationFrame(() => {
+      mobileSearchOverlay.classList.add('is-visible');
+      if (mobileSearchInput) mobileSearchInput.focus();
+    });
   }
 
   if (menuToggle) {
@@ -518,31 +618,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (mobileSearchTrigger && mobileSearchOverlay) {
-    mobileSearchTrigger.addEventListener('click', () => {
-      mobileSearchOverlay.hidden = false;
-      requestAnimationFrame(() => {
-        mobileSearchOverlay.classList.add('is-visible');
-        if (mobileSearchInput) mobileSearchInput.focus();
-      });
-    });
+    mobileSearchTrigger.addEventListener('click', openMobileSearch);
   }
 
   if (mobileSearchClose && mobileSearchOverlay) {
-    mobileSearchClose.addEventListener('click', () => {
-      mobileSearchOverlay.classList.remove('is-visible');
-      window.setTimeout(() => {
-        mobileSearchOverlay.hidden = true;
-      }, 180);
-    });
+    mobileSearchClose.addEventListener('click', () => closeMobileSearch());
   }
 
   if (mobileSearchOverlay) {
     mobileSearchOverlay.addEventListener('click', (event) => {
       if (event.target === mobileSearchOverlay) {
-        mobileSearchOverlay.classList.remove('is-visible');
-        window.setTimeout(() => {
-          mobileSearchOverlay.hidden = true;
-        }, 180);
+        closeMobileSearch();
       }
     });
   }
