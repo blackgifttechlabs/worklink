@@ -831,23 +831,17 @@
     }
   }
 
-  function renderProviderHighlights(host, provider) {
-    if (!host) return;
-    const items = [
-      provider.primaryCategory,
-      provider.specialty,
-      provider.city || provider.province,
-      provider.experience || 'Experienced'
-    ];
+  function buildProviderWorkSkeleton(count = 4) {
+    return Array.from({ length: count }, () => '<article class="provider-gallery-skeleton" aria-hidden="true"></article>').join('');
+  }
 
-    host.innerHTML = items.map((item) => `
-      <article class="provider-highlight-card">
-        <span class="provider-highlight-card-ring">
-          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="" />
-        </span>
-        <strong>${escapeHtml(item)}</strong>
-      </article>
-    `).join('');
+  function buildProviderWorkEmptyState() {
+    return `
+      <div class="provider-gallery-empty">
+        <i class="fa-regular fa-image"></i>
+        <p>No previous work yet. Completed jobs will appear here.</p>
+      </div>
+    `;
   }
 
   function getProviderDialogElements() {
@@ -1030,19 +1024,38 @@
     const title = page.querySelector('[data-provider-title]');
     const address = page.querySelector('[data-provider-address]');
     const bio = page.querySelector('[data-provider-bio]');
+    const phone = page.querySelector('[data-provider-phone]');
+    const phoneLink = page.querySelector('[data-provider-phone-link]');
     const postCount = page.querySelector('[data-provider-post-count]');
     const rating = page.querySelector('[data-provider-rating]');
     const jobs = page.querySelector('[data-provider-jobs]');
     const messageLink = page.querySelector('[data-provider-message-link]');
-    const whatsappLink = page.querySelector('[data-provider-whatsapp-link]');
     const editProfileBtn = page.querySelector('[data-provider-edit-profile]');
-    const highlights = page.querySelector('[data-provider-highlights]');
+    const backBtn = page.querySelector('[data-provider-back]');
     const postGrid = page.querySelector('[data-provider-post-grid]');
 
+    backBtn?.addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = `${getBase()}pages/specialists.html`;
+    });
+
     async function refreshProfile() {
-      const freshProvider = await getProviderByIdentity(uid, provinceSlug);
-      const posts = await getPostsForProvider(uid, provinceSlug);
+      if (postGrid instanceof HTMLElement) {
+        postGrid.innerHTML = buildProviderWorkSkeleton();
+      }
+
+      const [freshProvider, posts] = await Promise.all([
+        getProviderByIdentity(uid, provinceSlug),
+        getPostsForProvider(uid, provinceSlug)
+      ]);
       if (!freshProvider) return;
+
+      const workLabel = [freshProvider.specialty, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
+      const locationLabel = freshProvider.address || [freshProvider.city, freshProvider.province].filter(Boolean).join(', ') || 'Location not shared';
+      const phoneNumber = String(freshProvider.whatsappNumber || '').trim();
 
       if (banner instanceof HTMLElement) {
         banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png')}')`;
@@ -1050,25 +1063,26 @@
       if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
       if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(freshProvider.displayName);
       if (name instanceof HTMLElement) name.textContent = freshProvider.displayName;
-      if (title instanceof HTMLElement) title.textContent = `${freshProvider.specialty} • ${freshProvider.primaryCategory}`;
-      if (address instanceof HTMLElement) address.textContent = freshProvider.address || `${freshProvider.city}, ${freshProvider.province}`;
-      if (bio instanceof HTMLElement) bio.textContent = freshProvider.bio;
+      if (title instanceof HTMLElement) title.textContent = workLabel;
+      if (address instanceof HTMLElement) address.textContent = locationLabel;
+      if (bio instanceof HTMLElement) bio.textContent = freshProvider.bio || 'Available for new jobs.';
+      if (phone instanceof HTMLElement) phone.textContent = phoneNumber || 'Phone not shared';
+      if (phoneLink instanceof HTMLAnchorElement) {
+        if (phoneNumber) {
+          phoneLink.href = `tel:${phoneNumber.replace(/[^+\d]/g, '')}`;
+        } else {
+          phoneLink.removeAttribute('href');
+        }
+      }
       if (postCount instanceof HTMLElement) postCount.textContent = String(posts.length);
       if (rating instanceof HTMLElement) rating.textContent = `${freshProvider.averageRating.toFixed(1)} ★`;
       if (jobs instanceof HTMLElement) jobs.textContent = String(freshProvider.completedJobs || 0);
       if (messageLink instanceof HTMLAnchorElement) messageLink.href = freshProvider.messageUrl;
       if (messageLink instanceof HTMLElement) messageLink.hidden = isOwner;
-      if (whatsappLink instanceof HTMLAnchorElement) {
-        whatsappLink.href = buildWhatsAppLink(freshProvider.whatsappNumber, freshProvider.displayName);
-        whatsappLink.innerHTML = `<i class="fa-brands fa-whatsapp"></i><span>${escapeHtml(freshProvider.whatsappNumber || 'WhatsApp')}</span>`;
-        whatsappLink.hidden = false;
-      }
       if (editProfileBtn instanceof HTMLButtonElement) {
         editProfileBtn.hidden = !isOwner;
         editProfileBtn.onclick = () => openProfileEditor(freshProvider, refreshProfile);
       }
-
-      renderProviderHighlights(highlights, freshProvider);
 
       if (postGrid) {
         postGrid.innerHTML = posts.length
@@ -1091,7 +1105,7 @@
               </div>
             </article>
           `).join('')
-          : `<div class="specialists-empty">No work posts yet. Their previous work will appear here.</div>`;
+          : buildProviderWorkEmptyState();
       }
 
       if (isOwner && postGrid) {

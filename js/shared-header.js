@@ -102,15 +102,21 @@ function ensureProvidersUiScript() {
 
 window.ensureWorkLinkAuth = ensureFirebaseAuthScript;
 
+function getProviderProfileHref(base = getBasePath()) {
+  const account = getStoredAccount();
+  const isLoggedIn = Boolean(account && account.loggedIn);
+  return isLoggedIn && account?.providerProfileComplete && account?.uid && account?.providerProvinceSlug
+    ? `${base}pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(account.providerProvinceSlug)}`
+    : `${base}pages/account.html`;
+}
+
 function renderHeader() {
   const base = getBasePath();
   const account = getStoredAccount();
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
   const firstName = accountName.split(' ')[0];
-  const providerProfileHref = isLoggedIn && account?.providerProfileComplete && account?.uid && account?.providerProvinceSlug
-    ? `${base}pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(account.providerProvinceSlug)}`
-    : `${base}pages/account.html`;
+  const providerProfileHref = getProviderProfileHref(base);
   return `
   <header>
     <div class="header-inner">
@@ -601,12 +607,50 @@ function renderCartDrawer() {
   </div>`;
 }
 
+function getBottomNavActiveKey() {
+  const path = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  const mapView = params.get('view') === 'map';
+
+  if (path.endsWith('/pages/messages.html')) return 'messages';
+  if (path.endsWith('/pages/provider-profile.html') || path.endsWith('/pages/account.html')) return 'profile';
+  if (path.endsWith('/pages/specialists.html')) return mapView ? 'map' : 'find';
+  return 'home';
+}
+
+function renderBottomNav() {
+  const base = getBasePath();
+  const activeKey = getBottomNavActiveKey();
+  const providerProfileHref = getProviderProfileHref(base);
+  const items = [
+    { key: 'home', href: `${base}index.html`, icon: 'fa-solid fa-house', label: 'Home' },
+    { key: 'find', href: `${base}pages/specialists.html`, icon: 'fa-solid fa-magnifying-glass', label: 'Find' },
+    { key: 'messages', href: `${base}pages/messages.html`, icon: 'fa-regular fa-message', label: 'Messages' },
+    { key: 'map', href: `${base}pages/specialists.html?view=map`, icon: 'fa-solid fa-map-location-dot', label: 'Map' },
+    { key: 'profile', href: providerProfileHref, icon: 'fa-regular fa-user', label: 'Profile' }
+  ];
+
+  return `
+  <div class="shared-bottom-nav" role="navigation" aria-label="Primary">
+    ${items.map((item) => `
+      <a href="${item.href}" class="shared-bottom-nav-link ${item.key === activeKey ? 'is-active' : ''}">
+        <i class="${item.icon}"></i>
+        <span>${item.label}</span>
+      </a>
+    `).join('')}
+  </div>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   injectSharedHeaderOverrides();
   const headerEl = document.getElementById('site-header');
   if (headerEl) headerEl.innerHTML = renderHeader();
   const footerEl = document.getElementById('site-footer');
   if (footerEl) footerEl.innerHTML = renderFooter();
+  if (!document.querySelector('.shared-bottom-nav')) {
+    document.body.insertAdjacentHTML('beforeend', renderBottomNav());
+    document.body.classList.add('has-shared-bottom-nav');
+  }
   if (!document.getElementById('cookie-banner')) {
     document.body.insertAdjacentHTML('beforeend', renderCookieBanner());
   }
