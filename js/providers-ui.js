@@ -246,7 +246,10 @@
     host.innerHTML = providers.map((provider) => `
       <article class="specialist-card">
         <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png'))}');">
-          <div class="specialist-card-rating">${provider.averageRating.toFixed(1)} ★</div>
+          <div class="specialist-card-availability">
+            <span class="specialist-card-availability-label">Available</span>
+            <span class="specialist-card-rating">${Number(provider.averageRating || 0).toFixed(1)} ★</span>
+          </div>
           <img class="specialist-card-avatar" src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)} profile image" />
           <div class="specialist-card-banner-copy">
             <h3>${escapeHtml(provider.displayName)}</h3>
@@ -258,17 +261,26 @@
             <i class="fa-solid fa-location-dot"></i>
             <span>${escapeHtml(provider.address || `${provider.city}, ${provider.province}`)}</span>
           </div>
-          <div class="specialist-card-tags">
-            <span class="provider-meta-chip">${escapeHtml(provider.primaryCategory)}</span>
-            <span class="provider-meta-chip">${escapeHtml(provider.experience || 'Experienced')}</span>
+          <div class="specialist-card-facts">
+            <div class="specialist-card-fact">
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+              <span><strong>Service:</strong> ${escapeHtml(provider.primaryCategory)}</span>
+            </div>
+            <div class="specialist-card-fact">
+              <i class="fa-regular fa-clock"></i>
+              <span><strong>Experience:</strong> ${escapeHtml(provider.experience || 'Experienced')}</span>
+            </div>
           </div>
-          <p>${escapeHtml(provider.bio)}</p>
+          <p class="specialist-card-bio">${escapeHtml(provider.bio)}</p>
           <div class="specialist-actions">
             <a href="${escapeHtml(buildWhatsAppLink(provider.whatsappNumber, provider.displayName))}" class="provider-contact-btn whatsapp-btn" target="_blank" rel="noreferrer">
               <i class="fa-brands fa-whatsapp"></i>
-              <span>WhatsApp</span>
+              <span class="specialist-action-label specialist-action-label-whatsapp">WhatsApp</span>
             </a>
-            <a href="${escapeHtml(provider.profileUrl)}" class="specialists-view-btn">View Their Work</a>
+            <a href="${escapeHtml(provider.profileUrl)}" class="specialists-view-btn">
+              <i class="fa-regular fa-id-badge"></i>
+              <span>View Profile</span>
+            </a>
           </div>
         </div>
       </article>

@@ -1376,8 +1376,8 @@ footer {
 
 .specialist-card-banner {
   position: relative;
-  min-height: 220px;
-  padding: 20px 20px 18px;
+  min-height: 196px;
+  padding: 16px 16px 14px;
   background-size: cover;
   background-position: center;
   display: flex;
@@ -1385,28 +1385,42 @@ footer {
   justify-content: flex-end;
 }
 
-.specialist-card-rating {
+.specialist-card-availability {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  min-height: 34px;
-  padding: 0 12px;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.specialist-card-availability-label {
+  white-space: nowrap;
+}
+
+.specialist-card-rating {
+  min-height: 24px;
+  padding: 0 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
 .specialist-card-avatar {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 76px;
-  height: 76px;
+  top: 14px;
+  left: 14px;
+  width: 68px;
+  height: 68px;
   border-radius: 16px;
   object-fit: cover;
   border: 4px solid rgba(255, 255, 255, 0.9);
@@ -1415,25 +1429,32 @@ footer {
 
 .specialist-card-banner-copy {
   color: #fff;
-  padding-top: 86px;
+  padding-top: 74px;
 }
 
 .specialist-card-banner-copy h3 {
   color: #fff;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .specialist-card-banner-copy p {
-  margin-top: 6px;
+  margin-top: 4px;
   color: rgba(255, 255, 255, 0.82);
   font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .specialist-card-body {
   display: grid;
-  gap: 14px;
-  padding: 18px 20px 20px;
+  gap: 10px;
+  padding: 14px 16px 16px;
 }
 
 .specialist-card-location {
@@ -1441,7 +1462,49 @@ footer {
   align-items: center;
   gap: 10px;
   color: #475569;
+  font-size: 13px;
   font-weight: 600;
+}
+
+.specialist-card-location span {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.specialist-card-facts {
+  display: grid;
+  gap: 6px;
+}
+
+.specialist-card-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.specialist-card-fact i {
+  width: 16px;
+  margin-top: 2px;
+  color: #076fe5;
+  text-align: center;
+}
+
+.specialist-card-fact strong {
+  color: var(--brand-ink);
+}
+
+.specialist-card-fact span {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .specialist-card-tags,
@@ -1463,15 +1526,35 @@ footer {
   font-weight: 800;
 }
 
-.specialist-card-body p {
+.specialist-card-bio {
   color: #64748b;
+  font-size: 12px;
   line-height: 1.55;
+  min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .specialist-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
+}
+
+.specialist-actions > * {
+  flex: 1 1 0;
+}
+
+.specialist-actions .whatsapp-btn i,
+.specialist-actions .specialists-view-btn i {
+  flex: 0 0 auto;
+}
+
+.specialist-actions .specialists-view-btn span {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .specialists-page.is-loading [data-specialists-total] {
@@ -1479,7 +1562,7 @@ footer {
 }
 
 .specialist-card-skeleton {
-  min-height: 392px;
+  min-height: 352px;
   border-radius: 18px;
   border: 1px solid rgba(26, 50, 99, 0.08);
   background:
@@ -1529,20 +1612,32 @@ footer {
 .provider-skeleton-block,
 .provider-skeleton-line,
 .provider-skeleton-chip {
+  position: relative;
   display: block;
-  background:
-    linear-gradient(90deg, rgba(226, 232, 240, 0.82) 0%, rgba(248, 250, 252, 1) 48%, rgba(226, 232, 240, 0.82) 100%);
-  background-size: 220% 100%;
-  animation: provider-work-wave 1.35s ease-in-out infinite;
+  overflow: hidden;
+  background: #e2e8f0;
 }
 
 .provider-profile-skeleton-banner {
   position: relative;
   min-height: 330px;
-  background:
-    linear-gradient(90deg, rgba(226, 232, 240, 0.82) 0%, rgba(248, 250, 252, 1) 48%, rgba(226, 232, 240, 0.82) 100%);
-  background-size: 220% 100%;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.provider-skeleton-block::after,
+.provider-skeleton-line::after,
+.provider-skeleton-chip::after,
+.provider-profile-skeleton-banner::after,
+.provider-profile-gallery-head-skeleton .provider-profile-gallery-tab span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.78) 48%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
   animation: provider-work-wave 1.35s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .provider-profile-skeleton-back {
@@ -1805,15 +1900,14 @@ footer {
 }
 
 .provider-profile-gallery-head-skeleton .provider-profile-gallery-tab span {
+  position: relative;
   display: block;
+  overflow: hidden;
   width: 150px;
   height: 18px;
   border-radius: 999px;
   color: transparent;
-  background:
-    linear-gradient(90deg, rgba(226, 232, 240, 0.82) 0%, rgba(248, 250, 252, 1) 48%, rgba(226, 232, 240, 0.82) 100%);
-  background-size: 220% 100%;
-  animation: provider-work-wave 1.35s ease-in-out infinite;
+  background: #e2e8f0;
 }
 
 .provider-profile-gallery-tab {
@@ -2845,8 +2939,15 @@ footer {
   }
 
   .specialist-card-banner {
-    min-height: 150px;
+    min-height: 144px;
     padding: 12px 12px 14px;
+  }
+
+  .specialist-card-availability {
+    top: 10px;
+    right: 10px;
+    gap: 6px;
+    font-size: 11px;
   }
 
   .specialist-card-avatar {
@@ -2859,15 +2960,13 @@ footer {
   }
 
   .specialist-card-rating {
-    top: 10px;
-    right: 10px;
-    min-height: 28px;
+    min-height: 24px;
     padding: 0 8px;
     font-size: 11px;
   }
 
   .specialist-card-banner-copy {
-    padding-top: 56px;
+    padding-top: 54px;
   }
 
   .specialist-card-banner-copy h3 {
@@ -2875,16 +2974,17 @@ footer {
   }
 
   .specialist-card-banner-copy p {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .specialist-card-body {
-    gap: 10px;
+    gap: 8px;
     padding: 12px;
   }
 
   .specialist-card-location,
-  .specialist-card-body p {
+  .specialist-card-bio,
+  .specialist-card-fact {
     font-size: 12px;
   }
 
@@ -2899,11 +2999,23 @@ footer {
   }
 
   .specialist-actions a {
-    width: 100%;
     min-height: 38px;
     min-width: 0;
     padding: 0 10px;
     font-size: 12px;
+  }
+
+  .specialist-actions .whatsapp-btn {
+    flex: 0 0 42px;
+    padding: 0;
+  }
+
+  .specialist-actions .specialists-view-btn {
+    flex: 1 1 auto;
+  }
+
+  .specialist-action-label-whatsapp {
+    display: none;
   }
 
   .provider-profile-gallery {
@@ -3066,56 +3178,6 @@ footer {
     flex: 1 1 0;
   }
 
-  body.has-shared-bottom-nav {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  }
-
-  .shared-bottom-nav {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 980;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    border: 1px solid rgba(26, 50, 99, 0.12);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
-  }
-
-  .shared-bottom-nav-link {
-    flex: 1 1 0;
-    min-width: 0;
-    display: grid;
-    justify-items: center;
-    gap: 6px;
-    padding: 8px 4px;
-    border-radius: 16px;
-    color: #7b8799;
-    font-size: 11px;
-    font-weight: 800;
-  }
-
-  .shared-bottom-nav-link i {
-    font-size: 18px;
-  }
-
-  .shared-bottom-nav-link.is-active {
-    background: rgba(7, 111, 229, 0.10);
-    color: var(--brand-ink);
-  }
-
-  body.provider-dialog-open .shared-bottom-nav,
-  body.mobile-nav-open .shared-bottom-nav,
-  body.mobile-search-open .shared-bottom-nav {
-    opacity: 0;
-    pointer-events: none;
-  }
 }
 
 header {
@@ -4461,6 +4523,8 @@ header .logo {
 .homepage-categories {
   margin-top: 54px;
   margin-bottom: 44px;
+  position: relative;
+  overflow-x: clip;
 }
 
 .homepage-categories .section-title {
@@ -4570,8 +4634,13 @@ header .logo {
 
   .homepage-categories .category-circles {
     width: max-content;
+    min-width: max-content;
+    max-width: none;
     gap: 8px;
-    overflow: visible;
+    overflow: hidden;
+    flex-wrap: nowrap;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
   }
 
   .homepage-categories .category-circles.is-auto-scroll {
@@ -5378,10 +5447,6 @@ body:has(.nav-item:hover .mega-dropdown) > *:not(#site-header) {
   position: sticky;
   top: 0;
   z-index: 1000;
-}
-
-.shared-bottom-nav {
-  display: none;
 }
 
 .mobile-nav-brand {
@@ -7192,6 +7257,8 @@ footer {
   width: 100%;
   overflow: hidden;
   padding: 24px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
 }
 .girls-category-track {
   display: flex;

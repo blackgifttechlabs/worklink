@@ -613,68 +613,12 @@ function renderCartDrawer() {
   </div>`;
 }
 
-function getBottomNavActiveKey() {
-  const path = window.location.pathname;
-  const params = new URLSearchParams(window.location.search);
-  const mapView = params.get('view') === 'map';
-
-  if (path.endsWith('/pages/messages.html')) return 'messages';
-  if (path.endsWith('/pages/provider-profile.html') || path.endsWith('/pages/account.html')) return 'profile';
-  if (path.endsWith('/pages/specialists.html')) return mapView ? 'map' : 'find';
-  return 'home';
-}
-
-function renderBottomNav() {
-  const account = getStoredAccount();
-  if (!account?.loggedIn) return '';
-
-  const base = getBasePath();
-  const activeKey = getBottomNavActiveKey();
-  const providerProfileHref = getProviderProfileHref(base);
-  const items = [
-    { key: 'home', href: `${base}index.html`, icon: 'fa-solid fa-house', label: 'Home' },
-    { key: 'find', href: `${base}pages/specialists.html`, icon: 'fa-solid fa-magnifying-glass', label: 'Find' },
-    { key: 'messages', href: `${base}pages/messages.html`, icon: 'fa-regular fa-message', label: 'Messages' },
-    { key: 'map', href: `${base}pages/specialists.html?view=map`, icon: 'fa-solid fa-map-location-dot', label: 'Map' },
-    { key: 'profile', href: providerProfileHref, icon: 'fa-regular fa-user', label: 'Profile' }
-  ];
-
-  return `
-  <div class="shared-bottom-nav" role="navigation" aria-label="Primary">
-    ${items.map((item) => `
-      <a href="${item.href}" class="shared-bottom-nav-link ${item.key === activeKey ? 'is-active' : ''}">
-        <i class="${item.icon}"></i>
-        <span>${item.label}</span>
-      </a>
-    `).join('')}
-  </div>`;
-}
-
-function syncBottomNav() {
-  const existingBottomNav = document.querySelector('.shared-bottom-nav');
-  const bottomNavMarkup = renderBottomNav();
-
-  if (bottomNavMarkup) {
-    if (existingBottomNav) {
-      existingBottomNav.outerHTML = bottomNavMarkup;
-    } else {
-      document.body.insertAdjacentHTML('beforeend', bottomNavMarkup);
-    }
-    document.body.classList.add('has-shared-bottom-nav');
-    return;
-  }
-
-  existingBottomNav?.remove();
-  document.body.classList.remove('has-shared-bottom-nav');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   injectSharedHeaderOverrides();
   const headerEl = document.getElementById('site-header');
   if (headerEl) headerEl.innerHTML = renderHeader();
   const footerEl = document.getElementById('site-footer');
   if (footerEl) footerEl.innerHTML = renderFooter();
-  syncBottomNav();
   if (!document.getElementById('cookie-banner')) {
     document.body.insertAdjacentHTML('beforeend', renderCookieBanner());
   }
@@ -922,14 +866,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   syncMobileNav();
   syncDesktopNav();
-
-  window.addEventListener('softgiggles-auth-changed', () => {
-    syncBottomNav();
-  });
-
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'softgiggles_account') {
-      syncBottomNav();
-    }
-  });
 });
