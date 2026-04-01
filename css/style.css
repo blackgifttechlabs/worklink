@@ -1509,7 +1509,6 @@ footer {
 
 .provider-profile-hero {
   position: relative;
-  padding-bottom: 18px;
   background:
     radial-gradient(circle at top right, rgba(250, 185, 91, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(247, 249, 252, 1) 100%);
@@ -1517,7 +1516,7 @@ footer {
 
 .provider-profile-banner {
   position: relative;
-  min-height: 300px;
+  min-height: 330px;
   width: 100%;
   background-size: cover;
   background-position: center;
@@ -1540,18 +1539,11 @@ footer {
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
 }
 
-.provider-profile-summary {
-  position: relative;
-  z-index: 1;
-  width: min(1120px, calc(100% - 48px));
-  margin: -84px auto 0;
-  display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 28px;
-  align-items: end;
-}
-
 .provider-profile-avatar-ring {
+  position: absolute;
+  left: 24px;
+  bottom: -84px;
+  z-index: 2;
   width: 170px;
   height: 170px;
   padding: 6px;
@@ -1569,31 +1561,52 @@ footer {
   border: 5px solid #fff;
 }
 
-.provider-profile-summary-main {
-  display: grid;
-  gap: 16px;
-  padding: 0 0 10px;
+.provider-profile-banner-copy {
+  position: absolute;
+  left: 220px;
+  right: 24px;
+  bottom: 28px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 16px;
 }
 
-.provider-profile-identity {
+.provider-profile-banner-copy h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.04;
+  text-shadow: 0 10px 26px rgba(15, 23, 42, 0.24);
+}
+
+.provider-profile-banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.provider-profile-summary {
+  position: relative;
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 106px 0 18px;
+}
+
+.provider-profile-summary-main {
   display: grid;
-  gap: 6px;
+  gap: 14px;
 }
 
 .provider-profile-handle {
-  color: #6b7a90;
+  color: rgba(226, 232, 240, 0.78);
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: lowercase;
-}
-
-.provider-profile-identity h1 {
-  margin: 0;
-  color: var(--brand-ink);
-  font-size: 42px;
-  font-weight: 900;
-  line-height: 1.04;
 }
 
 .provider-profile-phone {
@@ -1601,13 +1614,13 @@ footer {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-top: 4px;
-  color: #21415c;
+  color: #fff;
   font-weight: 700;
+  text-shadow: 0 10px 26px rgba(15, 23, 42, 0.24);
 }
 
 .provider-profile-phone i {
-  color: #076fe5;
+  color: #fff;
 }
 
 .provider-profile-actions {
@@ -1619,23 +1632,20 @@ footer {
 .provider-profile-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px 24px;
+  align-items: flex-start;
 }
 
 .provider-profile-stats div {
-  display: grid;
-  gap: 3px;
-  min-width: 110px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(26, 50, 99, 0.08);
-  box-shadow: 0 14px 24px rgba(26, 50, 99, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .provider-profile-stats strong {
   color: var(--brand-ink);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
 }
 
@@ -1654,8 +1664,8 @@ footer {
 .provider-profile-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 24px;
-  align-items: center;
+  gap: 8px 24px;
+  align-items: flex-start;
 }
 
 .provider-profile-meta-item {
@@ -2564,12 +2574,17 @@ footer {
   }
 
   .provider-profile-summary {
-    grid-template-columns: 168px minmax(0, 1fr);
+    padding-top: 96px;
   }
 
   .provider-profile-avatar-ring {
     width: 150px;
     height: 150px;
+    bottom: -74px;
+  }
+
+  .provider-profile-banner-copy {
+    left: 196px;
   }
 }
 
@@ -2757,40 +2772,47 @@ footer {
   }
 
   .provider-profile-banner {
-    min-height: 210px;
+    min-height: 230px;
   }
 
   .provider-profile-summary {
     width: calc(100% - 32px);
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: -58px;
-    align-items: start;
+    padding-top: 82px;
   }
 
   .provider-profile-avatar-ring {
+    left: 16px;
+    bottom: -58px;
     width: 118px;
     height: 118px;
   }
 
+  .provider-profile-banner-copy {
+    left: 146px;
+    right: 16px;
+    bottom: 18px;
+    gap: 6px 12px;
+  }
+
+  .provider-profile-banner-copy h1 {
+    font-size: 28px;
+  }
+
+  .provider-profile-banner-meta {
+    gap: 6px 12px;
+  }
+
   .provider-profile-summary-main {
-    padding-top: 0;
     gap: 14px;
   }
 
-  .provider-profile-identity h1 {
-    font-size: 32px;
+  .provider-profile-handle,
+  .provider-profile-phone {
+    font-size: 12px;
   }
 
   .provider-profile-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .provider-profile-stats div {
-    min-width: 0;
-    padding: 10px 12px;
+    gap: 12px 18px;
   }
 
   .provider-profile-stats strong {

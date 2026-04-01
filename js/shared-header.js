@@ -619,6 +619,9 @@ function getBottomNavActiveKey() {
 }
 
 function renderBottomNav() {
+  const account = getStoredAccount();
+  if (!account?.loggedIn) return '';
+
   const base = getBasePath();
   const activeKey = getBottomNavActiveKey();
   const providerProfileHref = getProviderProfileHref(base);
@@ -647,9 +650,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (headerEl) headerEl.innerHTML = renderHeader();
   const footerEl = document.getElementById('site-footer');
   if (footerEl) footerEl.innerHTML = renderFooter();
-  if (!document.querySelector('.shared-bottom-nav')) {
-    document.body.insertAdjacentHTML('beforeend', renderBottomNav());
+  const bottomNavMarkup = renderBottomNav();
+  if (bottomNavMarkup && !document.querySelector('.shared-bottom-nav')) {
+    document.body.insertAdjacentHTML('beforeend', bottomNavMarkup);
     document.body.classList.add('has-shared-bottom-nav');
+  } else {
+    document.body.classList.remove('has-shared-bottom-nav');
   }
   if (!document.getElementById('cookie-banner')) {
     document.body.insertAdjacentHTML('beforeend', renderCookieBanner());
