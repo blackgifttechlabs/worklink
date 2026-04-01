@@ -426,7 +426,7 @@
               <div class="provider-onboarding-actions">
                 <button type="button" class="provider-onboarding-back" hidden>Back</button>
                 <button type="button" class="provider-onboarding-next">Next</button>
-                <button type="submit" class="provider-onboarding-submit" hidden>Save Profile</button>
+                <button type="submit" class="provider-onboarding-submit" hidden><span>Save Profile</span></button>
               </div>
             </div>
           </form>
@@ -601,7 +601,10 @@
       payload.profileImageData = uploadState.profileImageData;
       payload.bannerImageData = uploadState.bannerImageData;
 
-      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+      if (submitBtn instanceof HTMLButtonElement) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('is-loading');
+      }
       try {
         await authHelper.saveProviderProfile(payload);
         closeOnboarding();
@@ -609,7 +612,10 @@
       } catch (error) {
         window.alert(error.message || 'Could not save your provider profile.');
       } finally {
-        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+        if (submitBtn instanceof HTMLButtonElement) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('is-loading');
+        }
       }
     });
 
@@ -623,11 +629,19 @@
 
       try {
         const userDoc = await authHelper.getUserDocument(account.uid);
-        if (userDoc?.providerProfileComplete) return;
         let providerProfile = null;
         if (typeof authHelper.getProviderProfileByUid === 'function') {
           providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug);
         }
+
+        const hasCompletedProfile = Boolean(
+          userDoc?.providerProfileComplete ||
+          providerProfile?.uid ||
+          providerProfile?.provinceSlug
+        );
+
+        if (hasCompletedProfile) return;
+
         openOnboarding({
           ...(userDoc || {}),
           ...(providerProfile || {}),
@@ -844,6 +858,24 @@
     `;
   }
 
+  function preloadImage(src) {
+    return new Promise((resolve) => {
+      if (!src) {
+        resolve('');
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => resolve(src);
+      image.onerror = () => resolve(src);
+      image.src = src;
+    });
+  }
+
+  function buildWhatsAppShareLink(text) {
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  }
+
   function getProviderDialogElements() {
     const overlay = document.querySelector('[data-provider-dialog-overlay]');
     const body = document.querySelector('[data-provider-dialog-body]');
@@ -1043,9 +1075,7 @@
     });
 
     async function refreshProfile() {
-      if (postGrid instanceof HTMLElement) {
-        postGrid.innerHTML = buildProviderWorkSkeleton();
-      }
+      page.classList.add('is-loading');
 
       const [freshProvider, posts] = await Promise.all([
         getProviderByIdentity(uid, provinceSlug),
@@ -1056,11 +1086,20 @@
       const workLabel = [freshProvider.specialty, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
       const locationLabel = freshProvider.address || [freshProvider.city, freshProvider.province].filter(Boolean).join(', ') || 'Location not shared';
       const phoneNumber = String(freshProvider.whatsappNumber || '').trim();
+      const bannerSrc = resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png');
+      const avatarSrc = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
+      const postImageSources = posts.map((post) => resolveMediaSrc(post.imageData, 'images/sections/findme.png'));
+
+      await Promise.all([
+        preloadImage(bannerSrc),
+        preloadImage(avatarSrc),
+        ...postImageSources.map((src) => preloadImage(src))
+      ]);
 
       if (banner instanceof HTMLElement) {
-        banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png')}')`;
+        banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${bannerSrc}')`;
       }
-      if (avatar instanceof HTMLImageElement) avatar.src = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
+      if (avatar instanceof HTMLImageElement) avatar.src = avatarSrc;
       if (handle instanceof HTMLElement) handle.textContent = buildProviderHandle(freshProvider.displayName);
       if (name instanceof HTMLElement) name.textContent = freshProvider.displayName;
       if (title instanceof HTMLElement) title.textContent = workLabel;
@@ -1085,20 +1124,25 @@
       }
 
       if (postGrid) {
+        const profileShareText = `Check out ${freshProvider.displayName} on WorkLinkUp: ${window.location.href}`;
         postGrid.innerHTML = posts.length
-          ? posts.map((post) => `
+          ? posts.map((post, index) => `
             <article class="provider-gallery-card">
-              ${isOwner ? `
-                <button type="button" class="provider-post-menu-toggle" data-post-menu-toggle="${escapeHtml(post.id)}" aria-label="Post options">
-                  <i class="fa-solid fa-ellipsis"></i>
-                </button>
-                <div class="provider-post-menu" data-post-menu="${escapeHtml(post.id)}" hidden>
-                  <button type="button" data-post-view="${escapeHtml(post.id)}">View</button>
-                  <button type="button" data-post-edit="${escapeHtml(post.id)}">Edit</button>
-                  <button type="button" data-post-delete="${escapeHtml(post.id)}">Delete</button>
-                </div>
-              ` : ''}
-              <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="${escapeHtml(freshProvider.displayName)} work" />
+              <button type="button" class="provider-post-menu-toggle" data-post-menu-toggle="${escapeHtml(post.id)}" aria-label="Post options">
+                <i class="fa-solid fa-ellipsis"></i>
+              </button>
+              <div class="provider-post-menu" data-post-menu="${escapeHtml(post.id)}" style="transition-delay:${index * 18}ms;">
+                ${isOwner ? `
+                  <button type="button" data-post-view="${escapeHtml(post.id)}"><i class="fa-regular fa-eye"></i><span>View</span></button>
+                  <button type="button" data-post-edit="${escapeHtml(post.id)}"><i class="fa-regular fa-pen-to-square"></i><span>Edit</span></button>
+                  <button type="button" data-post-delete="${escapeHtml(post.id)}"><i class="fa-regular fa-trash-can"></i><span>Delete</span></button>
+                ` : `
+                  <button type="button" data-post-share="${escapeHtml(post.id)}" data-share-link="${escapeHtml(buildWhatsAppShareLink(profileShareText))}">
+                    <i class="fa-brands fa-whatsapp"></i><span>Share</span>
+                  </button>
+                `}
+              </div>
+              <img src="${escapeHtml(postImageSources[index])}" alt="${escapeHtml(freshProvider.displayName)} work" />
               <div class="provider-gallery-card-copy">
                 <strong>${escapeHtml(freshProvider.displayName)}</strong>
                 <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
@@ -1108,18 +1152,50 @@
           : buildProviderWorkEmptyState();
       }
 
-      if (isOwner && postGrid) {
-        postGrid.querySelectorAll('[data-post-menu-toggle]').forEach((button) => {
-          button.addEventListener('click', () => {
-            const postId = button.getAttribute('data-post-menu-toggle');
-            postGrid.querySelectorAll('[data-post-menu]').forEach((menu) => {
-              menu.hidden = menu.getAttribute('data-post-menu') !== postId ? true : !menu.hidden;
-            });
+      if (postGrid) {
+        const closeMenus = () => {
+          postGrid.querySelectorAll('[data-post-menu]').forEach((menu) => {
+            menu.classList.remove('is-open');
           });
-        });
+        };
 
-        posts.forEach((post) => {
-          postGrid.querySelector(`[data-post-view="${post.id}"]`)?.addEventListener('click', () => {
+        postGrid.onclick = async (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (!target) return;
+
+          const toggle = target.closest('[data-post-menu-toggle]');
+          if (toggle instanceof HTMLElement) {
+            event.preventDefault();
+            const postId = toggle.getAttribute('data-post-menu-toggle');
+            const menu = postId ? postGrid.querySelector(`[data-post-menu="${postId}"]`) : null;
+            const willOpen = Boolean(menu && !menu.classList.contains('is-open'));
+            closeMenus();
+            if (menu && willOpen) {
+              requestAnimationFrame(() => {
+                menu.classList.add('is-open');
+              });
+            }
+            return;
+          }
+
+          const shareBtn = target.closest('[data-post-share]');
+          if (shareBtn instanceof HTMLElement) {
+            event.preventDefault();
+            const shareLink = shareBtn.getAttribute('data-share-link') || '';
+            closeMenus();
+            if (shareLink) {
+              window.open(shareLink, '_blank', 'noopener,noreferrer');
+            }
+            return;
+          }
+
+          if (!isOwner) return;
+
+          const viewBtn = target.closest('[data-post-view]');
+          if (viewBtn instanceof HTMLElement) {
+            const post = posts.find((item) => item.id === viewBtn.getAttribute('data-post-view'));
+            if (!post) return;
+            closeMenus();
             openProviderDialog(`
               <div class="provider-dialog-card provider-dialog-card-wide">
                 <img class="provider-dialog-hero-image" src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Work preview" />
@@ -1129,13 +1205,23 @@
                 </div>
               </div>
             `);
-          });
+            return;
+          }
 
-          postGrid.querySelector(`[data-post-edit="${post.id}"]`)?.addEventListener('click', () => {
+          const editBtn = target.closest('[data-post-edit]');
+          if (editBtn instanceof HTMLElement) {
+            const post = posts.find((item) => item.id === editBtn.getAttribute('data-post-edit'));
+            if (!post) return;
+            closeMenus();
             openPostEditor(post, refreshProfile);
-          });
+            return;
+          }
 
-          postGrid.querySelector(`[data-post-delete="${post.id}"]`)?.addEventListener('click', async () => {
+          const deleteBtn = target.closest('[data-post-delete]');
+          if (deleteBtn instanceof HTMLElement) {
+            const post = posts.find((item) => item.id === deleteBtn.getAttribute('data-post-delete'));
+            if (!post) return;
+            closeMenus();
             const authHelper = await waitForAuthHelper();
             if (!authHelper || typeof authHelper.deleteProviderPost !== 'function') return;
             if (!window.confirm('Delete this post permanently?')) return;
@@ -1145,9 +1231,24 @@
             } catch (error) {
               window.alert(error.message || 'Could not delete that post.');
             }
-          });
-        });
+          }
+        };
+
+        if (postGrid.__providerOutsideClickHandler) {
+          document.removeEventListener('click', postGrid.__providerOutsideClickHandler);
+        }
+        postGrid.__providerOutsideClickHandler = (event) => {
+          if (!(event.target instanceof Node)) return;
+          if (!postGrid.contains(event.target)) {
+            closeMenus();
+          }
+        };
+        document.addEventListener('click', postGrid.__providerOutsideClickHandler);
       }
+
+      requestAnimationFrame(() => {
+        page.classList.remove('is-loading');
+      });
     }
 
     refreshProfile();

@@ -660,7 +660,7 @@ onAuthStateChanged(auth, (user) => {
     syncUserDocument(account).catch(() => {});
     getUserDocument(user.uid)
       .then((userDoc) => {
-        if (!userDoc) return;
+        if (!userDoc) return null;
         persistAccountDetails({
           name: userDoc.name || account.name,
           phone: userDoc.phone || account.phone,
@@ -670,6 +670,26 @@ onAuthStateChanged(auth, (user) => {
           providerPublicId: userDoc.providerPublicId || '',
           whatsappNumber: userDoc.whatsappNumber || ''
         });
+        return userDoc;
+      })
+      .then(async (userDoc) => {
+        if (!userDoc) return;
+        if (userDoc.providerProfileComplete) return;
+
+        const providerProfile = await getProviderProfileByUid(user.uid, userDoc.providerProvinceSlug || '').catch(() => null);
+        if (!providerProfile) return;
+
+        const healedProfileState = {
+          providerProfileComplete: true,
+          providerProvince: providerProfile.province || userDoc.providerProvince || '',
+          providerProvinceSlug: providerProfile.provinceSlug || userDoc.providerProvinceSlug || '',
+          providerPublicId: providerProfile.providerPublicId || userDoc.providerPublicId || '',
+          whatsappNumber: providerProfile.whatsappNumber || userDoc.whatsappNumber || ''
+        };
+
+        await setDoc(doc(db, 'users', user.uid), healedProfileState, { merge: true });
+        persistAccountDetails(healedProfileState);
+        dispatchAuthChange(user);
       })
       .catch(() => {});
   }

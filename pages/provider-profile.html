@@ -14,70 +14,119 @@
 <body>
   <div id="site-header"></div>
 
-  <main class="provider-profile-page" data-provider-profile-page>
-    <section class="provider-profile-hero">
-      <div class="provider-profile-banner" data-provider-banner>
-        <button type="button" class="provider-profile-back" data-provider-back aria-label="Go back">
-          <i class="fa-solid fa-arrow-left"></i>
-        </button>
-        <div class="provider-profile-avatar-ring">
-          <img src="../images/logo/logo.jpg" alt="Provider profile" data-provider-avatar />
-        </div>
-
-        <div class="provider-profile-banner-copy">
-          <h1 data-provider-name>Loading provider...</h1>
-          <div class="provider-profile-banner-meta">
-            <div class="provider-profile-handle" data-provider-handle>@provider</div>
-            <a href="#" class="provider-profile-phone" data-provider-phone-link>
-              <i class="fa-solid fa-phone"></i>
-              <span data-provider-phone>Loading number...</span>
-            </a>
+  <main class="provider-profile-page is-loading" data-provider-profile-page>
+    <div class="provider-profile-skeleton-shell" aria-hidden="true">
+      <section class="provider-profile-hero provider-profile-skeleton-hero">
+        <div class="provider-profile-skeleton-banner">
+          <div class="provider-profile-skeleton-back provider-skeleton-block"></div>
+          <div class="provider-profile-skeleton-avatar provider-skeleton-block"></div>
+          <div class="provider-profile-skeleton-copy">
+            <span class="provider-skeleton-line provider-skeleton-line-name"></span>
+            <span class="provider-skeleton-line provider-skeleton-line-meta"></span>
           </div>
         </div>
-      </div>
-
-      <section class="provider-profile-summary">
-        <div class="provider-profile-summary-main">
-          <div class="provider-profile-actions">
-            <button type="button" class="provider-profile-action secondary" data-provider-edit-profile hidden>Edit Profile</button>
-            <a href="#" class="provider-profile-action" data-provider-message-link>Message</a>
-          </div>
-
-          <div class="provider-profile-stats" aria-label="Profile stats">
-            <div><strong data-provider-post-count>0</strong><span>Posts</span></div>
-            <div><strong data-provider-rating>0.0 ★</strong><span>Rating</span></div>
-            <div><strong data-provider-jobs>0</strong><span>Jobs done</span></div>
-          </div>
-
-          <div class="provider-profile-meta" aria-label="Work and location">
-            <div class="provider-profile-meta-item">
-              <i class="fa-solid fa-briefcase"></i>
-              <span data-provider-title></span>
+        <section class="provider-profile-summary">
+          <div class="provider-profile-summary-main provider-profile-skeleton-summary">
+            <div class="provider-profile-skeleton-actions">
+              <span class="provider-skeleton-chip"></span>
+              <span class="provider-skeleton-chip"></span>
             </div>
-            <div class="provider-profile-meta-item">
-              <i class="fa-solid fa-location-dot"></i>
-              <span data-provider-address></span>
+            <div class="provider-profile-skeleton-stats">
+              <span class="provider-skeleton-line provider-skeleton-line-stat"></span>
+              <span class="provider-skeleton-line provider-skeleton-line-stat"></span>
+              <span class="provider-skeleton-line provider-skeleton-line-stat"></span>
+            </div>
+            <div class="provider-profile-skeleton-meta">
+              <span class="provider-skeleton-line provider-skeleton-line-meta-wide"></span>
+              <span class="provider-skeleton-line provider-skeleton-line-meta-wide"></span>
+            </div>
+            <div class="provider-profile-skeleton-bio">
+              <span class="provider-skeleton-line provider-skeleton-line-bio"></span>
+              <span class="provider-skeleton-line provider-skeleton-line-bio short"></span>
             </div>
           </div>
+        </section>
+      </section>
 
-          <p class="provider-profile-bio" data-provider-bio></p>
+      <section class="provider-profile-gallery-head provider-profile-gallery-head-skeleton">
+        <div class="provider-profile-gallery-tab is-active">
+          <span>Previous Work</span>
         </div>
       </section>
-    </section>
 
-    <section class="provider-profile-gallery-head">
-      <div class="provider-profile-gallery-tab is-active">
-        <i class="fa-solid fa-table-cells-large"></i>
-        <span>Previous Work</span>
-      </div>
-    </section>
+      <section class="provider-profile-gallery">
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+      </section>
+    </div>
 
-    <section class="provider-profile-gallery" data-provider-post-grid>
-      <article class="provider-gallery-skeleton"></article>
-      <article class="provider-gallery-skeleton"></article>
-      <article class="provider-gallery-skeleton"></article>
-      <article class="provider-gallery-skeleton"></article>
-    </section>
+    <div class="provider-profile-live">
+      <section class="provider-profile-hero">
+        <div class="provider-profile-banner" data-provider-banner>
+          <button type="button" class="provider-profile-back" data-provider-back aria-label="Go back">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="provider-profile-avatar-ring">
+            <img src="../images/logo/logo.jpg" alt="Provider profile" data-provider-avatar />
+          </div>
+
+          <div class="provider-profile-banner-copy">
+            <h1 data-provider-name>Loading provider...</h1>
+            <div class="provider-profile-banner-meta">
+              <div class="provider-profile-handle" data-provider-handle>@provider</div>
+              <a href="#" class="provider-profile-phone" data-provider-phone-link>
+                <i class="fa-solid fa-phone"></i>
+                <span data-provider-phone>Loading number...</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <section class="provider-profile-summary">
+          <div class="provider-profile-summary-main">
+            <div class="provider-profile-actions">
+              <button type="button" class="provider-profile-action secondary" data-provider-edit-profile hidden>Edit Profile</button>
+              <a href="#" class="provider-profile-action" data-provider-message-link>Message</a>
+            </div>
+
+            <div class="provider-profile-stats" aria-label="Profile stats">
+              <div><strong data-provider-post-count>0</strong><span>Posts</span></div>
+              <div><strong data-provider-rating>0.0 ★</strong><span>Rating</span></div>
+              <div><strong data-provider-jobs>0</strong><span>Jobs done</span></div>
+            </div>
+
+            <div class="provider-profile-meta" aria-label="Work and location">
+              <div class="provider-profile-meta-item">
+                <i class="fa-solid fa-briefcase"></i>
+                <span data-provider-title></span>
+              </div>
+              <div class="provider-profile-meta-item">
+                <i class="fa-solid fa-location-dot"></i>
+                <span data-provider-address></span>
+              </div>
+            </div>
+
+            <p class="provider-profile-bio" data-provider-bio></p>
+          </div>
+        </section>
+      </section>
+
+      <section class="provider-profile-gallery-head">
+        <div class="provider-profile-gallery-tab is-active">
+          <i class="fa-solid fa-table-cells-large"></i>
+          <span>Previous Work</span>
+        </div>
+      </section>
+
+      <section class="provider-profile-gallery" data-provider-post-grid>
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+        <article class="provider-gallery-skeleton"></article>
+      </section>
+    </div>
   </main>
 
   <div class="provider-dialog-overlay" data-provider-dialog-overlay hidden>

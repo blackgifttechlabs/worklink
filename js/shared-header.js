@@ -215,6 +215,12 @@ function renderHeader() {
         <path d="M6 6l12 12M18 6L6 18"/>
       </svg>
     </button>
+    <a href="${base}index.html" class="mobile-nav-brand" aria-label="WorkLinkUp home">
+      <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" class="logo-image" />
+      <span class="logo-wordmark" aria-hidden="true">
+        <span class="logo-work">Work</span><span class="logo-link">Link</span>
+      </span>
+    </a>
     <div class="nav-inner">
       <div class="nav-item">
         <a href="${base}index.html" class="nav-link">Home</a>
@@ -644,19 +650,31 @@ function renderBottomNav() {
   </div>`;
 }
 
+function syncBottomNav() {
+  const existingBottomNav = document.querySelector('.shared-bottom-nav');
+  const bottomNavMarkup = renderBottomNav();
+
+  if (bottomNavMarkup) {
+    if (existingBottomNav) {
+      existingBottomNav.outerHTML = bottomNavMarkup;
+    } else {
+      document.body.insertAdjacentHTML('beforeend', bottomNavMarkup);
+    }
+    document.body.classList.add('has-shared-bottom-nav');
+    return;
+  }
+
+  existingBottomNav?.remove();
+  document.body.classList.remove('has-shared-bottom-nav');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   injectSharedHeaderOverrides();
   const headerEl = document.getElementById('site-header');
   if (headerEl) headerEl.innerHTML = renderHeader();
   const footerEl = document.getElementById('site-footer');
   if (footerEl) footerEl.innerHTML = renderFooter();
-  const bottomNavMarkup = renderBottomNav();
-  if (bottomNavMarkup && !document.querySelector('.shared-bottom-nav')) {
-    document.body.insertAdjacentHTML('beforeend', bottomNavMarkup);
-    document.body.classList.add('has-shared-bottom-nav');
-  } else {
-    document.body.classList.remove('has-shared-bottom-nav');
-  }
+  syncBottomNav();
   if (!document.getElementById('cookie-banner')) {
     document.body.insertAdjacentHTML('beforeend', renderCookieBanner());
   }
@@ -904,4 +922,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   syncMobileNav();
   syncDesktopNav();
+
+  window.addEventListener('softgiggles-auth-changed', () => {
+    syncBottomNav();
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'softgiggles_account') {
+      syncBottomNav();
+    }
+  });
 });
