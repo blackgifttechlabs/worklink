@@ -26,6 +26,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
 
@@ -552,6 +553,7 @@ async function sendMessageToProvider(payload = {}) {
     fromProvinceSlug: sender.providerProvinceSlug || '',
     toProvinceSlug: recipientProvinceSlug,
     text: String(payload.text || '').trim(),
+    viewedAtMs: 0,
     createdAtMs: now,
     createdAt: serverTimestamp()
   };
@@ -576,6 +578,25 @@ async function listMessagesWithUser(peerUid) {
     .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
 }
 
+async function markConversationViewed(peerUid) {
+  if (!auth.currentUser || !peerUid) return { updated: 0 };
+  const conversationId = createConversationId(auth.currentUser.uid, peerUid);
+  const snapshot = await getDocs(query(collection(db, 'messages'), where('conversationId', '==', conversationId)));
+  const pending = snapshot.docs.filter((docSnapshot) => {
+    const data = docSnapshot.data();
+    return data.toUid === auth.currentUser.uid && !Number(data.viewedAtMs || 0);
+  });
+
+  if (!pending.length) return { updated: 0 };
+
+  const now = Date.now();
+  await Promise.all(pending.map((docSnapshot) => updateDoc(docSnapshot.ref, {
+    viewedAtMs: now,
+    viewedAt: serverTimestamp()
+  })));
+  return { updated: pending.length, viewedAtMs: now };
+}
+
 async function listConversations() {
   if (!auth.currentUser) return [];
   const snapshot = await getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', auth.currentUser.uid)));
@@ -583,18 +604,41 @@ async function listConversations() {
 
   snapshot.docs.forEach((docSnapshot) => {
     const data = docSnapshot.data();
-    const existing = conversations.get(data.conversationId);
-    if (!existing || Number(data.createdAtMs || 0) > Number(existing.createdAtMs || 0)) {
-      const peerUid = data.fromUid === auth.currentUser.uid ? data.toUid : data.fromUid;
-      const peerName = data.fromUid === auth.currentUser.uid ? data.toName : data.fromName;
-      conversations.set(data.conversationId, {
-        conversationId: data.conversationId,
-        peerUid,
-        peerName,
-        lastMessage: data.text,
-        createdAtMs: data.createdAtMs
-      });
+    const peerUid = data.fromUid === auth.currentUser.uid ? data.toUid : data.fromUid;
+    const peerName = data.fromUid === auth.currentUser.uid ? data.toName : data.fromName;
+    const peerProvinceSlug = data.fromUid === auth.currentUser.uid ? data.toProvinceSlug : data.fromProvinceSlug;
+    const existing = conversations.get(data.conversationId) || {
+      conversationId: data.conversationId,
+      peerUid,
+      peerName,
+      peerProvinceSlug: peerProvinceSlug || '',
+      lastMessage: '',
+      createdAtMs: 0,
+      unreadCount: 0,
+      lastSeenAtMs: 0,
+      lastMessageIsMine: false,
+      lastMessageViewedAtMs: 0
+    };
+
+    if (data.toUid === auth.currentUser.uid && !Number(data.viewedAtMs || 0)) {
+      existing.unreadCount += 1;
     }
+
+    if (data.fromUid !== auth.currentUser.uid) {
+      existing.lastSeenAtMs = Math.max(Number(existing.lastSeenAtMs || 0), Number(data.createdAtMs || 0));
+    }
+
+    if (Number(data.createdAtMs || 0) >= Number(existing.createdAtMs || 0)) {
+      existing.peerUid = peerUid;
+      existing.peerName = peerName;
+      existing.peerProvinceSlug = peerProvinceSlug || existing.peerProvinceSlug || '';
+      existing.lastMessage = data.text;
+      existing.createdAtMs = data.createdAtMs;
+      existing.lastMessageIsMine = data.fromUid === auth.currentUser.uid;
+      existing.lastMessageViewedAtMs = Number(data.viewedAtMs || 0);
+    }
+
+    conversations.set(data.conversationId, existing);
   });
 
   return Array.from(conversations.values()).sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
@@ -718,5 +762,6 @@ window.softGigglesAuth = {
   deleteProviderPost,
   sendMessageToProvider,
   listMessagesWithUser,
-  listConversations
+  listConversations,
+  markConversationViewed
 };

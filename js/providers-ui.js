@@ -922,30 +922,65 @@
     if (!authHelper || typeof authHelper.updateProviderProfile !== 'function') return;
 
     openProviderDialog(`
-      <div class="provider-dialog-card">
+      <div class="provider-dialog-card provider-dialog-card-editor">
         <h3>Edit your profile</h3>
         <p>Update the details finders see on your artisan profile.</p>
         <form class="provider-editor-form" data-provider-editor-form>
-          <div class="provider-editor-grid">
-            <label><span>Full name</span><input name="fullName" type="text" value="${escapeHtml(provider.displayName || '')}" required /></label>
-            <label><span>WhatsApp number</span><input name="whatsappNumber" type="tel" value="${escapeHtml(provider.whatsappNumber || '')}" required /></label>
-            <label><span>Province</span>
-              <select name="province" required>
-                ${ZIMBABWE_PROVINCES.map((provinceName) => `<option value="${provinceName}" ${provinceName === provider.province ? 'selected' : ''}>${provinceName}</option>`).join('')}
-              </select>
-            </label>
-            <label><span>City / suburb</span><input name="city" type="text" value="${escapeHtml(provider.city || '')}" required /></label>
-            <label class="provider-editor-span"><span>Address</span><input name="address" type="text" value="${escapeHtml(provider.address || '')}" required /></label>
-            <label><span>Experience</span><input name="experience" type="text" value="${escapeHtml(provider.experience || '')}" required /></label>
-            <label><span>Category</span>
-              <select name="primaryCategory" required>
-                ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
-              </select>
-            </label>
-            <label><span>Specialty</span><input name="specialty" type="text" value="${escapeHtml(provider.specialty || '')}" required /></label>
-            <label class="provider-editor-span"><span>Bio</span><textarea name="bio" required>${escapeHtml(provider.bio || '')}</textarea></label>
-            <label><span>Profile image</span><input type="file" name="profileImageFile" accept="image/*" /></label>
-            <label><span>Banner image</span><input type="file" name="bannerImageFile" accept="image/*" /></label>
+          <div class="provider-editor-scroll">
+            <section class="provider-editor-section">
+              <div class="provider-editor-section-head">
+                <strong>Identity</strong>
+                <span>Name and contact details</span>
+              </div>
+              <div class="provider-editor-grid">
+                <label><span>Full name</span><input name="fullName" type="text" value="${escapeHtml(provider.displayName || '')}" required /></label>
+                <label><span>WhatsApp number</span><input name="whatsappNumber" type="tel" value="${escapeHtml(provider.whatsappNumber || '')}" required /></label>
+              </div>
+            </section>
+
+            <section class="provider-editor-section">
+              <div class="provider-editor-section-head">
+                <strong>Location</strong>
+                <span>Where clients can find you</span>
+              </div>
+              <div class="provider-editor-grid">
+                <label><span>Province</span>
+                  <select name="province" required>
+                    ${ZIMBABWE_PROVINCES.map((provinceName) => `<option value="${provinceName}" ${provinceName === provider.province ? 'selected' : ''}>${provinceName}</option>`).join('')}
+                  </select>
+                </label>
+                <label><span>City / suburb</span><input name="city" type="text" value="${escapeHtml(provider.city || '')}" required /></label>
+                <label class="provider-editor-span"><span>Address</span><input name="address" type="text" value="${escapeHtml(provider.address || '')}" required /></label>
+              </div>
+            </section>
+
+            <section class="provider-editor-section">
+              <div class="provider-editor-section-head">
+                <strong>Work Details</strong>
+                <span>What you do and how you present it</span>
+              </div>
+              <div class="provider-editor-grid">
+                <label><span>Experience</span><input name="experience" type="text" value="${escapeHtml(provider.experience || '')}" required /></label>
+                <label><span>Category</span>
+                  <select name="primaryCategory" required>
+                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
+                  </select>
+                </label>
+                <label class="provider-editor-span"><span>Specialty</span><input name="specialty" type="text" value="${escapeHtml(provider.specialty || '')}" required /></label>
+                <label class="provider-editor-span"><span>Bio</span><textarea name="bio" required>${escapeHtml(provider.bio || '')}</textarea></label>
+              </div>
+            </section>
+
+            <section class="provider-editor-section">
+              <div class="provider-editor-section-head">
+                <strong>Images</strong>
+                <span>Update the pictures shown on your profile</span>
+              </div>
+              <div class="provider-editor-grid">
+                <label><span>Profile image</span><input type="file" name="profileImageFile" accept="image/*" /></label>
+                <label><span>Banner image</span><input type="file" name="bannerImageFile" accept="image/*" /></label>
+              </div>
+            </section>
           </div>
           <div class="provider-editor-actions">
             <button type="button" class="provider-profile-action secondary" data-provider-dialog-cancel>Cancel</button>
@@ -1357,6 +1392,91 @@
     refreshPosts();
   }
 
+  function formatMessagesListStamp(value) {
+    const timestamp = Number(value || 0);
+    if (!timestamp) return '';
+    const now = new Date();
+    const target = new Date(timestamp);
+    const sameDay = now.toDateString() === target.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (sameDay) {
+      return target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (yesterday.toDateString() === target.toDateString()) {
+      return 'Yesterday';
+    }
+    const diffDays = Math.floor((now - target) / 86400000);
+    if (diffDays < 7) {
+      return target.toLocaleDateString([], { weekday: 'short' });
+    }
+    return target.toLocaleDateString([], { day: '2-digit', month: 'short' });
+  }
+
+  function formatMessageDayLabel(value) {
+    const timestamp = Number(value || 0);
+    if (!timestamp) return '';
+    const now = new Date();
+    const target = new Date(timestamp);
+    const sameDay = now.toDateString() === target.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (sameDay) return 'Today';
+    if (yesterday.toDateString() === target.toDateString()) return 'Yesterday';
+    return target.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' });
+  }
+
+  function formatLastSeen(value) {
+    const timestamp = Number(value || 0);
+    if (!timestamp) return 'Recently active';
+    const label = formatMessageDayLabel(timestamp);
+    const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return label === 'Today'
+      ? `Last seen today at ${time}`
+      : label === 'Yesterday'
+        ? `Last seen yesterday at ${time}`
+        : `Last seen ${label} at ${time}`;
+  }
+
+  function buildInitials(value) {
+    const parts = String(value || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2);
+    return (parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'WL');
+  }
+
+  function buildMessageStatusMarkup(message, accountUid) {
+    if (message.fromUid !== accountUid) return '';
+    return `
+      <span class="message-status ${Number(message.viewedAtMs || 0) ? 'is-viewed' : ''}" aria-label="${Number(message.viewedAtMs || 0) ? 'Viewed' : 'Sent'}">
+        <i class="fa-solid fa-check-double"></i>
+      </span>
+    `;
+  }
+
+  function buildThreadMessagesMarkup(messages, accountUid) {
+    let previousDayKey = '';
+    return messages.map((message) => {
+      const dayKey = formatMessageDayLabel(message.createdAtMs);
+      const showDay = dayKey && dayKey !== previousDayKey;
+      previousDayKey = dayKey;
+      return `
+        ${showDay ? `<div class="messages-day-divider"><span>${escapeHtml(dayKey)}</span></div>` : ''}
+        <div class="message-row ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'}">
+          <div class="message-bubble ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'}">
+            <div class="message-bubble-text">${escapeHtml(message.text)}</div>
+            <div class="message-bubble-meta">
+              <span>${escapeHtml(new Date(Number(message.createdAtMs || 0)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>
+              ${buildMessageStatusMarkup(message, accountUid)}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   async function renderMessagesPage() {
     const page = document.querySelector('[data-messages-page]');
     if (!page) return;
@@ -1370,87 +1490,436 @@
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
 
+    page.innerHTML = `
+      <div class="messages-layout" data-messages-layout>
+        <aside class="messages-sidebar">
+          <div class="messages-home-head">
+            <div>
+              <p class="messages-home-kicker">WorkLinkUp Inbox</p>
+              <h1>Messages</h1>
+            </div>
+            <button type="button" class="messages-home-add" data-message-clear-search aria-label="Start a new chat">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+
+          <label class="messages-search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" placeholder="Search or start a new chat" data-message-search />
+          </label>
+
+          <div class="messages-filter-row" data-message-filter-row></div>
+          <section class="messages-suggestions" data-message-suggestions hidden></section>
+          <section class="messages-chat-list" data-chat-list></section>
+        </aside>
+
+        <section class="messages-thread">
+          <div class="messages-thread-head">
+            <div class="messages-thread-head-main">
+              <button type="button" class="messages-thread-back" data-thread-back aria-label="Back to messages list">
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+              <div class="messages-thread-avatar" data-message-thread-avatar>WL</div>
+              <div class="messages-thread-head-copy">
+                <div class="messages-thread-name-row">
+                  <strong data-message-thread-title>Messages</strong>
+                  <span class="messages-verified-tick" data-message-thread-verified hidden><i class="fa-solid fa-check"></i></span>
+                </div>
+                <span data-message-thread-status>Select a chat to start</span>
+              </div>
+            </div>
+            <button type="button" class="messages-thread-search-toggle" data-thread-focus-search aria-label="Search providers">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+
+          <div class="messages-thread-body" data-message-thread></div>
+
+          <form class="messages-thread-compose" data-messages-compose>
+            <input class="messages-compose-input" type="text" placeholder="Type a message..." data-messages-compose-input />
+            <button type="submit" class="messages-send-btn">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Send</span>
+            </button>
+          </form>
+        </section>
+      </div>
+    `;
+
     const params = new URLSearchParams(window.location.search);
-    const providerUid = params.get('provider') || '';
-    const providerProvince = params.get('province') || '';
     const chatList = page.querySelector('[data-chat-list]');
     const threadBody = page.querySelector('[data-message-thread]');
     const threadTitle = page.querySelector('[data-message-thread-title]');
+    const threadStatus = page.querySelector('[data-message-thread-status]');
+    const threadAvatar = page.querySelector('[data-message-thread-avatar]');
+    const threadVerified = page.querySelector('[data-message-thread-verified]');
     const composeForm = page.querySelector('[data-messages-compose]');
     const composeInput = page.querySelector('[data-messages-compose-input]');
-    let activePeerUid = providerUid;
-    let activePeerName = 'Choose a conversation';
+    const filterRow = page.querySelector('[data-message-filter-row]');
+    const searchInput = page.querySelector('[data-message-search]');
+    const suggestions = page.querySelector('[data-message-suggestions]');
+    const clearSearchBtn = page.querySelector('[data-message-clear-search]');
+    const threadBackBtn = page.querySelector('[data-thread-back]');
+    const focusSearchBtn = page.querySelector('[data-thread-focus-search]');
 
-    async function refreshChatList() {
-      const conversations = await authHelper.listConversations();
-      if (providerUid && !conversations.some((conversation) => conversation.peerUid === providerUid)) {
-        const provider = await getProviderByIdentity(providerUid, providerProvince);
-        if (provider) {
-          conversations.unshift({
-            conversationId: `${account.uid}__${provider.uid}`,
-            peerUid: provider.uid,
-            peerName: provider.displayName,
-            lastMessage: 'Start the conversation',
-            createdAtMs: Date.now()
-          });
-        }
+    const state = {
+      activePeerUid: params.get('provider') || '',
+      activePeerName: 'Messages',
+      activePeerProvince: params.get('province') || '',
+      activePeerProfile: null,
+      filter: 'all',
+      query: '',
+      conversations: []
+    };
+
+    const providerDirectory = new Map();
+    let providerListPromise = null;
+    let searchRequestId = 0;
+
+    function setThreadOpen(isOpen) {
+      page.classList.toggle('is-thread-open', Boolean(isOpen));
+    }
+
+    function setActiveConversation(peer) {
+      state.activePeerUid = peer?.uid || '';
+      state.activePeerName = peer?.name || 'Messages';
+      state.activePeerProvince = peer?.provinceSlug || '';
+      state.activePeerProfile = peer?.profile || null;
+      setThreadOpen(Boolean(state.activePeerUid));
+
+      const nextUrl = new URL(window.location.href);
+      if (state.activePeerUid) {
+        nextUrl.searchParams.set('provider', state.activePeerUid);
+        if (state.activePeerProvince) nextUrl.searchParams.set('province', state.activePeerProvince);
+      } else {
+        nextUrl.searchParams.delete('provider');
+        nextUrl.searchParams.delete('province');
       }
+      window.history.replaceState({}, '', nextUrl.toString());
+    }
 
-      chatList.innerHTML = conversations.length
-        ? conversations.map((conversation) => `
-          <button type="button" class="messages-chat-item ${conversation.peerUid === activePeerUid ? 'is-active' : ''}" data-chat-peer="${escapeHtml(conversation.peerUid)}">
-            <strong>${escapeHtml(conversation.peerName)}</strong>
-            <div>${escapeHtml(conversation.lastMessage)}</div>
-          </button>
-        `).join('')
-        : `<div class="specialists-empty">No messages yet. Start by viewing a provider profile.</div>`;
+    function getProfileImageMarkup(profile, fallbackName) {
+      const source = profile?.profileImageData ? resolveMediaSrc(profile.profileImageData, 'images/logo/logo.jpg') : '';
+      return source
+        ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(fallbackName)} profile image" />`
+        : `<span>${escapeHtml(buildInitials(fallbackName))}</span>`;
+    }
 
-      chatList.querySelectorAll('[data-chat-peer]').forEach((button) => {
+    function renderFilterChips() {
+      const unreadCount = state.conversations.reduce((total, conversation) => total + Number(conversation.unreadCount || 0), 0);
+      const chips = [
+        { key: 'all', label: 'All', count: state.conversations.length },
+        { key: 'unread', label: 'Unread', count: unreadCount },
+        { key: 'recent', label: 'Recent', count: Math.min(state.conversations.length, 9) }
+      ];
+
+      filterRow.innerHTML = chips.map((chip) => `
+        <button type="button" class="messages-filter-chip ${state.filter === chip.key ? 'is-active' : ''}" data-message-filter="${chip.key}">
+          <span>${chip.label}</span>
+          <strong>${chip.count}</strong>
+        </button>
+      `).join('');
+
+      filterRow.querySelectorAll('[data-message-filter]').forEach((button) => {
         button.addEventListener('click', () => {
-          activePeerUid = button.getAttribute('data-chat-peer') || '';
-          activePeerName = button.querySelector('strong')?.textContent || 'Conversation';
-          refreshMessages();
-          refreshChatList();
+          state.filter = button.getAttribute('data-message-filter') || 'all';
+          renderChatList();
+          renderFilterChips();
         });
       });
     }
 
-    async function refreshMessages() {
-      if (!activePeerUid) {
-        threadTitle.textContent = 'Messages';
-        threadBody.innerHTML = `<div class="messages-empty"><div><h2>Select a chat</h2><p>Your conversation with a provider will appear here.</p></div></div>`;
+    async function ensureProviderDirectory() {
+      if (!providerListPromise) {
+        providerListPromise = getProviders().then((providers) => {
+          providers.forEach((provider) => providerDirectory.set(provider.uid, provider));
+          return providers;
+        });
+      }
+      return providerListPromise;
+    }
+
+    async function ensureProviderProfile(uid, provinceSlug = '') {
+      if (!uid) return null;
+      if (providerDirectory.has(uid)) return providerDirectory.get(uid);
+      const provider = await getProviderByIdentity(uid, provinceSlug);
+      if (provider) providerDirectory.set(uid, provider);
+      return provider;
+    }
+
+    function getFilteredConversations() {
+      return state.conversations.filter((conversation) => {
+        if (state.filter === 'unread' && !Number(conversation.unreadCount || 0)) return false;
+        if (state.filter === 'recent' && !Number(conversation.createdAtMs || 0)) return false;
+        if (!state.query) return true;
+        const haystack = `${conversation.peerName} ${conversation.lastMessage} ${conversation.profile?.specialty || ''} ${conversation.profile?.primaryCategory || ''}`.toLowerCase();
+        return haystack.includes(state.query.toLowerCase());
+      });
+    }
+
+    function renderChatList() {
+      const conversations = getFilteredConversations();
+      chatList.innerHTML = conversations.length
+        ? conversations.map((conversation) => `
+          <button
+            type="button"
+            class="messages-chat-item ${conversation.peerUid === state.activePeerUid ? 'is-active' : ''}"
+            data-chat-peer="${escapeHtml(conversation.peerUid)}"
+            data-chat-province="${escapeHtml(conversation.peerProvinceSlug || '')}"
+            data-chat-name="${escapeHtml(conversation.peerName)}"
+          >
+            <div class="messages-chat-avatar">
+              ${getProfileImageMarkup(conversation.profile, conversation.peerName)}
+            </div>
+            <div class="messages-chat-copy">
+              <div class="messages-chat-top">
+                <div class="messages-chat-title">
+                  <strong>${escapeHtml(conversation.peerName)}</strong>
+                  <span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>
+                </div>
+                <span class="messages-chat-time">${escapeHtml(formatMessagesListStamp(conversation.createdAtMs))}</span>
+              </div>
+              <div class="messages-chat-role">${escapeHtml(conversation.profile?.specialty || conversation.profile?.primaryCategory || 'Specialist')}</div>
+              <div class="messages-chat-preview-row">
+                <div class="messages-chat-preview ${conversation.lastMessageIsMine ? 'is-mine' : ''}">
+                  ${conversation.lastMessageIsMine ? buildMessageStatusMarkup({ fromUid: account.uid, viewedAtMs: conversation.lastMessageViewedAtMs }, account.uid) : ''}
+                  <span>${escapeHtml(conversation.lastMessage || 'Start the conversation')}</span>
+                </div>
+                ${Number(conversation.unreadCount || 0) ? `<span class="messages-chat-unread">${conversation.unreadCount}</span>` : ''}
+              </div>
+            </div>
+          </button>
+        `).join('')
+        : `<div class="messages-empty messages-home-empty"><div><h2>No chats yet</h2><p>Search for a specialist above and start a conversation.</p></div></div>`;
+
+      chatList.querySelectorAll('[data-chat-peer]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const peerUid = button.getAttribute('data-chat-peer') || '';
+          const peerProvinceSlug = button.getAttribute('data-chat-province') || '';
+          const peerName = button.getAttribute('data-chat-name') || 'Conversation';
+          const profile = await ensureProviderProfile(peerUid, peerProvinceSlug);
+          setActiveConversation({
+            uid: peerUid,
+            provinceSlug: peerProvinceSlug || profile?.provinceSlug || '',
+            name: profile?.displayName || peerName,
+            profile
+          });
+          await refreshMessages();
+        });
+      });
+    }
+
+    function renderSuggestionSkeletons() {
+      suggestions.hidden = false;
+      suggestions.innerHTML = `
+        <div class="messages-suggestions-head">
+          <strong>Search results</strong>
+          <span>Looking for specialists</span>
+        </div>
+        <div class="messages-suggestion-grid">
+          <article class="messages-suggestion-skeleton"></article>
+          <article class="messages-suggestion-skeleton"></article>
+          <article class="messages-suggestion-skeleton"></article>
+        </div>
+      `;
+    }
+
+    async function refreshSuggestions() {
+      const query = state.query.trim();
+      if (!query) {
+        suggestions.hidden = true;
+        suggestions.innerHTML = '';
         return;
       }
 
-      const provider = await getProviderByIdentity(activePeerUid, providerProvince);
-      activePeerName = provider?.displayName || activePeerName;
-      threadTitle.textContent = activePeerName;
-      const messages = await authHelper.listMessagesWithUser(activePeerUid);
-      threadBody.innerHTML = messages.length
-        ? messages.map((message) => `
-          <div class="message-bubble ${message.fromUid === account.uid ? 'is-mine' : 'is-theirs'}">${escapeHtml(message.text)}</div>
-        `).join('')
-        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(activePeerName)}.</p></div></div>`;
-      threadBody.scrollTop = threadBody.scrollHeight;
+      renderSuggestionSkeletons();
+      const requestId = ++searchRequestId;
+      const providers = await ensureProviderDirectory();
+      if (requestId !== searchRequestId) return;
+
+      const results = providers
+        .filter((provider) => provider.uid !== account.uid)
+        .filter((provider) => {
+          const haystack = `${provider.displayName} ${provider.specialty} ${provider.primaryCategory} ${provider.bio} ${provider.city} ${provider.address}`.toLowerCase();
+          return haystack.includes(query.toLowerCase());
+        })
+        .slice(0, 6);
+
+      suggestions.hidden = false;
+      suggestions.innerHTML = `
+        <div class="messages-suggestions-head">
+          <strong>Search results</strong>
+          <span>${results.length ? `${results.length} specialist${results.length === 1 ? '' : 's'} found` : 'No specialists matched that search'}</span>
+        </div>
+        <div class="messages-suggestion-grid">
+          ${results.length ? results.map((provider) => `
+            <button
+              type="button"
+              class="messages-suggestion-card"
+              data-suggestion-peer="${escapeHtml(provider.uid)}"
+              data-suggestion-province="${escapeHtml(provider.provinceSlug || '')}"
+            >
+              <div class="messages-suggestion-avatar">
+                ${getProfileImageMarkup(provider, provider.displayName)}
+              </div>
+              <div class="messages-suggestion-copy">
+                <div class="messages-suggestion-title">
+                  <strong>${escapeHtml(provider.displayName)}</strong>
+                  <span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>
+                </div>
+                <div class="messages-suggestion-role">${escapeHtml(provider.specialty || provider.primaryCategory)}</div>
+                <div class="messages-suggestion-meta">
+                  <span><i class="fa-solid fa-briefcase"></i>${escapeHtml(provider.primaryCategory)}</span>
+                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(provider.city || provider.province)}</span>
+                </div>
+              </div>
+              <span class="messages-suggestion-cta">Message</span>
+            </button>
+          `).join('') : `<div class="messages-empty messages-suggestion-empty"><div><h2>No specialist found</h2><p>Try a job title like Hairdresser, Plumber, or Photographer.</p></div></div>`}
+        </div>
+      `;
+
+      suggestions.querySelectorAll('[data-suggestion-peer]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const peerUid = button.getAttribute('data-suggestion-peer') || '';
+          const peerProvinceSlug = button.getAttribute('data-suggestion-province') || '';
+          const profile = await ensureProviderProfile(peerUid, peerProvinceSlug);
+          if (!profile) return;
+          setActiveConversation({
+            uid: profile.uid,
+            provinceSlug: profile.provinceSlug,
+            name: profile.displayName,
+            profile
+          });
+          await refreshMessages();
+          if (composeInput instanceof HTMLInputElement) composeInput.focus();
+        });
+      });
     }
+
+    async function refreshChatList() {
+      const conversations = await authHelper.listConversations();
+      await ensureProviderDirectory();
+
+      const nextConversations = await Promise.all(conversations.map(async (conversation) => {
+        const profile = await ensureProviderProfile(conversation.peerUid, conversation.peerProvinceSlug || '');
+        return {
+          ...conversation,
+          profile
+        };
+      }));
+
+      if (state.activePeerUid && !nextConversations.some((conversation) => conversation.peerUid === state.activePeerUid)) {
+        const profile = await ensureProviderProfile(state.activePeerUid, state.activePeerProvince);
+        if (profile) {
+          nextConversations.unshift({
+            conversationId: `${account.uid}__${profile.uid}`,
+            peerUid: profile.uid,
+            peerName: profile.displayName,
+            peerProvinceSlug: profile.provinceSlug || '',
+            lastMessage: 'Start the conversation',
+            createdAtMs: Date.now(),
+            unreadCount: 0,
+            lastSeenAtMs: 0,
+            lastMessageIsMine: false,
+            lastMessageViewedAtMs: 0,
+            profile
+          });
+        }
+      }
+
+      state.conversations = nextConversations;
+      renderFilterChips();
+      renderChatList();
+    }
+
+    async function refreshMessages() {
+      const submitBtn = composeForm?.querySelector('.messages-send-btn');
+      if (!state.activePeerUid) {
+        setThreadOpen(false);
+        threadTitle.textContent = 'Messages';
+        threadStatus.textContent = 'Select a chat to start';
+        threadAvatar.textContent = 'WL';
+        threadVerified.hidden = true;
+        threadBody.innerHTML = `<div class="messages-empty"><div><h2>Select a chat</h2><p>Your conversations and search results will appear on the left.</p></div></div>`;
+        if (composeInput instanceof HTMLInputElement) composeInput.disabled = true;
+        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+        return;
+      }
+
+      const profile = await ensureProviderProfile(state.activePeerUid, state.activePeerProvince);
+      if (profile) {
+        state.activePeerProfile = profile;
+        state.activePeerName = profile.displayName;
+        state.activePeerProvince = profile.provinceSlug || state.activePeerProvince;
+      }
+
+      await authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
+      const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
+      const lastSeenAtMs = messages.reduce((latest, message) => (
+        message.fromUid === state.activePeerUid
+          ? Math.max(latest, Number(message.createdAtMs || 0))
+          : latest
+      ), 0);
+
+      threadTitle.textContent = state.activePeerName || 'Conversation';
+      threadStatus.textContent = formatLastSeen(lastSeenAtMs);
+      threadVerified.hidden = false;
+      threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+
+      threadBody.innerHTML = messages.length
+        ? buildThreadMessagesMarkup(messages, account.uid)
+        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(state.activePeerName)}.</p></div></div>`;
+      threadBody.scrollTop = threadBody.scrollHeight;
+
+      if (composeInput instanceof HTMLInputElement) composeInput.disabled = false;
+      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+      setThreadOpen(true);
+      await refreshChatList();
+    }
+
+    searchInput?.addEventListener('input', async (event) => {
+      state.query = event.target.value.trim();
+      renderChatList();
+      refreshSuggestions();
+    });
+
+    clearSearchBtn?.addEventListener('click', () => {
+      state.query = '';
+      if (searchInput instanceof HTMLInputElement) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      renderChatList();
+      refreshSuggestions();
+    });
+
+    focusSearchBtn?.addEventListener('click', () => {
+      searchInput?.focus();
+    });
+
+    threadBackBtn?.addEventListener('click', async () => {
+      setActiveConversation(null);
+      await refreshMessages();
+      renderChatList();
+    });
 
     composeForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!activePeerUid) return;
+      if (!state.activePeerUid) return;
       const text = composeInput?.value.trim() || '';
       if (!text) return;
       const submitBtn = composeForm.querySelector('.messages-send-btn');
       if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
       try {
         await authHelper.sendMessageToProvider({
-          toUid: activePeerUid,
-          toProvinceSlug: providerProvince,
-          toName: activePeerName,
+          toUid: state.activePeerUid,
+          toProvinceSlug: state.activePeerProvince,
+          toName: state.activePeerName,
           text
         });
         composeForm.reset();
-        refreshMessages();
-        refreshChatList();
+        await refreshMessages();
       } catch (error) {
         window.alert(error.message || 'Could not send message.');
       } finally {
@@ -1458,8 +1927,21 @@
       }
     });
 
-    refreshChatList();
-    refreshMessages();
+    await refreshChatList();
+    await refreshMessages();
+    refreshSuggestions();
+
+    const pollId = window.setInterval(async () => {
+      if (state.activePeerUid) {
+        await refreshMessages();
+      } else {
+        await refreshChatList();
+      }
+    }, 15000);
+
+    window.addEventListener('beforeunload', () => {
+      window.clearInterval(pollId);
+    }, { once: true });
   }
 
   async function enrichAccountPage() {
