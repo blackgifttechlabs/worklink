@@ -9,6 +9,14 @@
     messages: 'Messages',
     'admin-activity': 'Admin Activity'
   };
+  const VIEW_ROUTES = {
+    dashboard: 'dashboard.html',
+    users: 'users.html',
+    providers: 'providers.html',
+    engagement: 'engagement.html',
+    messages: 'messages.html',
+    'admin-activity': 'admin-activity.html'
+  };
 
   const state = {
     view: 'dashboard',
@@ -232,7 +240,7 @@
 
   function readAdminSession() {
     try {
-      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+      const raw = sessionStorage.getItem(ADMIN_SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (error) {
       return null;
@@ -240,17 +248,27 @@
   }
 
   function hasAdminSession() {
-    return false;
+    return Boolean(readAdminSession()?.id);
   }
 
-  function saveAdminSession() {
-    clearAdminSession();
+  function saveAdminSession(admin = state.currentAdmin) {
+    if (!admin) return;
+
+    try {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+        id: admin.id || '',
+        name: admin.name || '',
+        email: admin.email || '',
+        role: admin.role || 'Admin'
+      }));
+    } catch (error) {
+      // Ignore storage failures and keep the page usable.
+    }
   }
 
   function clearAdminSession() {
     state.currentAdmin = null;
     try {
-      localStorage.removeItem(ADMIN_SESSION_KEY);
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
     } catch (error) {
       // Ignore storage failures and keep the page usable.
@@ -334,12 +352,17 @@
     return 'System';
   }
 
+  function getInitialView() {
+    const pageView = document.body?.dataset?.adminView || '';
+    return VIEW_TITLES[pageView] ? pageView : 'dashboard';
+  }
+
   function setView(view) {
     state.view = VIEW_TITLES[view] ? view : 'dashboard';
     if (refs.viewTitle) refs.viewTitle.textContent = VIEW_TITLES[state.view];
 
-    document.querySelectorAll('[data-admin-view]').forEach((button) => {
-      button.classList.toggle('is-active', button.getAttribute('data-admin-view') === state.view);
+    document.querySelectorAll('[data-admin-view]').forEach((link) => {
+      link.classList.toggle('is-active', link.getAttribute('data-admin-view') === state.view);
     });
 
     document.querySelectorAll('[data-admin-panel]').forEach((panel) => {
@@ -347,6 +370,12 @@
     });
 
     setSidebarOpen(false);
+  }
+
+  function renderSidebarMetrics() {
+    const metrics = state.snapshot?.metrics || {};
+    if (refs.sidebarTotalUsers) refs.sidebarTotalUsers.textContent = `${formatNumber(metrics.totalUsers || 0)} users`;
+    if (refs.sidebarLastSync) refs.sidebarLastSync.textContent = state.lastLoadedAtMs ? getRelativeTime(state.lastLoadedAtMs) : 'Waiting...';
   }
 
   function renderSparkline(values, strokeColor, fillColor) {
@@ -545,9 +574,6 @@
       { label: 'Messages', value: messageSeries[messageSeries.length - 1] || 0, color: '#f43f5e' },
       { label: 'Commerce', value: commerceSeries[commerceSeries.length - 1] || 0, color: '#a855f7' }
     ];
-
-    if (refs.sidebarTotalUsers) refs.sidebarTotalUsers.textContent = `${formatNumber(metrics.totalUsers)} users`;
-    if (refs.sidebarLastSync) refs.sidebarLastSync.textContent = getRelativeTime(state.lastLoadedAtMs);
 
     refs.overviewDashboard.innerHTML = `
       <article class="admin-hero-card">
@@ -1212,12 +1238,28 @@
   }
 
   function renderAll() {
+    renderSidebarMetrics();
     renderOverview();
     renderUsers();
     renderProviders();
     renderEngagement();
     renderMessages();
     renderAdminActivity();
+  }
+
+  function logCurrentView() {
+    if (!state.currentAdmin) return;
+
+    logAdminAction(
+      'admin_view_changed',
+      'Admin view opened',
+      `${state.currentAdmin.name || 'An admin'} opened the ${VIEW_TITLES[state.view] || 'Dashboard'} page.`,
+      {
+        uid: state.view,
+        name: VIEW_TITLES[state.view] || 'Dashboard',
+        sourceRef: `admin-view/${VIEW_ROUTES[state.view] || state.view}`
+      }
+    );
   }
 
   function setLoadingTables(copy) {
@@ -1317,6 +1359,7 @@
       saveAdminSession();
       showApp();
       loadDashboardData();
+      logCurrentView();
       logAdminAction('admin_login', 'Admin signed in', `${matchedAdmin.name} unlocked the admin console.`, {
         uid: matchedAdmin.id,
         name: matchedAdmin.name,
@@ -1324,15 +1367,10 @@
       });
     });
 
-    document.querySelectorAll('[data-admin-view]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const nextView = button.getAttribute('data-admin-view') || 'dashboard';
+    document.querySelectorAll('[data-admin-view]').forEach((link) => {
+      link.addEventListener('click', () => {
+        const nextView = link.getAttribute('data-admin-view') || 'dashboard';
         setView(nextView);
-        logAdminAction('admin_view_changed', 'Admin view changed', `${state.currentAdmin?.name || 'An admin'} opened the ${VIEW_TITLES[nextView] || 'Dashboard'} view.`, {
-          uid: nextView,
-          name: VIEW_TITLES[nextView] || 'Dashboard',
-          sourceRef: `admin-view/${nextView}`
-        });
       });
     });
 
@@ -1468,13 +1506,17 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    state.view = getInitialView();
     cacheElements();
     bindEvents();
     setView(state.view);
 
-    if (hasAdminSession()) {
+    const savedSession = readAdminSession();
+    if (savedSession?.id) {
+      setCurrentAdmin(savedSession);
       showApp();
       loadDashboardData();
+      logCurrentView();
       return;
     }
 

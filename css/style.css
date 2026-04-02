@@ -80,6 +80,17 @@ nav {
   color: #f7fafc;
 }
 
+.admin-page-body header,
+.admin-page-body nav {
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.admin-page-body nav {
+  background: transparent;
+}
+
 .admin-gate[hidden],
 .admin-app[hidden],
 .admin-mobile-backdrop[hidden] {
@@ -264,6 +275,7 @@ nav {
   display: grid;
   gap: 10px;
   align-content: start;
+  background: transparent;
 }
 
 .admin-nav-link {
@@ -279,6 +291,8 @@ nav {
   gap: 12px;
   font-weight: 700;
   text-align: left;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .admin-nav-link.is-active,
@@ -1138,6 +1152,7 @@ nav {
 
 .admin-search-field,
 .admin-filter-field {
+  position: relative;
   min-height: 50px;
   padding: 0 16px;
   border-radius: 18px;
@@ -1152,6 +1167,21 @@ nav {
   flex: 1 1 380px;
 }
 
+.admin-filter-field {
+  padding-right: 42px;
+}
+
+.admin-filter-field::after {
+  content: '▾';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 12px;
+  pointer-events: none;
+}
+
 .admin-search-field input,
 .admin-filter-field select {
   border: 0;
@@ -1162,6 +1192,20 @@ nav {
 
 .admin-search-field input {
   width: 100%;
+}
+
+.admin-filter-field select {
+  width: 100%;
+  min-width: 150px;
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.admin-filter-field select option {
+  background: #0f172a;
+  color: #f8fafc;
 }
 
 .admin-search-field input:focus,
