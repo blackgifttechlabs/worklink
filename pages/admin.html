@@ -100,76 +100,12 @@
             </div>
             <div class="admin-status-pill" id="admin-status-pill">Loading dashboard...</div>
           </div>
-
-          <div class="admin-metric-grid">
-            <article class="admin-metric-card">
-              <span>Total users</span>
-              <strong id="admin-metric-total-users">0</strong>
-              <small id="admin-metric-new-users">0 new today</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Provider profiles</span>
-              <strong id="admin-metric-provider-count">0</strong>
-              <small id="admin-metric-provider-rate">0% completion</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Active users</span>
-              <strong id="admin-metric-active-users">0</strong>
-              <small id="admin-metric-active-carts">0 carts in progress</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Posts published</span>
-              <strong id="admin-metric-post-count">0</strong>
-              <small id="admin-metric-posts-today">0 today</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Messages sent</span>
-              <strong id="admin-metric-message-count">0</strong>
-              <small id="admin-metric-messages-today">0 today</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Active conversations</span>
-              <strong id="admin-metric-conversation-count">0</strong>
-              <small id="admin-metric-unread-messages">0 unread</small>
-            </article>
-            <article class="admin-metric-card">
-              <span>Commercial intent</span>
-              <strong id="admin-metric-cart-units">0</strong>
-              <small id="admin-metric-wishlist-saves">0 wishlist saves</small>
-            </article>
-          </div>
-
-          <div class="admin-insight-grid">
-            <section class="admin-card">
-              <div class="admin-card-head">
-                <h3>Top Categories</h3>
-                <span>Provider supply</span>
+          <div class="admin-dashboard-grid" id="admin-overview-dashboard">
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-chart-simple"></i>
+                <p>Loading live dashboard visuals...</p>
               </div>
-              <div class="admin-list" id="admin-category-breakdown"></div>
-            </section>
-
-            <section class="admin-card">
-              <div class="admin-card-head">
-                <h3>Location Spread</h3>
-                <span>Users by area</span>
-              </div>
-              <div class="admin-list" id="admin-province-breakdown"></div>
-            </section>
-
-            <section class="admin-card">
-              <div class="admin-card-head">
-                <h3>Recent Signups</h3>
-                <span>Newest users</span>
-              </div>
-              <div class="admin-list" id="admin-recent-users"></div>
-            </section>
-
-            <section class="admin-card">
-              <div class="admin-card-head">
-                <h3>Recent Activity</h3>
-                <span>Latest events</span>
-              </div>
-              <div class="admin-list admin-activity-preview" id="admin-activity-preview"></div>
             </section>
           </div>
         </section>

@@ -1102,6 +1102,10 @@ async function getAdminDashboardData() {
       totalWishlistSaves
     },
     users: usersWithDetails,
+    providers,
+    posts,
+    messages,
+    carts,
     activity: activityFeed,
     categoryBreakdown: Array.from(categoryBreakdownMap.entries())
       .map(([label, total]) => ({ label, total }))
