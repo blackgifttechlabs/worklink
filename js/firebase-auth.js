@@ -242,8 +242,33 @@ function normalizeRealtimeMessage(id, data = {}, conversationId = '') {
     fromProvinceSlug: String(data.fromProvinceSlug || '').trim(),
     toProvinceSlug: String(data.toProvinceSlug || '').trim(),
     text: String(data.text || '').trim(),
+    imageData: String(data.imageData || '').trim(),
     viewedAtMs: Number(data.viewedAtMs || 0),
     createdAtMs: Number(data.createdAtMs || 0)
+  };
+}
+
+function getMessageSummary(message = {}) {
+  const text = String(message.text || '').trim();
+  const hasImage = Boolean(String(message.imageData || '').trim());
+
+  if (text && hasImage) {
+    return {
+      lastMessage: text,
+      lastMessageType: 'mixed'
+    };
+  }
+
+  if (hasImage) {
+    return {
+      lastMessage: 'Photo',
+      lastMessageType: 'image'
+    };
+  }
+
+  return {
+    lastMessage: text,
+    lastMessageType: 'text'
   };
 }
 
@@ -264,6 +289,7 @@ function buildConversationIndexMap(messages) {
       peerName: message.toName,
       peerProvinceSlug: message.toProvinceSlug || '',
       lastMessage: '',
+      lastMessageType: 'text',
       createdAtMs: 0,
       unreadCount: 0,
       lastSeenAtMs: 0,
@@ -276,6 +302,7 @@ function buildConversationIndexMap(messages) {
       peerName: message.fromName,
       peerProvinceSlug: message.fromProvinceSlug || '',
       lastMessage: '',
+      lastMessageType: 'text',
       createdAtMs: 0,
       unreadCount: 0,
       lastSeenAtMs: 0,
@@ -292,15 +319,19 @@ function buildConversationIndexMap(messages) {
       Number(message.createdAtMs || 0)
     );
 
+    const summary = getMessageSummary(message);
+
     if (Number(message.createdAtMs || 0) >= Number(senderSummary.createdAtMs || 0)) {
-      senderSummary.lastMessage = message.text;
+      senderSummary.lastMessage = summary.lastMessage;
+      senderSummary.lastMessageType = summary.lastMessageType;
       senderSummary.createdAtMs = Number(message.createdAtMs || 0);
       senderSummary.lastMessageIsMine = true;
       senderSummary.lastMessageViewedAtMs = Number(message.viewedAtMs || 0);
     }
 
     if (Number(message.createdAtMs || 0) >= Number(recipientSummary.createdAtMs || 0)) {
-      recipientSummary.lastMessage = message.text;
+      recipientSummary.lastMessage = summary.lastMessage;
+      recipientSummary.lastMessageType = summary.lastMessageType;
       recipientSummary.createdAtMs = Number(message.createdAtMs || 0);
       recipientSummary.lastMessageIsMine = false;
       recipientSummary.lastMessageViewedAtMs = Number(message.viewedAtMs || 0);
@@ -944,6 +975,7 @@ async function ensureRealtimeMessagesMigrated() {
           fromProvinceSlug: message.fromProvinceSlug,
           toProvinceSlug: message.toProvinceSlug,
           text: message.text,
+          imageData: message.imageData,
           viewedAtMs: Number(message.viewedAtMs || 0),
           createdAtMs: Number(message.createdAtMs || 0)
         }
@@ -962,9 +994,16 @@ async function sendMessageToProvider(payload = {}) {
   }
 
   const sender = getAccountPayload(auth.currentUser);
-  const recipientProfile = await getProviderProfileByUid(payload.toUid, payload.toProvinceSlug);
-  const recipientName = recipientProfile?.displayName || String(payload.toName || 'Provider').trim();
-  const recipientProvinceSlug = recipientProfile?.provinceSlug || String(payload.toProvinceSlug || '').trim();
+  const [recipientProfile, recipientUserDoc] = await Promise.all([
+    getProviderProfileByUid(payload.toUid, payload.toProvinceSlug).catch(() => null),
+    getUserDocument(payload.toUid).catch(() => null)
+  ]);
+  const recipientName = recipientProfile?.displayName
+    || String(recipientUserDoc?.name || '').trim()
+    || String(payload.toName || 'WorkLinkUp user').trim();
+  const recipientProvinceSlug = recipientProfile?.provinceSlug
+    || String(recipientUserDoc?.providerProvinceSlug || '').trim()
+    || String(payload.toProvinceSlug || '').trim();
 
   const conversationId = createConversationId(sender.uid, payload.toUid);
   const now = Date.now();
@@ -978,13 +1017,14 @@ async function sendMessageToProvider(payload = {}) {
     fromProvinceSlug: sender.providerProvinceSlug || '',
     toProvinceSlug: recipientProvinceSlug,
     text: String(payload.text || '').trim(),
+    imageData: String(payload.imageData || '').trim(),
     viewedAtMs: 0,
     createdAtMs: now,
     createdAt: serverTimestamp()
   };
 
-  if (!messagePayload.text) {
-    throw new Error('Type a message first.');
+  if (!messagePayload.text && !messagePayload.imageData) {
+    throw new Error('Type a message or choose a photo first.');
   }
 
   await ensureRealtimeMessagesMigrated();
@@ -996,6 +1036,8 @@ async function sendMessageToProvider(payload = {}) {
   await set(createdRef, {
     ...messagePayload
   });
+
+  const summary = getMessageSummary(messagePayload);
 
   const [senderIndexSnapshot, recipientIndexSnapshot] = await Promise.all([
     get(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${sender.uid}/${conversationId}`)),
@@ -1011,7 +1053,8 @@ async function sendMessageToProvider(payload = {}) {
       peerUid: payload.toUid,
       peerName: recipientName,
       peerProvinceSlug: recipientProvinceSlug,
-      lastMessage: messagePayload.text,
+      lastMessage: summary.lastMessage,
+      lastMessageType: summary.lastMessageType,
       createdAtMs: now,
       unreadCount: Number(senderIndex.unreadCount || 0),
       lastSeenAtMs: Number(senderIndex.lastSeenAtMs || 0),
@@ -1023,7 +1066,8 @@ async function sendMessageToProvider(payload = {}) {
       peerUid: sender.uid,
       peerName: sender.name,
       peerProvinceSlug: sender.providerProvinceSlug || '',
-      lastMessage: messagePayload.text,
+      lastMessage: summary.lastMessage,
+      lastMessageType: summary.lastMessageType,
       createdAtMs: now,
       unreadCount: Number(recipientIndex.unreadCount || 0) + 1,
       lastSeenAtMs: Math.max(Number(recipientIndex.lastSeenAtMs || 0), now),
@@ -1101,6 +1145,7 @@ async function listConversations() {
       peerName: String(conversation.peerName || '').trim(),
       peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
       lastMessage: String(conversation.lastMessage || '').trim(),
+      lastMessageType: String(conversation.lastMessageType || 'text').trim(),
       createdAtMs: Number(conversation.createdAtMs || 0),
       unreadCount: Number(conversation.unreadCount || 0),
       lastSeenAtMs: Number(conversation.lastSeenAtMs || 0),
@@ -1141,6 +1186,7 @@ async function subscribeConversations(callback) {
           peerName: String(conversation.peerName || '').trim(),
           peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
           lastMessage: String(conversation.lastMessage || '').trim(),
+          lastMessageType: String(conversation.lastMessageType || 'text').trim(),
           createdAtMs: Number(conversation.createdAtMs || 0),
           unreadCount: Number(conversation.unreadCount || 0),
           lastSeenAtMs: Number(conversation.lastSeenAtMs || 0),

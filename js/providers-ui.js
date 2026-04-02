@@ -192,6 +192,54 @@
     return null;
   }
 
+  function normalizeMessageContact(contact = {}) {
+    const uid = String(contact.uid || '').trim();
+    const province = String(contact.province || contact.providerProvince || '').trim();
+    const city = String(contact.city || contact.address || '').trim();
+    const primaryCategory = String(contact.primaryCategory || '').trim();
+    const specialty = String(contact.specialty || '').trim();
+    const isProvider = Boolean(
+      contact.providerProfileComplete
+      || specialty
+      || primaryCategory
+      || contact.providerPublicId
+      || contact.whatsappNumber
+    );
+    const provinceSlug = String(
+      contact.provinceSlug
+      || contact.providerProvinceSlug
+      || slugify(province || city || '')
+    ).trim();
+    const displayName = String(
+      contact.displayName
+      || contact.name
+      || contact.providerPublicId
+      || 'WorkLinkUp user'
+    ).trim() || 'WorkLinkUp user';
+
+    return {
+      uid,
+      displayName,
+      name: displayName,
+      provinceSlug,
+      province,
+      city,
+      primaryCategory,
+      specialty,
+      bio: String(contact.bio || '').trim(),
+      isProvider,
+      roleLabel: specialty || primaryCategory || (isProvider ? 'Provider' : 'Member'),
+      statusLabel: city || province
+        ? [city, province].filter(Boolean).join(', ')
+        : (isProvider ? 'Provider on WorkLinkUp' : 'WorkLinkUp member'),
+      profileImageData: String(
+        contact.profileImageData
+        || (isProvider ? getCategoryConfig(primaryCategory).image : '')
+      ).trim(),
+      providerPublicId: String(contact.providerPublicId || '').trim()
+    };
+  }
+
   async function getPostsForProvider(uid, provinceSlug) {
     const authHelper = await waitForAuthHelper();
     if (authHelper && typeof authHelper.listProviderPosts === 'function') {
@@ -1447,12 +1495,46 @@
     return (parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'WL');
   }
 
+  function getConversationRoleLabel(profile) {
+    return profile?.roleLabel || profile?.specialty || profile?.primaryCategory || 'WorkLinkUp member';
+  }
+
+  function getConversationStatusLabel(profile, lastSeenAtMs = 0) {
+    if (Number(lastSeenAtMs || 0)) {
+      return formatLastSeen(lastSeenAtMs);
+    }
+
+    return profile?.statusLabel || 'Recently active';
+  }
+
+  function getConversationPreviewCopy(conversation = {}) {
+    const preview = String(conversation.lastMessage || '').trim();
+    if (preview) return preview;
+    if (conversation.lastMessageType === 'image') return 'Photo';
+    if (conversation.lastMessageType === 'mixed') return 'Photo and message';
+    return 'Start the conversation';
+  }
+
   function buildMessageStatusMarkup(message, accountUid) {
     if (message.fromUid !== accountUid) return '';
     return `
       <span class="message-status ${Number(message.viewedAtMs || 0) ? 'is-viewed' : ''}" aria-label="${Number(message.viewedAtMs || 0) ? 'Viewed' : 'Sent'}">
         <i class="fa-solid fa-check-double"></i>
       </span>
+    `;
+  }
+
+  function buildMessageBubbleContentMarkup(message) {
+    const hasImage = Boolean(String(message.imageData || '').trim());
+    const hasText = Boolean(String(message.text || '').trim());
+
+    return `
+      ${hasImage ? `
+        <div class="message-bubble-image">
+          <img src="${escapeHtml(resolveMediaSrc(message.imageData))}" alt="Shared message image" loading="lazy" />
+        </div>
+      ` : ''}
+      ${hasText ? `<div class="message-bubble-text">${escapeHtml(message.text)}</div>` : ''}
     `;
   }
 
@@ -1465,8 +1547,8 @@
       return `
         ${showDay ? `<div class="messages-day-divider"><span>${escapeHtml(dayKey)}</span></div>` : ''}
         <div class="message-row ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'}">
-          <div class="message-bubble ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'}">
-            <div class="message-bubble-text">${escapeHtml(message.text)}</div>
+          <div class="message-bubble ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'} ${message.imageData ? 'has-image' : ''}">
+            ${buildMessageBubbleContentMarkup(message)}
             <div class="message-bubble-meta">
               <span>${escapeHtml(new Date(Number(message.createdAtMs || 0)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>
               ${buildMessageStatusMarkup(message, accountUid)}
@@ -1483,7 +1565,7 @@
 
     const account = getStoredAccount();
     if (!account?.loggedIn) {
-      page.innerHTML = `<div class="specialists-empty">Sign in first to message providers.</div>`;
+      page.innerHTML = `<div class="specialists-empty">Sign in first to message people on WorkLinkUp.</div>`;
       return;
     }
 
@@ -1505,7 +1587,7 @@
 
           <label class="messages-search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder="Search or start a new chat" data-message-search />
+            <input type="search" placeholder="Search people or start a new chat" data-message-search />
           </label>
 
           <div class="messages-filter-row" data-message-filter-row></div>
@@ -1528,7 +1610,7 @@
                 <span data-message-thread-status>Select a chat to start</span>
               </div>
             </div>
-            <button type="button" class="messages-thread-search-toggle" data-thread-focus-search aria-label="Search providers">
+            <button type="button" class="messages-thread-search-toggle" data-thread-focus-search aria-label="Search people">
               <i class="fa-solid fa-magnifying-glass"></i>
             </button>
           </div>
@@ -1536,7 +1618,16 @@
           <div class="messages-thread-body" data-message-thread></div>
 
           <form class="messages-thread-compose" data-messages-compose>
-            <input class="messages-compose-input" type="text" placeholder="Type a message..." data-messages-compose-input />
+            <div class="messages-compose-main">
+              <div class="messages-compose-preview" data-messages-compose-preview hidden></div>
+              <div class="messages-compose-row">
+                <label class="messages-attach-btn" aria-label="Attach image">
+                  <input type="file" accept="image/*" data-messages-compose-file />
+                  <i class="fa-regular fa-image"></i>
+                </label>
+                <input class="messages-compose-input" type="text" placeholder="Type a message..." data-messages-compose-input />
+              </div>
+            </div>
             <button type="submit" class="messages-send-btn">
               <i class="fa-solid fa-paper-plane"></i>
               <span>Send</span>
@@ -1561,19 +1652,24 @@
     const clearSearchBtn = page.querySelector('[data-message-clear-search]');
     const threadBackBtn = page.querySelector('[data-thread-back]');
     const focusSearchBtn = page.querySelector('[data-thread-focus-search]');
+    const composePreview = page.querySelector('[data-messages-compose-preview]');
+    const composeFileInput = page.querySelector('[data-messages-compose-file]');
 
     const state = {
-      activePeerUid: params.get('provider') || '',
+      activePeerUid: params.get('peer') || params.get('provider') || '',
       activePeerName: 'Messages',
       activePeerProvince: params.get('province') || '',
       activePeerProfile: null,
       filter: 'all',
       query: '',
-      conversations: []
+      conversations: [],
+      pendingImageData: '',
+      pendingImageName: '',
+      lastRenderedMessageId: ''
     };
 
-    const providerDirectory = new Map();
-    let providerListPromise = null;
+    const contactDirectory = new Map();
+    let contactListPromise = null;
     let searchRequestId = 0;
     let unsubscribeConversations = null;
     let unsubscribeMessages = null;
@@ -1583,17 +1679,27 @@
     }
 
     function setActiveConversation(peer) {
+      const previousPeerUid = state.activePeerUid;
       state.activePeerUid = peer?.uid || '';
       state.activePeerName = peer?.name || 'Messages';
       state.activePeerProvince = peer?.provinceSlug || '';
       state.activePeerProfile = peer?.profile || null;
+      state.lastRenderedMessageId = '';
+
+      if (previousPeerUid !== state.activePeerUid) {
+        composeForm?.reset();
+        clearPendingImage();
+      }
+
       setThreadOpen(Boolean(state.activePeerUid));
 
       const nextUrl = new URL(window.location.href);
       if (state.activePeerUid) {
-        nextUrl.searchParams.set('provider', state.activePeerUid);
+        nextUrl.searchParams.set('peer', state.activePeerUid);
         if (state.activePeerProvince) nextUrl.searchParams.set('province', state.activePeerProvince);
+        nextUrl.searchParams.delete('provider');
       } else {
+        nextUrl.searchParams.delete('peer');
         nextUrl.searchParams.delete('provider');
         nextUrl.searchParams.delete('province');
       }
@@ -1621,6 +1727,75 @@
         : `<span>${escapeHtml(buildInitials(fallbackName))}</span>`;
     }
 
+    function clearPendingImage(resetInput = true) {
+      state.pendingImageData = '';
+      state.pendingImageName = '';
+      if (composePreview instanceof HTMLElement) {
+        composePreview.hidden = true;
+        composePreview.innerHTML = '';
+      }
+      if (resetInput && composeFileInput instanceof HTMLInputElement) {
+        composeFileInput.value = '';
+      }
+    }
+
+    function renderComposePreview() {
+      if (!(composePreview instanceof HTMLElement)) return;
+
+      if (!state.pendingImageData) {
+        composePreview.hidden = true;
+        composePreview.innerHTML = '';
+        return;
+      }
+
+      composePreview.hidden = false;
+      composePreview.innerHTML = `
+        <div class="messages-compose-preview-card">
+          <img src="${escapeHtml(state.pendingImageData)}" alt="Selected message image" />
+          <div class="messages-compose-preview-copy">
+            <strong>${escapeHtml(state.pendingImageName || 'Photo ready')}</strong>
+            <span>Will be sent with your next message</span>
+          </div>
+          <button type="button" class="messages-compose-preview-clear" data-messages-compose-preview-clear aria-label="Remove image">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      `;
+
+      composePreview.querySelector('[data-messages-compose-preview-clear]')?.addEventListener('click', () => {
+        clearPendingImage();
+        refreshComposerState();
+      });
+    }
+
+    function refreshComposerState() {
+      const submitBtn = composeForm?.querySelector('.messages-send-btn');
+      const canSend = Boolean(state.activePeerUid) && Boolean(
+        String(composeInput?.value || '').trim() || state.pendingImageData
+      );
+
+      if (composeInput instanceof HTMLInputElement) {
+        composeInput.disabled = !state.activePeerUid;
+      }
+
+      if (composeFileInput instanceof HTMLInputElement) {
+        composeFileInput.disabled = !state.activePeerUid;
+      }
+
+      if (submitBtn instanceof HTMLButtonElement) {
+        submitBtn.disabled = !canSend;
+      }
+    }
+
+    function scrollThreadToBottom(force = false) {
+      if (!(threadBody instanceof HTMLElement)) return;
+      const distanceFromBottom = threadBody.scrollHeight - threadBody.clientHeight - threadBody.scrollTop;
+      if (!force && distanceFromBottom > 96) return;
+      window.requestAnimationFrame(() => {
+        threadBody.scrollTop = threadBody.scrollHeight;
+      });
+    }
+
     function renderFilterChips() {
       const unreadCount = state.conversations.reduce((total, conversation) => total + Number(conversation.unreadCount || 0), 0);
       const chips = [
@@ -1645,22 +1820,56 @@
       });
     }
 
-    async function ensureProviderDirectory() {
-      if (!providerListPromise) {
-        providerListPromise = getProviders().then((providers) => {
-          providers.forEach((provider) => providerDirectory.set(provider.uid, provider));
-          return providers;
+    async function ensureContactDirectory() {
+      if (!contactListPromise) {
+        contactListPromise = Promise.all([
+          typeof authHelper.listUsers === 'function' ? authHelper.listUsers().catch(() => []) : [],
+          getProviders().catch(() => [])
+        ]).then(([users, providers]) => {
+          users.forEach((user) => {
+            const normalized = normalizeMessageContact(user);
+            if (normalized.uid) contactDirectory.set(normalized.uid, normalized);
+          });
+
+          providers.forEach((provider) => {
+            const existing = contactDirectory.get(provider.uid) || {};
+            const normalized = normalizeMessageContact({
+              ...existing,
+              ...provider,
+              uid: provider.uid,
+              displayName: provider.displayName || existing.displayName || existing.name || ''
+            });
+            if (normalized.uid) contactDirectory.set(normalized.uid, normalized);
+          });
+
+          return Array.from(contactDirectory.values());
         });
       }
-      return providerListPromise;
+      return contactListPromise;
     }
 
-    async function ensureProviderProfile(uid, provinceSlug = '') {
+    async function ensureContactProfile(uid, provinceSlug = '') {
       if (!uid) return null;
-      if (providerDirectory.has(uid)) return providerDirectory.get(uid);
-      const provider = await getProviderByIdentity(uid, provinceSlug);
-      if (provider) providerDirectory.set(uid, provider);
-      return provider;
+      if (contactDirectory.has(uid)) return contactDirectory.get(uid);
+
+      const [userDoc, providerProfile] = await Promise.all([
+        typeof authHelper.getUserDocument === 'function' ? authHelper.getUserDocument(uid).catch(() => null) : null,
+        typeof authHelper.getProviderProfileByUid === 'function' ? authHelper.getProviderProfileByUid(uid, provinceSlug).catch(() => null) : null
+      ]);
+
+      const normalized = normalizeMessageContact({
+        ...(userDoc || {}),
+        ...(providerProfile || {}),
+        uid,
+        displayName: providerProfile?.displayName || userDoc?.name || ''
+      });
+
+      if (normalized.uid) {
+        contactDirectory.set(normalized.uid, normalized);
+        return normalized;
+      }
+
+      return null;
     }
 
     function getFilteredConversations() {
@@ -1668,7 +1877,7 @@
         if (state.filter === 'unread' && !Number(conversation.unreadCount || 0)) return false;
         if (state.filter === 'recent' && !Number(conversation.createdAtMs || 0)) return false;
         if (!state.query) return true;
-        const haystack = `${conversation.peerName} ${conversation.lastMessage} ${conversation.profile?.specialty || ''} ${conversation.profile?.primaryCategory || ''}`.toLowerCase();
+        const haystack = `${conversation.peerName} ${conversation.lastMessage} ${conversation.profile?.roleLabel || ''} ${conversation.profile?.statusLabel || ''}`.toLowerCase();
         return haystack.includes(state.query.toLowerCase());
       });
     }
@@ -1691,29 +1900,29 @@
               <div class="messages-chat-top">
                 <div class="messages-chat-title">
                   <strong>${escapeHtml(conversation.peerName)}</strong>
-                  <span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>
+                  ${conversation.profile?.isProvider ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
                 </div>
                 <span class="messages-chat-time">${escapeHtml(formatMessagesListStamp(conversation.createdAtMs))}</span>
               </div>
-              <div class="messages-chat-role">${escapeHtml(conversation.profile?.specialty || conversation.profile?.primaryCategory || 'Specialist')}</div>
+              <div class="messages-chat-role">${escapeHtml(getConversationRoleLabel(conversation.profile))}</div>
               <div class="messages-chat-preview-row">
                 <div class="messages-chat-preview ${conversation.lastMessageIsMine ? 'is-mine' : ''}">
                   ${conversation.lastMessageIsMine ? buildMessageStatusMarkup({ fromUid: account.uid, viewedAtMs: conversation.lastMessageViewedAtMs }, account.uid) : ''}
-                  <span>${escapeHtml(conversation.lastMessage || 'Start the conversation')}</span>
+                  <span>${escapeHtml(getConversationPreviewCopy(conversation))}</span>
                 </div>
                 ${Number(conversation.unreadCount || 0) ? `<span class="messages-chat-unread">${conversation.unreadCount}</span>` : ''}
               </div>
             </div>
           </button>
         `).join('')
-        : `<div class="messages-empty messages-home-empty"><div><h2>No chats yet</h2><p>Search for a specialist above and start a conversation.</p></div></div>`;
+        : `<div class="messages-empty messages-home-empty"><div><h2>No chats yet</h2><p>Search for someone above and start a conversation.</p></div></div>`;
 
       chatList.querySelectorAll('[data-chat-peer]').forEach((button) => {
         button.addEventListener('click', async () => {
           const peerUid = button.getAttribute('data-chat-peer') || '';
           const peerProvinceSlug = button.getAttribute('data-chat-province') || '';
           const peerName = button.getAttribute('data-chat-name') || 'Conversation';
-          const profile = await ensureProviderProfile(peerUid, peerProvinceSlug);
+          const profile = await ensureContactProfile(peerUid, peerProvinceSlug);
           setActiveConversation({
             uid: peerUid,
             provinceSlug: peerProvinceSlug || profile?.provinceSlug || '',
@@ -1730,7 +1939,7 @@
       suggestions.innerHTML = `
         <div class="messages-suggestions-head">
           <strong>Search results</strong>
-          <span>Looking for specialists</span>
+          <span>Looking for people</span>
         </div>
         <div class="messages-suggestion-grid">
           <article class="messages-suggestion-skeleton"></article>
@@ -1750,13 +1959,13 @@
 
       renderSuggestionSkeletons();
       const requestId = ++searchRequestId;
-      const providers = await ensureProviderDirectory();
+      const contacts = await ensureContactDirectory();
       if (requestId !== searchRequestId) return;
 
-      const results = providers
-        .filter((provider) => provider.uid !== account.uid)
-        .filter((provider) => {
-          const haystack = `${provider.displayName} ${provider.specialty} ${provider.primaryCategory} ${provider.bio} ${provider.city} ${provider.address}`.toLowerCase();
+      const results = contacts
+        .filter((contact) => contact.uid !== account.uid)
+        .filter((contact) => {
+          const haystack = `${contact.displayName} ${contact.roleLabel} ${contact.statusLabel} ${contact.bio || ''} ${contact.city || ''} ${contact.province || ''}`.toLowerCase();
           return haystack.includes(query.toLowerCase());
         })
         .slice(0, 6);
@@ -1765,33 +1974,33 @@
       suggestions.innerHTML = `
         <div class="messages-suggestions-head">
           <strong>Search results</strong>
-          <span>${results.length ? `${results.length} specialist${results.length === 1 ? '' : 's'} found` : 'No specialists matched that search'}</span>
+          <span>${results.length ? `${results.length} contact${results.length === 1 ? '' : 's'} found` : 'No people matched that search'}</span>
         </div>
         <div class="messages-suggestion-grid">
-          ${results.length ? results.map((provider) => `
+          ${results.length ? results.map((contact) => `
             <button
               type="button"
               class="messages-suggestion-card"
-              data-suggestion-peer="${escapeHtml(provider.uid)}"
-              data-suggestion-province="${escapeHtml(provider.provinceSlug || '')}"
+              data-suggestion-peer="${escapeHtml(contact.uid)}"
+              data-suggestion-province="${escapeHtml(contact.provinceSlug || '')}"
             >
               <div class="messages-suggestion-avatar">
-                ${getProfileImageMarkup(provider, provider.displayName)}
+                ${getProfileImageMarkup(contact, contact.displayName)}
               </div>
               <div class="messages-suggestion-copy">
                 <div class="messages-suggestion-title">
-                  <strong>${escapeHtml(provider.displayName)}</strong>
-                  <span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>
+                  <strong>${escapeHtml(contact.displayName)}</strong>
+                  ${contact.isProvider ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
                 </div>
-                <div class="messages-suggestion-role">${escapeHtml(provider.specialty || provider.primaryCategory)}</div>
+                <div class="messages-suggestion-role">${escapeHtml(getConversationRoleLabel(contact))}</div>
                 <div class="messages-suggestion-meta">
-                  <span><i class="fa-solid fa-briefcase"></i>${escapeHtml(provider.primaryCategory)}</span>
-                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(provider.city || provider.province)}</span>
+                  <span><i class="fa-solid fa-briefcase"></i>${escapeHtml(getConversationRoleLabel(contact))}</span>
+                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(contact.statusLabel)}</span>
                 </div>
               </div>
               <span class="messages-suggestion-cta">Message</span>
             </button>
-          `).join('') : `<div class="messages-empty messages-suggestion-empty"><div><h2>No specialist found</h2><p>Try a job title like Hairdresser, Plumber, or Photographer.</p></div></div>`}
+          `).join('') : `<div class="messages-empty messages-suggestion-empty"><div><h2>No contact found</h2><p>Try a name, role, city, or service category.</p></div></div>`}
         </div>
       `;
 
@@ -1799,7 +2008,7 @@
         button.addEventListener('click', async () => {
           const peerUid = button.getAttribute('data-suggestion-peer') || '';
           const peerProvinceSlug = button.getAttribute('data-suggestion-province') || '';
-          const profile = await ensureProviderProfile(peerUid, peerProvinceSlug);
+          const profile = await ensureContactProfile(peerUid, peerProvinceSlug);
           if (!profile) return;
           setActiveConversation({
             uid: profile.uid,
@@ -1814,10 +2023,10 @@
     }
 
     async function applyConversationList(conversations) {
-      await ensureProviderDirectory();
+      await ensureContactDirectory();
 
       const nextConversations = await Promise.all(conversations.map(async (conversation) => {
-        const profile = await ensureProviderProfile(conversation.peerUid, conversation.peerProvinceSlug || '');
+        const profile = await ensureContactProfile(conversation.peerUid, conversation.peerProvinceSlug || '');
         return {
           ...conversation,
           profile
@@ -1825,22 +2034,21 @@
       }));
 
       if (state.activePeerUid && !nextConversations.some((conversation) => conversation.peerUid === state.activePeerUid)) {
-        const profile = await ensureProviderProfile(state.activePeerUid, state.activePeerProvince);
-        if (profile) {
-          nextConversations.unshift({
-            conversationId: `${account.uid}__${profile.uid}`,
-            peerUid: profile.uid,
-            peerName: profile.displayName,
-            peerProvinceSlug: profile.provinceSlug || '',
-            lastMessage: 'Start the conversation',
-            createdAtMs: Date.now(),
-            unreadCount: 0,
-            lastSeenAtMs: 0,
-            lastMessageIsMine: false,
-            lastMessageViewedAtMs: 0,
-            profile
-          });
-        }
+        const profile = await ensureContactProfile(state.activePeerUid, state.activePeerProvince);
+        nextConversations.unshift({
+          conversationId: `${account.uid}__${state.activePeerUid}`,
+          peerUid: state.activePeerUid,
+          peerName: profile?.displayName || state.activePeerName || 'Conversation',
+          peerProvinceSlug: profile?.provinceSlug || state.activePeerProvince || '',
+          lastMessage: '',
+          lastMessageType: 'text',
+          createdAtMs: Date.now(),
+          unreadCount: 0,
+          lastSeenAtMs: 0,
+          lastMessageIsMine: false,
+          lastMessageViewedAtMs: 0,
+          profile
+        });
       }
 
       state.conversations = nextConversations;
@@ -1854,15 +2062,18 @@
           ? Math.max(latest, Number(message.createdAtMs || 0))
           : latest
       ), 0);
+      const newestMessageId = messages.length ? String(messages[messages.length - 1].id || '') : '';
+      const shouldForceScroll = newestMessageId !== state.lastRenderedMessageId || !state.lastRenderedMessageId;
 
       threadTitle.textContent = state.activePeerName || 'Conversation';
-      threadStatus.textContent = formatLastSeen(lastSeenAtMs);
-      threadVerified.hidden = false;
+      threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile, lastSeenAtMs);
+      threadVerified.hidden = !state.activePeerProfile?.isProvider;
       threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
       threadBody.innerHTML = messages.length
         ? buildThreadMessagesMarkup(messages, account.uid)
         : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(state.activePeerName)}.</p></div></div>`;
-      threadBody.scrollTop = threadBody.scrollHeight;
+      state.lastRenderedMessageId = newestMessageId;
+      scrollThreadToBottom(shouldForceScroll);
     }
 
     async function startConversationSubscription() {
@@ -1879,7 +2090,6 @@
     }
 
     async function refreshMessages() {
-      const submitBtn = composeForm?.querySelector('.messages-send-btn');
       if (!state.activePeerUid) {
         stopMessagesSubscription();
         setThreadOpen(false);
@@ -1888,21 +2098,19 @@
         threadAvatar.textContent = 'WL';
         threadVerified.hidden = true;
         threadBody.innerHTML = `<div class="messages-empty"><div><h2>Select a chat</h2><p>Your conversations and search results will appear on the left.</p></div></div>`;
-        if (composeInput instanceof HTMLInputElement) composeInput.disabled = true;
-        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+        refreshComposerState();
         return;
       }
 
-      const profile = await ensureProviderProfile(state.activePeerUid, state.activePeerProvince);
+      const profile = await ensureContactProfile(state.activePeerUid, state.activePeerProvince);
       if (profile) {
         state.activePeerProfile = profile;
         state.activePeerName = profile.displayName;
         state.activePeerProvince = profile.provinceSlug || state.activePeerProvince;
       }
 
-      if (composeInput instanceof HTMLInputElement) composeInput.disabled = false;
-      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
       setThreadOpen(true);
+      refreshComposerState();
 
       stopMessagesSubscription();
       if (typeof authHelper.subscribeMessagesWithUser === 'function') {
@@ -1920,12 +2128,43 @@
         const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
         renderThreadMessages(messages);
       }
+
+      scrollThreadToBottom(true);
     }
 
     searchInput?.addEventListener('input', async (event) => {
       state.query = event.target.value.trim();
       renderChatList();
       refreshSuggestions();
+    });
+
+    composeInput?.addEventListener('input', () => {
+      refreshComposerState();
+    });
+
+    composeFileInput?.addEventListener('change', async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        clearPendingImage(false);
+        renderComposePreview();
+        refreshComposerState();
+        return;
+      }
+
+      try {
+        state.pendingImageData = await readImageAsBase64(file, {
+          maxWidth: 1440,
+          maxHeight: 1440,
+          quality: 0.84
+        });
+        state.pendingImageName = file.name || 'Photo ready';
+        renderComposePreview();
+        refreshComposerState();
+        scrollThreadToBottom(true);
+      } catch (error) {
+        clearPendingImage();
+        window.alert(error.message || 'Could not process that image.');
+      }
     });
 
     clearSearchBtn?.addEventListener('click', () => {
@@ -1952,7 +2191,8 @@
       event.preventDefault();
       if (!state.activePeerUid) return;
       const text = composeInput?.value.trim() || '';
-      if (!text) return;
+      const imageData = state.pendingImageData;
+      if (!text && !imageData) return;
       const submitBtn = composeForm.querySelector('.messages-send-btn');
       if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
       try {
@@ -1960,20 +2200,24 @@
           toUid: state.activePeerUid,
           toProvinceSlug: state.activePeerProvince,
           toName: state.activePeerName,
-          text
+          text,
+          imageData
         });
         composeForm.reset();
-        await refreshMessages();
+        clearPendingImage();
+        refreshComposerState();
+        scrollThreadToBottom(true);
       } catch (error) {
         window.alert(error.message || 'Could not send message.');
       } finally {
-        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+        refreshComposerState();
       }
     });
 
     await startConversationSubscription();
     await refreshMessages();
     refreshSuggestions();
+    refreshComposerState();
 
     window.addEventListener('beforeunload', () => {
       stopConversationSubscription();
