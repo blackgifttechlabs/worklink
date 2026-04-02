@@ -42,21 +42,37 @@
       </div>
 
       <nav class="admin-nav" aria-label="Admin navigation">
-        <button type="button" class="admin-nav-link is-active" data-admin-view="overview">
+        <button type="button" class="admin-nav-link is-active" data-admin-view="dashboard">
           <i class="fa-solid fa-chart-line"></i>
-          <span>Overview</span>
+          <span>Dashboard</span>
         </button>
         <button type="button" class="admin-nav-link" data-admin-view="users">
-          <i class="fa-solid fa-users"></i>
+          <i class="fa-solid fa-user-group"></i>
           <span>Users</span>
         </button>
-        <button type="button" class="admin-nav-link" data-admin-view="activity">
-          <i class="fa-solid fa-wave-square"></i>
-          <span>Activity</span>
+        <button type="button" class="admin-nav-link" data-admin-view="providers">
+          <i class="fa-solid fa-id-badge"></i>
+          <span>Providers</span>
+        </button>
+        <button type="button" class="admin-nav-link" data-admin-view="engagement">
+          <i class="fa-solid fa-chart-column"></i>
+          <span>Engagement</span>
+        </button>
+        <button type="button" class="admin-nav-link" data-admin-view="messages">
+          <i class="fa-solid fa-envelope"></i>
+          <span>Messages</span>
+        </button>
+        <button type="button" class="admin-nav-link" data-admin-view="admin-activity">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Admin Activity</span>
         </button>
       </nav>
 
       <div class="admin-sidebar-meta">
+        <div class="admin-sidebar-card">
+          <span>Signed in as</span>
+          <strong id="admin-sidebar-current-admin">Awaiting PIN</strong>
+        </div>
         <div class="admin-sidebar-card">
           <span>Live users</span>
           <strong id="admin-sidebar-total-users">0</strong>
@@ -76,7 +92,7 @@
           </button>
           <div>
             <p class="admin-topbar-kicker">WorkLinkUp Admin</p>
-            <h1 id="admin-view-title">Overview</h1>
+            <h1 id="admin-view-title">Dashboard</h1>
           </div>
         </div>
         <div class="admin-topbar-right">
@@ -92,11 +108,11 @@
       </header>
 
       <main class="admin-content">
-        <section class="admin-panel" data-admin-panel="overview">
+        <section class="admin-panel" data-admin-panel="dashboard">
           <div class="admin-panel-head">
             <div>
               <p class="admin-panel-kicker">Platform snapshot</p>
-              <h2>Live metrics</h2>
+              <h2>Dashboard</h2>
             </div>
             <div class="admin-status-pill" id="admin-status-pill">Loading dashboard...</div>
           </div>
@@ -113,8 +129,8 @@
         <section class="admin-panel" data-admin-panel="users" hidden>
           <div class="admin-panel-head">
             <div>
-              <p class="admin-panel-kicker">User records</p>
-              <h2>Users table</h2>
+              <p class="admin-panel-kicker">Member records</p>
+              <h2>Registered users</h2>
             </div>
             <div class="admin-inline-total" id="admin-users-total">0 users</div>
           </div>
@@ -122,15 +138,7 @@
           <div class="admin-toolbar">
             <label class="admin-search-field">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="search" id="admin-users-search" placeholder="Search by name, email, province, category, or provider ID" />
-            </label>
-            <label class="admin-filter-field">
-              <span>Status</span>
-              <select id="admin-users-status">
-                <option value="all">All users</option>
-                <option value="providers">Providers only</option>
-                <option value="members">Members only</option>
-              </select>
+              <input type="search" id="admin-users-search" placeholder="Search member by name, email, phone, or location" />
             </label>
           </div>
 
@@ -140,43 +148,115 @@
                 <tr>
                   <th>User</th>
                   <th>Contact</th>
-                  <th>Status</th>
                   <th>Location</th>
-                  <th>Category</th>
                   <th>Registered</th>
                   <th>Last seen</th>
+                  <th>Commercial intent</th>
                 </tr>
               </thead>
               <tbody id="admin-users-body">
-                <tr><td colspan="7" class="admin-empty-cell">Loading users...</td></tr>
+                <tr><td colspan="6" class="admin-empty-cell">Loading users...</td></tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        <section class="admin-panel" data-admin-panel="activity" hidden>
+        <section class="admin-panel" data-admin-panel="providers" hidden>
           <div class="admin-panel-head">
             <div>
-              <p class="admin-panel-kicker">Event stream</p>
-              <h2>User activity</h2>
+              <p class="admin-panel-kicker">Provider records</p>
+              <h2>Providers</h2>
             </div>
-            <div class="admin-inline-total" id="admin-activity-total">0 events</div>
+            <div class="admin-inline-total" id="admin-providers-total">0 providers</div>
           </div>
 
           <div class="admin-toolbar">
             <label class="admin-search-field">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="search" id="admin-activity-search" placeholder="Search actor, event title, or description" />
+              <input type="search" id="admin-providers-search" placeholder="Search provider by name, email, public ID, category, or specialty" />
             </label>
             <label class="admin-filter-field">
-              <span>Type</span>
-              <select id="admin-activity-type">
-                <option value="all">All activity</option>
-                <option value="user">Registrations</option>
-                <option value="provider">Provider updates</option>
-                <option value="post">Posts</option>
-                <option value="message">Messages</option>
-                <option value="cart">Cart and wishlist</option>
+              <span>Province</span>
+              <select id="admin-providers-province">
+                <option value="all">All provinces</option>
+              </select>
+            </label>
+            <label class="admin-filter-field">
+              <span>Category</span>
+              <select id="admin-providers-category">
+                <option value="all">All categories</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="admin-dashboard-grid admin-subpanel-grid" id="admin-providers-overview">
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-user-tie"></i>
+                <p>Loading provider insights...</p>
+              </div>
+            </section>
+          </div>
+
+          <div class="admin-table-shell">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Contact</th>
+                  <th>Location</th>
+                  <th>Service</th>
+                  <th>Jobs</th>
+                  <th>Rating</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="admin-providers-body">
+                <tr><td colspan="7" class="admin-empty-cell">Loading providers...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="engagement" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">User activity</p>
+              <h2>Engagement</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-engagement-total">0 touchpoints</div>
+          </div>
+
+          <div class="admin-dashboard-grid admin-subpanel-grid" id="admin-engagement-dashboard">
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-chart-column"></i>
+                <p>Loading engagement visuals...</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="messages" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">Inbox stream</p>
+              <h2>Messages</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-messages-total">0 messages</div>
+          </div>
+
+          <div class="admin-toolbar">
+            <label class="admin-search-field">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="admin-messages-search" placeholder="Search sender, recipient, conversation, or message text" />
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select id="admin-messages-status">
+                <option value="all">All messages</option>
+                <option value="unread">Unread only</option>
+                <option value="read">Read only</option>
               </select>
             </label>
           </div>
@@ -185,15 +265,82 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <th>Actor</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Conversation</th>
+                  <th>Message</th>
+                  <th>Status</th>
+                  <th>Sent</th>
+                </tr>
+              </thead>
+              <tbody id="admin-messages-body">
+                <tr><td colspan="6" class="admin-empty-cell">Loading messages...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="admin-activity" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">Admin controls</p>
+              <h2>Admin Activity</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-admin-activity-total">0 actions</div>
+          </div>
+
+          <div class="admin-dashboard-grid admin-subpanel-grid" id="admin-admin-overview">
+            <section class="admin-visual-card">
+              <div class="admin-card-head">
+                <div>
+                  <span>Create admin access</span>
+                  <h3>New admin</h3>
+                </div>
+              </div>
+              <form class="admin-create-form" id="admin-create-form">
+                <label class="admin-form-field">
+                  <span>Name</span>
+                  <input type="text" id="admin-create-name" placeholder="Admin name" />
+                </label>
+                <label class="admin-form-field">
+                  <span>Email</span>
+                  <input type="email" id="admin-create-email" placeholder="admin@worklinkup.com" />
+                </label>
+                <label class="admin-form-field">
+                  <span>PIN</span>
+                  <input type="password" id="admin-create-pin" inputmode="numeric" maxlength="8" placeholder="4 to 8 digits" />
+                </label>
+                <button type="submit" class="admin-gate-submit">Create Admin</button>
+                <div class="admin-form-message" id="admin-create-message" hidden></div>
+              </form>
+            </section>
+
+            <section class="admin-visual-card">
+              <div class="admin-card-head">
+                <div>
+                  <span>Admin roster</span>
+                  <h3>Active admins</h3>
+                </div>
+              </div>
+              <div class="admin-stacked-list" id="admin-admins-list">
+                <div class="admin-list-empty">Loading admins...</div>
+              </div>
+            </section>
+          </div>
+
+          <div class="admin-table-shell">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Admin</th>
+                  <th>Action</th>
                   <th>Target</th>
                   <th>Description</th>
                   <th>Date and time</th>
                 </tr>
               </thead>
-              <tbody id="admin-activity-body">
-                <tr><td colspan="5" class="admin-empty-cell">Loading activity...</td></tr>
+              <tbody id="admin-admin-activity-body">
+                <tr><td colspan="5" class="admin-empty-cell">Loading admin activity...</td></tr>
               </tbody>
             </table>
           </div>

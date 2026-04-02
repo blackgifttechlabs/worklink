@@ -29,10 +29,21 @@ import {
   updateDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
+import {
+  get,
+  getDatabase,
+  off,
+  onValue,
+  push,
+  ref,
+  set,
+  update
+} from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDD3a9ARK6FBJKmtuZ5v0Rnqjf8Xlp1LHA',
   authDomain: 'worklink-5e1ff.firebaseapp.com',
+  databaseURL: 'https://worklink-5e1ff-default-rtdb.firebaseio.com',
   projectId: 'worklink-5e1ff',
   storageBucket: 'worklink-5e1ff.firebasestorage.app',
   messagingSenderId: '1053395339078',
@@ -42,10 +53,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const realtimeDb = getDatabase(app);
 const provider = new GoogleAuthProvider();
 const storageKey = 'softgiggles_account';
 const PROVIDER_COUNTER_START = 3383;
 const ADMIN_ACTIVITY_COLLECTION = 'adminActivity';
+const ADMINS_COLLECTION = 'admins';
+const ADMIN_BOOTSTRAP_ID = 'primary-admin';
+const ADMIN_BOOTSTRAP_PIN = '1677';
+const MESSAGE_THREADS_PATH = 'messages';
+const MESSAGE_INDEX_PATH = 'conversationIndex';
 const ZIMBABWE_PROVINCES = [
   'Bulawayo',
   'Harare',
@@ -61,6 +78,7 @@ const ZIMBABWE_PROVINCES = [
 
 let recaptchaVerifier = null;
 let phoneConfirmationResult = null;
+let legacyMessageMigrationPromise = null;
 
 function normalizeName(value) {
   return String(value || '')
@@ -186,11 +204,149 @@ function toMillis(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getBootstrapAdminRecord() {
+  return {
+    id: ADMIN_BOOTSTRAP_ID,
+    name: 'Admin 1',
+    email: '',
+    pin: ADMIN_BOOTSTRAP_PIN,
+    role: 'Owner',
+    active: true,
+    createdAtMs: 0,
+    createdBy: 'system'
+  };
+}
+
+function normalizeAdminRecord(id, data = {}) {
+  return {
+    id,
+    name: String(data.name || 'Admin').trim() || 'Admin',
+    email: String(data.email || '').trim(),
+    pin: String(data.pin || '').trim(),
+    role: String(data.role || 'Admin').trim() || 'Admin',
+    active: data.active !== false,
+    createdBy: String(data.createdBy || '').trim(),
+    createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt))
+  };
+}
+
+function normalizeRealtimeMessage(id, data = {}, conversationId = '') {
+  return {
+    id,
+    conversationId: String(data.conversationId || conversationId || '').trim(),
+    participants: Array.isArray(data.participants) ? data.participants : [],
+    fromUid: String(data.fromUid || '').trim(),
+    toUid: String(data.toUid || '').trim(),
+    fromName: String(data.fromName || '').trim(),
+    toName: String(data.toName || '').trim(),
+    fromProvinceSlug: String(data.fromProvinceSlug || '').trim(),
+    toProvinceSlug: String(data.toProvinceSlug || '').trim(),
+    text: String(data.text || '').trim(),
+    viewedAtMs: Number(data.viewedAtMs || 0),
+    createdAtMs: Number(data.createdAtMs || 0)
+  };
+}
+
+function buildConversationIndexMap(messages) {
+  const indexMap = new Map();
+  const orderedMessages = messages
+    .slice()
+    .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
+
+  orderedMessages.forEach((message) => {
+    if (!message.conversationId || !message.fromUid || !message.toUid) return;
+
+    const senderKey = `${message.fromUid}:${message.conversationId}`;
+    const recipientKey = `${message.toUid}:${message.conversationId}`;
+    const senderSummary = indexMap.get(senderKey) || {
+      conversationId: message.conversationId,
+      peerUid: message.toUid,
+      peerName: message.toName,
+      peerProvinceSlug: message.toProvinceSlug || '',
+      lastMessage: '',
+      createdAtMs: 0,
+      unreadCount: 0,
+      lastSeenAtMs: 0,
+      lastMessageIsMine: false,
+      lastMessageViewedAtMs: 0
+    };
+    const recipientSummary = indexMap.get(recipientKey) || {
+      conversationId: message.conversationId,
+      peerUid: message.fromUid,
+      peerName: message.fromName,
+      peerProvinceSlug: message.fromProvinceSlug || '',
+      lastMessage: '',
+      createdAtMs: 0,
+      unreadCount: 0,
+      lastSeenAtMs: 0,
+      lastMessageIsMine: false,
+      lastMessageViewedAtMs: 0
+    };
+
+    if (!Number(message.viewedAtMs || 0)) {
+      recipientSummary.unreadCount += 1;
+    }
+
+    recipientSummary.lastSeenAtMs = Math.max(
+      Number(recipientSummary.lastSeenAtMs || 0),
+      Number(message.createdAtMs || 0)
+    );
+
+    if (Number(message.createdAtMs || 0) >= Number(senderSummary.createdAtMs || 0)) {
+      senderSummary.lastMessage = message.text;
+      senderSummary.createdAtMs = Number(message.createdAtMs || 0);
+      senderSummary.lastMessageIsMine = true;
+      senderSummary.lastMessageViewedAtMs = Number(message.viewedAtMs || 0);
+    }
+
+    if (Number(message.createdAtMs || 0) >= Number(recipientSummary.createdAtMs || 0)) {
+      recipientSummary.lastMessage = message.text;
+      recipientSummary.createdAtMs = Number(message.createdAtMs || 0);
+      recipientSummary.lastMessageIsMine = false;
+      recipientSummary.lastMessageViewedAtMs = Number(message.viewedAtMs || 0);
+    }
+
+    indexMap.set(senderKey, senderSummary);
+    indexMap.set(recipientKey, recipientSummary);
+  });
+
+  return indexMap;
+}
+
+function mapIndexEntriesByUser(indexMap) {
+  const byUser = {};
+
+  indexMap.forEach((value, key) => {
+    const [uid, conversationId] = key.split(':');
+    if (!uid || !conversationId) return;
+    if (!byUser[uid]) byUser[uid] = {};
+    byUser[uid][conversationId] = value;
+  });
+
+  return byUser;
+}
+
+async function ensureBootstrapAdmin() {
+  const bootstrap = getBootstrapAdminRecord();
+  await setDoc(doc(db, ADMINS_COLLECTION, ADMIN_BOOTSTRAP_ID), {
+    name: bootstrap.name,
+    email: bootstrap.email,
+    pin: bootstrap.pin,
+    role: bootstrap.role,
+    active: true,
+    createdBy: bootstrap.createdBy,
+    createdAtMs: bootstrap.createdAtMs,
+    createdAt: serverTimestamp()
+  }, { merge: true }).catch(() => {});
+  return bootstrap;
+}
+
 async function recordAdminActivity(type, payload = {}) {
   try {
     const createdAtMs = Number(payload.createdAtMs || Date.now());
     await addDoc(collection(db, ADMIN_ACTIVITY_COLLECTION), {
       type: String(type || 'activity').trim(),
+      actorScope: String(payload.actorScope || '').trim() || (String(type || '').startsWith('admin_') ? 'admin' : 'user'),
       actorUid: String(payload.actorUid || '').trim(),
       actorName: String(payload.actorName || '').trim(),
       actorEmail: String(payload.actorEmail || '').trim(),
@@ -205,6 +361,100 @@ async function recordAdminActivity(type, payload = {}) {
   } catch (error) {
     // Keep product flows working even if admin analytics writes fail.
   }
+}
+
+async function listAdmins() {
+  await ensureBootstrapAdmin();
+  const snapshot = await getDocs(collection(db, ADMINS_COLLECTION));
+  const admins = snapshot.docs
+    .map((docSnapshot) => normalizeAdminRecord(docSnapshot.id, docSnapshot.data()))
+    .filter((admin) => admin.active !== false)
+    .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
+
+  if (!admins.some((admin) => admin.id === ADMIN_BOOTSTRAP_ID)) {
+    admins.unshift(getBootstrapAdminRecord());
+  }
+
+  return admins;
+}
+
+async function resolveAdminByPin(pin) {
+  const cleanPin = String(pin || '').trim();
+  if (!cleanPin) return null;
+  const admins = await listAdmins();
+  return admins.find((admin) => admin.active !== false && admin.pin === cleanPin) || null;
+}
+
+async function createAdmin(input = {}, actorAdmin = null) {
+  const name = normalizeName(input.name || '');
+  const email = String(input.email || '').trim();
+  const pin = String(input.pin || '').trim();
+
+  if (!name) {
+    throw new Error('Enter the admin name.');
+  }
+
+  if (!/^\d{4,8}$/.test(pin)) {
+    throw new Error('Admin PIN must be 4 to 8 digits.');
+  }
+
+  const admins = await listAdmins();
+  if (admins.some((admin) => admin.pin === pin)) {
+    throw new Error('That PIN is already assigned to another admin.');
+  }
+
+  const createdAtMs = Date.now();
+  const created = await addDoc(collection(db, ADMINS_COLLECTION), {
+    name,
+    email,
+    pin,
+    role: 'Admin',
+    active: true,
+    createdBy: String(actorAdmin?.name || 'Admin').trim(),
+    createdAtMs,
+    createdAt: serverTimestamp()
+  });
+
+  const createdAdmin = {
+    id: created.id,
+    name,
+    email,
+    pin,
+    role: 'Admin',
+    active: true,
+    createdBy: String(actorAdmin?.name || 'Admin').trim(),
+    createdAtMs
+  };
+
+  await recordAdminActivity('admin_created', {
+    actorScope: 'admin',
+    actorUid: String(actorAdmin?.id || ADMIN_BOOTSTRAP_ID),
+    actorName: String(actorAdmin?.name || 'Admin 1'),
+    actorEmail: String(actorAdmin?.email || ''),
+    subjectUid: createdAdmin.id,
+    subjectName: createdAdmin.name,
+    title: 'Admin created',
+    description: `${String(actorAdmin?.name || 'Admin 1')} created admin access for ${createdAdmin.name}.`,
+    sourceRef: `admins/${createdAdmin.id}`,
+    createdAtMs
+  });
+
+  return createdAdmin;
+}
+
+async function recordAdminConsoleAction(input = {}) {
+  await recordAdminActivity(String(input.type || 'admin_action'), {
+    actorScope: 'admin',
+    actorUid: String(input.admin?.id || ''),
+    actorName: String(input.admin?.name || 'Admin'),
+    actorEmail: String(input.admin?.email || ''),
+    subjectUid: String(input.subjectUid || input.admin?.id || ''),
+    subjectName: String(input.subjectName || input.admin?.name || 'Admin'),
+    title: String(input.title || 'Admin action'),
+    description: String(input.description || 'An admin action was recorded.'),
+    sourceRef: String(input.sourceRef || ''),
+    createdAtMs: Number(input.createdAtMs || Date.now())
+  });
 }
 
 async function syncUserDocument(account, extra = {}) {
@@ -633,6 +883,79 @@ async function deleteProviderPost(postId) {
   return { deleted: true, postId };
 }
 
+async function listAllRealtimeMessages() {
+  const snapshot = await get(ref(realtimeDb, MESSAGE_THREADS_PATH));
+  if (!snapshot.exists()) return [];
+
+  const messages = [];
+  const conversations = snapshot.val() || {};
+
+  Object.entries(conversations).forEach(([conversationId, conversationMessages]) => {
+    if (!conversationMessages || typeof conversationMessages !== 'object') return;
+
+    Object.entries(conversationMessages).forEach(([messageId, messageData]) => {
+      messages.push(normalizeRealtimeMessage(messageId, messageData, conversationId));
+    });
+  });
+
+  return messages.sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
+}
+
+async function rebuildConversationIndexesFromRealtime() {
+  const messages = await listAllRealtimeMessages();
+  const nextIndex = mapIndexEntriesByUser(buildConversationIndexMap(messages));
+  await set(ref(realtimeDb, MESSAGE_INDEX_PATH), nextIndex);
+  return messages;
+}
+
+async function ensureRealtimeMessagesMigrated() {
+  if (legacyMessageMigrationPromise) return legacyMessageMigrationPromise;
+
+  legacyMessageMigrationPromise = (async () => {
+    const [legacySnapshot, realtimeSnapshot] = await Promise.all([
+      getDocs(collection(db, 'messages')).catch(() => null),
+      get(ref(realtimeDb, MESSAGE_THREADS_PATH)).catch(() => null)
+    ]);
+
+    const realtimeConversationMap = realtimeSnapshot?.exists() ? realtimeSnapshot.val() || {} : {};
+    const missingLegacyMessages = [];
+
+    if (legacySnapshot && !legacySnapshot.empty) {
+      legacySnapshot.docs.forEach((docSnapshot) => {
+        const legacyMessage = normalizeRealtimeMessage(docSnapshot.id, docSnapshot.data(), docSnapshot.data().conversationId || '');
+        if (!legacyMessage.conversationId) return;
+        const existsInRealtime = Boolean(realtimeConversationMap?.[legacyMessage.conversationId]?.[legacyMessage.id]);
+        if (!existsInRealtime) {
+          missingLegacyMessages.push(legacyMessage);
+        }
+      });
+    }
+
+    if (missingLegacyMessages.length) {
+      await Promise.all(missingLegacyMessages.map((message) => set(
+        ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${message.conversationId}/${message.id}`),
+        {
+          conversationId: message.conversationId,
+          participants: message.participants,
+          fromUid: message.fromUid,
+          toUid: message.toUid,
+          fromName: message.fromName,
+          toName: message.toName,
+          fromProvinceSlug: message.fromProvinceSlug,
+          toProvinceSlug: message.toProvinceSlug,
+          text: message.text,
+          viewedAtMs: Number(message.viewedAtMs || 0),
+          createdAtMs: Number(message.createdAtMs || 0)
+        }
+      )));
+    }
+
+    await rebuildConversationIndexesFromRealtime();
+  })();
+
+  return legacyMessageMigrationPromise;
+}
+
 async function sendMessageToProvider(payload = {}) {
   if (!auth.currentUser) {
     throw new Error('Please sign in first.');
@@ -664,7 +987,51 @@ async function sendMessageToProvider(payload = {}) {
     throw new Error('Type a message first.');
   }
 
-  const created = await addDoc(collection(db, 'messages'), messagePayload);
+  await ensureRealtimeMessagesMigrated();
+
+  const conversationRef = ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`);
+  const createdRef = push(conversationRef);
+  const createdId = createdRef.key;
+
+  await set(createdRef, {
+    ...messagePayload
+  });
+
+  const [senderIndexSnapshot, recipientIndexSnapshot] = await Promise.all([
+    get(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${sender.uid}/${conversationId}`)),
+    get(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${payload.toUid}/${conversationId}`))
+  ]);
+
+  const senderIndex = senderIndexSnapshot.exists() ? senderIndexSnapshot.val() : {};
+  const recipientIndex = recipientIndexSnapshot.exists() ? recipientIndexSnapshot.val() : {};
+
+  await Promise.all([
+    set(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${sender.uid}/${conversationId}`), {
+      conversationId,
+      peerUid: payload.toUid,
+      peerName: recipientName,
+      peerProvinceSlug: recipientProvinceSlug,
+      lastMessage: messagePayload.text,
+      createdAtMs: now,
+      unreadCount: Number(senderIndex.unreadCount || 0),
+      lastSeenAtMs: Number(senderIndex.lastSeenAtMs || 0),
+      lastMessageIsMine: true,
+      lastMessageViewedAtMs: now
+    }),
+    set(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${payload.toUid}/${conversationId}`), {
+      conversationId,
+      peerUid: sender.uid,
+      peerName: sender.name,
+      peerProvinceSlug: sender.providerProvinceSlug || '',
+      lastMessage: messagePayload.text,
+      createdAtMs: now,
+      unreadCount: Number(recipientIndex.unreadCount || 0) + 1,
+      lastSeenAtMs: Math.max(Number(recipientIndex.lastSeenAtMs || 0), now),
+      lastMessageIsMine: false,
+      lastMessageViewedAtMs: 0
+    })
+  ]);
+
   await recordAdminActivity('message_sent', {
     actorUid: sender.uid,
     actorName: sender.name,
@@ -673,88 +1040,120 @@ async function sendMessageToProvider(payload = {}) {
     subjectName: recipientName,
     title: 'Message sent',
     description: `${sender.name} sent a message to ${recipientName}.`,
-    sourceRef: `messages/${created.id}`,
+    sourceRef: `messages/${conversationId}/${createdId}`,
     createdAtMs: now
   });
   return {
-    id: created.id,
+    id: createdId,
     ...messagePayload
   };
 }
 
 async function listMessagesWithUser(peerUid) {
   if (!auth.currentUser || !peerUid) return [];
+  await ensureRealtimeMessagesMigrated();
   const conversationId = createConversationId(auth.currentUser.uid, peerUid);
-  const snapshot = await getDocs(query(collection(db, 'messages'), where('conversationId', '==', conversationId)));
-  return snapshot.docs
-    .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+  const snapshot = await get(ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`));
+  if (!snapshot.exists()) return [];
+
+  return Object.entries(snapshot.val() || {})
+    .map(([messageId, messageData]) => normalizeRealtimeMessage(messageId, messageData, conversationId))
     .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
 }
 
 async function markConversationViewed(peerUid) {
   if (!auth.currentUser || !peerUid) return { updated: 0 };
+  await ensureRealtimeMessagesMigrated();
   const conversationId = createConversationId(auth.currentUser.uid, peerUid);
-  const snapshot = await getDocs(query(collection(db, 'messages'), where('conversationId', '==', conversationId)));
-  const pending = snapshot.docs.filter((docSnapshot) => {
-    const data = docSnapshot.data();
-    return data.toUid === auth.currentUser.uid && !Number(data.viewedAtMs || 0);
-  });
+  const snapshot = await get(ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`));
+  if (!snapshot.exists()) return { updated: 0 };
+
+  const pending = Object.entries(snapshot.val() || {})
+    .map(([messageId, messageData]) => normalizeRealtimeMessage(messageId, messageData, conversationId))
+    .filter((message) => message.toUid === auth.currentUser.uid && !Number(message.viewedAtMs || 0));
 
   if (!pending.length) return { updated: 0 };
 
   const now = Date.now();
-  await Promise.all(pending.map((docSnapshot) => updateDoc(docSnapshot.ref, {
-    viewedAtMs: now,
-    viewedAt: serverTimestamp()
-  })));
+  const messageUpdates = {};
+  pending.forEach((message) => {
+    messageUpdates[`${message.id}/viewedAtMs`] = now;
+  });
+  await update(ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`), messageUpdates);
+  await update(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${auth.currentUser.uid}/${conversationId}`), {
+    unreadCount: 0,
+    lastSeenAtMs: pending.reduce((latest, message) => Math.max(latest, Number(message.createdAtMs || 0)), 0),
+    lastMessageViewedAtMs: now
+  });
   return { updated: pending.length, viewedAtMs: now };
 }
 
 async function listConversations() {
   if (!auth.currentUser) return [];
-  const snapshot = await getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', auth.currentUser.uid)));
-  const conversations = new Map();
+  await ensureRealtimeMessagesMigrated();
+  const snapshot = await get(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${auth.currentUser.uid}`));
+  if (!snapshot.exists()) return [];
 
-  snapshot.docs.forEach((docSnapshot) => {
-    const data = docSnapshot.data();
-    const peerUid = data.fromUid === auth.currentUser.uid ? data.toUid : data.fromUid;
-    const peerName = data.fromUid === auth.currentUser.uid ? data.toName : data.fromName;
-    const peerProvinceSlug = data.fromUid === auth.currentUser.uid ? data.toProvinceSlug : data.fromProvinceSlug;
-    const existing = conversations.get(data.conversationId) || {
-      conversationId: data.conversationId,
-      peerUid,
-      peerName,
-      peerProvinceSlug: peerProvinceSlug || '',
-      lastMessage: '',
-      createdAtMs: 0,
-      unreadCount: 0,
-      lastSeenAtMs: 0,
-      lastMessageIsMine: false,
-      lastMessageViewedAtMs: 0
-    };
+  return Object.values(snapshot.val() || {})
+    .map((conversation) => ({
+      conversationId: String(conversation.conversationId || '').trim(),
+      peerUid: String(conversation.peerUid || '').trim(),
+      peerName: String(conversation.peerName || '').trim(),
+      peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
+      lastMessage: String(conversation.lastMessage || '').trim(),
+      createdAtMs: Number(conversation.createdAtMs || 0),
+      unreadCount: Number(conversation.unreadCount || 0),
+      lastSeenAtMs: Number(conversation.lastSeenAtMs || 0),
+      lastMessageIsMine: Boolean(conversation.lastMessageIsMine),
+      lastMessageViewedAtMs: Number(conversation.lastMessageViewedAtMs || 0)
+    }))
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
 
-    if (data.toUid === auth.currentUser.uid && !Number(data.viewedAtMs || 0)) {
-      existing.unreadCount += 1;
-    }
+async function subscribeMessagesWithUser(peerUid, callback) {
+  if (!auth.currentUser || !peerUid || typeof callback !== 'function') return () => {};
+  await ensureRealtimeMessagesMigrated();
+  const conversationId = createConversationId(auth.currentUser.uid, peerUid);
+  const targetRef = ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`);
+  const handler = (snapshot) => {
+    const messages = snapshot.exists()
+      ? Object.entries(snapshot.val() || {})
+        .map(([messageId, messageData]) => normalizeRealtimeMessage(messageId, messageData, conversationId))
+        .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0))
+      : [];
+    callback(messages);
+  };
 
-    if (data.fromUid !== auth.currentUser.uid) {
-      existing.lastSeenAtMs = Math.max(Number(existing.lastSeenAtMs || 0), Number(data.createdAtMs || 0));
-    }
+  onValue(targetRef, handler);
+  return () => off(targetRef, 'value', handler);
+}
 
-    if (Number(data.createdAtMs || 0) >= Number(existing.createdAtMs || 0)) {
-      existing.peerUid = peerUid;
-      existing.peerName = peerName;
-      existing.peerProvinceSlug = peerProvinceSlug || existing.peerProvinceSlug || '';
-      existing.lastMessage = data.text;
-      existing.createdAtMs = data.createdAtMs;
-      existing.lastMessageIsMine = data.fromUid === auth.currentUser.uid;
-      existing.lastMessageViewedAtMs = Number(data.viewedAtMs || 0);
-    }
+async function subscribeConversations(callback) {
+  if (!auth.currentUser || typeof callback !== 'function') return () => {};
+  await ensureRealtimeMessagesMigrated();
+  const targetRef = ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${auth.currentUser.uid}`);
+  const handler = (snapshot) => {
+    const conversations = snapshot.exists()
+      ? Object.values(snapshot.val() || {})
+        .map((conversation) => ({
+          conversationId: String(conversation.conversationId || '').trim(),
+          peerUid: String(conversation.peerUid || '').trim(),
+          peerName: String(conversation.peerName || '').trim(),
+          peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
+          lastMessage: String(conversation.lastMessage || '').trim(),
+          createdAtMs: Number(conversation.createdAtMs || 0),
+          unreadCount: Number(conversation.unreadCount || 0),
+          lastSeenAtMs: Number(conversation.lastSeenAtMs || 0),
+          lastMessageIsMine: Boolean(conversation.lastMessageIsMine),
+          lastMessageViewedAtMs: Number(conversation.lastMessageViewedAtMs || 0)
+        }))
+        .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
+      : [];
+    callback(conversations);
+  };
 
-    conversations.set(data.conversationId, existing);
-  });
-
-  return Array.from(conversations.values()).sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  onValue(targetRef, handler);
+  return () => off(targetRef, 'value', handler);
 }
 
 async function signOut() {
@@ -917,13 +1316,16 @@ async function listAdminActivity() {
 }
 
 async function getAdminDashboardData() {
-  const [users, providerSnapshot, postSnapshot, messageSnapshot, cartSnapshot, adminActivity] = await Promise.all([
+  await ensureRealtimeMessagesMigrated();
+
+  const [users, providerSnapshot, postSnapshot, messages, cartSnapshot, adminActivity, admins] = await Promise.all([
     listUsers(),
     getDocs(collectionGroup(db, 'profiles')),
     getDocs(collectionGroup(db, 'posts')),
-    getDocs(collection(db, 'messages')),
+    listAllRealtimeMessages(),
     getDocs(collection(db, 'cart')),
-    listAdminActivity().catch(() => [])
+    listAdminActivity().catch(() => []),
+    listAdmins().catch(() => [getBootstrapAdminRecord()])
   ]);
 
   const providers = providerSnapshot.docs.map((docSnapshot) => {
@@ -943,16 +1345,6 @@ async function getAdminDashboardData() {
       ...data,
       createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
       updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt))
-    };
-  });
-
-  const messages = messageSnapshot.docs.map((docSnapshot) => {
-    const data = docSnapshot.data();
-    return {
-      id: docSnapshot.id,
-      ...data,
-      createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
-      viewedAtMs: Number(data.viewedAtMs || toMillis(data.viewedAt))
     };
   });
 
@@ -1083,6 +1475,9 @@ async function getAdminDashboardData() {
   const activityFeed = Array.from(activityMap.values())
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
     .slice(0, 300);
+  const adminAudit = adminActivity
+    .filter((item) => String(item.type || '').startsWith('admin_') || String(item.actorScope || '') === 'admin')
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 
   return {
     metrics: {
@@ -1102,6 +1497,8 @@ async function getAdminDashboardData() {
       totalWishlistSaves
     },
     users: usersWithDetails,
+    admins,
+    adminAudit,
     providers,
     posts,
     messages,
@@ -1138,10 +1535,16 @@ window.softGigglesAuth = {
   createProviderPost,
   updateProviderPost,
   deleteProviderPost,
+  resolveAdminByPin,
+  listAdmins,
+  createAdmin,
+  recordAdminConsoleAction,
   sendMessageToProvider,
   listMessagesWithUser,
   listConversations,
   markConversationViewed,
+  subscribeMessagesWithUser,
+  subscribeConversations,
   listAdminActivity,
   getAdminDashboardData
 };

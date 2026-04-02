@@ -1575,6 +1575,8 @@
     const providerDirectory = new Map();
     let providerListPromise = null;
     let searchRequestId = 0;
+    let unsubscribeConversations = null;
+    let unsubscribeMessages = null;
 
     function setThreadOpen(isOpen) {
       page.classList.toggle('is-thread-open', Boolean(isOpen));
@@ -1596,6 +1598,20 @@
         nextUrl.searchParams.delete('province');
       }
       window.history.replaceState({}, '', nextUrl.toString());
+    }
+
+    function stopConversationSubscription() {
+      if (typeof unsubscribeConversations === 'function') {
+        unsubscribeConversations();
+      }
+      unsubscribeConversations = null;
+    }
+
+    function stopMessagesSubscription() {
+      if (typeof unsubscribeMessages === 'function') {
+        unsubscribeMessages();
+      }
+      unsubscribeMessages = null;
     }
 
     function getProfileImageMarkup(profile, fallbackName) {
@@ -1797,8 +1813,7 @@
       });
     }
 
-    async function refreshChatList() {
-      const conversations = await authHelper.listConversations();
+    async function applyConversationList(conversations) {
       await ensureProviderDirectory();
 
       const nextConversations = await Promise.all(conversations.map(async (conversation) => {
@@ -1833,9 +1848,40 @@
       renderChatList();
     }
 
+    function renderThreadMessages(messages) {
+      const lastSeenAtMs = messages.reduce((latest, message) => (
+        message.fromUid === state.activePeerUid
+          ? Math.max(latest, Number(message.createdAtMs || 0))
+          : latest
+      ), 0);
+
+      threadTitle.textContent = state.activePeerName || 'Conversation';
+      threadStatus.textContent = formatLastSeen(lastSeenAtMs);
+      threadVerified.hidden = false;
+      threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+      threadBody.innerHTML = messages.length
+        ? buildThreadMessagesMarkup(messages, account.uid)
+        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(state.activePeerName)}.</p></div></div>`;
+      threadBody.scrollTop = threadBody.scrollHeight;
+    }
+
+    async function startConversationSubscription() {
+      stopConversationSubscription();
+      if (typeof authHelper.subscribeConversations === 'function') {
+        unsubscribeConversations = await authHelper.subscribeConversations((conversations) => {
+          applyConversationList(conversations).catch(() => {});
+        });
+        return;
+      }
+
+      const conversations = await authHelper.listConversations();
+      await applyConversationList(conversations);
+    }
+
     async function refreshMessages() {
       const submitBtn = composeForm?.querySelector('.messages-send-btn');
       if (!state.activePeerUid) {
+        stopMessagesSubscription();
         setThreadOpen(false);
         threadTitle.textContent = 'Messages';
         threadStatus.textContent = 'Select a chat to start';
@@ -1854,28 +1900,26 @@
         state.activePeerProvince = profile.provinceSlug || state.activePeerProvince;
       }
 
-      await authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
-      const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
-      const lastSeenAtMs = messages.reduce((latest, message) => (
-        message.fromUid === state.activePeerUid
-          ? Math.max(latest, Number(message.createdAtMs || 0))
-          : latest
-      ), 0);
-
-      threadTitle.textContent = state.activePeerName || 'Conversation';
-      threadStatus.textContent = formatLastSeen(lastSeenAtMs);
-      threadVerified.hidden = false;
-      threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
-
-      threadBody.innerHTML = messages.length
-        ? buildThreadMessagesMarkup(messages, account.uid)
-        : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(state.activePeerName)}.</p></div></div>`;
-      threadBody.scrollTop = threadBody.scrollHeight;
-
       if (composeInput instanceof HTMLInputElement) composeInput.disabled = false;
       if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
       setThreadOpen(true);
-      await refreshChatList();
+
+      stopMessagesSubscription();
+      if (typeof authHelper.subscribeMessagesWithUser === 'function') {
+        unsubscribeMessages = await authHelper.subscribeMessagesWithUser(state.activePeerUid, (messages) => {
+          renderThreadMessages(messages);
+          const hasUnreadIncoming = messages.some((message) => (
+            message.toUid === account.uid && !Number(message.viewedAtMs || 0)
+          ));
+          if (hasUnreadIncoming) {
+            authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
+          }
+        });
+      } else {
+        await authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
+        const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
+        renderThreadMessages(messages);
+      }
     }
 
     searchInput?.addEventListener('input', async (event) => {
@@ -1927,20 +1971,13 @@
       }
     });
 
-    await refreshChatList();
+    await startConversationSubscription();
     await refreshMessages();
     refreshSuggestions();
 
-    const pollId = window.setInterval(async () => {
-      if (state.activePeerUid) {
-        await refreshMessages();
-      } else {
-        await refreshChatList();
-      }
-    }, 15000);
-
     window.addEventListener('beforeunload', () => {
-      window.clearInterval(pollId);
+      stopConversationSubscription();
+      stopMessagesSubscription();
     }, { once: true });
   }
 

@@ -2,18 +2,24 @@
   const ADMIN_PIN = '1677';
   const ADMIN_SESSION_KEY = 'worklinkup_admin_session';
   const VIEW_TITLES = {
-    overview: 'Overview',
+    dashboard: 'Dashboard',
     users: 'Users',
-    activity: 'Activity'
+    providers: 'Providers',
+    engagement: 'Engagement',
+    messages: 'Messages',
+    'admin-activity': 'Admin Activity'
   };
 
   const state = {
-    view: 'overview',
+    view: 'dashboard',
     snapshot: null,
+    currentAdmin: null,
     usersSearch: '',
-    usersStatus: 'all',
-    activitySearch: '',
-    activityType: 'all',
+    providersSearch: '',
+    providersProvince: 'all',
+    providersCategory: 'all',
+    messagesSearch: '',
+    messagesStatus: 'all',
     loading: false,
     sidebarOpen: false,
     lastLoadedAtMs: 0
@@ -113,6 +119,14 @@
     return values;
   }
 
+  function buildRangeSeries(items, getTimestamp, buckets, getValue = () => 1) {
+    return buckets.map((bucket) => items.reduce((sum, item) => {
+      const timestamp = Number(getTimestamp(item) || 0);
+      if (!timestamp || timestamp < bucket.startMs || timestamp >= bucket.endMs) return sum;
+      return sum + Number(getValue(item) || 0);
+    }, 0));
+  }
+
   function getSeriesTrend(values) {
     const current = Number(values[values.length - 1] || 0);
     const previous = Number(values[values.length - 2] || 0);
@@ -129,6 +143,45 @@
       state: delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral',
       label: delta === 0 ? 'Flat vs last month' : `${delta > 0 ? '+' : ''}${delta}% vs last month`
     };
+  }
+
+  function getWeekBuckets(count = 7) {
+    const buckets = [];
+    const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    for (let index = count - 1; index >= 0; index -= 1) {
+      const bucketDate = new Date(now);
+      bucketDate.setDate(now.getDate() - index);
+      buckets.push({
+        key: `${bucketDate.getFullYear()}-${bucketDate.getMonth()}-${bucketDate.getDate()}`,
+        label: formatter.format(bucketDate),
+        startMs: bucketDate.getTime(),
+        endMs: bucketDate.getTime() + (24 * 60 * 60 * 1000)
+      });
+    }
+
+    return buckets;
+  }
+
+  function uniqueSortedValues(values) {
+    return Array.from(new Set(values
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)))
+      .sort((first, second) => first.localeCompare(second));
+  }
+
+  function syncSelectOptions(select, values, allLabel) {
+    if (!select) return;
+
+    const currentValue = select.value || 'all';
+    const options = [
+      `<option value="all">${escapeHtml(allLabel)}</option>`,
+      ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+    ];
+    select.innerHTML = options.join('');
+    select.value = values.includes(currentValue) || currentValue === 'all' ? currentValue : 'all';
   }
 
   function formatDateTime(value) {
@@ -195,6 +248,7 @@
   }
 
   function clearAdminSession() {
+    state.currentAdmin = null;
     try {
       localStorage.removeItem(ADMIN_SESSION_KEY);
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -207,6 +261,32 @@
     if (!refs.statusPill) return;
     refs.statusPill.textContent = text;
     refs.statusPill.dataset.state = mode;
+  }
+
+  function setCurrentAdmin(admin) {
+    state.currentAdmin = admin || null;
+    if (refs.sidebarCurrentAdmin) {
+      refs.sidebarCurrentAdmin.textContent = state.currentAdmin?.name || 'Awaiting PIN';
+    }
+  }
+
+  async function logAdminAction(type, title, description, subject = {}) {
+    const currentAdmin = state.currentAdmin;
+    if (!currentAdmin) return;
+
+    const authHelper = await waitForAuthHelper().catch(() => null);
+    if (!authHelper || typeof authHelper.recordAdminConsoleAction !== 'function') return;
+
+    authHelper.recordAdminConsoleAction({
+      type,
+      admin: currentAdmin,
+      title,
+      description,
+      subjectUid: subject.uid || '',
+      subjectName: subject.name || '',
+      sourceRef: subject.sourceRef || '',
+      createdAtMs: Date.now()
+    }).catch(() => {});
   }
 
   function setSidebarOpen(isOpen) {
@@ -234,6 +314,7 @@
   }
 
   function getActivityGroup(type) {
+    if (String(type).startsWith('admin_')) return 'admin';
     if (String(type).startsWith('user_') || type === 'profile_deleted') return 'user';
     if (String(type).startsWith('provider_post_')) return 'post';
     if (String(type).startsWith('provider_')) return 'provider';
@@ -244,6 +325,7 @@
 
   function getActivityBadge(type) {
     const group = getActivityGroup(type);
+    if (group === 'admin') return 'Admin';
     if (group === 'user') return 'Registration';
     if (group === 'provider') return 'Provider';
     if (group === 'post') return 'Post';
@@ -253,7 +335,7 @@
   }
 
   function setView(view) {
-    state.view = VIEW_TITLES[view] ? view : 'overview';
+    state.view = VIEW_TITLES[view] ? view : 'dashboard';
     if (refs.viewTitle) refs.viewTitle.textContent = VIEW_TITLES[state.view];
 
     document.querySelectorAll('[data-admin-view]').forEach((button) => {
@@ -341,6 +423,27 @@
       <div class="admin-chart-legend">
         <span><i class="admin-legend-swatch is-primary"></i>${escapeHtml(firstLabel)}</span>
         <span><i class="admin-legend-swatch is-secondary"></i>${escapeHtml(secondLabel)}</span>
+      </div>
+    `;
+  }
+
+  function renderBubbleBars(labels, values, modifier = '') {
+    const maximum = Math.max(1, ...values);
+    return `
+      <div class="admin-bubble-bars ${modifier}">
+        ${labels.map((label, index) => {
+          const value = Number(values[index] || 0);
+          const height = Math.max(10, Math.round((value / maximum) * 100));
+          return `
+            <div class="admin-bubble-column">
+              <span class="admin-bubble-value">${formatNumber(value)}</span>
+              <div class="admin-bubble-track">
+                <span class="admin-bubble-bar" style="height:${height}%"></span>
+              </div>
+              <small>${escapeHtml(label)}</small>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   }
@@ -668,35 +771,30 @@
   function renderUsers() {
     if (!refs.usersBody || !refs.usersTotal) return;
     const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
+    const members = users
+      .filter((user) => !user.providerProfileComplete)
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
     const query = state.usersSearch.trim().toLowerCase();
 
-    const filtered = users.filter((user) => {
-      const matchesStatus = state.usersStatus === 'all'
-        || (state.usersStatus === 'providers' && user.providerProfileComplete)
-        || (state.usersStatus === 'members' && !user.providerProfileComplete);
-      if (!matchesStatus) return false;
-
+    const filtered = members.filter((user) => {
       if (!query) return true;
 
       const haystack = [
         user.name,
         user.email,
         user.phone,
-        user.providerPublicId,
         user.providerProvince,
         user.city,
-        user.primaryCategory,
-        user.specialty,
         user.uid
       ].join(' ').toLowerCase();
 
       return haystack.includes(query);
     });
 
-    refs.usersTotal.textContent = `${formatNumber(filtered.length)} users`;
+    refs.usersTotal.textContent = `${formatNumber(filtered.length)} members`;
 
     if (!filtered.length) {
-      refs.usersBody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">No users match the current filters.</td></tr>';
+      refs.usersBody.innerHTML = '<tr><td colspan="6" class="admin-empty-cell">No users match the current filters.</td></tr>';
       return;
     }
 
@@ -705,7 +803,7 @@
         <td>
           <div class="admin-table-user">
             <strong>${escapeHtml(user.name || 'WorkLinkUp User')}</strong>
-            <span>${escapeHtml(user.providerPublicId || user.uid || 'No ID')}</span>
+            <span>${escapeHtml(user.uid || 'No ID')}</span>
           </div>
         </td>
         <td>
@@ -714,17 +812,10 @@
             <small>${escapeHtml(user.phone || 'No phone')}</small>
           </div>
         </td>
-        <td><span class="admin-badge ${user.providerProfileComplete ? 'is-provider' : 'is-member'}">${user.providerProfileComplete ? 'Provider' : 'Member'}</span></td>
         <td>
           <div class="admin-table-stack">
             <span>${escapeHtml(user.providerProvince || 'Not set')}</span>
             <small>${escapeHtml(user.city || 'No city')}</small>
-          </div>
-        </td>
-        <td>
-          <div class="admin-table-stack">
-            <span>${escapeHtml(user.primaryCategory || 'Not set')}</span>
-            <small>${escapeHtml(user.specialty || 'No specialty')}</small>
           </div>
         </td>
         <td>
@@ -739,60 +830,381 @@
             <small>${getRelativeTime(user.lastSeenAtMs || user.updatedAtMs)}</small>
           </div>
         </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${formatNumber(Number(user.cartCount || 0))} carts</span>
+            <small>${formatNumber(Number(user.wishlistCount || 0))} wishlist saves</small>
+          </div>
+        </td>
       </tr>
     `).join('');
   }
 
-  function renderActivity() {
-    if (!refs.activityBody || !refs.activityTotal) return;
-    const activity = Array.isArray(state.snapshot?.activity) ? state.snapshot.activity : [];
-    const query = state.activitySearch.trim().toLowerCase();
+  function renderProviders() {
+    if (!refs.providersBody || !refs.providersTotal || !refs.providersOverview) return;
+    const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers.slice() : [];
+    const query = state.providersSearch.trim().toLowerCase();
+    const provinceOptions = uniqueSortedValues(providers.map((provider) => provider.province));
+    const categoryOptions = uniqueSortedValues(providers.map((provider) => provider.primaryCategory));
 
-    const filtered = activity.filter((eventItem) => {
-      const group = getActivityGroup(eventItem.type);
-      if (state.activityType !== 'all' && group !== state.activityType) return false;
+    syncSelectOptions(refs.providersProvince, provinceOptions, 'All provinces');
+    syncSelectOptions(refs.providersCategory, categoryOptions, 'All categories');
 
-      if (!query) return true;
+    const filtered = providers
+      .filter((provider) => {
+        const matchesProvince = state.providersProvince === 'all'
+          || String(provider.province || '').trim() === state.providersProvince;
+        const matchesCategory = state.providersCategory === 'all'
+          || String(provider.primaryCategory || '').trim() === state.providersCategory;
+        if (!matchesProvince || !matchesCategory) return false;
 
-      const haystack = [
-        eventItem.title,
-        eventItem.description,
-        eventItem.actorName,
-        eventItem.actorEmail,
-        eventItem.subjectName,
-        eventItem.type
-      ].join(' ').toLowerCase();
+        if (!query) return true;
 
-      return haystack.includes(query);
-    });
+        const haystack = [
+          provider.displayName,
+          provider.email,
+          provider.providerPublicId,
+          provider.province,
+          provider.city,
+          provider.primaryCategory,
+          provider.specialty,
+          provider.uid
+        ].join(' ').toLowerCase();
 
-    refs.activityTotal.textContent = `${formatNumber(filtered.length)} events`;
+        return haystack.includes(query);
+      })
+      .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+
+    const totalCompletedJobs = filtered.reduce((sum, provider) => sum + Number(provider.completedJobs || 0), 0);
+    const averageRating = filtered.length
+      ? (filtered.reduce((sum, provider) => sum + Number(provider.averageRating || 0), 0) / filtered.length).toFixed(1)
+      : '0.0';
+    const topProviders = filtered
+      .slice()
+      .sort((first, second) => (
+        Number(second.completedJobs || 0) - Number(first.completedJobs || 0)
+      ) || (
+        Number(second.averageRating || 0) - Number(first.averageRating || 0)
+      ))
+      .slice(0, 5);
+    const supplyByProvince = uniqueSortedValues(filtered.map((provider) => provider.province))
+      .map((province) => ({
+        label: province,
+        total: filtered.filter((provider) => String(provider.province || '').trim() === province).length
+      }))
+      .sort((first, second) => second.total - first.total)
+      .slice(0, 5);
+    const provinceMax = Math.max(1, ...supplyByProvince.map((item) => Number(item.total || 0)));
+
+    refs.providersTotal.textContent = `${formatNumber(filtered.length)} providers`;
+    refs.providersOverview.innerHTML = `
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Filtered provider pool</span>
+            <h3>Provider snapshot</h3>
+          </div>
+        </div>
+        <div class="admin-stats-row">
+          <div class="admin-mini-stat">
+            <span>Total providers</span>
+            <strong>${formatNumber(filtered.length)}</strong>
+          </div>
+          <div class="admin-mini-stat">
+            <span>Completed jobs</span>
+            <strong>${formatNumber(totalCompletedJobs)}</strong>
+          </div>
+          <div class="admin-mini-stat">
+            <span>Average rating</span>
+            <strong>${averageRating}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Top providers</span>
+            <h3>Best performing providers</h3>
+          </div>
+        </div>
+        <div class="admin-stacked-list">
+          ${topProviders.length ? topProviders.map((provider) => `
+            <div class="admin-person-row">
+              <div class="admin-person-main">
+                ${renderAvatar(provider.displayName || provider.providerPublicId || 'Provider', provider.profileImageData)}
+                <div class="admin-person-copy">
+                  <strong>${escapeHtml(provider.displayName || provider.providerPublicId || 'Provider')}</strong>
+                  <small>${escapeHtml(provider.primaryCategory || provider.specialty || provider.province || 'Provider')}</small>
+                </div>
+              </div>
+              <div class="admin-person-meta">
+                <strong>${formatNumber(provider.completedJobs || 0)}</strong>
+                <small>${Number(provider.averageRating || 0).toFixed(1)} rating</small>
+              </div>
+            </div>
+          `).join('') : '<div class="admin-list-empty">No providers match the current filters.</div>'}
+        </div>
+      </section>
+
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Province filter response</span>
+            <h3>Provider spread</h3>
+          </div>
+        </div>
+        <div class="admin-rank-list">
+          ${supplyByProvince.length ? supplyByProvince.map((item) => `
+            <div class="admin-rank-row">
+              <div class="admin-rank-copy">
+                <strong>${escapeHtml(item.label)}</strong>
+                <small>${formatNumber(item.total)} providers</small>
+              </div>
+              <div class="admin-rank-meter is-cyan">
+                <span style="width:${Math.max(10, Math.round((Number(item.total || 0) / provinceMax) * 100))}%"></span>
+              </div>
+            </div>
+          `).join('') : '<div class="admin-list-empty">No province data is available for this provider filter.</div>'}
+        </div>
+      </section>
+    `;
 
     if (!filtered.length) {
-      refs.activityBody.innerHTML = '<tr><td colspan="5" class="admin-empty-cell">No activity matches the current filters.</td></tr>';
+      refs.providersBody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">No providers match the current filters.</td></tr>';
       return;
     }
 
-    refs.activityBody.innerHTML = filtered.map((eventItem) => `
+    refs.providersBody.innerHTML = filtered.map((provider) => `
+      <tr>
+        <td>
+          <div class="admin-table-user">
+            <strong>${escapeHtml(provider.displayName || provider.providerPublicId || 'Provider')}</strong>
+            <span>${escapeHtml(provider.providerPublicId || provider.uid || 'No public ID')}</span>
+          </div>
+        </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(provider.email || 'No email')}</span>
+            <small>${escapeHtml(provider.whatsappNumber || 'No phone')}</small>
+          </div>
+        </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(provider.province || 'Not set')}</span>
+            <small>${escapeHtml(provider.city || 'No city')}</small>
+          </div>
+        </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(provider.primaryCategory || 'Not set')}</span>
+            <small>${escapeHtml(provider.specialty || 'No specialty')}</small>
+          </div>
+        </td>
+        <td>${formatNumber(provider.completedJobs || 0)}</td>
+        <td>${Number(provider.averageRating || 0).toFixed(1)}</td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${formatDateTime(provider.updatedAtMs || provider.createdAtMs)}</span>
+            <small>${getRelativeTime(provider.updatedAtMs || provider.createdAtMs)}</small>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderEngagement() {
+    if (!refs.engagementDashboard || !refs.engagementTotal) return;
+    const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
+    const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
+    const messages = Array.isArray(state.snapshot?.messages) ? state.snapshot.messages : [];
+    const posts = Array.isArray(state.snapshot?.posts) ? state.snapshot.posts : [];
+    const activity = Array.isArray(state.snapshot?.activity) ? state.snapshot.activity : [];
+    const monthBuckets = getMonthlyBuckets(6);
+    const weekBuckets = getWeekBuckets(7);
+    const memberMonthly = buildMonthlySeries(users.filter((user) => !user.providerProfileComplete), (user) => user.createdAtMs, monthBuckets);
+    const providerMonthly = buildMonthlySeries(users.filter((user) => user.providerProfileComplete), (user) => user.createdAtMs, monthBuckets);
+    const weeklyEngagement = buildRangeSeries(activity, (eventItem) => eventItem.createdAtMs, weekBuckets);
+    const weeklyMessages = buildRangeSeries(messages, (message) => message.createdAtMs, weekBuckets);
+    const weeklyTouchpoints = weeklyEngagement.reduce((sum, value) => sum + Number(value || 0), 0);
+    const averageDailyTouchpoints = weekBuckets.length ? Math.round(weeklyTouchpoints / weekBuckets.length) : 0;
+    const responseLoad = posts.length + messages.length + providers.length;
+
+    refs.engagementTotal.textContent = `${formatNumber(weeklyTouchpoints)} weekly touchpoints`;
+    refs.engagementDashboard.innerHTML = `
+      <section class="admin-visual-card admin-chart-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Monthly user comparison</span>
+            <h3>Members vs providers by month</h3>
+          </div>
+        </div>
+        ${renderGroupedBars(monthBuckets.map((bucket) => bucket.label), memberMonthly, providerMonthly, 'Members', 'Providers')}
+      </section>
+
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Weekly engagement</span>
+            <h3>User touchpoints by day</h3>
+          </div>
+        </div>
+        ${renderBubbleBars(weekBuckets.map((bucket) => bucket.label), weeklyEngagement, 'is-cyan')}
+      </section>
+
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Weekly messages</span>
+            <h3>Conversation activity</h3>
+          </div>
+        </div>
+        ${renderBubbleBars(weekBuckets.map((bucket) => bucket.label), weeklyMessages, 'is-pink')}
+      </section>
+
+      <section class="admin-visual-card">
+        <div class="admin-card-head">
+          <div>
+            <span>Engagement summary</span>
+            <h3>Interaction signals</h3>
+          </div>
+        </div>
+        <div class="admin-stats-row">
+          <div class="admin-mini-stat">
+            <span>Active users 7d</span>
+            <strong>${formatNumber(state.snapshot?.metrics?.activeUsers7d || 0)}</strong>
+          </div>
+          <div class="admin-mini-stat">
+            <span>Avg daily touchpoints</span>
+            <strong>${formatNumber(averageDailyTouchpoints)}</strong>
+          </div>
+          <div class="admin-mini-stat">
+            <span>Response load</span>
+            <strong>${formatNumber(responseLoad)}</strong>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderMessages() {
+    if (!refs.messagesBody || !refs.messagesTotal) return;
+    const messages = Array.isArray(state.snapshot?.messages) ? state.snapshot.messages.slice() : [];
+    const query = state.messagesSearch.trim().toLowerCase();
+
+    const filtered = messages
+      .filter((message) => {
+        const matchesStatus = state.messagesStatus === 'all'
+          || (state.messagesStatus === 'unread' && !Number(message.viewedAtMs || 0))
+          || (state.messagesStatus === 'read' && Number(message.viewedAtMs || 0));
+        if (!matchesStatus) return false;
+
+        if (!query) return true;
+
+        const haystack = [
+          message.fromName,
+          message.toName,
+          message.text,
+          message.conversationId,
+          message.fromUid,
+          message.toUid
+        ].join(' ').toLowerCase();
+
+        return haystack.includes(query);
+      })
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+
+    refs.messagesTotal.textContent = `${formatNumber(filtered.length)} messages`;
+
+    if (!filtered.length) {
+      refs.messagesBody.innerHTML = '<tr><td colspan="6" class="admin-empty-cell">No messages match the current filters.</td></tr>';
+      return;
+    }
+
+    refs.messagesBody.innerHTML = filtered.map((message) => `
       <tr>
         <td>
           <div class="admin-table-stack">
-            <span>${escapeHtml(eventItem.title || 'Activity')}</span>
-            <small>${escapeHtml(getActivityBadge(eventItem.type))}</small>
+            <span>${escapeHtml(message.fromName || 'Unknown sender')}</span>
+            <small>${escapeHtml(message.fromUid || 'No sender ID')}</small>
           </div>
         </td>
         <td>
           <div class="admin-table-stack">
-            <span>${escapeHtml(eventItem.actorName || 'Unknown user')}</span>
-            <small>${escapeHtml(eventItem.actorEmail || eventItem.actorUid || 'No identifier')}</small>
+            <span>${escapeHtml(message.toName || 'Unknown recipient')}</span>
+            <small>${escapeHtml(message.toUid || 'No recipient ID')}</small>
           </div>
         </td>
-        <td>${escapeHtml(eventItem.subjectName || '—')}</td>
-        <td>${escapeHtml(eventItem.description || 'WorkLinkUp event')}</td>
+        <td>${escapeHtml(message.conversationId || '—')}</td>
+        <td>${escapeHtml(message.text || 'No text')}</td>
+        <td><span class="admin-badge ${Number(message.viewedAtMs || 0) ? 'is-read' : 'is-unread'}">${Number(message.viewedAtMs || 0) ? 'Read' : 'Unread'}</span></td>
         <td>
           <div class="admin-table-stack">
-            <span>${formatDateTime(eventItem.createdAtMs)}</span>
-            <small>${getRelativeTime(eventItem.createdAtMs)}</small>
+            <span>${formatDateTime(message.createdAtMs)}</span>
+            <small>${getRelativeTime(message.createdAtMs)}</small>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function setCreateAdminMessage(text, mode = 'default') {
+    if (!refs.createAdminMessage) return;
+    refs.createAdminMessage.hidden = !text;
+    refs.createAdminMessage.textContent = text || '';
+    refs.createAdminMessage.dataset.state = mode;
+  }
+
+  function renderAdminActivity() {
+    if (!refs.adminActivityBody || !refs.adminActivityTotal || !refs.adminsList) return;
+    const admins = Array.isArray(state.snapshot?.admins) ? state.snapshot.admins : [];
+    const adminAudit = Array.isArray(state.snapshot?.adminAudit) ? state.snapshot.adminAudit : [];
+
+    refs.adminActivityTotal.textContent = `${formatNumber(adminAudit.length)} actions`;
+
+    refs.adminsList.innerHTML = admins.length
+      ? admins.map((admin) => `
+        <div class="admin-person-row">
+          <div class="admin-person-main">
+            ${renderAvatar(admin.name || 'Admin')}
+            <div class="admin-person-copy">
+              <strong>${escapeHtml(admin.name || 'Admin')}</strong>
+              <small>${escapeHtml(admin.email || admin.role || 'WorkLinkUp admin')}</small>
+            </div>
+          </div>
+          <div class="admin-person-meta">
+            <strong>${escapeHtml(admin.role || 'Admin')}</strong>
+            <small>${admin.id === state.currentAdmin?.id ? 'Current session' : 'Active'}</small>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="admin-list-empty">No admin accounts are available yet.</div>';
+
+    if (!adminAudit.length) {
+      refs.adminActivityBody.innerHTML = '<tr><td colspan="5" class="admin-empty-cell">No admin actions have been recorded yet.</td></tr>';
+      return;
+    }
+
+    refs.adminActivityBody.innerHTML = adminAudit.map((entry) => `
+      <tr>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(entry.actorName || 'Admin')}</span>
+            <small>${escapeHtml(entry.actorEmail || entry.actorUid || 'No identifier')}</small>
+          </div>
+        </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(entry.title || 'Admin action')}</span>
+            <small>${escapeHtml(getActivityBadge(entry.type))}</small>
+          </div>
+        </td>
+        <td>${escapeHtml(entry.subjectName || '—')}</td>
+        <td>${escapeHtml(entry.description || 'Admin action')}</td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${formatDateTime(entry.createdAtMs)}</span>
+            <small>${getRelativeTime(entry.createdAtMs)}</small>
           </div>
         </td>
       </tr>
@@ -802,12 +1214,17 @@
   function renderAll() {
     renderOverview();
     renderUsers();
-    renderActivity();
+    renderProviders();
+    renderEngagement();
+    renderMessages();
+    renderAdminActivity();
   }
 
   function setLoadingTables(copy) {
-    if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
-    if (refs.activityBody) refs.activityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.providersBody) refs.providersBody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.messagesBody) refs.messagesBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.adminActivityBody) refs.adminActivityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
   }
 
   async function loadDashboardData() {
@@ -841,6 +1258,26 @@
           </section>
         `;
       }
+      if (refs.providersOverview) {
+        refs.providersOverview.innerHTML = `
+          <section class="admin-visual-card admin-overview-placeholder">
+            <div class="admin-empty-state">
+              <i class="fa-solid fa-user-tie"></i>
+              <p>${escapeHtml(message)}</p>
+            </div>
+          </section>
+        `;
+      }
+      if (refs.engagementDashboard) {
+        refs.engagementDashboard.innerHTML = `
+          <section class="admin-visual-card admin-overview-placeholder">
+            <div class="admin-empty-state">
+              <i class="fa-solid fa-chart-column"></i>
+              <p>${escapeHtml(message)}</p>
+            </div>
+          </section>
+        `;
+      }
     } finally {
       state.loading = false;
       if (refs.refreshButton) refs.refreshButton.disabled = false;
@@ -848,12 +1285,27 @@
   }
 
   function bindEvents() {
-    refs.gateForm?.addEventListener('submit', (event) => {
+    refs.gateForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const pin = String(refs.pinInput?.value || '').trim();
-      const isValid = pin === ADMIN_PIN;
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      let matchedAdmin = null;
 
-      if (!isValid) {
+      if (authHelper && typeof authHelper.resolveAdminByPin === 'function') {
+        matchedAdmin = await authHelper.resolveAdminByPin(pin).catch(() => null);
+      }
+
+      if (!matchedAdmin && pin === ADMIN_PIN) {
+        matchedAdmin = {
+          id: 'primary-admin',
+          name: 'Admin 1',
+          email: '',
+          role: 'Owner',
+          pin: ADMIN_PIN
+        };
+      }
+
+      if (!matchedAdmin) {
         if (refs.gateError) refs.gateError.hidden = false;
         refs.pinInput?.focus();
         refs.pinInput?.select();
@@ -861,14 +1313,26 @@
       }
 
       if (refs.gateError) refs.gateError.hidden = true;
+      setCurrentAdmin(matchedAdmin);
       saveAdminSession();
       showApp();
       loadDashboardData();
+      logAdminAction('admin_login', 'Admin signed in', `${matchedAdmin.name} unlocked the admin console.`, {
+        uid: matchedAdmin.id,
+        name: matchedAdmin.name,
+        sourceRef: `admins/${matchedAdmin.id}`
+      });
     });
 
     document.querySelectorAll('[data-admin-view]').forEach((button) => {
       button.addEventListener('click', () => {
-        setView(button.getAttribute('data-admin-view') || 'overview');
+        const nextView = button.getAttribute('data-admin-view') || 'dashboard';
+        setView(nextView);
+        logAdminAction('admin_view_changed', 'Admin view changed', `${state.currentAdmin?.name || 'An admin'} opened the ${VIEW_TITLES[nextView] || 'Dashboard'} view.`, {
+          uid: nextView,
+          name: VIEW_TITLES[nextView] || 'Dashboard',
+          sourceRef: `admin-view/${nextView}`
+        });
       });
     });
 
@@ -877,28 +1341,73 @@
       renderUsers();
     });
 
-    refs.usersStatus?.addEventListener('change', (event) => {
-      state.usersStatus = String(event.target.value || 'all');
-      renderUsers();
+    refs.providersSearch?.addEventListener('input', (event) => {
+      state.providersSearch = String(event.target.value || '');
+      renderProviders();
     });
 
-    refs.activitySearch?.addEventListener('input', (event) => {
-      state.activitySearch = String(event.target.value || '');
-      renderActivity();
+    refs.providersProvince?.addEventListener('change', (event) => {
+      state.providersProvince = String(event.target.value || 'all');
+      renderProviders();
     });
 
-    refs.activityType?.addEventListener('change', (event) => {
-      state.activityType = String(event.target.value || 'all');
-      renderActivity();
+    refs.providersCategory?.addEventListener('change', (event) => {
+      state.providersCategory = String(event.target.value || 'all');
+      renderProviders();
+    });
+
+    refs.messagesSearch?.addEventListener('input', (event) => {
+      state.messagesSearch = String(event.target.value || '');
+      renderMessages();
+    });
+
+    refs.messagesStatus?.addEventListener('change', (event) => {
+      state.messagesStatus = String(event.target.value || 'all');
+      renderMessages();
     });
 
     refs.refreshButton?.addEventListener('click', () => {
       loadDashboardData();
+      logAdminAction('admin_refresh', 'Dashboard refreshed', `${state.currentAdmin?.name || 'An admin'} refreshed admin data.`, {
+        uid: state.currentAdmin?.id || '',
+        name: state.currentAdmin?.name || 'Admin',
+        sourceRef: 'admin-console/refresh'
+      });
     });
 
     refs.lockButton?.addEventListener('click', () => {
+      logAdminAction('admin_locked_console', 'Admin locked console', `${state.currentAdmin?.name || 'An admin'} locked the admin console.`, {
+        uid: state.currentAdmin?.id || '',
+        name: state.currentAdmin?.name || 'Admin',
+        sourceRef: 'admin-console/lock'
+      });
       clearAdminSession();
+      setCurrentAdmin(null);
       showGate();
+    });
+
+    refs.createAdminForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      if (!authHelper || typeof authHelper.createAdmin !== 'function') {
+        setCreateAdminMessage('Admin tools are not available right now.', 'error');
+        return;
+      }
+
+      const payload = {
+        name: String(refs.createAdminName?.value || '').trim(),
+        email: String(refs.createAdminEmail?.value || '').trim(),
+        pin: String(refs.createAdminPin?.value || '').trim()
+      };
+
+      try {
+        const createdAdmin = await authHelper.createAdmin(payload, state.currentAdmin);
+        refs.createAdminForm.reset();
+        setCreateAdminMessage(`Created admin access for ${createdAdmin.name}.`, 'success');
+        await loadDashboardData();
+      } catch (error) {
+        setCreateAdminMessage(error?.message || 'Could not create the admin account.', 'error');
+      }
     });
 
     refs.menuToggle?.addEventListener('click', () => {
@@ -930,16 +1439,32 @@
     refs.viewTitle = document.getElementById('admin-view-title');
     refs.statusPill = document.getElementById('admin-status-pill');
     refs.overviewDashboard = document.getElementById('admin-overview-dashboard');
+    refs.sidebarCurrentAdmin = document.getElementById('admin-sidebar-current-admin');
     refs.sidebarTotalUsers = document.getElementById('admin-sidebar-total-users');
     refs.sidebarLastSync = document.getElementById('admin-sidebar-last-sync');
     refs.usersSearch = document.getElementById('admin-users-search');
-    refs.usersStatus = document.getElementById('admin-users-status');
     refs.usersTotal = document.getElementById('admin-users-total');
     refs.usersBody = document.getElementById('admin-users-body');
-    refs.activitySearch = document.getElementById('admin-activity-search');
-    refs.activityType = document.getElementById('admin-activity-type');
-    refs.activityTotal = document.getElementById('admin-activity-total');
-    refs.activityBody = document.getElementById('admin-activity-body');
+    refs.providersSearch = document.getElementById('admin-providers-search');
+    refs.providersProvince = document.getElementById('admin-providers-province');
+    refs.providersCategory = document.getElementById('admin-providers-category');
+    refs.providersTotal = document.getElementById('admin-providers-total');
+    refs.providersOverview = document.getElementById('admin-providers-overview');
+    refs.providersBody = document.getElementById('admin-providers-body');
+    refs.engagementDashboard = document.getElementById('admin-engagement-dashboard');
+    refs.engagementTotal = document.getElementById('admin-engagement-total');
+    refs.messagesSearch = document.getElementById('admin-messages-search');
+    refs.messagesStatus = document.getElementById('admin-messages-status');
+    refs.messagesTotal = document.getElementById('admin-messages-total');
+    refs.messagesBody = document.getElementById('admin-messages-body');
+    refs.createAdminForm = document.getElementById('admin-create-form');
+    refs.createAdminName = document.getElementById('admin-create-name');
+    refs.createAdminEmail = document.getElementById('admin-create-email');
+    refs.createAdminPin = document.getElementById('admin-create-pin');
+    refs.createAdminMessage = document.getElementById('admin-create-message');
+    refs.adminsList = document.getElementById('admin-admins-list');
+    refs.adminActivityTotal = document.getElementById('admin-admin-activity-total');
+    refs.adminActivityBody = document.getElementById('admin-admin-activity-body');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
