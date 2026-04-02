@@ -3,49 +3,49 @@
     {
       key: 'home-services',
       label: 'Home Services',
-      image: 'images/categories/home-services.jpg',
+      image: 'images/categories/home-services.avif',
       subservices: ['Gardener', 'Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman']
     },
     {
       key: 'beauty-wellness',
       label: 'Beauty & Wellness',
-      image: 'images/categories/beauty-and-wellness.jpg',
+      image: 'images/categories/beauty-and-wellness.avif',
       subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist']
     },
     {
       key: 'digital-business',
       label: 'Digital & Business',
-      image: 'images/categories/business.jpg',
+      image: 'images/categories/business.avif',
       subservices: ['Programmer', 'Designer', 'Photographer', 'Videographer', 'Social Media Manager']
     },
     {
       key: 'plumbing',
       label: 'Plumbing',
-      image: 'images/categories/plumbing.jpg',
+      image: 'images/categories/plumbing.avif',
       subservices: ['Leak Repairs', 'Blocked Drains', 'Tank Cleaning']
     },
     {
       key: 'security-services',
       label: 'Security Services',
-      image: 'images/categories/security-services.jpg',
+      image: 'images/categories/security-services.avif',
       subservices: ['Guarding', 'Alarm Setup', 'Gate Monitoring']
     },
     {
       key: 'tutoring',
       label: 'Tutoring',
-      image: 'images/categories/tutoring.jpg',
+      image: 'images/categories/tutoring.avif',
       subservices: ['Maths Tutor', 'Science Tutor', 'Exam Prep']
     },
     {
       key: 'childcare',
       label: 'Childcare',
-      image: 'images/categories/childcare.jpg',
+      image: 'images/categories/childcare.avif',
       subservices: ['Babysitting', 'Nanny Support', 'After-school Care']
     },
     {
       key: 'photography',
       label: 'Photography',
-      image: 'images/categories/photography.jpg',
+      image: 'images/categories/photography.avif',
       subservices: ['Events', 'Brand Shoots', 'Product Photography']
     }
   ];
