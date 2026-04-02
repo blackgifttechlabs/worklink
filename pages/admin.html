@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Console – WorkLinkUp</title>
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="admin-page-body">
+  <div class="admin-gate" id="admin-gate">
+    <div class="admin-gate-card">
+      <div class="admin-gate-badge"><i class="fa-solid fa-key"></i> Admin Access</div>
+      <h1>WorkLinkUp Admin</h1>
+      <p>Enter the admin PIN to unlock live users, activity, and platform metrics.</p>
+      <form class="admin-gate-form" id="admin-gate-form">
+        <label for="admin-pin">PIN</label>
+        <input id="admin-pin" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter admin PIN" maxlength="4" />
+        <button type="submit" class="admin-gate-submit">Unlock Console</button>
+        <div class="admin-gate-error" id="admin-gate-error" hidden>Incorrect PIN. Try again.</div>
+      </form>
+      <a href="../index.html" class="admin-gate-back">Back to WorkLinkUp</a>
+    </div>
+  </div>
+
+  <div class="admin-mobile-backdrop" id="admin-mobile-backdrop" hidden></div>
+
+  <div class="admin-app" id="admin-app" hidden>
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <a href="../index.html" class="admin-brand-link" aria-label="WorkLinkUp home">
+          <img src="../images/logo/logo.jpg" alt="WorkLinkUp" />
+          <span>
+            <strong>WorkLinkUp</strong>
+            <small>Admin Console</small>
+          </span>
+        </a>
+      </div>
+
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <button type="button" class="admin-nav-link is-active" data-admin-view="overview">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Overview</span>
+        </button>
+        <button type="button" class="admin-nav-link" data-admin-view="users">
+          <i class="fa-solid fa-users"></i>
+          <span>Users</span>
+        </button>
+        <button type="button" class="admin-nav-link" data-admin-view="activity">
+          <i class="fa-solid fa-wave-square"></i>
+          <span>Activity</span>
+        </button>
+      </nav>
+
+      <div class="admin-sidebar-meta">
+        <div class="admin-sidebar-card">
+          <span>Live users</span>
+          <strong id="admin-sidebar-total-users">0</strong>
+        </div>
+        <div class="admin-sidebar-card">
+          <span>Last sync</span>
+          <strong id="admin-sidebar-last-sync">Waiting...</strong>
+        </div>
+      </div>
+    </aside>
+
+    <div class="admin-main-shell">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open admin menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <p class="admin-topbar-kicker">WorkLinkUp Admin</p>
+            <h1 id="admin-view-title">Overview</h1>
+          </div>
+        </div>
+        <div class="admin-topbar-right">
+          <button type="button" class="admin-refresh-btn" id="admin-refresh-btn">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Refresh</span>
+          </button>
+          <button type="button" class="admin-lock-btn" id="admin-lock-btn">
+            <i class="fa-solid fa-lock"></i>
+            <span>Lock</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <section class="admin-panel" data-admin-panel="overview">
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">Platform snapshot</p>
+              <h2>Live metrics</h2>
+            </div>
+            <div class="admin-status-pill" id="admin-status-pill">Loading dashboard...</div>
+          </div>
+
+          <div class="admin-metric-grid">
+            <article class="admin-metric-card">
+              <span>Total users</span>
+              <strong id="admin-metric-total-users">0</strong>
+              <small id="admin-metric-new-users">0 new today</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Provider profiles</span>
+              <strong id="admin-metric-provider-count">0</strong>
+              <small id="admin-metric-provider-rate">0% completion</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Active users</span>
+              <strong id="admin-metric-active-users">0</strong>
+              <small id="admin-metric-active-carts">0 carts in progress</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Posts published</span>
+              <strong id="admin-metric-post-count">0</strong>
+              <small id="admin-metric-posts-today">0 today</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Messages sent</span>
+              <strong id="admin-metric-message-count">0</strong>
+              <small id="admin-metric-messages-today">0 today</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Active conversations</span>
+              <strong id="admin-metric-conversation-count">0</strong>
+              <small id="admin-metric-unread-messages">0 unread</small>
+            </article>
+            <article class="admin-metric-card">
+              <span>Commercial intent</span>
+              <strong id="admin-metric-cart-units">0</strong>
+              <small id="admin-metric-wishlist-saves">0 wishlist saves</small>
+            </article>
+          </div>
+
+          <div class="admin-insight-grid">
+            <section class="admin-card">
+              <div class="admin-card-head">
+                <h3>Top Categories</h3>
+                <span>Provider supply</span>
+              </div>
+              <div class="admin-list" id="admin-category-breakdown"></div>
+            </section>
+
+            <section class="admin-card">
+              <div class="admin-card-head">
+                <h3>Location Spread</h3>
+                <span>Users by area</span>
+              </div>
+              <div class="admin-list" id="admin-province-breakdown"></div>
+            </section>
+
+            <section class="admin-card">
+              <div class="admin-card-head">
+                <h3>Recent Signups</h3>
+                <span>Newest users</span>
+              </div>
+              <div class="admin-list" id="admin-recent-users"></div>
+            </section>
+
+            <section class="admin-card">
+              <div class="admin-card-head">
+                <h3>Recent Activity</h3>
+                <span>Latest events</span>
+              </div>
+              <div class="admin-list admin-activity-preview" id="admin-activity-preview"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="users" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">User records</p>
+              <h2>Users table</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-users-total">0 users</div>
+          </div>
+
+          <div class="admin-toolbar">
+            <label class="admin-search-field">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="admin-users-search" placeholder="Search by name, email, province, category, or provider ID" />
+            </label>
+            <label class="admin-filter-field">
+              <span>Status</span>
+              <select id="admin-users-status">
+                <option value="all">All users</option>
+                <option value="providers">Providers only</option>
+                <option value="members">Members only</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="admin-table-shell">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Contact</th>
+                  <th>Status</th>
+                  <th>Location</th>
+                  <th>Category</th>
+                  <th>Registered</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-body">
+                <tr><td colspan="7" class="admin-empty-cell">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="activity" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">Event stream</p>
+              <h2>User activity</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-activity-total">0 events</div>
+          </div>
+
+          <div class="admin-toolbar">
+            <label class="admin-search-field">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="admin-activity-search" placeholder="Search actor, event title, or description" />
+            </label>
+            <label class="admin-filter-field">
+              <span>Type</span>
+              <select id="admin-activity-type">
+                <option value="all">All activity</option>
+                <option value="user">Registrations</option>
+                <option value="provider">Provider updates</option>
+                <option value="post">Posts</option>
+                <option value="message">Messages</option>
+                <option value="cart">Cart and wishlist</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="admin-table-shell">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Actor</th>
+                  <th>Target</th>
+                  <th>Description</th>
+                  <th>Date and time</th>
+                </tr>
+              </thead>
+              <tbody id="admin-activity-body">
+                <tr><td colspan="5" class="admin-empty-cell">Loading activity...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/firebase-auth.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

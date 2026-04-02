@@ -476,6 +476,9 @@ function renderFooter() {
           <a href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
           <a href="#" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
+        <a href="${base}pages/admin.html" class="footer-admin-link" title="Admin console" aria-label="Open admin console">
+          <i class="fa-solid fa-key"></i>
+        </a>
       </div>
     </div>
   </footer>`;

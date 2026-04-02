@@ -45,6 +45,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const storageKey = 'softgiggles_account';
 const PROVIDER_COUNTER_START = 3383;
+const ADMIN_ACTIVITY_COLLECTION = 'adminActivity';
 const ZIMBABWE_PROVINCES = [
   'Bulawayo',
   'Harare',
@@ -176,24 +177,77 @@ function getCartDocId(account) {
   return slugifyIdentifier(account.name || account.email || account.phone || account.uid);
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value?.toMillis === 'function') return value.toMillis();
+  if (typeof value?.seconds === 'number') return value.seconds * 1000;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function recordAdminActivity(type, payload = {}) {
+  try {
+    const createdAtMs = Number(payload.createdAtMs || Date.now());
+    await addDoc(collection(db, ADMIN_ACTIVITY_COLLECTION), {
+      type: String(type || 'activity').trim(),
+      actorUid: String(payload.actorUid || '').trim(),
+      actorName: String(payload.actorName || '').trim(),
+      actorEmail: String(payload.actorEmail || '').trim(),
+      subjectUid: String(payload.subjectUid || payload.actorUid || '').trim(),
+      subjectName: String(payload.subjectName || payload.actorName || '').trim(),
+      title: String(payload.title || '').trim(),
+      description: String(payload.description || '').trim(),
+      sourceRef: String(payload.sourceRef || '').trim(),
+      createdAtMs,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    // Keep product flows working even if admin analytics writes fail.
+  }
+}
+
 async function syncUserDocument(account, extra = {}) {
   if (!account.uid) return;
   const userRef = doc(db, 'users', account.uid);
+  const existingSnapshot = await getDoc(userRef).catch(() => null);
+  const existingUser = existingSnapshot?.exists() ? existingSnapshot.data() : null;
+  const createdAtMs = Number(extra.createdAtMs ?? (existingUser?.createdAtMs || Date.now()));
+  const updatedAtMs = Number(extra.updatedAtMs ?? Date.now());
+  const lastSeenAtMs = Number(extra.lastSeenAtMs ?? existingUser?.lastSeenAtMs ?? 0);
   await setDoc(userRef, {
     uid: account.uid,
     name: account.name,
     email: account.email || '',
     phone: account.phone || '',
     provider: account.provider,
-    cartCount: extra.cartCount ?? 0,
-    wishlistCount: extra.wishlistCount ?? 0,
+    cartCount: extra.cartCount ?? existingUser?.cartCount ?? 0,
+    wishlistCount: extra.wishlistCount ?? existingUser?.wishlistCount ?? 0,
     providerProfileComplete: extra.providerProfileComplete ?? account.providerProfileComplete ?? false,
     providerProvince: extra.providerProvince ?? account.providerProvince ?? '',
     providerProvinceSlug: extra.providerProvinceSlug ?? account.providerProvinceSlug ?? '',
     providerPublicId: extra.providerPublicId ?? account.providerPublicId ?? '',
     whatsappNumber: extra.whatsappNumber ?? account.whatsappNumber ?? '',
+    createdAtMs,
+    updatedAtMs,
+    lastSeenAtMs,
+    createdAt: existingUser?.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: true });
+
+  if (!existingUser) {
+    await recordAdminActivity('user_registered', {
+      actorUid: account.uid,
+      actorName: account.name,
+      actorEmail: account.email || '',
+      subjectUid: account.uid,
+      subjectName: account.name,
+      title: 'New user registered',
+      description: `${account.name} created a WorkLinkUp account.`,
+      sourceRef: `users/${account.uid}`,
+      createdAtMs
+    });
+  }
 }
 
 async function readCartState(account) {
@@ -209,6 +263,7 @@ async function readCartState(account) {
 
 async function writeCartState(account, cartItems, wishlistItems) {
   const cartRef = doc(db, 'cart', getCartDocId(account));
+  const updatedAtMs = Date.now();
   await setDoc(cartRef, {
     ownerName: account.name,
     accountDetails: {
@@ -222,6 +277,7 @@ async function writeCartState(account, cartItems, wishlistItems) {
     wishlistItems,
     cartCount: cartItems.length,
     wishlistCount: wishlistItems.length,
+    updatedAtMs,
     updatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -368,6 +424,7 @@ async function saveProviderProfile(profileInput = {}) {
     account.uid,
     existingUserDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
   ).catch(() => null);
+  const isNewProviderProfile = !existingProviderProfile;
   const province = normalizeProvince(profileInput.province);
   const provinceSlug = slugifyIdentifier(province);
   const providerPublicId = existingUserDoc?.providerPublicId || await getOrCreateProviderPublicId(account.uid);
@@ -440,6 +497,18 @@ async function saveProviderProfile(profileInput = {}) {
     whatsappNumber: providerProfile.whatsappNumber
   });
 
+  await recordAdminActivity(isNewProviderProfile ? 'provider_profile_created' : 'provider_profile_updated', {
+    actorUid: account.uid,
+    actorName: displayName,
+    actorEmail: account.email || '',
+    subjectUid: account.uid,
+    subjectName: displayName,
+    title: isNewProviderProfile ? 'Provider profile created' : 'Provider profile updated',
+    description: `${displayName} ${isNewProviderProfile ? 'completed' : 'updated'} a provider profile in ${province}.`,
+    sourceRef: `providers/${provinceSlug}/profiles/${account.uid}`,
+    createdAtMs: providerProfile.updatedAtMs
+  });
+
   return providerProfile;
 }
 
@@ -480,6 +549,17 @@ async function createProviderPost(payload = {}) {
   };
 
   const created = await addDoc(postsRef, postPayload);
+  await recordAdminActivity('provider_post_created', {
+    actorUid: providerProfile.uid,
+    actorName: providerProfile.displayName,
+    actorEmail: providerProfile.email || '',
+    subjectUid: providerProfile.uid,
+    subjectName: providerProfile.displayName,
+    title: 'New work post published',
+    description: `${providerProfile.displayName} posted new work for ${providerProfile.primaryCategory || 'their services'}.`,
+    sourceRef: `providers/${providerProfile.provinceSlug}/profiles/${providerProfile.uid}/posts/${created.id}`,
+    createdAtMs: now
+  });
   return {
     id: created.id,
     ...postPayload
@@ -511,6 +591,17 @@ async function updateProviderPost(postId, payload = {}) {
 
   await setDoc(getProviderPostRef(providerProfile, postId), nextPayload, { merge: true });
   const updatedSnapshot = await getDoc(getProviderPostRef(providerProfile, postId));
+  await recordAdminActivity('provider_post_updated', {
+    actorUid: providerProfile.uid,
+    actorName: providerProfile.displayName,
+    actorEmail: providerProfile.email || '',
+    subjectUid: providerProfile.uid,
+    subjectName: providerProfile.displayName,
+    title: 'Work post updated',
+    description: `${providerProfile.displayName} updated one of their work posts.`,
+    sourceRef: `providers/${providerProfile.provinceSlug}/profiles/${providerProfile.uid}/posts/${postId}`,
+    createdAtMs: nextPayload.updatedAtMs
+  });
   return updatedSnapshot.exists() ? { id: updatedSnapshot.id, ...updatedSnapshot.data() } : null;
 }
 
@@ -528,6 +619,17 @@ async function deleteProviderPost(postId) {
   }
 
   await deleteDoc(getProviderPostRef(providerProfile, postId));
+  await recordAdminActivity('provider_post_deleted', {
+    actorUid: providerProfile.uid,
+    actorName: providerProfile.displayName,
+    actorEmail: providerProfile.email || '',
+    subjectUid: providerProfile.uid,
+    subjectName: providerProfile.displayName,
+    title: 'Work post deleted',
+    description: `${providerProfile.displayName} removed a work post.`,
+    sourceRef: `providers/${providerProfile.provinceSlug}/profiles/${providerProfile.uid}/posts/${postId}`,
+    createdAtMs: Date.now()
+  });
   return { deleted: true, postId };
 }
 
@@ -563,6 +665,17 @@ async function sendMessageToProvider(payload = {}) {
   }
 
   const created = await addDoc(collection(db, 'messages'), messagePayload);
+  await recordAdminActivity('message_sent', {
+    actorUid: sender.uid,
+    actorName: sender.name,
+    actorEmail: sender.email || '',
+    subjectUid: payload.toUid,
+    subjectName: recipientName,
+    title: 'Message sent',
+    description: `${sender.name} sent a message to ${recipientName}.`,
+    sourceRef: `messages/${created.id}`,
+    createdAtMs: now
+  });
   return {
     id: created.id,
     ...messagePayload
@@ -659,6 +772,17 @@ async function deleteProfile() {
     throw new Error('No signed-in user found.');
   }
   const account = getAccountPayload(auth.currentUser);
+  await recordAdminActivity('profile_deleted', {
+    actorUid: account.uid,
+    actorName: account.name,
+    actorEmail: account.email || '',
+    subjectUid: account.uid,
+    subjectName: account.name,
+    title: 'Profile deleted',
+    description: `${account.name} deleted their WorkLinkUp profile.`,
+    sourceRef: `users/${account.uid}`,
+    createdAtMs: Date.now()
+  });
   if (account.uid) {
     await deleteDoc(doc(db, 'users', account.uid));
   }
@@ -677,6 +801,17 @@ async function addToCart(product) {
     ? cartItems.map((item) => item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item)
     : [...cartItems, { ...product, quantity: 1, addedAt: new Date().toISOString() }];
   await writeCartState(account, nextCartItems, wishlistItems);
+  await recordAdminActivity('cart_updated', {
+    actorUid: account.uid,
+    actorName: account.name,
+    actorEmail: account.email || '',
+    subjectUid: account.uid,
+    subjectName: account.name,
+    title: 'Cart updated',
+    description: `${account.name} added ${product?.name || 'an item'} to the cart.`,
+    sourceRef: `cart/${getCartDocId(account)}`,
+    createdAtMs: Date.now()
+  });
   return { cartCount: nextCartItems.length };
 }
 
@@ -691,6 +826,17 @@ async function toggleWishlist(product) {
     ? wishlistItems.filter((item) => item.id !== product.id)
     : [...wishlistItems, { ...product, savedAt: new Date().toISOString() }];
   await writeCartState(account, cartItems, nextWishlistItems);
+  await recordAdminActivity(exists ? 'wishlist_removed' : 'wishlist_saved', {
+    actorUid: account.uid,
+    actorName: account.name,
+    actorEmail: account.email || '',
+    subjectUid: account.uid,
+    subjectName: account.name,
+    title: exists ? 'Wishlist item removed' : 'Wishlist item saved',
+    description: `${account.name} ${exists ? 'removed' : 'saved'} ${product?.name || 'an item'} ${exists ? 'from' : 'to'} the wishlist.`,
+    sourceRef: `cart/${getCartDocId(account)}`,
+    createdAtMs: Date.now()
+  });
   return {
     saved: !exists,
     wishlistCount: nextWishlistItems.length
@@ -701,7 +847,7 @@ onAuthStateChanged(auth, (user) => {
   persistUser(user);
   if (user) {
     const account = getAccountPayload(user);
-    syncUserDocument(account).catch(() => {});
+    syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
     getUserDocument(user.uid)
       .then((userDoc) => {
         if (!userDoc) return null;
@@ -740,6 +886,233 @@ onAuthStateChanged(auth, (user) => {
   dispatchAuthChange(user);
 });
 
+async function listUsers() {
+  const snapshot = await getDocs(collection(db, 'users'));
+  return snapshot.docs
+    .map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        uid: docSnapshot.id,
+        ...data,
+        createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+        updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt)),
+        lastSeenAtMs: Number(data.lastSeenAtMs || 0)
+      };
+    })
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+async function listAdminActivity() {
+  const snapshot = await getDocs(collection(db, ADMIN_ACTIVITY_COLLECTION));
+  return snapshot.docs
+    .map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        ...data,
+        createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt))
+      };
+    })
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+async function getAdminDashboardData() {
+  const [users, providerSnapshot, postSnapshot, messageSnapshot, cartSnapshot, adminActivity] = await Promise.all([
+    listUsers(),
+    getDocs(collectionGroup(db, 'profiles')),
+    getDocs(collectionGroup(db, 'posts')),
+    getDocs(collection(db, 'messages')),
+    getDocs(collection(db, 'cart')),
+    listAdminActivity().catch(() => [])
+  ]);
+
+  const providers = providerSnapshot.docs.map((docSnapshot) => {
+    const data = docSnapshot.data();
+    return {
+      uid: docSnapshot.id,
+      ...data,
+      createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+      updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt))
+    };
+  });
+
+  const posts = postSnapshot.docs.map((docSnapshot) => {
+    const data = docSnapshot.data();
+    return {
+      id: docSnapshot.id,
+      ...data,
+      createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+      updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt))
+    };
+  });
+
+  const messages = messageSnapshot.docs.map((docSnapshot) => {
+    const data = docSnapshot.data();
+    return {
+      id: docSnapshot.id,
+      ...data,
+      createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+      viewedAtMs: Number(data.viewedAtMs || toMillis(data.viewedAt))
+    };
+  });
+
+  const carts = cartSnapshot.docs.map((docSnapshot) => {
+    const data = docSnapshot.data();
+    return {
+      id: docSnapshot.id,
+      ...data,
+      updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt)),
+      cartCount: Number(data.cartCount || (Array.isArray(data.cartItems) ? data.cartItems.length : 0)),
+      wishlistCount: Number(data.wishlistCount || (Array.isArray(data.wishlistItems) ? data.wishlistItems.length : 0))
+    };
+  });
+
+  const providerByUid = new Map(providers.map((providerProfile) => [providerProfile.uid, providerProfile]));
+  const usersWithDetails = users.map((user) => {
+    const providerProfile = providerByUid.get(user.uid);
+    return {
+      ...user,
+      providerPublicId: user.providerPublicId || providerProfile?.providerPublicId || '',
+      providerProvince: user.providerProvince || providerProfile?.province || '',
+      city: user.city || providerProfile?.city || '',
+      primaryCategory: user.primaryCategory || providerProfile?.primaryCategory || '',
+      specialty: user.specialty || providerProfile?.specialty || '',
+      createdAtMs: Number(user.createdAtMs || providerProfile?.createdAtMs || 0),
+      updatedAtMs: Number(user.updatedAtMs || providerProfile?.updatedAtMs || 0),
+      providerProfileComplete: Boolean(user.providerProfileComplete || providerProfile)
+    };
+  }).sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+
+  const now = Date.now();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayMs = startOfToday.getTime();
+  const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+
+  const conversationCount = new Set(messages.map((message) => message.conversationId).filter(Boolean)).size;
+  const unreadMessageCount = messages.filter((message) => !Number(message.viewedAtMs || 0)).length;
+  const totalCartUnits = carts.reduce((sum, cartDoc) => sum + (Array.isArray(cartDoc.cartItems)
+    ? cartDoc.cartItems.reduce((innerSum, item) => innerSum + Number(item.quantity || 0), 0)
+    : Number(cartDoc.cartCount || 0)), 0);
+  const totalWishlistSaves = carts.reduce((sum, cartDoc) => sum + Number(cartDoc.wishlistCount || 0), 0);
+
+  const categoryBreakdownMap = new Map();
+  providers.forEach((providerProfile) => {
+    const key = String(providerProfile.primaryCategory || 'Uncategorized').trim() || 'Uncategorized';
+    categoryBreakdownMap.set(key, (categoryBreakdownMap.get(key) || 0) + 1);
+  });
+
+  const provinceBreakdownMap = new Map();
+  usersWithDetails.forEach((user) => {
+    const key = String(user.providerProvince || user.city || 'Unknown').trim() || 'Unknown';
+    provinceBreakdownMap.set(key, (provinceBreakdownMap.get(key) || 0) + 1);
+  });
+
+  const derivedActivity = [
+    ...usersWithDetails.filter((user) => Number(user.createdAtMs || 0)).map((user) => ({
+      type: 'user_registered',
+      actorUid: user.uid,
+      actorName: user.name,
+      actorEmail: user.email || '',
+      subjectUid: user.uid,
+      subjectName: user.name,
+      title: 'New user registered',
+      description: `${user.name || 'A user'} created a WorkLinkUp account.`,
+      sourceRef: `users/${user.uid}`,
+      createdAtMs: Number(user.createdAtMs || 0)
+    })),
+    ...providers.filter((providerProfile) => Number(providerProfile.updatedAtMs || 0)).map((providerProfile) => ({
+      type: 'provider_profile_updated',
+      actorUid: providerProfile.uid,
+      actorName: providerProfile.displayName,
+      actorEmail: providerProfile.email || '',
+      subjectUid: providerProfile.uid,
+      subjectName: providerProfile.displayName,
+      title: 'Provider profile updated',
+      description: `${providerProfile.displayName || 'A provider'} updated a provider profile.`,
+      sourceRef: `providers/${providerProfile.provinceSlug}/profiles/${providerProfile.uid}`,
+      createdAtMs: Number(providerProfile.updatedAtMs || 0)
+    })),
+    ...posts.filter((post) => Number(post.createdAtMs || 0)).map((post) => ({
+      type: 'provider_post_created',
+      actorUid: post.providerUid,
+      actorName: post.providerName,
+      actorEmail: '',
+      subjectUid: post.providerUid,
+      subjectName: post.providerName,
+      title: 'New work post published',
+      description: `${post.providerName || 'A provider'} published a new work post.`,
+      sourceRef: `providers/${post.provinceSlug}/profiles/${post.providerUid}/posts/${post.id}`,
+      createdAtMs: Number(post.createdAtMs || 0)
+    })),
+    ...messages.filter((message) => Number(message.createdAtMs || 0)).map((message) => ({
+      type: 'message_sent',
+      actorUid: message.fromUid,
+      actorName: message.fromName,
+      actorEmail: '',
+      subjectUid: message.toUid,
+      subjectName: message.toName,
+      title: 'Message sent',
+      description: `${message.fromName || 'A user'} sent a message to ${message.toName || 'another user'}.`,
+      sourceRef: `messages/${message.id}`,
+      createdAtMs: Number(message.createdAtMs || 0)
+    })),
+    ...carts.filter((cartDoc) => Number(cartDoc.updatedAtMs || 0)).map((cartDoc) => ({
+      type: 'cart_updated',
+      actorUid: cartDoc.accountDetails?.uid || '',
+      actorName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'WorkLinkUp user',
+      actorEmail: cartDoc.accountDetails?.email || '',
+      subjectUid: cartDoc.accountDetails?.uid || '',
+      subjectName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'WorkLinkUp user',
+      title: 'Cart or wishlist updated',
+      description: `${cartDoc.accountDetails?.name || cartDoc.ownerName || 'A user'} changed cart or wishlist items.`,
+      sourceRef: `cart/${cartDoc.id}`,
+      createdAtMs: Number(cartDoc.updatedAtMs || 0)
+    }))
+  ];
+
+  const activityMap = new Map();
+  [...derivedActivity, ...adminActivity].forEach((activity) => {
+    const key = activity.sourceRef || `${activity.type}:${activity.subjectUid || activity.actorUid}:${activity.createdAtMs}`;
+    const current = activityMap.get(key);
+    if (!current || Number(activity.createdAtMs || 0) > Number(current.createdAtMs || 0)) {
+      activityMap.set(key, activity);
+    }
+  });
+
+  const activityFeed = Array.from(activityMap.values())
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
+    .slice(0, 300);
+
+  return {
+    metrics: {
+      totalUsers: usersWithDetails.length,
+      providerCount: providers.length,
+      providerCompletionRate: usersWithDetails.length ? Math.round((providers.length / usersWithDetails.length) * 100) : 0,
+      newUsersToday: usersWithDetails.filter((user) => Number(user.createdAtMs || 0) >= startOfTodayMs).length,
+      activeUsers7d: usersWithDetails.filter((user) => Number(user.lastSeenAtMs || user.updatedAtMs || user.createdAtMs || 0) >= sevenDaysAgo).length,
+      postCount: posts.length,
+      postsToday: posts.filter((post) => Number(post.createdAtMs || 0) >= startOfTodayMs).length,
+      messageCount: messages.length,
+      unreadMessageCount,
+      messagesToday: messages.filter((message) => Number(message.createdAtMs || 0) >= startOfTodayMs).length,
+      conversationCount,
+      cartCount: carts.filter((cartDoc) => Number(cartDoc.cartCount || 0) > 0).length,
+      totalCartUnits,
+      totalWishlistSaves
+    },
+    users: usersWithDetails,
+    activity: activityFeed,
+    categoryBreakdown: Array.from(categoryBreakdownMap.entries())
+      .map(([label, total]) => ({ label, total }))
+      .sort((first, second) => second.total - first.total),
+    provinceBreakdown: Array.from(provinceBreakdownMap.entries())
+      .map(([label, total]) => ({ label, total }))
+      .sort((first, second) => second.total - first.total),
+    recentUsers: usersWithDetails.slice(0, 6)
+  };
+}
+
 window.softGigglesAuth = {
   signInWithGoogle,
   signInWithEmail,
@@ -752,6 +1125,7 @@ window.softGigglesAuth = {
   addToCart,
   toggleWishlist,
   getUserDocument,
+  listUsers,
   getProviderProfileByUid,
   saveProviderProfile,
   updateProviderProfile,
@@ -763,5 +1137,7 @@ window.softGigglesAuth = {
   sendMessageToProvider,
   listMessagesWithUser,
   listConversations,
-  markConversationViewed
+  markConversationViewed,
+  listAdminActivity,
+  getAdminDashboardData
 };
