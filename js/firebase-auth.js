@@ -576,6 +576,42 @@ function dispatchAuthChange(user) {
   }));
 }
 
+function waitForAuthSession(expectedUid = '', timeoutMs = 12000) {
+  const normalizedUid = String(expectedUid || '').trim();
+  if (!normalizedUid) {
+    return Promise.resolve(auth.currentUser || null);
+  }
+
+  if (auth.currentUser?.uid === normalizedUid) {
+    return Promise.resolve(auth.currentUser);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timeoutId = 0;
+
+    const finish = (user) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('softgiggles-auth-changed', handleAuthChanged);
+      if (timeoutId) window.clearTimeout(timeoutId);
+      resolve(user || null);
+    };
+
+    const handleAuthChanged = (event) => {
+      const user = event?.detail?.user || null;
+      if (user?.uid === normalizedUid) {
+        finish(user);
+      }
+    };
+
+    window.addEventListener('softgiggles-auth-changed', handleAuthChanged);
+    timeoutId = window.setTimeout(() => {
+      finish(auth.currentUser?.uid === normalizedUid ? auth.currentUser : null);
+    }, Math.max(1000, Number(timeoutMs || 12000)));
+  });
+}
+
 function ensureRecaptcha() {
   if (recaptchaVerifier) return recaptchaVerifier;
   recaptchaVerifier = new RecaptchaVerifier(auth, 'account-phone-submit', {
@@ -1585,6 +1621,7 @@ window.softGigglesAuth = {
   listAdmins,
   createAdmin,
   recordAdminConsoleAction,
+  waitForAuthSession,
   sendMessageToProvider,
   listMessagesWithUser,
   listConversations,

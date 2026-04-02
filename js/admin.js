@@ -312,6 +312,9 @@
     if (!refs.sidebar || !refs.mobileBackdrop) return;
     refs.sidebar.classList.toggle('is-open', isOpen);
     refs.mobileBackdrop.hidden = !isOpen;
+    refs.mobileBackdrop.classList.toggle('is-visible', isOpen);
+    refs.menuToggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    document.body.classList.toggle('admin-mobile-menu-open', isOpen);
   }
 
   function showGate() {

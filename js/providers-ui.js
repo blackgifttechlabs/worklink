@@ -1495,6 +1495,15 @@
     return (parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'WL');
   }
 
+  function buildMessageImageFilename(label, timestamp = Date.now()) {
+    const stem = String(label || 'worklinkup-chat-image')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      || 'worklinkup-chat-image';
+    return `${stem}-${Number(timestamp || Date.now())}.jpg`;
+  }
+
   function getConversationRoleLabel(profile) {
     return profile?.roleLabel || profile?.specialty || profile?.primaryCategory || 'WorkLinkUp member';
   }
@@ -1527,12 +1536,21 @@
   function buildMessageBubbleContentMarkup(message) {
     const hasImage = Boolean(String(message.imageData || '').trim());
     const hasText = Boolean(String(message.text || '').trim());
+    const imageSrc = hasImage ? resolveMediaSrc(message.imageData) : '';
+    const imageLabel = `Shared image from ${message.fromName || 'WorkLinkUp chat'}`;
 
     return `
       ${hasImage ? `
-        <div class="message-bubble-image">
-          <img src="${escapeHtml(resolveMediaSrc(message.imageData))}" alt="Shared message image" loading="lazy" />
-        </div>
+        <button
+          type="button"
+          class="message-bubble-image"
+          data-message-image
+          data-message-image-src="${escapeHtml(imageSrc)}"
+          data-message-image-name="${escapeHtml(imageLabel)}"
+          aria-label="Open shared image"
+        >
+          <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(imageLabel)}" loading="lazy" />
+        </button>
       ` : ''}
       ${hasText ? `<div class="message-bubble-text">${escapeHtml(message.text)}</div>` : ''}
     `;
@@ -1571,6 +1589,10 @@
 
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
+
+    if (typeof authHelper.waitForAuthSession === 'function') {
+      await authHelper.waitForAuthSession(account.uid, 12000).catch(() => null);
+    }
 
     page.innerHTML = `
       <div class="messages-layout" data-messages-layout>
@@ -1635,6 +1657,23 @@
           </form>
         </section>
       </div>
+
+      <div class="messages-media-viewer" data-messages-media-viewer hidden>
+        <div class="messages-media-viewer-panel" role="dialog" aria-modal="true" aria-label="Message image viewer">
+          <div class="messages-media-viewer-bar">
+            <a href="#" class="messages-media-download" data-messages-media-download download="worklinkup-chat-image.jpg">
+              <i class="fa-solid fa-download"></i>
+              <span>Download</span>
+            </a>
+            <button type="button" class="messages-media-close" data-messages-media-close aria-label="Close image viewer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="messages-media-stage">
+            <img src="" alt="Expanded message image" data-messages-media-image />
+          </div>
+        </div>
+      </div>
     `;
 
     const params = new URLSearchParams(window.location.search);
@@ -1654,6 +1693,10 @@
     const focusSearchBtn = page.querySelector('[data-thread-focus-search]');
     const composePreview = page.querySelector('[data-messages-compose-preview]');
     const composeFileInput = page.querySelector('[data-messages-compose-file]');
+    const mediaViewer = page.querySelector('[data-messages-media-viewer]');
+    const mediaViewerImage = page.querySelector('[data-messages-media-image]');
+    const mediaViewerDownload = page.querySelector('[data-messages-media-download]');
+    const mediaViewerClose = page.querySelector('[data-messages-media-close]');
 
     const state = {
       activePeerUid: params.get('peer') || params.get('provider') || '',
@@ -1673,6 +1716,7 @@
     let searchRequestId = 0;
     let unsubscribeConversations = null;
     let unsubscribeMessages = null;
+    let authSyncQueued = false;
 
     function setThreadOpen(isOpen) {
       page.classList.toggle('is-thread-open', Boolean(isOpen));
@@ -1794,6 +1838,37 @@
       window.requestAnimationFrame(() => {
         threadBody.scrollTop = threadBody.scrollHeight;
       });
+    }
+
+    function closeMessageImageViewer() {
+      if (!(mediaViewer instanceof HTMLElement)) return;
+      mediaViewer.hidden = true;
+      mediaViewer.classList.remove('is-visible');
+      document.body.classList.remove('messages-media-viewer-open');
+      if (mediaViewerImage instanceof HTMLImageElement) {
+        mediaViewerImage.src = '';
+      }
+      if (mediaViewerDownload instanceof HTMLAnchorElement) {
+        mediaViewerDownload.href = '#';
+        mediaViewerDownload.download = 'worklinkup-chat-image.jpg';
+      }
+    }
+
+    function openMessageImageViewer(src, label) {
+      if (!(mediaViewer instanceof HTMLElement) || !(mediaViewerImage instanceof HTMLImageElement)) return;
+      const safeSrc = String(src || '').trim();
+      if (!safeSrc) return;
+
+      mediaViewer.hidden = false;
+      mediaViewer.classList.add('is-visible');
+      document.body.classList.add('messages-media-viewer-open');
+      mediaViewerImage.src = safeSrc;
+      mediaViewerImage.alt = label || 'Expanded message image';
+
+      if (mediaViewerDownload instanceof HTMLAnchorElement) {
+        mediaViewerDownload.href = safeSrc;
+        mediaViewerDownload.download = buildMessageImageFilename(label);
+      }
     }
 
     function renderFilterChips() {
@@ -2132,6 +2207,19 @@
       scrollThreadToBottom(true);
     }
 
+    async function refreshInboxAfterAuthSync() {
+      if (authSyncQueued) return;
+      authSyncQueued = true;
+
+      try {
+        await startConversationSubscription();
+        await refreshMessages();
+        refreshSuggestions();
+      } finally {
+        authSyncQueued = false;
+      }
+    }
+
     searchInput?.addEventListener('input', async (event) => {
       state.query = event.target.value.trim();
       renderChatList();
@@ -2181,6 +2269,25 @@
       searchInput?.focus();
     });
 
+    threadBody?.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-message-image]');
+      if (!(trigger instanceof HTMLElement)) return;
+      openMessageImageViewer(
+        trigger.getAttribute('data-message-image-src') || '',
+        trigger.getAttribute('data-message-image-name') || 'worklinkup-chat-image'
+      );
+    });
+
+    mediaViewerClose?.addEventListener('click', () => {
+      closeMessageImageViewer();
+    });
+
+    mediaViewer?.addEventListener('click', (event) => {
+      if (event.target === mediaViewer) {
+        closeMessageImageViewer();
+      }
+    });
+
     threadBackBtn?.addEventListener('click', async () => {
       setActiveConversation(null);
       await refreshMessages();
@@ -2214,12 +2321,30 @@
       }
     });
 
+    const handleAuthChanged = async (event) => {
+      const nextUser = event?.detail?.user || null;
+      if (!nextUser || nextUser.uid !== account.uid) return;
+      await refreshInboxAfterAuthSync();
+    };
+
     await startConversationSubscription();
     await refreshMessages();
     refreshSuggestions();
     refreshComposerState();
 
+    window.addEventListener('softgiggles-auth-changed', handleAuthChanged);
+
+    const handleViewerEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeMessageImageViewer();
+      }
+    };
+
+    window.addEventListener('keydown', handleViewerEscape);
+
     window.addEventListener('beforeunload', () => {
+      window.removeEventListener('softgiggles-auth-changed', handleAuthChanged);
+      window.removeEventListener('keydown', handleViewerEscape);
       stopConversationSubscription();
       stopMessagesSubscription();
     }, { once: true });
