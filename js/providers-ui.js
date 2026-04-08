@@ -3,48 +3,56 @@
     {
       key: 'home-services',
       label: 'Home Services',
+      icon: 'fa-solid fa-house',
       image: 'images/categories/home-services.avif',
       subservices: ['Gardener', 'Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman']
     },
     {
       key: 'beauty-wellness',
       label: 'Beauty & Wellness',
+      icon: 'fa-solid fa-spa',
       image: 'images/categories/beauty-and-wellness.avif',
       subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist']
     },
     {
       key: 'digital-business',
       label: 'Digital & Business',
+      icon: 'fa-solid fa-laptop-code',
       image: 'images/categories/business.avif',
       subservices: ['Programmer', 'Designer', 'Photographer', 'Videographer', 'Social Media Manager']
     },
     {
       key: 'plumbing',
       label: 'Plumbing',
+      icon: 'fa-solid fa-faucet-drip',
       image: 'images/categories/plumbing.avif',
       subservices: ['Leak Repairs', 'Blocked Drains', 'Tank Cleaning']
     },
     {
       key: 'security-services',
       label: 'Security Services',
+      icon: 'fa-solid fa-shield-halved',
       image: 'images/categories/security-services.avif',
       subservices: ['Guarding', 'Alarm Setup', 'Gate Monitoring']
     },
     {
       key: 'tutoring',
       label: 'Tutoring',
+      icon: 'fa-solid fa-graduation-cap',
       image: 'images/categories/tutoring.avif',
       subservices: ['Maths Tutor', 'Science Tutor', 'Exam Prep']
     },
     {
       key: 'childcare',
       label: 'Childcare',
+      icon: 'fa-solid fa-child-reaching',
       image: 'images/categories/childcare.avif',
       subservices: ['Babysitting', 'Nanny Support', 'After-school Care']
     },
     {
       key: 'photography',
       label: 'Photography',
+      icon: 'fa-solid fa-camera',
       image: 'images/categories/photography.avif',
       subservices: ['Events', 'Brand Shoots', 'Product Photography']
     }
@@ -241,6 +249,14 @@
     return isLoop ? `${cards}${cards}` : cards;
   }
 
+  function getCategoryBySubservice(serviceLabel = '') {
+    const normalized = String(serviceLabel || '').trim().toLowerCase();
+    if (!normalized) return SPECIALIST_CATEGORIES[0];
+    return SPECIALIST_CATEGORIES.find((category) => category.subservices.some((service) => service.toLowerCase() === normalized))
+      || SPECIALIST_CATEGORIES.find((category) => category.label.toLowerCase() === normalized)
+      || SPECIALIST_CATEGORIES[0];
+  }
+
   async function getProviders() {
     const authHelper = await waitForAuthHelper();
     if (!authHelper || typeof authHelper.listProviders !== 'function') return [];
@@ -331,9 +347,18 @@
   function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
     return SPECIALIST_CATEGORIES.map((category, index) => `
       <div class="service-filter-group">
-        <button type="button" class="service-filter-toggle" data-filter-group="${escapeHtml(category.label)}" aria-expanded="${index === 0 ? 'true' : 'false'}">
-          <span>${escapeHtml(category.label)}</span>
-          <i class="fa-solid fa-chevron-down"></i>
+        <button
+          type="button"
+          class="service-filter-toggle ${selectedCategory === category.label || category.subservices.includes(selectedSubservice) ? 'is-active' : ''}"
+          data-filter-group="${escapeHtml(category.label)}"
+          aria-expanded="${index === 0 ? 'true' : 'false'}"
+          title="${escapeHtml(category.label)}"
+        >
+          <span class="service-filter-toggle-main">
+            <i class="${escapeHtml(category.icon)} service-filter-toggle-icon" aria-hidden="true"></i>
+            <span class="service-filter-toggle-label">${escapeHtml(category.label)}</span>
+          </span>
+          <i class="fa-solid fa-chevron-down service-filter-toggle-chevron" aria-hidden="true"></i>
         </button>
         <div class="service-filter-links" ${index === 0 ? '' : 'hidden'}>
           <button type="button" class="${selectedCategory === category.label && !selectedSubservice ? 'is-active' : ''}" data-filter-category="${escapeHtml(category.label)}">All ${escapeHtml(category.label)}</button>
@@ -347,15 +372,71 @@
     `).join('');
   }
 
+  function buildProviderSearchText(provider = {}) {
+    const languages = Array.isArray(provider.languages) ? provider.languages.map((entry) => entry?.name || '').join(' ') : '';
+    const skills = Array.isArray(provider.skills) ? provider.skills.map((entry) => entry?.name || '').join(' ') : '';
+    return [
+      provider.displayName,
+      provider.username,
+      provider.title,
+      provider.primaryCategory,
+      provider.specialty,
+      provider.city,
+      provider.province,
+      provider.address,
+      provider.bio,
+      languages,
+      skills
+    ].join(' ').toLowerCase();
+  }
+
+  function scoreProviderMatch(provider, queryText = '') {
+    const query = String(queryText || '').trim().toLowerCase();
+    if (!query) return 0;
+
+    const name = String(provider.displayName || '').toLowerCase();
+    const username = String(provider.username || '').toLowerCase();
+    const title = String(provider.title || '').toLowerCase();
+    const category = String(provider.primaryCategory || '').toLowerCase();
+    const specialty = String(provider.specialty || '').toLowerCase();
+    const city = String(provider.city || '').toLowerCase();
+    const province = String(provider.province || '').toLowerCase();
+    const address = String(provider.address || '').toLowerCase();
+    const haystack = buildProviderSearchText(provider);
+
+    let score = 0;
+    if (name === query || username === query) score += 120;
+    if (name.startsWith(query) || username.startsWith(query)) score += 80;
+    if (specialty === query || title === query) score += 75;
+    if (specialty.startsWith(query) || title.startsWith(query)) score += 52;
+    if (category === query) score += 48;
+    if (city === query || province === query) score += 46;
+    if (address.includes(query)) score += 24;
+    if (haystack.includes(query)) score += 18;
+    return score;
+  }
+
+  function sortProvidersForSearch(providers, queryText = '') {
+    const query = String(queryText || '').trim();
+    return providers.slice().sort((first, second) => {
+      const scoreDiff = scoreProviderMatch(second, query) - scoreProviderMatch(first, query);
+      if (scoreDiff !== 0) return scoreDiff;
+      const ratingDiff = Number(second.averageRating || 0) - Number(first.averageRating || 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return String(first.displayName || '').localeCompare(String(second.displayName || ''));
+    });
+  }
+
   function filterProviders(providers, state) {
-    return providers.filter((provider) => {
+    const filtered = providers.filter((provider) => {
       const categoryMatch = !state.category || provider.primaryCategory === state.category;
       const subserviceMatch = !state.subservice || String(provider.specialty || '').toLowerCase().includes(state.subservice.toLowerCase());
       const ratingMatch = !state.rating || Number(provider.averageRating || 0) >= state.rating;
-      const searchHaystack = `${provider.displayName} ${provider.primaryCategory} ${provider.specialty} ${provider.city} ${provider.province} ${provider.bio} ${provider.address}`.toLowerCase();
+      const searchHaystack = buildProviderSearchText(provider);
       const searchMatch = !state.search || searchHaystack.includes(state.search.toLowerCase());
       return categoryMatch && subserviceMatch && ratingMatch && searchMatch;
     });
+    return sortProvidersForSearch(filtered, state.search);
   }
 
   function renderProviderCards(host, providers) {
@@ -484,6 +565,54 @@
         </div>
       </div>
     `;
+  }
+
+  function buildSuggestedProvidersMarkup(items = [], duplicate = false) {
+    const cards = items.map((provider) => `
+      <article class="specialists-suggested-card">
+        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-card-link">
+          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
+          <strong>${escapeHtml(provider.displayName)}</strong>
+          <span class="specialists-suggested-meta">${escapeHtml(provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
+          <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on WorkLinkUp')}</span>
+        </a>
+        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-action">View</a>
+      </article>
+    `).join('');
+
+    return duplicate ? `${cards}${cards}` : cards;
+  }
+
+  function getSuggestedProviders(allProviders = [], filteredProviders = [], state = {}) {
+    const activeCategory = state.category || getCategoryBySubservice(state.subservice).label;
+    const activeQuery = state.search || state.subservice || '';
+    const prioritized = [
+      ...sortProvidersForSearch(filteredProviders, activeQuery),
+      ...sortProvidersForSearch(
+        allProviders.filter((provider) => {
+          if (filteredProviders.some((item) => item.uid === provider.uid)) return false;
+          if (activeCategory && provider.primaryCategory === activeCategory) return true;
+          return activeQuery ? scoreProviderMatch(provider, activeQuery) > 0 : true;
+        }),
+        activeQuery
+      )
+    ];
+
+    return prioritized
+      .filter((provider, index, list) => provider?.uid && list.findIndex((item) => item.uid === provider.uid) === index)
+      .slice(0, 10);
+  }
+
+  function buildSearchSuggestionLabel(provider = {}) {
+    const city = provider.city || provider.province || '';
+    const service = provider.specialty || provider.title || provider.primaryCategory || 'Specialist';
+    return [provider.displayName, service, city].filter(Boolean).join(' • ');
+  }
+
+  function buildSearchResultQuery(provider = {}) {
+    const preferred = String(provider.specialty || provider.title || provider.primaryCategory || '').trim();
+    if (preferred) return preferred;
+    return String(provider.displayName || '').trim();
   }
 
   function buildRelatedServicesMarkup(items = [], duplicate = false) {
@@ -887,6 +1016,7 @@
     const resultsActionsHost = page.querySelector('[data-specialists-results-actions]');
     const relatedShell = page.querySelector('[data-specialists-related-shell]');
     const relatedHost = page.querySelector('[data-specialists-related]');
+    const suggestedAllBtn = page.querySelector('[data-specialists-suggested-all]');
     const searchInput = page.querySelector('[data-specialists-search]');
     const ratingButtons = Array.from(page.querySelectorAll('[data-rating-filter]'));
     const filterBtn = page.querySelector('[data-open-specialists-sheet]');
@@ -900,7 +1030,8 @@
     const mobileQuery = window.matchMedia('(max-width: 768px)');
     const providers = [];
     let renderRequestId = 0;
-    let manualSidebarCollapsed = false;
+    let sidebarUserToggled = false;
+    let sidebarCollapsed = Boolean(initialResultsMode || searchQueryParam || initialSubservice);
     const state = {
       category: currentCategory,
       subservice: initialSubservice,
@@ -954,6 +1085,12 @@
       if (mobileSheetBody) mobileSheetBody.innerHTML = markup;
     }
 
+    function syncSidebarToggleControl() {
+      if (!(sidebarToggle instanceof HTMLElement)) return;
+      sidebarToggle.setAttribute('aria-label', sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+      sidebarToggle.innerHTML = `<i class="fa-solid ${sidebarCollapsed ? 'fa-angles-right' : 'fa-angles-left'}"></i>`;
+    }
+
     function bindFilterInteractions(scope) {
       if (!scope) return;
 
@@ -990,32 +1127,15 @@
 
     function renderRelatedServices(filteredProviders) {
       if (!(relatedShell instanceof HTMLElement) || !(relatedHost instanceof HTMLElement)) return;
-      if (!isResultsMode()) {
+      const suggestedProviders = getSuggestedProviders(providers, filteredProviders, state);
+      if (!suggestedProviders.length) {
         relatedShell.hidden = true;
         relatedHost.innerHTML = '';
         return;
       }
 
-      const relatedCandidates = [
-        ...filteredProviders.slice(0, 8).map((provider) => ({
-          label: provider.specialty || provider.primaryCategory || 'Service',
-          address: provider.address || [provider.city, provider.province].filter(Boolean).join(', ') || 'Available on WorkLinkUp'
-        })),
-        ...SPECIALIST_CATEGORIES
-          .filter((category) => category.label !== state.category)
-          .flatMap((category) => category.subservices.slice(0, 2).map((service) => ({
-            label: service,
-            address: `${category.label} near you`
-          })))
-      ].filter((item, index, list) => item.label && list.findIndex((entry) => entry.label === item.label) === index).slice(0, 10);
-
-      if (!relatedCandidates.length) {
-        relatedShell.hidden = true;
-        return;
-      }
-
       relatedShell.hidden = false;
-      relatedHost.innerHTML = buildRelatedServicesMarkup(relatedCandidates, true);
+      relatedHost.innerHTML = buildSuggestedProvidersMarkup(suggestedProviders, suggestedProviders.length > 4);
     }
 
     function renderResultsActions() {
@@ -1040,8 +1160,12 @@
       const focused = isResultsMode();
       page.classList.toggle('is-results-mode', focused);
       if (sidebarLayout instanceof HTMLElement) {
-        sidebarLayout.classList.toggle('is-sidebar-collapsed', focused || manualSidebarCollapsed);
+        if (!sidebarUserToggled) {
+          sidebarCollapsed = focused;
+        }
+        sidebarLayout.classList.toggle('is-sidebar-collapsed', sidebarCollapsed);
       }
+      syncSidebarToggleControl();
       if (resultsTitleHost instanceof HTMLElement) {
         resultsTitleHost.textContent = focused
           ? `Results for "${getActiveSearchLabel()}"`
@@ -1183,8 +1307,22 @@
 
     sidebarToggle?.addEventListener('click', () => {
       if (!(sidebarLayout instanceof HTMLElement)) return;
-      manualSidebarCollapsed = !manualSidebarCollapsed;
-      sidebarLayout.classList.toggle('is-sidebar-collapsed', manualSidebarCollapsed || isResultsMode());
+      sidebarUserToggled = true;
+      sidebarCollapsed = !sidebarCollapsed;
+      sidebarLayout.classList.toggle('is-sidebar-collapsed', sidebarCollapsed);
+      syncSidebarToggleControl();
+    });
+
+    suggestedAllBtn?.addEventListener('click', () => {
+      state.category = '';
+      state.subservice = '';
+      state.search = '';
+      state.rating = 0;
+      state.resultsMode = false;
+      sidebarUserToggled = false;
+      sidebarCollapsed = false;
+      if (searchInput instanceof HTMLInputElement) searchInput.value = '';
+      update({ showSkeleton: true });
     });
 
     mobileQuery.addEventListener('change', renderCategoryRail);

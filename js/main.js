@@ -1,56 +1,5 @@
 // Nav mega dropdown hover logic
 document.addEventListener('DOMContentLoaded', () => {
-  const SEARCH_ITEMS = [
-    {
-      value: 'Plumber in Harare',
-      title: 'Plumber in Harare',
-      subtitle: 'Home Services • Water leaks, blocked drains, fittings',
-      icon: 'fa-solid fa-wrench'
-    },
-    {
-      value: 'Gardener in Borrowdale',
-      title: 'Gardener in Borrowdale',
-      subtitle: 'Home Services • Lawn care, hedges, garden clean-ups',
-      icon: 'fa-solid fa-seedling'
-    },
-    {
-      value: 'Nail technician in Bulawayo',
-      title: 'Nail technician in Bulawayo',
-      subtitle: 'Beauty & Wellness • Acrylics, gel polish, manicures',
-      icon: 'fa-solid fa-hand-sparkles'
-    },
-    {
-      value: 'Tutor for Maths',
-      title: 'Tutor for Maths',
-      subtitle: 'Learning Support • Primary, O-Level, A-Level',
-      icon: 'fa-solid fa-graduation-cap'
-    },
-    {
-      value: 'Programmer for websites',
-      title: 'Programmer for websites',
-      subtitle: 'Digital & Business • Websites, landing pages, support',
-      icon: 'fa-solid fa-laptop-code'
-    },
-    {
-      value: 'Photographer for events',
-      title: 'Photographer for events',
-      subtitle: 'Creative Services • Weddings, birthdays, brand shoots',
-      icon: 'fa-solid fa-camera'
-    },
-    {
-      value: 'Cleaner in Avondale',
-      title: 'Cleaner in Avondale',
-      subtitle: 'Home Support • Weekly visits, deep cleaning, ironing',
-      icon: 'fa-solid fa-soap'
-    },
-    {
-      value: 'Social media manager',
-      title: 'Social media manager',
-      subtitle: 'Business Support • Content calendars, posting, ads',
-      icon: 'fa-solid fa-hashtag'
-    }
-  ];
-
   const cookieBanner = document.getElementById('cookie-banner');
   const cookieAccept = document.querySelector('.cookie-accept');
   const cookieDecline = document.querySelector('.cookie-decline');
@@ -103,6 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchModalInput = searchModal ? searchModal.querySelector('input[data-search-context="overlay"]') : null;
   let searchModalResults = document.getElementById('mobile-search-results');
   let activeSearchInput = null;
+  let searchSuggestionRequestId = 0;
+  let searchModalRequestId = 0;
+  let providerSearchCache = [];
+  let providerSearchPromise = null;
 
   if (!searchSuggestions) {
     document.body.insertAdjacentHTML('beforeend', `<div class="search-suggestions" id="search-suggestions" hidden></div>`);
@@ -116,13 +69,129 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSearchInput = null;
   }
 
-  function getSearchMatches(rawQuery) {
+  function normalizeProviderSearchItems(rawProviders = []) {
+    return rawProviders
+      .map((provider) => {
+        const displayName = String(provider.displayName || provider.name || '').trim();
+        const username = String(provider.username || '').trim();
+        const specialty = String(provider.specialty || provider.title || provider.primaryCategory || '').trim();
+        const primaryCategory = String(provider.primaryCategory || '').trim();
+        const city = String(provider.city || '').trim();
+        const province = String(provider.province || '').trim();
+        const address = String(provider.address || '').trim();
+        if (!displayName && !specialty && !city && !province) return null;
+        return {
+          displayName: displayName || specialty || 'WorkLinkUp specialist',
+          username,
+          specialty: specialty || primaryCategory || 'Specialist',
+          primaryCategory,
+          city,
+          province,
+          address,
+          averageRating: Number(provider.averageRating || 0)
+        };
+      })
+      .filter(Boolean);
+  }
+
+  async function getSearchProviders() {
+    if (providerSearchCache.length) return providerSearchCache;
+    if (providerSearchPromise) return providerSearchPromise;
+
+    providerSearchPromise = (async () => {
+      const authHelper = await getAuthHelperReady();
+      if (!authHelper || typeof authHelper.listProviders !== 'function') {
+        providerSearchCache = [];
+        return providerSearchCache;
+      }
+
+      const providers = await authHelper.listProviders().catch(() => []);
+      providerSearchCache = normalizeProviderSearchItems(providers);
+      return providerSearchCache;
+    })();
+
+    const result = await providerSearchPromise;
+    providerSearchPromise = null;
+    return result;
+  }
+
+  function getSearchProviderIcon(item = {}) {
+    const label = `${item.specialty} ${item.primaryCategory}`.toLowerCase();
+    if (label.includes('plumb')) return 'fa-solid fa-faucet-drip';
+    if (label.includes('garden')) return 'fa-solid fa-seedling';
+    if (label.includes('nail') || label.includes('hair') || label.includes('beauty')) return 'fa-solid fa-spa';
+    if (label.includes('photo')) return 'fa-solid fa-camera';
+    if (label.includes('program') || label.includes('digital') || label.includes('design')) return 'fa-solid fa-laptop-code';
+    if (label.includes('tutor') || label.includes('math') || label.includes('teach')) return 'fa-solid fa-graduation-cap';
+    return 'fa-solid fa-magnifying-glass';
+  }
+
+  function getSearchProviderText(item = {}) {
+    return [
+      item.displayName,
+      item.username,
+      item.specialty,
+      item.primaryCategory,
+      item.city,
+      item.province,
+      item.address
+    ].join(' ').toLowerCase();
+  }
+
+  function scoreSearchProvider(item, rawQuery) {
     const query = String(rawQuery || '').trim().toLowerCase();
-    const matches = SEARCH_ITEMS.filter((item) => {
-      const haystack = `${item.title} ${item.subtitle}`.toLowerCase();
-      return !query || haystack.includes(query);
-    });
-    return matches.slice(0, query ? 6 : 8);
+    if (!query) return Number(item.averageRating || 0);
+
+    const name = String(item.displayName || '').toLowerCase();
+    const username = String(item.username || '').toLowerCase();
+    const specialty = String(item.specialty || '').toLowerCase();
+    const category = String(item.primaryCategory || '').toLowerCase();
+    const city = String(item.city || '').toLowerCase();
+    const province = String(item.province || '').toLowerCase();
+    const address = String(item.address || '').toLowerCase();
+    const haystack = getSearchProviderText(item);
+
+    let score = 0;
+    if (name === query || username === query) score += 120;
+    if (name.startsWith(query) || username.startsWith(query)) score += 84;
+    if (specialty === query || category === query) score += 72;
+    if (specialty.startsWith(query) || category.startsWith(query)) score += 46;
+    if (city === query || province === query) score += 42;
+    if (address.includes(query)) score += 20;
+    if (haystack.includes(query)) score += 18;
+    return score;
+  }
+
+  function buildSearchQueryFromProvider(item = {}) {
+    return [
+      item.displayName,
+      item.specialty,
+      item.city || item.province
+    ].filter(Boolean).join(' ');
+  }
+
+  async function getSearchMatches(rawQuery) {
+    const query = String(rawQuery || '').trim().toLowerCase();
+    const providers = await getSearchProviders();
+    const ranked = providers
+      .map((item) => ({
+        ...item,
+        _score: scoreSearchProvider(item, query)
+      }))
+      .filter((item) => !query || item._score > 0 || getSearchProviderText(item).includes(query))
+      .sort((first, second) => {
+        const scoreDiff = Number(second._score || 0) - Number(first._score || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return Number(second.averageRating || 0) - Number(first.averageRating || 0);
+      })
+      .slice(0, query ? 6 : 8);
+
+    return ranked.map((item) => ({
+      query: buildSearchQueryFromProvider(item),
+      title: item.displayName,
+      subtitle: [item.specialty, item.city || item.province || item.address].filter(Boolean).join(' • '),
+      icon: getSearchProviderIcon(item)
+    }));
   }
 
   function goToSpecialistsSearch(rawQuery) {
@@ -136,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildSearchItemMarkup(item, query, className) {
     return `
-      <button type="button" class="${className}" data-value="${escapeHtml(item.value)}">
+      <button type="button" class="${className}" data-query="${escapeHtml(item.query)}">
         <span class="search-result-icon" aria-hidden="true"><i class="${item.icon}"></i></span>
         <span class="search-result-copy">
           <strong>${highlightMatch(item.title, query)}</strong>
@@ -146,12 +215,17 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  function renderSearchModalResults(query = '') {
+  async function renderSearchModalResults(query = '') {
     if (!searchModalResults) return;
-    const matches = getSearchMatches(query);
+    const requestId = ++searchModalRequestId;
+    searchModalResults.innerHTML = query
+      ? `<div class="mobile-search-empty">Searching specialists...</div>`
+      : `<div class="mobile-search-empty">Loading available specialists...</div>`;
+    const matches = await getSearchMatches(query);
+    if (requestId !== searchModalRequestId) return;
     searchModalResults.innerHTML = matches.length
       ? matches.map((item) => buildSearchItemMarkup(item, query, 'mobile-search-result')).join('')
-      : `<div class="mobile-search-empty">No sample results found. Search is coming soon.</div>`;
+      : `<div class="mobile-search-empty">No specialists matched that search yet.</div>`;
   }
 
   function openSearchModal(prefill = '') {
@@ -173,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       searchModal.hidden = true;
       if (searchModalInput) searchModalInput.value = '';
-      renderSearchModalResults('');
+      searchModalResults && (searchModalResults.innerHTML = '');
     }, 180);
   }
 
@@ -186,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function escapeHtml(value) {
-    return value
+    return String(value ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')
@@ -211,11 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${before}<span class="search-match">${match}</span>${after}`;
   }
 
-  function renderSearchSuggestions(input) {
+  async function renderSearchSuggestions(input) {
     if (!searchSuggestions) return;
     const rawQuery = input.value.trim();
     const query = rawQuery.toLowerCase();
-    const matches = getSearchMatches(rawQuery);
 
     if (!query) {
       searchSuggestions.innerHTML = '';
@@ -224,8 +297,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const requestId = ++searchSuggestionRequestId;
+    searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">Searching specialists...</button>`;
+    positionSearchSuggestions(input);
+    searchSuggestions.hidden = false;
+    activeSearchInput = input;
+    const matches = await getSearchMatches(rawQuery);
+    if (requestId !== searchSuggestionRequestId) return;
+
     if (!matches.length) {
-      searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">No suggestions found</button>`;
+      searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">No specialists found</button>`;
     } else {
       searchSuggestions.innerHTML = matches
         .map((item) => buildSearchItemMarkup(item, rawQuery, 'search-suggestion'))
@@ -320,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const button = event.target.closest('.search-suggestion');
       if (!button || button.classList.contains('is-empty')) return;
       event.preventDefault();
-      const value = button.getAttribute('data-value') || '';
+      const value = button.getAttribute('data-query') || '';
       if (activeSearchInput) activeSearchInput.value = value;
       hideSearchSuggestions();
       goToSpecialistsSearch(value);
@@ -338,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const result = target.closest('.mobile-search-result');
       if (result instanceof HTMLElement && searchModalInput) {
-        const value = result.getAttribute('data-value') || '';
+        const value = result.getAttribute('data-query') || '';
         goToSpecialistsSearch(value);
       }
     });
