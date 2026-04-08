@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const categories = getServiceCatalog();
     if (!categories.length) return;
     categoryRow.innerHTML = buildHomepageCategoryMarkup(getSiteBasePath(), categories);
+    initScrollableRails(document);
   }
 
   async function getSearchMatches(rawQuery) {
@@ -350,33 +351,47 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function initHomepageCategoryAutoScroll() {
-    const categoryRow = document.querySelector('.homepage-categories .category-circles');
-    if (!categoryRow) return;
+  function initScrollableRails(root = document) {
+    root.querySelectorAll('[data-scroll-rail]').forEach((rail) => {
+      if (!(rail instanceof HTMLElement) || rail.dataset.railBound === '1') return;
+      const shell = rail.closest('.worklinkup-rail-shell');
+      if (!(shell instanceof HTMLElement)) return;
+      const prevBtn = shell.querySelector('[data-scroll-prev]');
+      const nextBtn = shell.querySelector('[data-scroll-next]');
+      const scrollAmount = () => Math.max(rail.clientWidth * 0.72, 180);
 
-    function syncMarquee() {
-      const originalItems = Array.from(categoryRow.children)
-        .filter((item) => item instanceof HTMLElement && !item.hasAttribute('data-cloned-marquee-item'));
-      categoryRow.querySelectorAll('[data-cloned-marquee-item]').forEach((item) => item.remove());
-      categoryRow.classList.remove('is-auto-scroll');
+      function syncButtons() {
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          if (prevBtn instanceof HTMLButtonElement) prevBtn.disabled = false;
+          if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = false;
+          return;
+        }
+        const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        if (prevBtn instanceof HTMLButtonElement) prevBtn.disabled = rail.scrollLeft <= 4;
+        if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = rail.scrollLeft >= maxScrollLeft - 4;
+      }
 
-      if (!originalItems.length) return;
-
-      const clones = originalItems.map((item) => {
-        const clone = item.cloneNode(true);
-        clone.setAttribute('data-cloned-marquee-item', 'true');
-        clone.setAttribute('aria-hidden', 'true');
-        clone.tabIndex = -1;
-        return clone;
+      prevBtn?.addEventListener('click', () => {
+        rail.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
       });
+      nextBtn?.addEventListener('click', () => {
+        rail.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
+      });
+      rail.addEventListener('scroll', syncButtons, { passive: true });
+      window.addEventListener('resize', syncButtons);
 
-      categoryRow.append(...clones);
-      categoryRow.classList.add('is-auto-scroll');
-    }
+      const track = rail.querySelector('[data-scroll-track]');
+      if (track instanceof HTMLElement && typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(syncButtons);
+        observer.observe(track, { childList: true });
+      }
 
-    syncMarquee();
-    window.addEventListener('resize', syncMarquee);
+      rail.dataset.railBound = '1';
+      syncButtons();
+    });
   }
+
+  window.initScrollableRails = initScrollableRails;
 
   document.querySelectorAll('.search-bar input').forEach(input => {
     const context = input.dataset.searchContext || 'inline';
@@ -416,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderHomepageCategories();
-  initHomepageCategoryAutoScroll();
+  initScrollableRails(document);
 
   if (searchSuggestions) {
     searchSuggestions.addEventListener('mousedown', (event) => {

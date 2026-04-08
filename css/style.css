@@ -202,16 +202,48 @@
   font-weight: 800;
 }
 
+.worklinkup-rail-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.worklinkup-rail-arrow {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid rgba(26, 50, 99, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1a3263;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.worklinkup-rail-arrow[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .specialists-related-track-wrap {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 2px 0 8px;
+  flex: 1 1 auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.specialists-related-track-wrap::-webkit-scrollbar,
+.homepage-categories-track-wrap::-webkit-scrollbar,
+.specialists-categories-track-wrap::-webkit-scrollbar {
+  display: none;
 }
 
 .specialists-related-track {
   display: flex;
   gap: 14px;
   width: max-content;
-  animation: specialists-marquee 30s linear infinite;
 }
 
 .specialists-related-card {
@@ -1273,6 +1305,14 @@
 }
 
 @media (max-width: 768px) {
+  .worklinkup-rail-shell {
+    gap: 0;
+  }
+
+  .worklinkup-rail-arrow {
+    display: none;
+  }
+
   .specialists-results-head {
     align-items: stretch;
     flex-direction: column;
@@ -1282,8 +1322,11 @@
     justify-content: flex-start;
   }
 
-  .specialists-related-track {
-    animation-duration: 42s;
+  .homepage-categories-track-wrap,
+  .specialists-categories-track-wrap,
+  .specialists-related-track-wrap {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .account-setup-stage {
@@ -3889,7 +3932,11 @@ footer {
 
 .homepage-categories-track-wrap,
 .specialists-categories-track-wrap {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1 1 auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
 }
@@ -3901,16 +3948,6 @@ footer {
   max-width: none;
   flex-wrap: nowrap;
   justify-content: flex-start;
-}
-
-.homepage-categories .category-circles.is-auto-scroll,
-.specialists-categories-row.is-marquee {
-  animation: homepage-categories-marquee 54s linear infinite;
-}
-
-.homepage-categories .category-circles.is-auto-scroll:hover,
-.specialists-categories-row.is-marquee:hover {
-  animation-play-state: paused;
 }
 
 .home-category-circle,
@@ -7014,7 +7051,21 @@ footer {
   }
 
   .specialists-results-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
     margin-bottom: 14px;
+  }
+
+  .specialists-results-head > div:first-child {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .specialists-results-head h3 {
+    font-size: 20px;
+    line-height: 1.14;
+    text-align: left;
   }
 
   .specialists-filter-btn {
@@ -7050,9 +7101,8 @@ footer {
     margin-top: 18px;
   }
 
-  .specialists-categories-row.is-marquee {
+  .specialists-categories-row {
     width: max-content;
-    animation: specialists-marquee 22s linear infinite;
     overflow: visible;
   }
 
@@ -7083,45 +7133,57 @@ footer {
     min-width: 0;
   }
 
+  .specialists-title-row {
+    align-items: flex-start;
+  }
+
+  .specialists-title-actions,
+  .specialists-results-head-actions {
+    justify-content: flex-start;
+  }
+
   .specialists-rating-filter {
     display: none;
   }
 
   .specialists-results-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .specialist-card {
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .specialist-card-banner {
-    min-height: 182px;
-    padding: 14px 14px 12px;
+    min-height: 150px;
+    padding: 12px 12px 10px;
   }
 
   .specialist-card-avatar {
-    width: 62px;
-    height: 62px;
+    width: 48px;
+    height: 48px;
   }
 
   .specialist-card-body {
-    padding: 14px;
+    padding: 12px;
   }
 
   .specialist-card-bio {
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .specialist-actions {
-    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .specialist-actions .provider-contact-btn,
   .specialist-actions .specialists-view-btn {
     width: 100%;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
   .specialists-related-shell {
@@ -8973,10 +9035,6 @@ header .logo {
     flex-wrap: nowrap;
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
     mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
-  }
-
-  .homepage-categories .category-circles.is-auto-scroll {
-    animation: homepage-categories-marquee 22s linear infinite;
   }
 
   .homepage-categories .category-circle {

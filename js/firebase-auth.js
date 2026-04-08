@@ -1463,17 +1463,15 @@ async function applyToJob(jobId = '', payload = {}) {
   }
 
   const account = getAccountPayload(auth.currentUser);
-  const [job, providerProfile, userDoc] = await Promise.all([
+  const [job, providerProfile, clientProfile, userDoc] = await Promise.all([
     getJobPost(jobId),
     getProviderProfileByUid(auth.currentUser.uid).catch(() => null),
+    getClientProfileByUid(auth.currentUser.uid).catch(() => null),
     getUserDocument(auth.currentUser.uid).catch(() => null)
   ]);
 
   if (!job) {
     throw new Error('That job could not be found.');
-  }
-  if (!providerProfile) {
-    throw new Error('Complete your provider profile before bidding on jobs.');
   }
   if (job.ownerUid === auth.currentUser.uid) {
     throw new Error('You cannot bid on your own job.');
@@ -1485,13 +1483,25 @@ async function applyToJob(jobId = '', payload = {}) {
   }
 
   const now = Date.now();
+  const bidderName = providerProfile?.displayName
+    || clientProfile?.displayName
+    || userDoc?.name
+    || account.name
+    || 'WorkLinkUp user';
+  const bidderRoleLabel = providerProfile
+    ? 'Provider'
+    : String(userDoc?.userRole || account.userRole || 'client').trim().toLowerCase() === 'client'
+      ? 'Client'
+      : 'WorkLinkUp member';
   const applicationPayload = {
     bidderUid: auth.currentUser.uid,
-    bidderName: providerProfile.displayName || userDoc?.name || account.name,
-    bidderProvinceSlug: providerProfile.provinceSlug || '',
-    bidderCategory: providerProfile.primaryCategory || '',
-    bidderSpecialty: providerProfile.specialty || '',
-    bidderProfileImageData: providerProfile.profileImageData || '',
+    bidderName,
+    bidderProvinceSlug: providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || '',
+    bidderCategory: providerProfile?.primaryCategory || clientProfile?.city || userDoc?.city || '',
+    bidderSpecialty: providerProfile?.specialty || userDoc?.title || '',
+    bidderProfileImageData: providerProfile?.profileImageData || clientProfile?.profileImageData || userDoc?.profileImageData || '',
+    bidderRoleLabel,
+    bidderUserRole: String(userDoc?.userRole || account.userRole || 'client').trim() || 'client',
     bidderMessage: String(payload.message || '').trim(),
     proposedBudget,
     status: 'pending',
@@ -1505,12 +1515,12 @@ async function applyToJob(jobId = '', payload = {}) {
 
   await recordAdminActivity('job_bid_created', {
     actorUid: auth.currentUser.uid,
-    actorName: applicationPayload.bidderName,
+    actorName: bidderName,
     actorEmail: userDoc?.email || '',
     subjectUid: job.ownerUid,
     subjectName: job.ownerName,
     title: 'Job bid submitted',
-    description: `${applicationPayload.bidderName} bid on ${job.category}.`,
+    description: `${bidderName} bid on ${job.category}.`,
     sourceRef: `${JOBS_COLLECTION}/${jobId}/applications/${auth.currentUser.uid}`,
     createdAtMs: now
   });

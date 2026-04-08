@@ -544,17 +544,15 @@
     }
   }
 
-  async function ensureProviderReady(authHelper) {
+  async function ensureBidderReady(authHelper) {
     const account = getStoredAccount();
     if (!account?.loggedIn || !authHelper) {
       return { ready: false, reason: 'Please sign in first.' };
     }
     const userDoc = await authHelper.getUserDocument(account.uid).catch(() => null);
+    const clientProfile = await authHelper.getClientProfileByUid(account.uid).catch(() => null);
     const providerProfile = await authHelper.getProviderProfileByUid(account.uid, account.providerProvinceSlug || userDoc?.providerProvinceSlug || '').catch(() => null);
-    if (!providerProfile) {
-      return { ready: false, reason: 'Complete your provider profile before bidding on jobs.' };
-    }
-    return { ready: true, userDoc, providerProfile };
+    return { ready: true, userDoc, clientProfile, providerProfile };
   }
 
   function buildJobAuthCardMarkup(scope = 'post') {
@@ -563,7 +561,7 @@
         <div class="job-auth-head">
           <div>
             <span class="job-auth-kicker">${scope === 'bid' ? 'Continue to bid' : 'Continue to post'}</span>
-            <h3>${scope === 'bid' ? 'Sign in as a provider' : 'Create your hiring account'}</h3>
+            <h3>${scope === 'bid' ? 'Sign in to bid for this job' : 'Create your hiring account'}</h3>
           </div>
           <div class="job-auth-mode-switch">
             <button type="button" class="is-active" data-job-auth-mode="signup">Create account</button>
@@ -621,13 +619,13 @@
       if (note instanceof HTMLElement) {
         note.textContent = scope === 'bid'
           ? (authMode === 'signup'
-            ? 'Create a provider account with email or phone. If your service profile is not complete yet, you will finish that next.'
-            : 'Sign in with your provider account to continue placing this bid.')
+            ? 'Create a quick account with email or phone so you can send your bid and keep track of it later.'
+            : 'Sign in with your email or phone account to continue placing this bid.')
           : 'Use email or phone plus a password so your job dashboard is saved to your account.';
       }
       if (submitBtn instanceof HTMLElement) {
         submitBtn.textContent = scope === 'bid'
-          ? (authMode === 'signup' ? 'Create provider account' : 'Sign in and continue')
+          ? (authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue')
           : (authMode === 'signup' ? 'Create account and post job' : 'Sign in and post job');
       }
     }
@@ -659,7 +657,7 @@
       try {
         if (authMode === 'signup') {
           await authHelper.signUpWithIdentifier(name, identifier, password, idMode, {
-            userRole: scope === 'bid' ? 'provider' : 'client',
+            userRole: 'client',
             phone: idMode === 'phone' ? identifier : ''
           });
         } else {
@@ -1087,24 +1085,17 @@
       if (!account?.loggedIn) {
         openModal(authModal, `<div class="job-modal-panel job-modal-auth-panel">${buildJobAuthCardMarkup('bid')}<button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button></div>`);
         bindJobAuthCard('bid', async () => {
-          const readiness = await ensureProviderReady(authHelper);
-          if (!readiness.ready) {
-            savePendingJobBid(job.id);
-            window.alert(`${readiness.reason} You will be taken to complete it now.`);
-            window.location.href = `${getBase()}pages/edit-profile.html?resumeJob=${encodeURIComponent(job.id)}`;
-            return;
-          }
+          const readiness = await ensureBidderReady(authHelper);
+          if (!readiness.ready) return;
           closeModal(authModal);
           openBidFlow(job);
         });
         return;
       }
 
-      const readiness = await ensureProviderReady(authHelper);
+      const readiness = await ensureBidderReady(authHelper);
       if (!readiness.ready) {
-        savePendingJobBid(job.id);
-        window.alert(`${readiness.reason} You will be taken to complete it now.`);
-        window.location.href = `${getBase()}pages/edit-profile.html?resumeJob=${encodeURIComponent(job.id)}`;
+        window.alert(readiness.reason || 'Please sign in first.');
         return;
       }
 
@@ -1173,7 +1164,7 @@
 
     const resumeJobId = params.get('resumeJob') || params.get('job') || readPendingJobBid()?.jobId || '';
     if (resumeJobId) {
-      const readiness = await ensureProviderReady(authHelper);
+      const readiness = await ensureBidderReady(authHelper);
       const job = jobs.find((item) => item.id === resumeJobId);
       if (job && readiness.ready) {
         clearPendingJobBid();
@@ -1274,8 +1265,8 @@
                           ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
                         </div>
                         <div>
-                          <strong>${escapeHtml(application.bidderName || 'Provider')}</strong>
-                          <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || 'Provider')}</span>
+                          <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+                          <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
                           <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
                         </div>
                       </div>

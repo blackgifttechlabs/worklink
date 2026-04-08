@@ -1084,11 +1084,11 @@
 
     function renderCategoryRail() {
       if (!categoriesHost) return;
-      categoriesHost.classList.add('is-marquee');
       categoriesHost.innerHTML = createCircleCardsMarkup(base, true);
       categoriesHost.querySelectorAll('[data-category-chip]').forEach((chip) => {
         chip.classList.toggle('is-active', chip.getAttribute('data-category-chip') === state.category);
       });
+      if (typeof window.initScrollableRails === 'function') window.initScrollableRails(page);
     }
 
     function renderFilters() {
@@ -1155,6 +1155,7 @@
         if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested categories';
         if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'Try another category';
         relatedHost.innerHTML = buildSuggestedCategoriesMarkup(fallbackCategories, fallbackCategories.length > 4);
+        if (typeof window.initScrollableRails === 'function') window.initScrollableRails(page);
         return;
       }
 
@@ -1169,6 +1170,7 @@
       if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested for you';
       if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'More specialists you can explore';
       relatedHost.innerHTML = buildSuggestedProvidersMarkup(suggestedProviders, suggestedProviders.length > 4);
+      if (typeof window.initScrollableRails === 'function') window.initScrollableRails(page);
     }
 
     function renderResultsActions() {
