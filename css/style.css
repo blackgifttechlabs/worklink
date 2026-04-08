@@ -3596,6 +3596,22 @@ footer {
   display: none !important;
 }
 
+.account-embed-preload #site-header,
+.account-embed-preload #site-footer,
+.account-embed-preload #account-guest-card,
+.account-embed-preload #account-dashboard {
+  display: none !important;
+}
+
+.account-embed-preload .account-page {
+  min-height: auto;
+  background: transparent;
+}
+
+.account-embed-preload #account-setup-stage[hidden] {
+  display: block !important;
+}
+
 .account-embed-mode .account-page {
   min-height: auto;
   background: transparent;
@@ -3674,6 +3690,36 @@ footer {
     transform: scale(1) rotate(0deg);
     opacity: 1;
   }
+}
+
+.account-setup-loading {
+  min-height: 420px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.account-setup-loading h2 {
+  color: var(--brand-ink);
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.account-setup-loading p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.account-setup-loading-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 4px solid rgba(26, 50, 99, 0.12);
+  border-top-color: #1a3263;
+  animation: account-spin 0.75s linear infinite;
 }
 
 /* ========== PROVIDERS EXPERIENCE ========== */

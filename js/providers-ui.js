@@ -2789,11 +2789,25 @@
     const isEmbedded = params.get('embed') === '1';
     if (isEmbedded) {
       document.body.classList.add('account-embed-mode');
+      if (guestStage) guestStage.hidden = true;
+      if (dashboard) dashboard.hidden = true;
+      if (setupStage) setupStage.hidden = false;
+      if (setupBody) {
+        setupBody.innerHTML = `
+          <section class="account-setup-loading">
+            <div class="account-setup-loading-spinner"></div>
+            <h2>Preparing your setup</h2>
+            <p>Loading the next step for your account.</p>
+          </section>
+        `;
+      }
     }
     if (!account?.loggedIn) {
-      guestStage.hidden = false;
-      setupStage.hidden = true;
-      dashboard.hidden = true;
+      if (!isEmbedded) {
+        guestStage.hidden = false;
+        setupStage.hidden = true;
+        dashboard.hidden = true;
+      }
       window.addEventListener('softgiggles-auth-changed', () => {
         window.location.reload();
       }, { once: true });

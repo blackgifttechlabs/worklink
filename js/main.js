@@ -543,6 +543,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPageSubtextLabel = document.querySelector('.account-auth-page-subtext-label');
   const accountPageSubmitBtn = document.querySelector('.account-page-submit-btn');
   const accountPageForgotPasswordBtn = document.querySelector('.account-page-forgot-password');
+  const accountPageParams = new URLSearchParams(window.location.search);
+  const isEmbeddedAccountPage = accountPageParams.get('embed') === '1';
 
   function readAccount() {
     try {
@@ -663,6 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (needsSetup) {
         try {
           localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
+          setSessionFlag('worklinkup_show_setup_modal_once');
         } catch (error) {
           // Ignore storage issues and fall back to home redirect.
         }
@@ -672,6 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       try {
         localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
+        setSessionFlag('worklinkup_show_setup_modal_once');
       } catch (storageError) {
         // Ignore storage issues and fall back to home redirect.
       }
@@ -741,7 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function syncAccountPageMode(mode) {
-    if (!accountPageModeInput) return;
+    if (!accountPageModeInput || isEmbeddedAccountPage) return;
     const isSignup = mode === 'signup';
     accountPageModeInput.value = mode;
     if (accountPageHeading) accountPageHeading.textContent = isSignup ? 'Create a new account' : 'Sign in to your account';
@@ -777,7 +781,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function setSessionFlag(key, value = '1') {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
   async function maybeHandleRedirectedGoogleAuth() {
+    if (isEmbeddedAccountPage) return;
     const hasRedirectSuccess = readSessionFlag('worklinkup_google_redirect_success');
     if (!hasRedirectSuccess) return;
     const authHelper = await getAuthHelperReady();
@@ -793,6 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function initPendingSetupModal() {
     if (!document.body.classList.contains('home-page-body')) return;
+    if (!readSessionFlag('worklinkup_show_setup_modal_once')) return;
 
     let pendingSearch = '';
     try {
@@ -831,6 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.setTimeout(() => {
         overlay.hidden = true;
       }, 180);
+      clearSessionFlag('worklinkup_show_setup_modal_once');
       if (clearPending) {
         try {
           localStorage.removeItem('worklinkup_pending_setup');
@@ -848,6 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
           overlay.classList.add('is-visible');
           document.body.classList.add('pending-setup-open');
         });
+        clearSessionFlag('worklinkup_show_setup_modal_once');
       }, 2000);
     }
 
@@ -875,8 +891,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function applyAccountToPage() {
-    const account = readAccount();
     if (!accountDashboard || !accountGuestCard) return;
+    if (isEmbeddedAccountPage) {
+      accountDashboard.hidden = true;
+      accountGuestCard.hidden = true;
+      return;
+    }
+    const account = readAccount();
     const isLoggedIn = Boolean(account && account.loggedIn);
     accountDashboard.hidden = !isLoggedIn;
     accountGuestCard.hidden = isLoggedIn;
@@ -1323,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (accountPageModeSwitch && accountPageModeInput) {
+  if (!isEmbeddedAccountPage && accountPageModeSwitch && accountPageModeInput) {
     accountPageModeSwitch.addEventListener('click', () => {
       const nextMode = accountPageModeInput.value === 'signup' ? 'signin' : 'signup';
       syncAccountPageMode(nextMode);
@@ -1353,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (accountPageForgotPasswordBtn && accountPageEmailInput) {
+  if (!isEmbeddedAccountPage && accountPageForgotPasswordBtn && accountPageEmailInput) {
     accountPageForgotPasswordBtn.addEventListener('click', async () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
@@ -1403,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (accountPageGoogleBtn) {
+  if (!isEmbeddedAccountPage && accountPageGoogleBtn) {
     accountPageGoogleBtn.addEventListener('click', async () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
@@ -1447,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (accountPageEmailForm && accountPageModeInput) {
+  if (!isEmbeddedAccountPage && accountPageEmailForm && accountPageModeInput) {
     accountPageEmailForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const authHelper = await getAuthHelperReady();
@@ -1561,7 +1582,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   syncAccountMode('signin');
-  syncAccountPageMode('signup');
+  if (!isEmbeddedAccountPage) {
+    syncAccountPageMode('signup');
+  }
   setMethodVisibility('all');
   applyAccountToPage();
   maybeHandleRedirectedGoogleAuth();
