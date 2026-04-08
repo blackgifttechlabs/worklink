@@ -38,6 +38,12 @@
 
   function waitForAuthHelper(timeoutMs = 12000) {
     return new Promise((resolve) => {
+      if (typeof window.ensureWorkLinkAuth === 'function') {
+        window.ensureWorkLinkAuth()
+          .then((helper) => resolve(helper || window.softGigglesAuth || null))
+          .catch(() => resolve(window.softGigglesAuth || null));
+        return;
+      }
       if (window.softGigglesAuth) {
         resolve(window.softGigglesAuth);
         return;
@@ -50,6 +56,116 @@
         }
       }, 120);
     });
+  }
+
+  function buildPostJobSkeleton() {
+    return `
+      <section class="job-page-shell">
+        <div class="job-page-hero job-skeleton-hero">
+          <span class="job-page-kicker job-skeleton-block job-skeleton-pill"></span>
+          <div class="job-skeleton-block job-skeleton-title"></div>
+          <div class="job-skeleton-block job-skeleton-copy"></div>
+          <div class="job-skeleton-block job-skeleton-copy short"></div>
+          <div class="job-page-hero-actions">
+            <span class="job-skeleton-block job-skeleton-button"></span>
+          </div>
+        </div>
+        <section class="job-post-form job-skeleton-form">
+          <div class="job-form-grid">
+            <div class="job-form-field">
+              <span class="job-skeleton-block job-skeleton-label"></span>
+              <span class="job-skeleton-block job-skeleton-input"></span>
+            </div>
+            <div class="job-form-field">
+              <span class="job-skeleton-block job-skeleton-label"></span>
+              <span class="job-skeleton-block job-skeleton-input"></span>
+            </div>
+            <div class="job-form-field is-wide">
+              <span class="job-skeleton-block job-skeleton-label"></span>
+              <span class="job-skeleton-block job-skeleton-textarea"></span>
+            </div>
+            <div class="job-form-field">
+              <span class="job-skeleton-block job-skeleton-label"></span>
+              <span class="job-skeleton-block job-skeleton-input"></span>
+            </div>
+            <div class="job-form-field is-wide">
+              <span class="job-skeleton-block job-skeleton-label"></span>
+              <span class="job-skeleton-block job-skeleton-textarea small"></span>
+            </div>
+          </div>
+          <div class="job-auth-card job-skeleton-auth">
+            <div class="job-skeleton-auth-row">
+              <span class="job-skeleton-block job-skeleton-pill"></span>
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+            </div>
+            <div class="job-skeleton-block job-skeleton-copy"></div>
+            <div class="job-skeleton-block job-skeleton-copy short"></div>
+          </div>
+          <div class="job-post-form-actions">
+            <span class="job-skeleton-block job-skeleton-button"></span>
+            <span class="job-skeleton-block job-skeleton-button secondary"></span>
+          </div>
+        </section>
+      </section>
+    `;
+  }
+
+  function buildJobPostsSkeleton() {
+    return `
+      <section class="job-page-shell">
+        <div class="job-page-hero job-skeleton-hero">
+          <span class="job-page-kicker job-skeleton-block job-skeleton-pill"></span>
+          <div class="job-skeleton-block job-skeleton-title"></div>
+          <div class="job-skeleton-block job-skeleton-copy"></div>
+          <div class="job-skeleton-block job-skeleton-copy short"></div>
+          <div class="job-page-hero-actions">
+            <span class="job-skeleton-block job-skeleton-button"></span>
+          </div>
+        </div>
+        <section class="job-board-toolbar job-skeleton-toolbar">
+          <span class="job-skeleton-block job-skeleton-search"></span>
+          <div class="job-skeleton-filter-row">
+            <span class="job-skeleton-block job-skeleton-chip"></span>
+            <span class="job-skeleton-block job-skeleton-chip"></span>
+            <span class="job-skeleton-block job-skeleton-chip"></span>
+            <span class="job-skeleton-block job-skeleton-chip"></span>
+          </div>
+        </section>
+        <section class="job-board-groups">
+          <section class="job-group">
+            <div class="job-group-head">
+              <div class="job-skeleton-block job-skeleton-heading"></div>
+              <div class="job-skeleton-block job-skeleton-count"></div>
+            </div>
+            <div class="job-card-grid">
+              ${Array.from({ length: 4 }).map(() => `
+                <article class="job-card job-card-skeleton">
+                  <div class="job-card-top">
+                    <div class="job-skeleton-inline">
+                      <span class="job-skeleton-block job-skeleton-pill"></span>
+                      <span class="job-skeleton-block job-skeleton-pill light"></span>
+                    </div>
+                    <span class="job-skeleton-block job-skeleton-price"></span>
+                  </div>
+                  <div class="job-skeleton-block job-skeleton-card-title"></div>
+                  <div class="job-skeleton-block job-skeleton-copy"></div>
+                  <div class="job-skeleton-block job-skeleton-copy short"></div>
+                  <div class="job-skeleton-meta">
+                    <span class="job-skeleton-block job-skeleton-meta-line"></span>
+                    <span class="job-skeleton-block job-skeleton-meta-line"></span>
+                    <span class="job-skeleton-block job-skeleton-meta-line short"></span>
+                  </div>
+                  <div class="job-card-actions">
+                    <span class="job-skeleton-block job-skeleton-button secondary"></span>
+                    <span class="job-skeleton-block job-skeleton-button"></span>
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+          </section>
+        </section>
+      </section>
+    `;
   }
 
   function buildSelectOptions(items = [], selected = '', placeholder = '') {
@@ -72,6 +188,234 @@
 
   function buildSubcategoryOptions(categoryLabel = '', selected = '') {
     return buildSelectOptions(getSubservicesForCategory(categoryLabel), selected, 'Optional subcategory');
+  }
+
+  function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function highlightMatch(text, query) {
+    const rawText = String(text || '');
+    const trimmedQuery = String(query || '').trim();
+    if (!trimmedQuery) return escapeHtml(rawText);
+    const matcher = new RegExp(`(${escapeRegExp(trimmedQuery)})`, 'ig');
+    return escapeHtml(rawText).replace(matcher, '<strong>$1</strong>');
+  }
+
+  function getCategoryIcon(categoryLabel = '') {
+    return getCategoryConfig(categoryLabel)?.icon || 'fa-solid fa-layer-group';
+  }
+
+  function buildJobComboboxMarkup({ type, label, placeholder, value = '', required = false }) {
+    return `
+      <label class="job-form-field">
+        <span>${escapeHtml(label)}</span>
+        <div class="job-combobox" data-job-combobox="${escapeHtml(type)}">
+          <div class="job-combobox-shell">
+            <span class="job-combobox-leading" data-job-combobox-leading="${escapeHtml(type)}" aria-hidden="true">
+              <i class="fa-solid fa-layer-group"></i>
+            </span>
+            <input
+              type="text"
+              class="job-combobox-input"
+              data-job-combobox-input="${escapeHtml(type)}"
+              placeholder="${escapeHtml(placeholder)}"
+              value="${escapeHtml(value)}"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" class="job-combobox-toggle" data-job-combobox-toggle="${escapeHtml(type)}" aria-label="Toggle ${escapeHtml(label)} suggestions">
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+          </div>
+          <input type="hidden" name="${escapeHtml(type)}" value="${escapeHtml(value)}" data-job-hidden-field="${escapeHtml(type)}" ${required ? 'required' : ''} />
+          <div class="job-combobox-menu" data-job-combobox-menu="${escapeHtml(type)}" hidden></div>
+        </div>
+      </label>
+    `;
+  }
+
+  function showJobToast(message = 'Done', callback) {
+    const toast = document.getElementById('account-success-toast');
+    if (!(toast instanceof HTMLElement)) {
+      if (typeof callback === 'function') callback();
+      return;
+    }
+    const label = toast.querySelector('span');
+    if (label) label.textContent = message;
+    toast.hidden = false;
+    requestAnimationFrame(() => {
+      toast.classList.add('is-visible');
+    });
+    window.setTimeout(() => {
+      toast.classList.remove('is-visible');
+      window.setTimeout(() => {
+        toast.hidden = true;
+        if (typeof callback === 'function') callback();
+      }, 220);
+    }, 1300);
+  }
+
+  function createSuggestionItemMarkup({ icon, title, subtitle = '', query = '', value = '' }) {
+    return `
+      <button type="button" class="job-combobox-option" data-job-option="${escapeHtml(value || title)}">
+        <span class="job-combobox-option-icon" aria-hidden="true"><i class="${escapeHtml(icon || 'fa-solid fa-layer-group')}"></i></span>
+        <span class="job-combobox-option-copy">
+          <span class="job-combobox-option-title">${highlightMatch(title, query)}</span>
+          ${subtitle ? `<span class="job-combobox-option-subtitle">${highlightMatch(subtitle, query)}</span>` : ''}
+        </span>
+      </button>
+    `;
+  }
+
+  function bindJobCombobox(host, config) {
+    if (!(host instanceof HTMLElement)) return null;
+    const input = host.querySelector(`[data-job-combobox-input="${config.type}"]`);
+    const hiddenInput = host.querySelector(`[data-job-hidden-field="${config.type}"]`);
+    const menu = host.querySelector(`[data-job-combobox-menu="${config.type}"]`);
+    const toggle = host.querySelector(`[data-job-combobox-toggle="${config.type}"]`);
+    const leading = host.querySelector(`[data-job-combobox-leading="${config.type}"]`);
+    if (!(input instanceof HTMLInputElement) || !(hiddenInput instanceof HTMLInputElement) || !(menu instanceof HTMLElement)) return null;
+
+    let options = Array.isArray(config.getItems?.('')) ? config.getItems('') : [];
+    let selectedValue = String(hiddenInput.value || config.value || '').trim();
+
+    function setLeadingIcon(iconClass) {
+      if (!(leading instanceof HTMLElement)) return;
+      leading.innerHTML = `<i class="${escapeHtml(iconClass || 'fa-solid fa-layer-group')}"></i>`;
+    }
+
+    function closeMenu() {
+      host.classList.remove('is-open');
+      menu.hidden = true;
+    }
+
+    function renderOptions() {
+      const query = String(input.value || '').trim();
+      options = Array.isArray(config.getItems?.(query)) ? config.getItems(query) : [];
+      if (!options.length) {
+        menu.innerHTML = `<div class="job-combobox-empty">No matches found.</div>`;
+      } else {
+        menu.innerHTML = options.map((item) => createSuggestionItemMarkup({
+          icon: item.icon,
+          title: item.label,
+          subtitle: item.subtitle,
+          query,
+          value: item.value
+        })).join('');
+      }
+
+      menu.querySelectorAll('[data-job-option]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const value = String(button.getAttribute('data-job-option') || '').trim();
+          const match = options.find((item) => item.value === value) || options.find((item) => item.label === value) || null;
+          if (!match) return;
+          selectedValue = match.value;
+          hiddenInput.value = match.value;
+          input.value = match.label;
+          setLeadingIcon(match.icon);
+          closeMenu();
+          if (typeof config.onSelect === 'function') config.onSelect(match);
+        });
+      });
+    }
+
+    function openMenu() {
+      renderOptions();
+      host.classList.add('is-open');
+      menu.hidden = false;
+    }
+
+    input.addEventListener('focus', openMenu);
+    input.addEventListener('input', () => {
+      hiddenInput.value = '';
+      selectedValue = '';
+      setLeadingIcon(config.defaultIcon);
+      openMenu();
+      if (typeof config.onInput === 'function') config.onInput(String(input.value || '').trim());
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+        return;
+      }
+      if (event.key === 'Enter') {
+        if (!menu.hidden) {
+          event.preventDefault();
+          const first = menu.querySelector('[data-job-option]');
+          if (first instanceof HTMLElement) {
+            first.click();
+            return;
+          }
+        }
+        const exact = options.find((item) => item.label.toLowerCase() === String(input.value || '').trim().toLowerCase());
+        if (exact) {
+          hiddenInput.value = exact.value;
+          selectedValue = exact.value;
+          input.value = exact.label;
+          setLeadingIcon(exact.icon);
+        }
+      }
+    });
+    toggle?.addEventListener('click', () => {
+      if (host.classList.contains('is-open')) {
+        closeMenu();
+      } else {
+        input.focus();
+        openMenu();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!host.contains(event.target)) closeMenu();
+    });
+
+    if (selectedValue) {
+      const current = (Array.isArray(config.getItems?.('')) ? config.getItems('') : []).find((item) => item.value === selectedValue || item.label === selectedValue);
+      if (current) {
+        input.value = current.label;
+        hiddenInput.value = current.value;
+        setLeadingIcon(current.icon);
+      }
+    } else if (config.defaultIcon) {
+      setLeadingIcon(config.defaultIcon);
+    }
+
+    return {
+      setItems(nextItems = [], preserveInput = false) {
+        options = nextItems;
+        if (!preserveInput) {
+          input.value = '';
+          hiddenInput.value = '';
+          selectedValue = '';
+        }
+        renderOptions();
+      },
+      setValue(nextValue = '') {
+        const next = (Array.isArray(config.getItems?.('')) ? config.getItems('') : []).find((item) => item.value === nextValue || item.label === nextValue);
+        if (!next) return;
+        selectedValue = next.value;
+        hiddenInput.value = next.value;
+        input.value = next.label;
+        setLeadingIcon(next.icon);
+      },
+      clear() {
+        input.value = '';
+        hiddenInput.value = '';
+        selectedValue = '';
+        setLeadingIcon(config.defaultIcon);
+      },
+      setDefaultIcon(nextIcon) {
+        config.defaultIcon = nextIcon;
+        if (!selectedValue) setLeadingIcon(config.defaultIcon);
+      },
+      getValue() {
+        return String(hiddenInput.value || '').trim();
+      },
+      getInputValue() {
+        return String(input.value || '').trim();
+      }
+    };
   }
 
   async function readImageAsBase64(file, options = {}) {
@@ -347,6 +691,8 @@
     const page = document.querySelector('[data-job-post-page]');
     if (!page) return;
 
+    page.innerHTML = buildPostJobSkeleton();
+
     const authHelper = await waitForAuthHelper();
     const account = getStoredAccount();
     const userDoc = account?.loggedIn && authHelper?.getUserDocument
@@ -370,14 +716,18 @@
 
         <form class="job-post-form" data-job-post-form>
           <div class="job-form-grid">
-            <label class="job-form-field">
-              <span>Job category</span>
-              <select name="category" data-job-category required>${buildSelectOptions(CATALOG.map((category) => category.label), defaultCategory)}</select>
-            </label>
-            <label class="job-form-field">
-              <span>Subcategory</span>
-              <select name="subcategory" data-job-subcategory>${buildSubcategoryOptions(defaultCategory, '')}</select>
-            </label>
+            ${buildJobComboboxMarkup({
+              type: 'category',
+              label: 'Job category',
+              placeholder: 'Search category',
+              value: defaultCategory,
+              required: true
+            })}
+            ${buildJobComboboxMarkup({
+              type: 'subcategory',
+              label: 'Subcategory',
+              placeholder: 'Optional subcategory'
+            })}
             <label class="job-form-field is-wide">
               <span>Describe the job</span>
               <textarea name="description" required placeholder="I need someone to cut trees in my yard and remove the branches after the work is done."></textarea>
@@ -408,14 +758,67 @@
     `;
 
     const form = page.querySelector('[data-job-post-form]');
-    const categorySelect = page.querySelector('[data-job-category]');
-    const subcategorySelect = page.querySelector('[data-job-subcategory]');
     const submitBtn = page.querySelector('[data-job-post-submit]');
+    const categoryHost = page.querySelector('[data-job-combobox="category"]');
+    const subcategoryHost = page.querySelector('[data-job-combobox="subcategory"]');
 
-    categorySelect?.addEventListener('change', () => {
-      if (!(categorySelect instanceof HTMLSelectElement) || !(subcategorySelect instanceof HTMLSelectElement)) return;
-      subcategorySelect.innerHTML = buildSubcategoryOptions(categorySelect.value, '');
+    function getCategoryItems(query = '') {
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      return CATALOG
+        .filter((category) => {
+          if (!normalizedQuery) return true;
+          return category.label.toLowerCase().includes(normalizedQuery)
+            || category.shortLabel?.toLowerCase().includes(normalizedQuery)
+            || (Array.isArray(category.subservices) && category.subservices.some((service) => service.toLowerCase().includes(normalizedQuery)));
+        })
+        .map((category) => ({
+          value: category.label,
+          label: category.label,
+          subtitle: `${category.subservices.length} services`,
+          icon: category.icon
+        }));
+    }
+
+    function getSubcategoryItems(categoryLabel = '', query = '') {
+      if (!String(categoryLabel || '').trim()) return [];
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      const parentCategory = getCategoryConfig(categoryLabel);
+      return getSubservicesForCategory(categoryLabel)
+        .filter((service) => !normalizedQuery || service.toLowerCase().includes(normalizedQuery))
+        .map((service) => ({
+          value: service,
+          label: service,
+          subtitle: parentCategory?.label || '',
+          icon: getCategoryIcon(categoryLabel)
+        }));
+    }
+
+    let activeCategory = defaultCategory;
+    const subcategoryCombobox = bindJobCombobox(subcategoryHost, {
+      type: 'subcategory',
+      value: '',
+      defaultIcon: getCategoryIcon(defaultCategory),
+      getItems: (query) => getSubcategoryItems(activeCategory, query)
     });
+    const categoryCombobox = bindJobCombobox(categoryHost, {
+      type: 'category',
+      value: defaultCategory,
+      defaultIcon: getCategoryIcon(defaultCategory),
+      getItems: getCategoryItems,
+      onSelect: (match) => {
+        activeCategory = match.value;
+        subcategoryCombobox?.setDefaultIcon(getCategoryIcon(match.value));
+        subcategoryCombobox?.clear();
+      },
+      onInput: () => {
+        activeCategory = '';
+        subcategoryCombobox?.setDefaultIcon('fa-solid fa-list-ul');
+        subcategoryCombobox?.clear();
+      }
+    });
+    categoryCombobox?.setValue(defaultCategory);
+    activeCategory = categoryCombobox?.getValue() || defaultCategory;
+    subcategoryCombobox?.clear();
 
     if (!account?.loggedIn) {
       bindJobAuthCard('post', async () => {
@@ -429,6 +832,10 @@
       if (!authHelper) return;
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
+      const typedCategory = categoryCombobox?.getInputValue() || '';
+      const typedSubcategory = subcategoryCombobox?.getInputValue() || '';
+      payload.category = String(payload.category || typedCategory).trim();
+      payload.subcategory = String(payload.subcategory || typedSubcategory).trim();
       if (!payload.category || !payload.description || !payload.address || !payload.budget) {
         window.alert('Fill in the job details first.');
         return;
@@ -494,7 +901,9 @@
           address: payload.address
         });
 
-        window.location.href = `${getBase()}pages/job-giver-profile.html?created=1`;
+        showJobToast('Job has been posted.', () => {
+          window.location.href = `${getBase()}pages/job-giver-profile.html?created=1`;
+        });
       } catch (error) {
         window.alert(error.message || 'Could not post your job.');
       } finally {
@@ -507,8 +916,9 @@
     const page = document.querySelector('[data-job-posts-page]');
     if (!page) return;
 
+    page.innerHTML = buildJobPostsSkeleton();
+
     const authHelper = await waitForAuthHelper();
-    if (!authHelper || typeof authHelper.listJobPosts !== 'function') return;
 
     page.innerHTML = `
       <section class="job-page-shell">
@@ -549,6 +959,17 @@
     const authModal = page.querySelector('[data-job-auth-modal]');
     const filterButtons = Array.from(page.querySelectorAll('[data-job-filter]'));
     const params = new URLSearchParams(window.location.search);
+    if (!authHelper || typeof authHelper.listJobPosts !== 'function') {
+      groupsHost.innerHTML = `
+        <div class="specialists-empty">
+          <div>
+            <h2>Jobs could not be loaded yet</h2>
+            <p>Refresh the page in a moment and try again.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
     let jobs = await authHelper.listJobPosts().catch(() => []);
     let activeFilter = 'all';
     let query = '';
