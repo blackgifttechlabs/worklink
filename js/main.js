@@ -632,7 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function routeAfterAuthSuccess() {
     const authHelper = await getAuthHelperReady();
-    const account = readAccount();
     const base = getSiteBasePath();
     const currentUrl = new URL(window.location.href);
     const accountPageUrl = new URL(`${base}pages/account.html`, window.location.origin);
@@ -640,6 +639,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentUrl.searchParams.get('service')) {
       accountPageUrl.searchParams.set('service', currentUrl.searchParams.get('service'));
     }
+    if (authHelper && typeof authHelper.waitForAuthSession === 'function') {
+      await authHelper.waitForAuthSession('', 12000).catch(() => null);
+    }
+    const account = readAccount();
 
     if (!authHelper || !account?.uid) {
       window.location.reload();

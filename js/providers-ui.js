@@ -118,6 +118,14 @@
       .replace(/'/g, '&#39;');
   }
 
+  function setButtonLoading(button, isLoading) {
+    if (!(button instanceof HTMLElement)) return;
+    button.classList.toggle('is-loading', Boolean(isLoading));
+    if (button instanceof HTMLButtonElement) {
+      button.disabled = Boolean(isLoading);
+    }
+  }
+
   function getStoredAccount() {
     try {
       const raw = localStorage.getItem('softgiggles_account');
@@ -2786,8 +2794,15 @@
       guestStage.hidden = false;
       setupStage.hidden = true;
       dashboard.hidden = true;
+      window.addEventListener('softgiggles-auth-changed', () => {
+        window.location.reload();
+      }, { once: true });
       return;
     }
+
+    guestStage.hidden = true;
+    setupStage.hidden = true;
+    dashboard.hidden = true;
 
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
@@ -2837,6 +2852,19 @@
 
     async function renderCurrentStep() {
       const step = getSetupStep();
+
+      if (!isEmbedded && step !== 'dashboard') {
+        const nextParams = new URLSearchParams();
+        nextParams.set('setup', step === 'provider' ? 'provider' : '1');
+        if (providerInviteService) nextParams.set('service', providerInviteService);
+        try {
+          localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
+        } catch (error) {
+          // Ignore storage issues and continue redirect.
+        }
+        window.location.href = `${getBase()}index.html`;
+        return;
+      }
 
       guestStage.hidden = true;
       setupStage.hidden = step === 'dashboard';

@@ -3459,6 +3459,19 @@ footer {
   }
 }
 
+.account-submit-btn.account-submit-signup,
+[data-account-username-submit] {
+  background: linear-gradient(180deg, #1a3263 0%, #11254c 100%) !important;
+  color: #fff !important;
+}
+
+.account-submit-btn.account-submit-signup:hover,
+.account-submit-btn.account-submit-signup:focus-visible,
+[data-account-username-submit]:hover,
+[data-account-username-submit]:focus-visible {
+  background: linear-gradient(180deg, #11254c 0%, #0b1833 100%) !important;
+}
+
 .account-page {
   max-width: none !important;
   margin: 0 !important;
