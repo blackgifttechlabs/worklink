@@ -199,7 +199,9 @@
     const cards = SPECIALIST_CATEGORIES.map((category) => `
       <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
         <div class="category-circle-img">
-          <span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
+          ${category.image
+            ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
+            : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
         </div>
         <span>${escapeHtml(category.label)}</span>
       </a>
@@ -212,19 +214,15 @@
     return categories.map((category) => {
       const services = Array.isArray(category.subservices) ? category.subservices : [];
       return `
-        <article class="categories-directory-card">
-          <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="categories-directory-card-link">
-            <span class="categories-directory-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
-            <div class="categories-directory-copy">
-              <strong>${escapeHtml(category.label)}</strong>
-              <span>${services.length} service${services.length === 1 ? '' : 's'}</span>
-            </div>
-            <i class="fa-solid fa-arrow-right categories-directory-arrow" aria-hidden="true"></i>
-          </a>
-          <div class="categories-directory-tags">
-            ${services.slice(0, 8).map((service) => `<a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&service=${encodeURIComponent(service)}&results=1" class="categories-directory-tag">${escapeHtml(service)}</a>`).join('')}
+        <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle categories-directory-circle">
+          <div class="category-circle-img">
+            ${category.image
+              ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
+              : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
           </div>
-        </article>
+          <span>${escapeHtml(category.label)}</span>
+          <small>${services.length} service${services.length === 1 ? '' : 's'}</small>
+        </a>
       `;
     }).join('');
   }

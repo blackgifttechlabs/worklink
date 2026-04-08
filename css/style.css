@@ -3733,7 +3733,7 @@ footer {
 
 .homepage-categories .category-circles.is-auto-scroll,
 .specialists-categories-row.is-marquee {
-  animation: homepage-categories-marquee 34s linear infinite;
+  animation: homepage-categories-marquee 54s linear infinite;
 }
 
 .homepage-categories .category-circles.is-auto-scroll:hover,
@@ -3823,88 +3823,25 @@ footer {
 
 .categories-directory-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 18px;
-}
-
-.categories-directory-card {
-  padding: 20px;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 252, 0.98));
-  border: 1px solid rgba(22, 52, 105, 0.1);
-  box-shadow: 0 18px 38px rgba(15, 31, 66, 0.08);
-  text-align: center;
-}
-
-.categories-directory-card-link {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  align-items: center;
-  color: inherit;
-  text-decoration: none;
-}
-
-.categories-directory-icon {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #12306a 0%, #0d5bd1 100%);
-  color: #fff;
-  font-size: 38px;
-  box-shadow: 0 18px 28px rgba(7, 111, 229, 0.18);
-}
-
-.categories-directory-copy {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
   justify-items: center;
 }
 
-.categories-directory-copy strong {
-  color: #0f1f42;
-  font-size: 19px;
-  line-height: 1.2;
+.categories-directory-circle {
+  width: 100%;
+  max-width: 164px;
+  padding: 8px 4px 12px;
 }
 
-.categories-directory-copy span {
+.categories-directory-circle span {
+  max-width: 120px;
+}
+
+.categories-directory-circle small {
   color: #60708a;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-}
-
-.categories-directory-arrow {
-  display: none;
-}
-
-.categories-directory-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.categories-directory-tag {
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  background: rgba(7, 111, 229, 0.08);
-  color: #163469;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.categories-directory-tag:hover,
-.categories-directory-tag:focus-visible {
-  background: #163469;
-  color: #fff;
 }
 
 .categories-directory-empty {
@@ -3935,7 +3872,7 @@ footer {
 
 @media (max-width: 1024px) {
   .categories-directory-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   }
 }
 
@@ -3978,38 +3915,27 @@ footer {
   }
 
   .categories-directory-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
 
-  .categories-directory-card {
-    padding: 16px;
-    border-radius: 20px;
+  .categories-directory-circle {
+    max-width: 110px;
+    padding: 4px 2px 8px;
   }
 
-  .categories-directory-card-link {
-    gap: 12px;
+  .categories-directory-circle .category-circle-img {
+    width: 78px;
+    height: 78px;
   }
 
-  .categories-directory-icon {
-    width: 74px;
-    height: 74px;
-    font-size: 28px;
+  .categories-directory-circle span {
+    max-width: 82px;
+    font-size: 11px;
   }
 
-  .categories-directory-copy strong {
-    font-size: 17px;
-  }
-
-  .categories-directory-tags {
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .categories-directory-tag {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 12px;
+  .categories-directory-circle small {
+    font-size: 10px;
   }
 }
 
@@ -4429,7 +4355,8 @@ footer {
   display: grid;
   grid-template-columns: 20% minmax(0, 1fr);
   gap: 0;
-  align-items: stretch;
+  align-items: start;
+  min-height: calc(100vh - 86px);
 }
 
 .specialists-layout.is-sidebar-collapsed {
@@ -4452,16 +4379,21 @@ footer {
   position: sticky;
   top: 86px;
   left: 0;
-  min-height: calc(100vh - 86px);
+  height: calc(100vh - 86px);
+  max-height: calc(100vh - 86px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 18px 16px 24px;
   border-radius: 0;
   border-left: 0;
   border-top: 0;
   border-bottom: 0;
   box-shadow: none;
+  scrollbar-width: thin;
 }
 
 .specialists-main {
+  min-height: calc(100vh - 86px);
   padding: 22px 26px 0;
 }
 

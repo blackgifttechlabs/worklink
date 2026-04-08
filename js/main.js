@@ -178,7 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return categories.map((category) => `
       <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle home-category-circle">
         <div class="category-circle-img">
-          <span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
+          ${category.image
+            ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
+            : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
         </div>
         <span>${escapeHtml(category.label)}</span>
       </a>
