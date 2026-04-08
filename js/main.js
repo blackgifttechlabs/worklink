@@ -170,6 +170,29 @@ document.addEventListener('DOMContentLoaded', () => {
     ].filter(Boolean).join(' ');
   }
 
+  function getServiceCatalog() {
+    return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+  }
+
+  function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = []) {
+    return categories.map((category) => `
+      <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle home-category-circle">
+        <div class="category-circle-img">
+          <span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
+        </div>
+        <span>${escapeHtml(category.label)}</span>
+      </a>
+    `).join('');
+  }
+
+  function renderHomepageCategories() {
+    const categoryRow = document.querySelector('[data-home-categories]');
+    if (!categoryRow) return;
+    const categories = getServiceCatalog();
+    if (!categories.length) return;
+    categoryRow.innerHTML = buildHomepageCategoryMarkup(getSiteBasePath(), categories);
+  }
+
   async function getSearchMatches(rawQuery) {
     const query = String(rawQuery || '').trim().toLowerCase();
     const providers = await getSearchProviders();
@@ -324,18 +347,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initHomepageCategoryAutoScroll() {
-    const mobileQuery = window.matchMedia('(max-width: 768px)');
     const categoryRow = document.querySelector('.homepage-categories .category-circles');
     if (!categoryRow) return;
 
-    const originalItems = Array.from(categoryRow.children)
-      .filter((item) => item instanceof HTMLElement && !item.hasAttribute('data-cloned-marquee-item'));
-
     function syncMarquee() {
+      const originalItems = Array.from(categoryRow.children)
+        .filter((item) => item instanceof HTMLElement && !item.hasAttribute('data-cloned-marquee-item'));
       categoryRow.querySelectorAll('[data-cloned-marquee-item]').forEach((item) => item.remove());
       categoryRow.classList.remove('is-auto-scroll');
 
-      if (!mobileQuery.matches || !originalItems.length) return;
+      if (!originalItems.length) return;
 
       const clones = originalItems.map((item) => {
         const clone = item.cloneNode(true);
@@ -350,11 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     syncMarquee();
-    if (typeof mobileQuery.addEventListener === 'function') {
-      mobileQuery.addEventListener('change', syncMarquee);
-    } else if (typeof mobileQuery.addListener === 'function') {
-      mobileQuery.addListener(syncMarquee);
-    }
+    window.addEventListener('resize', syncMarquee);
   }
 
   document.querySelectorAll('.search-bar input').forEach(input => {
@@ -394,6 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  renderHomepageCategories();
   initHomepageCategoryAutoScroll();
 
   if (searchSuggestions) {
@@ -586,6 +604,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountEmailFormWrap = document.querySelector('.account-email-form-wrap');
   const accountEmailForm = document.getElementById('account-email-form');
   const accountEmailInput = document.getElementById('account-email');
+  const accountIdentifierModeInput = document.getElementById('account-identifier-mode');
+  const accountIdentifierSwitch = document.querySelector('[data-account-identifier-switch]');
+  const accountIdentifierLabel = document.querySelector('[data-account-identifier-label]');
   const accountNameInput = document.getElementById('account-name');
   const accountModeSwitch = document.querySelector('.account-mode-switch');
   const accountForgotPasswordBtn = document.querySelector('.account-forgot-password');
@@ -619,6 +640,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPageNameRow = document.querySelector('.account-page-name-row');
   const accountPageNameInput = document.getElementById('account-page-name');
   const accountPageEmailInput = document.getElementById('account-page-email');
+  const accountPageIdentifierModeInput = document.getElementById('account-page-identifier-mode');
+  const accountPageIdentifierSwitch = document.querySelector('[data-account-page-identifier-switch]');
+  const accountPageIdentifierLabel = document.querySelector('[data-account-page-identifier-label]');
   const accountPagePasswordInput = document.getElementById('account-page-password');
   const accountPageHeading = document.querySelector('.account-auth-page-heading');
   const accountPageSubtextLabel = document.querySelector('.account-auth-page-subtext-label');
@@ -823,6 +847,8 @@ document.addEventListener('DOMContentLoaded', () => {
       accountNameInput.required = isSignup;
       if (!isSignup) accountNameInput.value = '';
     }
+    if (accountIdentifierSwitch) accountIdentifierSwitch.hidden = isSignup;
+    syncIdentifierField(accountEmailInput, accountIdentifierLabel, accountIdentifierModeInput?.value || 'email', isSignup);
   }
 
   function syncAccountPageMode(mode) {
@@ -837,6 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
       accountPageNameInput.required = isSignup;
       if (!isSignup) accountPageNameInput.value = '';
     }
+    if (accountPageIdentifierSwitch) accountPageIdentifierSwitch.hidden = isSignup;
     if (accountPageSubmitBtn) {
       accountPageSubmitBtn.classList.toggle('account-submit-signup', isSignup);
       accountPageSubmitBtn.classList.toggle('account-submit-signin', !isSignup);
@@ -844,6 +871,39 @@ document.addEventListener('DOMContentLoaded', () => {
       if (label) label.textContent = isSignup ? 'Create Account' : 'Sign In';
     }
     if (accountPageModeSwitch) accountPageModeSwitch.textContent = isSignup ? 'Sign in' : 'Create account';
+    syncIdentifierField(accountPageEmailInput, accountPageIdentifierLabel, accountPageIdentifierModeInput?.value || 'email', isSignup);
+  }
+
+  function syncIdentifierField(input, label, mode = 'email', forceEmail = false) {
+    if (!(input instanceof HTMLInputElement)) return;
+    const normalizedMode = forceEmail ? 'email' : (mode === 'username' ? 'username' : 'email');
+    const isUsername = normalizedMode === 'username';
+    if (label instanceof HTMLElement) {
+      label.textContent = isUsername ? 'Username' : 'Email address';
+    }
+    input.type = isUsername ? 'text' : 'email';
+    input.inputMode = isUsername ? 'text' : 'email';
+    input.autocapitalize = 'none';
+    input.autocomplete = isUsername ? 'username' : 'email';
+    input.placeholder = isUsername ? 'john_smith' : 'you@example.com';
+  }
+
+  function bindIdentifierSwitch(container, hiddenInput, input, label, isSignupCheck) {
+    if (!(container instanceof HTMLElement) || !(hiddenInput instanceof HTMLInputElement)) return;
+    container.querySelectorAll('[data-account-identifier-option], [data-account-page-identifier-option]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (typeof isSignupCheck === 'function' && isSignupCheck()) return;
+        const nextMode = button.getAttribute('data-account-identifier-option')
+          || button.getAttribute('data-account-page-identifier-option')
+          || 'email';
+        hiddenInput.value = nextMode === 'username' ? 'username' : 'email';
+        container.querySelectorAll('button').forEach((item) => {
+          item.classList.toggle('is-active', item === button);
+        });
+        syncIdentifierField(input, label, hiddenInput.value, false);
+        input?.focus();
+      });
+    });
   }
 
   function readSessionFlag(key) {
@@ -1465,6 +1525,10 @@ document.addEventListener('DOMContentLoaded', () => {
     accountForgotPasswordBtn.addEventListener('click', async () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
+      if (accountIdentifierModeInput?.value === 'username' && accountModeInput?.value !== 'signup') {
+        window.alert('Password reset works with email. Switch to Email first.');
+        return;
+      }
       const email = accountEmailInput.value.trim();
       if (!email) {
         window.alert('Enter your email address first so we can send the reset link.');
@@ -1488,6 +1552,10 @@ document.addEventListener('DOMContentLoaded', () => {
     accountPageForgotPasswordBtn.addEventListener('click', async () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
+      if (accountPageIdentifierModeInput?.value === 'username' && accountPageModeInput?.value !== 'signup') {
+        window.alert('Password reset works with email. Switch to Email first.');
+        return;
+      }
       const email = accountPageEmailInput.value.trim();
       if (!email) {
         window.alert('Enter your email address first so we can send the reset link.');
@@ -1557,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       const formData = new FormData(accountEmailForm);
-      const email = String(formData.get('email') || '').trim();
+      const identifier = String(formData.get('identifier') || '').trim();
       const password = String(formData.get('password') || '');
       const typedName = String(formData.get('name') || '').trim();
       const isSignup = accountModeInput.value === 'signup';
@@ -1565,9 +1633,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         if (isSignup) {
-          await authHelper.signUpWithEmail(typedName, email, password);
+          await authHelper.signUpWithEmail(typedName, identifier, password);
         } else {
-          await authHelper.signInWithEmail(email, password);
+          const method = accountIdentifierModeInput?.value || 'email';
+          await (authHelper.signInWithIdentifier
+            ? authHelper.signInWithIdentifier(identifier, password, method)
+            : authHelper.signInWithEmail(identifier, password));
         }
         finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
       } catch (error) {
@@ -1584,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const authHelper = await getAuthHelperReady();
       if (!authHelper) return;
       const formData = new FormData(accountPageEmailForm);
-      const email = String(formData.get('email') || '').trim();
+      const identifier = String(formData.get('identifier') || '').trim();
       const password = String(formData.get('password') || '');
       const typedName = String(formData.get('name') || '').trim();
       const isSignup = accountPageModeInput.value === 'signup';
@@ -1592,9 +1663,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         if (isSignup) {
-          await authHelper.signUpWithEmail(typedName, email, password);
+          await authHelper.signUpWithEmail(typedName, identifier, password);
         } else {
-          await authHelper.signInWithEmail(email, password);
+          const method = accountPageIdentifierModeInput?.value || 'email';
+          await (authHelper.signInWithIdentifier
+            ? authHelper.signInWithIdentifier(identifier, password, method)
+            : authHelper.signInWithEmail(identifier, password));
         }
         finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
       } catch (error) {
@@ -1695,6 +1769,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!isEmbeddedAccountPage) {
     syncAccountPageMode('signup');
   }
+  bindIdentifierSwitch(
+    accountIdentifierSwitch,
+    accountIdentifierModeInput,
+    accountEmailInput,
+    accountIdentifierLabel,
+    () => accountModeInput?.value === 'signup'
+  );
+  bindIdentifierSwitch(
+    accountPageIdentifierSwitch,
+    accountPageIdentifierModeInput,
+    accountPageEmailInput,
+    accountPageIdentifierLabel,
+    () => accountPageModeInput?.value === 'signup'
+  );
   setMethodVisibility('all');
   applyAccountToPage();
   maybeHandleRedirectedGoogleAuth();

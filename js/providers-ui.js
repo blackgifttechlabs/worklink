@@ -1,62 +1,7 @@
 (function providerUiBootstrap() {
-  const SPECIALIST_CATEGORIES = [
-    {
-      key: 'home-services',
-      label: 'Home Services',
-      icon: 'fa-solid fa-house',
-      image: 'images/categories/home-services.avif',
-      subservices: ['Gardener', 'Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman']
-    },
-    {
-      key: 'beauty-wellness',
-      label: 'Beauty & Wellness',
-      icon: 'fa-solid fa-spa',
-      image: 'images/categories/beauty-and-wellness.avif',
-      subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist']
-    },
-    {
-      key: 'digital-business',
-      label: 'Digital & Business',
-      icon: 'fa-solid fa-laptop-code',
-      image: 'images/categories/business.avif',
-      subservices: ['Programmer', 'Designer', 'Photographer', 'Videographer', 'Social Media Manager']
-    },
-    {
-      key: 'plumbing',
-      label: 'Plumbing',
-      icon: 'fa-solid fa-faucet-drip',
-      image: 'images/categories/plumbing.avif',
-      subservices: ['Leak Repairs', 'Blocked Drains', 'Tank Cleaning']
-    },
-    {
-      key: 'security-services',
-      label: 'Security Services',
-      icon: 'fa-solid fa-shield-halved',
-      image: 'images/categories/security-services.avif',
-      subservices: ['Guarding', 'Alarm Setup', 'Gate Monitoring']
-    },
-    {
-      key: 'tutoring',
-      label: 'Tutoring',
-      icon: 'fa-solid fa-graduation-cap',
-      image: 'images/categories/tutoring.avif',
-      subservices: ['Maths Tutor', 'Science Tutor', 'Exam Prep']
-    },
-    {
-      key: 'childcare',
-      label: 'Childcare',
-      icon: 'fa-solid fa-child-reaching',
-      image: 'images/categories/childcare.avif',
-      subservices: ['Babysitting', 'Nanny Support', 'After-school Care']
-    },
-    {
-      key: 'photography',
-      label: 'Photography',
-      icon: 'fa-solid fa-camera',
-      image: 'images/categories/photography.avif',
-      subservices: ['Events', 'Brand Shoots', 'Product Photography']
-    }
-  ];
+  const SPECIALIST_CATEGORIES = Array.isArray(window.WorkLinkUpServiceCatalog) && window.WorkLinkUpServiceCatalog.length
+    ? window.WorkLinkUpServiceCatalog
+    : [];
 
   const ZIMBABWE_PROVINCES = [
     'Bulawayo',
@@ -188,6 +133,20 @@
     return SPECIALIST_CATEGORIES.find((category) => category.label === label) || SPECIALIST_CATEGORIES[0];
   }
 
+  function getAllSubservices() {
+    return SPECIALIST_CATEGORIES.flatMap((category) => Array.isArray(category.subservices) ? category.subservices : []);
+  }
+
+  function getSubservicesForCategory(categoryLabel = '') {
+    const category = getCategoryConfig(categoryLabel);
+    return Array.isArray(category?.subservices) ? category.subservices : [];
+  }
+
+  function buildSubserviceOptionsMarkup(categoryLabel = '', selectedValue = '', placeholder = 'Choose a service') {
+    const subservices = getSubservicesForCategory(categoryLabel);
+    return buildSelectOptions(subservices, selectedValue, placeholder);
+  }
+
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
     if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.jpg`;
@@ -240,13 +199,34 @@
     const cards = SPECIALIST_CATEGORIES.map((category) => `
       <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
         <div class="category-circle-img">
-          <img src="${base}${category.image}" alt="${escapeHtml(category.label)}" />
+          <span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
         </div>
         <span>${escapeHtml(category.label)}</span>
       </a>
     `).join('');
 
     return isLoop ? `${cards}${cards}` : cards;
+  }
+
+  function buildCategoryDirectoryMarkup(base, categories = []) {
+    return categories.map((category) => {
+      const services = Array.isArray(category.subservices) ? category.subservices : [];
+      return `
+        <article class="categories-directory-card">
+          <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="categories-directory-card-link">
+            <span class="categories-directory-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
+            <div class="categories-directory-copy">
+              <strong>${escapeHtml(category.label)}</strong>
+              <span>${services.length} service${services.length === 1 ? '' : 's'}</span>
+            </div>
+            <i class="fa-solid fa-arrow-right categories-directory-arrow" aria-hidden="true"></i>
+          </a>
+          <div class="categories-directory-tags">
+            ${services.slice(0, 8).map((service) => `<a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&service=${encodeURIComponent(service)}&results=1" class="categories-directory-tag">${escapeHtml(service)}</a>`).join('')}
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 
   function getCategoryBySubservice(serviceLabel = '') {
@@ -759,7 +739,9 @@
                   </div>
                   <div class="provider-onboarding-row">
                     <label for="provider-specialty">Specialty</label>
-                    <input id="provider-specialty" name="specialty" type="text" placeholder="Plumber, Nail Technician, Tutor..." required />
+                    <select id="provider-specialty" name="specialty" data-onboarding-specialty required>
+                      ${buildSubserviceOptionsMarkup(SPECIALIST_CATEGORIES[0]?.label || '', '', 'Choose a service')}
+                    </select>
                   </div>
                   <div class="provider-onboarding-row provider-onboarding-row-span">
                     <label for="provider-bio">Short bio</label>
@@ -888,7 +870,11 @@
       if (addressField) addressField.value = prefill.address || '';
       if (experienceField) experienceField.value = prefill.experience || '';
       if (categoryField) categoryField.value = prefill.primaryCategory || SPECIALIST_CATEGORIES[0].label;
-      if (specialtyField) specialtyField.value = prefill.specialty || '';
+      if (categoryField instanceof HTMLSelectElement && specialtyField instanceof HTMLSelectElement) {
+        specialtyField.innerHTML = buildSubserviceOptionsMarkup(categoryField.value, prefill.specialty || '', 'Choose a service');
+      } else if (specialtyField) {
+        specialtyField.value = prefill.specialty || '';
+      }
       if (bioField) bioField.value = prefill.bio || '';
       uploadState.profileImageData = String(prefill.profileImageData || '').trim();
       uploadState.bannerImageData = String(prefill.bannerImageData || '').trim();
@@ -920,6 +906,13 @@
     backBtn?.addEventListener('click', () => {
       activeStep = Math.max(activeStep - 1, 0);
       syncSteps();
+    });
+
+    form.querySelector('select[name="primaryCategory"]')?.addEventListener('change', (event) => {
+      const categoryField = event.currentTarget;
+      const specialtyField = form.querySelector('[data-onboarding-specialty]');
+      if (!(categoryField instanceof HTMLSelectElement) || !(specialtyField instanceof HTMLSelectElement)) return;
+      specialtyField.innerHTML = buildSubserviceOptionsMarkup(categoryField.value, '', 'Choose a service');
     });
 
     profileInput?.addEventListener('change', async () => {
@@ -1071,9 +1064,8 @@
 
     function renderCategoryRail() {
       if (!categoriesHost) return;
-      const mobileLoop = mobileQuery.matches;
-      categoriesHost.classList.toggle('is-marquee', mobileLoop);
-      categoriesHost.innerHTML = createCircleCardsMarkup(base, mobileLoop);
+      categoriesHost.classList.add('is-marquee');
+      categoriesHost.innerHTML = createCircleCardsMarkup(base, true);
       categoriesHost.querySelectorAll('[data-category-chip]').forEach((chip) => {
         chip.classList.toggle('is-active', chip.getAttribute('data-category-chip') === state.category);
       });
@@ -1341,6 +1333,62 @@
     }
   }
 
+  function renderCategoriesPage() {
+    const page = document.querySelector('[data-categories-page]');
+    if (!page) return;
+
+    const base = getBase();
+    const searchInput = page.querySelector('[data-categories-search]');
+    const resultsCount = page.querySelector('[data-categories-count]');
+    const grid = page.querySelector('[data-categories-grid]');
+    const empty = page.querySelector('[data-categories-empty]');
+    const params = new URLSearchParams(window.location.search);
+    let query = String(params.get('q') || '').trim();
+
+    function syncUrl() {
+      const nextUrl = new URL(window.location.href);
+      if (query) nextUrl.searchParams.set('q', query);
+      else nextUrl.searchParams.delete('q');
+      window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
+    }
+
+    function getFilteredCategories() {
+      if (!query) return SPECIALIST_CATEGORIES;
+      const normalized = query.toLowerCase();
+      return SPECIALIST_CATEGORIES.filter((category) => {
+        const haystack = [
+          category.label,
+          ...(Array.isArray(category.subservices) ? category.subservices : [])
+        ].join(' ').toLowerCase();
+        return haystack.includes(normalized);
+      });
+    }
+
+    function render() {
+      const filtered = getFilteredCategories();
+      if (searchInput instanceof HTMLInputElement) {
+        searchInput.value = query;
+      }
+      if (resultsCount instanceof HTMLElement) {
+        resultsCount.textContent = `${filtered.length} categor${filtered.length === 1 ? 'y' : 'ies'}`;
+      }
+      if (grid instanceof HTMLElement) {
+        grid.innerHTML = buildCategoryDirectoryMarkup(base, filtered);
+      }
+      if (empty instanceof HTMLElement) {
+        empty.hidden = filtered.length > 0;
+      }
+      syncUrl();
+    }
+
+    searchInput?.addEventListener('input', () => {
+      query = searchInput.value.trim();
+      render();
+    });
+
+    render();
+  }
+
   function buildProviderWorkSkeleton(count = 4) {
     return Array.from({ length: count }, () => '<article class="provider-gallery-skeleton" aria-hidden="true"></article>').join('');
   }
@@ -1450,7 +1498,11 @@
                     ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
                   </select>
                 </label>
-                <label class="provider-editor-span"><span>Specialty</span><input name="specialty" type="text" value="${escapeHtml(provider.specialty || '')}" required /></label>
+                <label class="provider-editor-span"><span>Specialty</span>
+                  <select name="specialty" data-provider-editor-specialty required>
+                    ${buildSubserviceOptionsMarkup(provider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', provider.specialty || '', 'Choose a service')}
+                  </select>
+                </label>
                 <label class="provider-editor-span"><span>Bio</span><textarea name="bio" required>${escapeHtml(provider.bio || '')}</textarea></label>
               </div>
             </section>
@@ -1475,7 +1527,13 @@
     `, (body) => {
       const form = body.querySelector('[data-provider-editor-form]');
       const cancelBtn = body.querySelector('[data-provider-dialog-cancel]');
+      const categorySelect = form?.querySelector('select[name="primaryCategory"]');
+      const specialtySelect = form?.querySelector('[data-provider-editor-specialty]');
       cancelBtn?.addEventListener('click', closeProviderDialog);
+      categorySelect?.addEventListener('change', () => {
+        if (!(categorySelect instanceof HTMLSelectElement) || !(specialtySelect instanceof HTMLSelectElement)) return;
+        specialtySelect.innerHTML = buildSubserviceOptionsMarkup(categorySelect.value, '', 'Choose a service');
+      });
       form?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
@@ -3382,7 +3440,8 @@
                   </label>
                   <label class="account-setup-field">
                     <span>Specialty</span>
-                    <input type="text" name="specialty" required value="${escapeHtml(existingProvider.specialty || providerInviteService || '')}" />
+                    <select name="specialty" data-account-specialty-select required>${buildSubserviceOptionsMarkup(existingProvider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', existingProvider.specialty || providerInviteService || '', 'Choose a service')}</select>
+                    <small>Choose the exact service you offer from this category.</small>
                   </label>
                   <label class="account-setup-field">
                     <span>Experience</span>
@@ -3511,9 +3570,16 @@
       const profileInput = setupBody.querySelector('[data-account-profile-file]');
       const bannerInput = setupBody.querySelector('[data-account-banner-file]');
       const documentInput = setupBody.querySelector('[data-account-document-files]');
+      const providerCategorySelect = form.querySelector('select[name="primaryCategory"]');
+      const providerSpecialtySelect = form.querySelector('[data-account-specialty-select]');
 
       updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
       updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
+
+      providerCategorySelect?.addEventListener('change', () => {
+        if (!(providerCategorySelect instanceof HTMLSelectElement) || !(providerSpecialtySelect instanceof HTMLSelectElement)) return;
+        providerSpecialtySelect.innerHTML = buildSubserviceOptionsMarkup(providerCategorySelect.value, '', 'Choose a service');
+      });
 
       function renderDocumentList() {
         if (!(documentList instanceof HTMLElement)) return;
@@ -3707,6 +3773,7 @@
   function initialize() {
     setupOnboarding();
     renderSpecialistsPage();
+    renderCategoriesPage();
     renderProviderProfilePage();
     renderPostsPage();
     renderMessagesPage();

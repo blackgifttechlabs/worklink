@@ -69,9 +69,13 @@
             <label for="account-page-name">Full name</label>
             <input id="account-page-name" name="name" type="text" placeholder="Tinashe Moyo" />
           </div>
+          <div class="account-auth-identifier-switch" data-account-page-identifier-switch hidden>
+            <button type="button" class="account-identifier-option is-active" data-account-page-identifier-option="email">Email</button>
+            <button type="button" class="account-identifier-option" data-account-page-identifier-option="username">Username</button>
+          </div>
           <div class="account-form-row">
-            <label for="account-page-email">Email address</label>
-            <input id="account-page-email" name="email" type="email" placeholder="you@example.com" required />
+            <label for="account-page-email" data-account-page-identifier-label>Email address</label>
+            <input id="account-page-email" name="identifier" type="email" placeholder="you@example.com" required />
           </div>
           <div class="account-form-row">
             <label for="account-page-password">Password</label>
@@ -86,6 +90,7 @@
         <p class="account-auth-page-note">Additional verification may be required at a later stage.</p>
         <p class="account-auth-note">By joining, you agree to WorkLinkUp Terms of Service and Privacy Policy.</p>
         <input type="hidden" id="account-page-mode" value="signup" />
+        <input type="hidden" id="account-page-identifier-mode" value="email" />
       </div>
     </div>
   </section>

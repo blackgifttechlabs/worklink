@@ -1,5 +1,42 @@
 // shared-header.js - injected into all pages
 
+if (!Array.isArray(window.WorkLinkUpServiceCatalog) || !window.WorkLinkUpServiceCatalog.length) {
+  window.WorkLinkUpServiceCatalog = [
+    { key: 'home-services', label: 'Home Services', icon: 'fa-solid fa-house-chimney', subservices: ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman', 'Tiler', 'Plasterer', 'Ceiling Installer', 'Roof Repairer', 'Gutter Cleaner', 'Waterproofing Specialist', 'Damp Proofer', 'Window & Door Installer', 'Fence Builder', 'Bricklayer / Concreter', 'Floor Polisher', 'Burglar Bar Installer', 'Curtain & Blind Fitter', 'Gate & Garage Door Installer', 'Solar Panel Installer', 'Borehole Driller', 'Water Tank Installer', 'Septic Tank Services', 'Chimney Cleaner', 'Pest Control', 'Pool Cleaner & Maintenance'] },
+    { key: 'gardening-landscaping', label: 'Gardening & Landscaping', icon: 'fa-solid fa-seedling', subservices: ['General Gardener', 'Lawn Mower', 'Tree Feller', 'Tree Trimmer & Pruner', 'Hedge Trimmer', 'Irrigation Installer', 'Landscape Designer', 'Flower Planting', 'Vegetable Garden Setup', 'Weed Control', 'Garden Clean-Up', 'Topsoil & Sand Delivery', 'Compost Supplier'] },
+    { key: 'cleaning-services', label: 'Cleaning Services', icon: 'fa-solid fa-broom', subservices: ['Domestic Worker / Housekeeper', 'Laundry & Ironing Service', 'Carpet Cleaner', 'Deep House Cleaning', 'Office Cleaning', 'Post-Construction Cleaning', 'Mattress Cleaning', 'Upholstery Cleaning', 'Window Cleaning', 'Move-in / Move-out Cleaning'] },
+    { key: 'plumbing-detailed', label: 'Plumbing', icon: 'fa-solid fa-faucet-drip', subservices: ['Leak Repairs', 'Blocked Drains', 'Pipe Installation', 'Geyser / Water Heater Installation', 'Toilet & Bathroom Fitting', 'Borehole Pump Repairs', 'Water Tank Plumbing', 'Irrigation Pipe Laying'] },
+    { key: 'electrical-detailed', label: 'Electrical', icon: 'fa-solid fa-bolt', subservices: ['Wiring & Rewiring', 'DB Board Installation', 'Prepaid Meter Installation', 'Solar System Installation', 'Inverter & Battery Setup', 'Security Lighting', 'Generator Installation & Servicing', 'CCTV & Intercom Wiring', 'Electric Fence Installation', 'Appliance Installation'] },
+    { key: 'beauty-wellness', label: 'Beauty & Wellness', icon: 'fa-solid fa-spa', subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist', 'Eyebrow Threading & Shaping', 'Eyelash Technician', 'Braiding & Hair Weaving', 'Loc / Dreadlock Maintenance', 'Waxing Specialist', 'Facial & Skincare Specialist', 'Body Scrub & Spa Treatments', 'Tattoo Artist', 'Piercing Specialist', 'Henna / Mehendi Artist'] },
+    { key: 'clothing-textiles', label: 'Clothing & Textiles', icon: 'fa-solid fa-shirt', subservices: ['Tailor / Dressmaker', 'Alterations & Repairs', 'School Uniform Maker', 'Traditional Attire Maker', 'Embroidery Specialist', 'T-shirt Printing', 'Curtain & Upholstery Sewing', 'Shoe Cobbler / Repairs', 'Shoe Polisher', 'Leather Goods Maker', 'Bag Maker & Repairs', 'Hat Maker', 'Knitting & Crochet Services'] },
+    { key: 'food-catering', label: 'Food & Catering', icon: 'fa-solid fa-utensils', subservices: ['Private Chef', 'Event Caterer', 'Wedding Caterer', 'Food Delivery (homemade)', 'Baking & Cake Making', 'Bread Baker', 'Traditional Food Cooking (sadza, muriwo, etc.)', 'Braai / Nyama Choma Service', 'Meal Prep Service', 'Lunch Box Supplier (for offices/schools)', 'Juice & Smoothie Maker', 'Ice Cream Vendor', 'Peanut Butter Maker', 'Jam & Pickle Maker', 'Dried Fish Seller', 'Maheu / Fermented Drink Maker', 'Confectionery & Sweet Maker'] },
+    { key: 'transport-logistics', label: 'Transport & Logistics', icon: 'fa-solid fa-truck-fast', subservices: ['Taxi / Ride-hailing Driver', 'Kombi / Minibus Driver', 'Goods Transport (truck / bakkie)', 'Motorbike Courier / Delivery', 'Bicycle Courier', 'Moving & Relocation Services', 'Car Hire / Chauffeur', 'Airport Transfer Driver', 'School Transport / Pickup', 'Tractor Hire (for farming)', 'Wheelbarrow Transport (market to home)', 'Boat / Canoe Transport (Zambezi, Lake Kariba areas)'] },
+    { key: 'automotive-vehicles', label: 'Automotive & Vehicles', icon: 'fa-solid fa-car-side', subservices: ['Mechanic (general)', 'Auto Electrician', 'Panel Beater & Spray Painter', 'Tyre Fitting & Repair', 'Wheel Alignment', 'Car Wash', 'Interior Car Cleaning / Detailing', 'Windscreen Repair & Replacement', 'Roadside Assist / Breakdown', 'Motorcycle Mechanic', 'Bicycle Repair', 'Truck & Heavy Vehicle Mechanic', 'Fuel Delivery'] },
+    { key: 'agriculture-farming', label: 'Agriculture & Farming', icon: 'fa-solid fa-tractor', subservices: ['Ploughing / Tractor Operator', 'Crop Planting', 'Weeding', 'Harvesting', 'Irrigation Setup', 'Poultry Farming Consultant', 'Livestock Handler', 'Animal Dipping', 'Veterinary Services', 'Pest & Disease Control (crops)', 'Greenhouse Setup', 'Seed Supplier', 'Fertiliser Distributor', 'Grain Milling', 'Beekeeping / Honey Production', 'Fish Farming Setup', 'Mushroom Farming', 'Market Garden Supplier', 'Tobacco Grading'] },
+    { key: 'construction-building', label: 'Construction & Building', icon: 'fa-solid fa-building', subservices: ['Architect / Drafter', 'Building Contractor', 'Quantity Surveyor', 'Bricklayer', 'Concreter', 'Steel & Structural Fabricator', 'Scaffolding Erector', 'Crane Operator', 'Demolition Specialist', 'Road & Paving Layer', 'Paving & Driveway Installer', 'Swimming Pool Builder', 'Stonemason', 'Tank Stand Builder'] },
+    { key: 'security-services', label: 'Security Services', icon: 'fa-solid fa-shield-halved', subservices: ['Security Guard', 'Alarm System Installer', 'CCTV Installation', 'Electric Fence Installer', 'Gate & Access Control Setup', 'Patrol & Response Service', 'VIP Protection / Bodyguard', 'Cash in Transit', 'Event Security', 'Dog Handler / K9 Security'] },
+    { key: 'digital-business', label: 'Digital & Business', icon: 'fa-solid fa-laptop-code', subservices: ['Programmer / Software Developer', 'Web Designer', 'Graphic Designer', 'App Developer', 'Social Media Manager', 'Content Creator', 'Copywriter', 'Data Analyst', 'IT Support / Technician', 'Network & Wi-Fi Setup', 'Laptop & Phone Repairer', 'Printer & Copier Technician', 'CCTV & Networking Technician', 'Digital Marketing Consultant', 'E-commerce Setup', 'SEO Specialist', 'UI/UX Designer', 'Video Editor', 'Podcast Editor'] },
+    { key: 'photography-videography', label: 'Photography & Videography', icon: 'fa-solid fa-camera-retro', subservices: ['Wedding Photographer', 'Events Photographer', 'Brand & Corporate Shoots', 'Product Photography', 'Portrait Photography', 'School Photography', 'Videographer', 'Drone Photographer', 'Video Production', 'Photo Editing & Retouching', 'Photo Printing Services'] },
+    { key: 'tutoring-education', label: 'Tutoring & Education', icon: 'fa-solid fa-graduation-cap', subservices: ['Maths Tutor', 'Science Tutor', 'English Tutor', 'Shona / Ndebele Language Tutor', 'History Tutor', 'Exam Prep (O & A Level)', 'Primary School Tutor', 'Special Needs Tutor', 'Music Teacher', 'Art Teacher', 'Computer & Coding Teacher', 'Driving Instructor', 'Sign Language Instructor', 'Adult Literacy Tutor', 'University Assignment Help'] },
+    { key: 'childcare-family', label: 'Childcare & Family', icon: 'fa-solid fa-children', subservices: ['Babysitter', 'Nanny', 'After-school Care', 'Child Minder (daytime)', 'Au Pair', 'Special Needs Carer', 'Elderly Carer', 'Home Nurse / Caregiver', 'Disability Assistant'] },
+    { key: 'health-medical', label: 'Health & Medical', icon: 'fa-solid fa-heart-pulse', subservices: ['Nurse (private visits)', 'Home-based Care Worker', 'Physiotherapist', 'Nutritionist / Dietitian', 'Midwife', "Traditional Healer / N'anga", 'Herbalist', 'First Aid Trainer', 'Mental Health Counsellor', 'HIV Counsellor', 'Optician', 'Hearing Aid Specialist', 'Wheelchair & Mobility Aid Repairer', 'Blood Pressure & Sugar Testing (community)'] },
+    { key: 'events-entertainment', label: 'Events & Entertainment', icon: 'fa-solid fa-music', subservices: ['Event Planner / Coordinator', 'Wedding Planner', 'DJ', 'MC / Emcee', 'Live Band', 'Traditional Dancer / Mbira Player', 'Acrobat / Entertainer', 'Sound & PA System Hire', 'Tent & Chair Hire', 'Decor & Floral Arrangement', 'Bouncy Castle Hire', 'Clown / Kids Entertainer', 'Photo Booth Hire', 'Confectionery & Cake Display', 'Event Cleaning Crew'] },
+    { key: 'printing-stationery', label: 'Printing & Stationery', icon: 'fa-solid fa-print', subservices: ['Flyer & Poster Printing', 'Business Card Printing', 'Banner & Signage Printing', 'Branded Merchandise', 'Rubber Stamp Maker', 'Booklet & Brochure Printing', 'Graduation & Certificate Printing', 'ID Badge Printing', 'Vehicle Branding / Wrapping', 'Embroidery & Uniform Branding'] },
+    { key: 'furniture-metalwork', label: 'Furniture & Metalwork', icon: 'fa-solid fa-couch', subservices: ['Furniture Maker (wood)', 'Furniture Repairer / Restorer', 'Upholsterer', 'Welder', 'Metal Fabricator', 'Blacksmith', 'Aluminium Fabricator (windows, doors)', 'Mattress Maker & Repairer', 'Second-hand Furniture Dealer'] },
+    { key: 'appliance-electronics-repair', label: 'Appliance & Electronics Repair', icon: 'fa-solid fa-tv', subservices: ['Fridge & Freezer Repair', 'Washing Machine Repair', 'TV & Electronics Repair', 'Phone Screen Replacement', 'Phone Unlocking & Flashing', 'Radio & Satellite Dish Repair', 'Generator Repair', 'Solar Equipment Repair', 'Air Conditioner Service & Repair', 'Water Pump Repair'] },
+    { key: 'financial-legal-services', label: 'Financial & Legal Services', icon: 'fa-solid fa-scale-balanced', subservices: ['Accountant', 'Bookkeeper', 'Tax Consultant', 'Payroll Services', 'Business Registration Consultant', 'Legal Advisor / Paralegal', 'Notary Services', 'Debt Collector', 'Insurance Agent', 'Money Transfer Agent', 'Loan Facilitator (microfinance)', 'Financial Planner'] },
+    { key: 'real-estate-property', label: 'Real Estate & Property', icon: 'fa-solid fa-house-user', subservices: ['Property Agent', 'Property Manager', 'Valuer', 'Auctioneer', 'House Sitter', 'Caretaker / Estate Manager', 'Land Surveyor'] },
+    { key: 'religious-community-services', label: 'Religious & Community Services', icon: 'fa-solid fa-hands-praying', subservices: ['Pastor / Preacher for Hire (events)', 'Church Musician / Organist', 'Funeral Director', 'Coffin Maker', 'Grave Digger', 'Mourning & Burial Support Services', 'Memorial Photographer'] },
+    { key: 'animal-pet-services', label: 'Animal & Pet Services', icon: 'fa-solid fa-paw', subservices: ['Veterinarian', 'Dog Groomer', 'Dog Walker', 'Pet Sitter', 'Animal Trainer', 'Livestock Buyer / Auctioneer', 'Snake / Pest Removal Specialist', 'Poultry Vaccinator', 'Farrier (horse hoof care)'] },
+    { key: 'water-environment', label: 'Water & Environment', icon: 'fa-solid fa-droplet', subservices: ['Water Delivery (bowser / tank)', 'Borehole Drilling', 'Water Pump Installation', 'Water Treatment & Purification', 'Refuse Removal', 'Recycling Collector', 'Environmental Consultant', 'Firewood Supplier', 'Charcoal Maker & Supplier'] },
+    { key: 'informal-street-level-services', label: 'Informal & Street-Level Services', icon: 'fa-solid fa-store', subservices: ['Shoe Polisher', 'Street Barber', 'Street Food Vendor', 'Fruit & Vegetable Seller', 'Ice Block Seller', 'Airtime & Data Vendor', 'Phone Charging Station', 'Key Cutter', 'Clothes Ironing (street)', 'Bicycle Taxi (Scotch cart / cycle)', 'Porter / Carrier (market)', 'Trolley Pusher (supermarket areas)', 'Odd Jobs / General Labour', 'Car Guard', 'Parking Attendant', 'Queue Manager', "Form Filler / Scribe (for those who can't write)", 'Photocopying & Scanning (corner shops)', 'Typist / Letter Writer'] }
+  ];
+}
+
+function getWorkLinkUpServiceCatalog() {
+  return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+}
+
 function getBasePath() {
   // Determine relative path based on current page location
   const path = window.location.pathname;
@@ -17,7 +54,7 @@ function getStoredAccount() {
 }
 
 function pageNeedsProvidersUi(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname);
+  return /\/pages\/(specialists|provider-profile|my-posts|messages|account|categories)\.html$/.test(pathname);
 }
 
 function hasPendingAuthBootstrapState() {
@@ -216,8 +253,8 @@ function renderHeader() {
         <button type="button" class="mobile-search-close" aria-label="Close search">×</button>
       </div>
       <div class="mobile-search-copy">
-        <h3 id="mobile-search-title">Search coming soon</h3>
-        <p>Use these sample results for now while full WorkLinkUp search is still being built.</p>
+        <h3 id="mobile-search-title">Search WorkLinkUp</h3>
+        <p>Find specialists by service, provider name, or city.</p>
       </div>
       <div class="mobile-search-results" id="mobile-search-results"></div>
     </div>
@@ -380,9 +417,13 @@ function renderAccountPanel() {
                 <label for="account-name">Full name</label>
                 <input id="account-name" name="name" type="text" placeholder="Tinashe Moyo" />
               </div>
+              <div class="account-auth-identifier-switch" data-account-identifier-switch>
+                <button type="button" class="account-identifier-option is-active" data-account-identifier-option="email">Email</button>
+                <button type="button" class="account-identifier-option" data-account-identifier-option="username">Username</button>
+              </div>
               <div class="account-form-row">
-                <label for="account-email">Email address</label>
-                <input id="account-email" name="email" type="email" placeholder="you@example.com" required />
+                <label for="account-email" data-account-identifier-label>Email address</label>
+                <input id="account-email" name="identifier" type="email" placeholder="you@example.com" required />
               </div>
               <div class="account-form-row">
                 <label for="account-password">Password</label>
@@ -408,6 +449,7 @@ function renderAccountPanel() {
       </div>
       <p class="account-auth-note">By continuing, you agree to our Terms and Privacy Policy.</p>
       <input type="hidden" id="account-mode" value="signin" />
+      <input type="hidden" id="account-identifier-mode" value="email" />
       <input type="hidden" id="account-stored-email" value="${accountEmail}" />
     </aside>
   </div>

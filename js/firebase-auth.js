@@ -710,6 +710,36 @@ async function signInWithEmail(email, password) {
   return user;
 }
 
+async function signInWithIdentifier(identifier, password, method = 'email') {
+  const normalizedMethod = String(method || 'email').trim().toLowerCase();
+  const rawIdentifier = String(identifier || '').trim();
+  if (!rawIdentifier) {
+    throw new Error(normalizedMethod === 'username' ? 'Enter your username first.' : 'Enter your email address first.');
+  }
+
+  if (normalizedMethod !== 'username') {
+    return signInWithEmail(rawIdentifier, password);
+  }
+
+  const normalizedUsername = sanitizeUsername(rawIdentifier);
+  if (!normalizedUsername) {
+    throw new Error('Enter a valid username first.');
+  }
+
+  const snapshot = await getDocs(query(collection(db, 'users'), where('usernameLower', '==', normalizedUsername)));
+  if (snapshot.empty) {
+    throw new Error('No account found for that username.');
+  }
+
+  const userDoc = snapshot.docs[0].data() || {};
+  const email = String(userDoc.email || '').trim();
+  if (!email) {
+    throw new Error('That username does not have an email account linked yet.');
+  }
+
+  return signInWithEmail(email, password);
+}
+
 async function signUpWithEmail(name, email, password) {
   const result = await createUserWithEmailAndPassword(auth, email, password);
   const normalizedName = normalizeName(name);
@@ -1863,6 +1893,7 @@ async function getAdminDashboardData() {
 window.softGigglesAuth = {
   signInWithGoogle,
   signInWithEmail,
+  signInWithIdentifier,
   signUpWithEmail,
   sendPhoneCode,
   verifyPhoneCode,
