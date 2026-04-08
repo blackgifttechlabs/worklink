@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
           // Ignore storage issues and fall back to home redirect.
         }
-        window.location.href = `${base}index.html`;
+        window.location.replace(`${base}index.html`);
         return;
       }
     } catch (error) {
@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (storageError) {
         // Ignore storage issues and fall back to home redirect.
       }
-      window.location.href = `${base}index.html`;
+      window.location.replace(`${base}index.html`);
       return;
     }
 
@@ -804,6 +804,97 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function openWorkLinkUpSetupModal(pendingSearch = '', options = {}) {
+    const normalizedSearch = String(pendingSearch || '').trim()
+      ? (String(pendingSearch).startsWith('?') ? String(pendingSearch) : `?${String(pendingSearch)}`)
+      : '?setup=1';
+    const delayMs = Number(options.delayMs ?? 0);
+    const clearPendingOnClose = Boolean(options.clearPendingOnClose);
+    const consumeOnceFlag = Boolean(options.consumeOnceFlag);
+    const base = getSiteBasePath();
+    const frameSrc = `${base}pages/account.html${normalizedSearch}${normalizedSearch.includes('embed=1') ? '' : `${normalizedSearch ? '&' : '?'}embed=1`}`;
+
+    document.getElementById('pending-setup-overlay')?.remove();
+
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="pending-setup-overlay" id="pending-setup-overlay" hidden>
+        <div class="pending-setup-backdrop"></div>
+        <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-labelledby="pending-setup-title">
+          <div class="pending-setup-head">
+            <div>
+              <span class="pending-setup-kicker">Complete your account</span>
+              <h2 id="pending-setup-title">Complete your sign up process</h2>
+            </div>
+            <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
+          </div>
+          <iframe class="pending-setup-frame" src="${frameSrc}" title="WorkLinkUp account setup"></iframe>
+        </div>
+      </div>
+    `);
+
+    const overlay = document.getElementById('pending-setup-overlay');
+    const closeBtn = overlay?.querySelector('.pending-setup-close');
+    let openTimer = 0;
+
+    function closeModal(shouldClearPending = false) {
+      if (!(overlay instanceof HTMLElement)) return;
+      overlay.classList.remove('is-visible');
+      document.body.classList.remove('pending-setup-open');
+      window.setTimeout(() => {
+        overlay.hidden = true;
+        overlay.remove();
+      }, 180);
+      if (consumeOnceFlag) clearSessionFlag('worklinkup_show_setup_modal_once');
+      if (shouldClearPending || clearPendingOnClose) {
+        try {
+          localStorage.removeItem('worklinkup_pending_setup');
+        } catch (error) {
+          // Ignore storage issues.
+        }
+      }
+      if (messageHandler) {
+        window.removeEventListener('message', messageHandler);
+      }
+    }
+
+    if (overlay instanceof HTMLElement) {
+      openTimer = window.setTimeout(() => {
+        overlay.hidden = false;
+        requestAnimationFrame(() => {
+          overlay.classList.add('is-visible');
+          document.body.classList.add('pending-setup-open');
+        });
+        if (consumeOnceFlag) clearSessionFlag('worklinkup_show_setup_modal_once');
+      }, Math.max(0, delayMs));
+    }
+
+    closeBtn?.addEventListener('click', () => closeModal(false));
+    overlay?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.classList.contains('pending-setup-backdrop')) {
+        closeModal(false);
+      }
+    });
+
+    const messageHandler = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'worklinkup-setup-complete') {
+        closeModal(true);
+        if (openTimer) window.clearTimeout(openTimer);
+        if (event.data?.redirectUrl) {
+          window.location.href = event.data.redirectUrl;
+          return;
+        }
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+  }
+
+  window.openWorkLinkUpSetupModal = openWorkLinkUpSetupModal;
+
   function initPendingSetupModal() {
     if (!document.body.classList.contains('home-page-body')) return;
     if (!readSessionFlag('worklinkup_show_setup_modal_once')) return;
@@ -817,76 +908,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const account = readAccount();
     if (!account?.loggedIn || !pendingSearch) return;
-
-    const normalizedSearch = pendingSearch.startsWith('?') ? pendingSearch : `?${pendingSearch}`;
-    document.body.insertAdjacentHTML('beforeend', `
-      <div class="pending-setup-overlay" id="pending-setup-overlay" hidden>
-        <div class="pending-setup-backdrop"></div>
-        <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-labelledby="pending-setup-title">
-          <div class="pending-setup-head">
-            <div>
-              <span class="pending-setup-kicker">Complete your account</span>
-              <h2 id="pending-setup-title">Complete your sign up process</h2>
-            </div>
-            <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
-          </div>
-          <iframe class="pending-setup-frame" src="pages/account.html${normalizedSearch}${normalizedSearch.includes('embed=1') ? '' : `${normalizedSearch ? '&' : '?'}embed=1`}" title="WorkLinkUp account setup"></iframe>
-        </div>
-      </div>
-    `);
-
-    const overlay = document.getElementById('pending-setup-overlay');
-    const closeBtn = overlay?.querySelector('.pending-setup-close');
-
-    function closeModal(clearPending = false) {
-      if (!(overlay instanceof HTMLElement)) return;
-      overlay.classList.remove('is-visible');
-      document.body.classList.remove('pending-setup-open');
-      window.setTimeout(() => {
-        overlay.hidden = true;
-      }, 180);
-      clearSessionFlag('worklinkup_show_setup_modal_once');
-      if (clearPending) {
-        try {
-          localStorage.removeItem('worklinkup_pending_setup');
-        } catch (error) {
-          // Ignore storage issues.
-        }
-      }
-    }
-
-    let openTimer = 0;
-    if (overlay instanceof HTMLElement) {
-      openTimer = window.setTimeout(() => {
-        overlay.hidden = false;
-        requestAnimationFrame(() => {
-          overlay.classList.add('is-visible');
-          document.body.classList.add('pending-setup-open');
-        });
-        clearSessionFlag('worklinkup_show_setup_modal_once');
-      }, 2000);
-    }
-
-    closeBtn?.addEventListener('click', () => closeModal(false));
-    overlay?.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (target.classList.contains('pending-setup-backdrop')) {
-        closeModal(false);
-      }
-    });
-
-    window.addEventListener('message', (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'worklinkup-setup-complete') {
-        closeModal(true);
-        if (openTimer) window.clearTimeout(openTimer);
-        if (event.data?.redirectUrl) {
-          window.location.href = event.data.redirectUrl;
-          return;
-        }
-        window.location.reload();
-      }
+    openWorkLinkUpSetupModal(pendingSearch, {
+      delayMs: 2000,
+      consumeOnceFlag: true
     });
   }
 

@@ -2807,6 +2807,7 @@
         guestStage.hidden = false;
         setupStage.hidden = true;
         dashboard.hidden = true;
+        return;
       }
       window.addEventListener('softgiggles-auth-changed', () => {
         window.location.reload();
@@ -2866,16 +2867,31 @@
 
     async function renderCurrentStep() {
       const step = getSetupStep();
+      const isGetFoundPage = /\/pages\/account\.html$/.test(window.location.pathname);
+      const nextParams = new URLSearchParams();
+      nextParams.set('setup', step === 'provider' ? 'provider' : '1');
+      if (providerInviteService) nextParams.set('service', providerInviteService);
 
       if (!isEmbedded && step !== 'dashboard') {
-        const nextParams = new URLSearchParams();
-        nextParams.set('setup', step === 'provider' ? 'provider' : '1');
-        if (providerInviteService) nextParams.set('service', providerInviteService);
         try {
           localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
         } catch (error) {
           // Ignore storage issues and continue redirect.
         }
+
+        if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
+          guestStage.hidden = true;
+          setupStage.hidden = true;
+          dashboard.hidden = true;
+          if (!document.body.dataset.accountSetupModalOpen) {
+            document.body.dataset.accountSetupModalOpen = '1';
+            window.openWorkLinkUpSetupModal(`?${nextParams.toString()}`, {
+              delayMs: 160
+            });
+          }
+          return;
+        }
+
         window.location.href = `${getBase()}index.html`;
         return;
       }
@@ -2885,6 +2901,14 @@
       dashboard.hidden = step !== 'dashboard';
 
       if (step === 'dashboard') {
+        if (!isEmbedded && isGetFoundPage) {
+          const redirectUrl = String(userDoc?.userRole || '').trim() === 'provider'
+            ? `${getBase()}pages/my-posts.html`
+            : `${getBase()}pages/specialists.html`;
+          window.location.replace(redirectUrl);
+          return;
+        }
+
         if (isEmbedded) {
           const redirectTarget = (() => {
             if (String(userDoc?.userRole || '').trim() === 'provider') {
