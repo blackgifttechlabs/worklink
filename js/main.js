@@ -798,6 +798,11 @@ document.addEventListener('DOMContentLoaded', () => {
       await authHelper.waitForAuthSession('', 12000).catch(() => null);
     }
     clearSessionFlag('worklinkup_google_redirect_success');
+    if (window.location.pathname.endsWith('/account.html')) {
+      closeAccountPanel();
+      routeAfterAuthSuccess();
+      return;
+    }
     showAccountSuccess('Signed in successfully', () => {
       closeAccountPanel();
       routeAfterAuthSuccess();

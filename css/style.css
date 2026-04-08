@@ -1071,6 +1071,141 @@
     justify-content: center;
     margin-top: 18px;
   }
+
+  .pending-setup-panel {
+    width: calc(100vw - 10px);
+    height: calc(100dvh - 10px);
+    margin: 5px auto 0;
+    border-radius: 22px;
+  }
+
+  .pending-setup-head {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .pending-setup-kicker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .pending-setup-head h2 {
+    font-size: 21px;
+    line-height: 1.12;
+  }
+
+  .pending-setup-close {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .pending-setup-frame {
+    height: calc(100% - 72px);
+  }
+
+  .account-embed-mode .account-setup-stage {
+    padding: 0;
+  }
+
+  .account-embed-mode .account-setup-shell {
+    width: 100%;
+  }
+
+  .account-embed-mode .account-setup-split {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .account-embed-mode .account-setup-split-visual {
+    display: none;
+  }
+
+  .account-embed-mode .account-setup-split-panel {
+    padding: 14px 14px 24px;
+  }
+
+  .account-embed-mode .account-setup-content-block {
+    max-width: none;
+    margin-top: 18px;
+  }
+
+  .account-embed-mode .account-setup-content-block h2,
+  .account-embed-mode .account-setup-role-copy h2,
+  .account-embed-mode .account-provider-setup-head h2,
+  .account-embed-mode .account-setup-embed-success h2,
+  .account-embed-mode .account-setup-loading h2 {
+    font-size: 26px;
+    line-height: 1.12;
+  }
+
+  .account-embed-mode .account-setup-content-block p,
+  .account-embed-mode .account-setup-role-copy p,
+  .account-embed-mode .account-provider-setup-head p,
+  .account-embed-mode .account-setup-embed-success p,
+  .account-embed-mode .account-setup-loading p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .account-embed-mode .account-setup-compact-form {
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  .account-embed-mode .account-setup-role-stage {
+    padding: 18px 14px 22px;
+  }
+
+  .account-embed-mode .account-setup-role-copy {
+    margin-bottom: 22px;
+  }
+
+  .account-embed-mode .account-setup-role-card {
+    min-height: 180px;
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .account-embed-mode .account-setup-role-card strong {
+    font-size: 20px;
+  }
+
+  .account-embed-mode .account-provider-setup-stage {
+    gap: 18px;
+  }
+
+  .account-embed-mode .account-provider-section {
+    padding: 18px 16px;
+    border-radius: 22px;
+  }
+
+  .account-embed-mode .account-provider-section-head strong {
+    font-size: 19px;
+  }
+
+  .account-embed-mode .account-provider-form textarea,
+  .account-embed-mode .account-provider-form input,
+  .account-embed-mode .account-provider-form select,
+  .account-embed-mode .account-setup-field input,
+  .account-embed-mode .account-setup-field select,
+  .account-embed-mode .account-setup-field textarea {
+    min-height: 50px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  .account-embed-mode .account-provider-form textarea,
+  .account-embed-mode .account-setup-field textarea {
+    min-height: 120px;
+  }
 }
 
 /* ========== WORKLINKUP THEME OVERRIDES ========== */

@@ -126,6 +126,14 @@
     }
   }
 
+  function readSessionFlag(key) {
+    try {
+      return sessionStorage.getItem(key) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
   function getStoredAccount() {
     try {
       const raw = localStorage.getItem('softgiggles_account');
@@ -2787,6 +2795,10 @@
     const account = getStoredAccount();
     const params = new URLSearchParams(window.location.search);
     const isEmbedded = params.get('embed') === '1';
+    const isGoogleRedirectReturn = Boolean(
+      readSessionFlag('worklinkup_google_redirect_pending')
+      || readSessionFlag('worklinkup_google_redirect_success')
+    );
     if (isEmbedded) {
       document.body.classList.add('account-embed-mode');
       if (guestStage) guestStage.hidden = true;
@@ -2801,6 +2813,22 @@
           </section>
         `;
       }
+    }
+    if (!isEmbedded && isGoogleRedirectReturn) {
+      guestStage.hidden = true;
+      setupStage.hidden = false;
+      dashboard.hidden = true;
+      setupBody.innerHTML = `
+        <section class="account-setup-loading">
+          <div class="account-setup-loading-spinner"></div>
+          <h2>Signing you in</h2>
+          <p>Finishing your Google sign-in and preparing your next step.</p>
+        </section>
+      `;
+      window.addEventListener('softgiggles-auth-changed', () => {
+        window.location.reload();
+      }, { once: true });
+      return;
     }
     if (!account?.loggedIn) {
       if (!isEmbedded) {
