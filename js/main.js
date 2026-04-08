@@ -176,7 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = []) {
     return categories.map((category) => `
-      <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle home-category-circle">
+      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
+        ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
+        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle home-category-circle">
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`

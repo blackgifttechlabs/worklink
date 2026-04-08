@@ -197,7 +197,9 @@
 
   function createCircleCardsMarkup(base, isLoop = false) {
     const cards = SPECIALIST_CATEGORIES.map((category) => `
-      <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
+      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
+        ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
+        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -214,7 +216,9 @@
     return categories.map((category) => {
       const services = Array.isArray(category.subservices) ? category.subservices : [];
       return `
-        <a href="${base}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="category-circle categories-directory-circle">
+        <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
+          ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
+          : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle categories-directory-circle">
           <div class="category-circle-img">
             ${category.image
               ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -609,7 +613,9 @@
 
   function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
     const cards = items.map((category) => `
-      <a href="${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="specialists-related-card">
+      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
+        ? buildWorkLinkUpSpecialistsHref(category.label, { base: getBase(), category: category.label, query: category.label })
+        : `${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="specialists-related-card">
         <strong>${escapeHtml(category.shortLabel || category.label)}</strong>
         <span>${escapeHtml((category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`)}</span>
       </a>
@@ -1367,6 +1373,29 @@
     const params = new URLSearchParams(window.location.search);
     let query = String(params.get('q') || '').trim();
 
+    if (searchInput instanceof HTMLInputElement) {
+      searchInput.autocomplete = 'off';
+      searchInput.spellcheck = false;
+      searchInput.setAttribute('autocapitalize', 'off');
+      searchInput.setAttribute('aria-autocomplete', 'none');
+    }
+
+    cards.forEach((card) => {
+      const label = String(card.getAttribute('data-category-label') || '').trim();
+      const category = SPECIALIST_CATEGORIES.find((item) => item.label === label);
+      const searchableText = [
+        label,
+        category?.shortLabel || '',
+        ...(Array.isArray(category?.subservices) ? category.subservices : [])
+      ].join(' ').toLowerCase();
+      card.setAttribute('data-category-search', searchableText);
+      if (card instanceof HTMLAnchorElement) {
+        card.href = typeof buildWorkLinkUpSpecialistsHref === 'function'
+          ? buildWorkLinkUpSpecialistsHref(label, { category: label, query: label })
+          : `${getBase()}pages/specialists.html?category=${encodeURIComponent(label)}&query=${encodeURIComponent(label)}&results=1`;
+      }
+    });
+
     function syncUrl() {
       const nextUrl = new URL(window.location.href);
       if (query) nextUrl.searchParams.set('q', query);
@@ -1374,30 +1403,15 @@
       window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
     }
 
-    function getFilteredLabels() {
-      if (!query) {
-        return new Set(SPECIALIST_CATEGORIES.map((category) => category.label));
-      }
-      const normalized = query.toLowerCase();
-      return new Set(SPECIALIST_CATEGORIES.filter((category) => {
-        const haystack = [
-          category.label,
-          category.shortLabel || '',
-          ...(Array.isArray(category.subservices) ? category.subservices : [])
-        ].join(' ').toLowerCase();
-        return haystack.includes(normalized);
-      }).map((category) => category.label));
-    }
-
     function render() {
-      const filteredLabels = getFilteredLabels();
+      const normalized = query.toLowerCase();
       let visibleCount = 0;
       if (searchInput instanceof HTMLInputElement) {
         searchInput.value = query;
       }
       cards.forEach((card) => {
-        const label = String(card.getAttribute('data-category-label') || '').trim();
-        const matches = filteredLabels.has(label);
+        const haystack = String(card.getAttribute('data-category-search') || '').trim();
+        const matches = !normalized || haystack.includes(normalized);
         card.hidden = !matches;
         if (matches) visibleCount += 1;
       });
@@ -2404,9 +2418,23 @@
         userDoc = await authHelper.getUserDocument(account.uid).catch(() => userDoc) || userDoc;
         providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => providerProfile);
         const nextProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || existingProvider.provinceSlug || '';
-        const nextUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
-        nextUrl.searchParams.set('uid', account.uid);
-        nextUrl.searchParams.set('province', nextProvince);
+        const pendingJobBid = (() => {
+          try {
+            const raw = sessionStorage.getItem('worklinkup_pending_job_bid');
+            return raw ? JSON.parse(raw) : null;
+          } catch (storageError) {
+            return null;
+          }
+        })();
+        const nextUrl = pendingJobBid?.jobId
+          ? new URL(`${getBase()}pages/job-posts.html`, window.location.href)
+          : new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+        if (pendingJobBid?.jobId) {
+          nextUrl.searchParams.set('resumeJob', pendingJobBid.jobId);
+        } else {
+          nextUrl.searchParams.set('uid', account.uid);
+          nextUrl.searchParams.set('province', nextProvince);
+        }
         window.location.href = `${nextUrl.pathname}${nextUrl.search}`;
       } catch (error) {
         window.alert(error.message || 'Could not save your provider profile.');
@@ -2770,6 +2798,7 @@
       activePeerName: 'Messages',
       activePeerProvince: params.get('province') || '',
       activePeerProfile: null,
+      pendingDraft: params.get('draft') || '',
       filter: 'all',
       query: '',
       conversations: [],
@@ -2881,6 +2910,9 @@
 
     function refreshComposerState() {
       const submitBtn = composeForm?.querySelector('.messages-send-btn');
+      if (composeInput instanceof HTMLInputElement && state.pendingDraft && state.activePeerUid && !composeInput.value.trim()) {
+        composeInput.value = state.pendingDraft;
+      }
       const canSend = Boolean(state.activePeerUid) && Boolean(
         String(composeInput?.value || '').trim() || state.pendingImageData
       );
@@ -3379,6 +3411,10 @@
         });
         composeForm.reset();
         clearPendingImage();
+        state.pendingDraft = '';
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.delete('draft');
+        window.history.replaceState({}, '', nextUrl.toString());
         refreshComposerState();
         scrollThreadToBottom(true);
       } catch (error) {

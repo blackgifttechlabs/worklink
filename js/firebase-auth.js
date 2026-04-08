@@ -65,6 +65,8 @@ const ADMIN_BOOTSTRAP_ID = 'primary-admin';
 const ADMIN_BOOTSTRAP_PIN = '1677';
 const MESSAGE_THREADS_PATH = 'messages';
 const MESSAGE_INDEX_PATH = 'conversationIndex';
+const CLIENTS_COLLECTION = 'clients';
+const JOBS_COLLECTION = 'jobs';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
 const GOOGLE_REDIRECT_SUCCESS_KEY = 'worklinkup_google_redirect_success';
 const GOOGLE_AUTH_FLOW_KEY = 'worklinkup_google_auth_flow';
@@ -152,6 +154,39 @@ function sanitizeUsername(value) {
     .replace(/^_+|_+$/g, '');
 }
 
+function normalizePhoneNumber(value) {
+  return String(value || '')
+    .trim()
+    .replace(/[^\d+]/g, '')
+    .replace(/(?!^)\+/g, '');
+}
+
+function normalizePhoneDigits(value) {
+  return normalizePhoneNumber(value).replace(/\D/g, '');
+}
+
+function isPhoneIdentifier(value) {
+  const digits = normalizePhoneDigits(value);
+  return digits.length >= 8 && digits.length <= 15;
+}
+
+function buildPhoneAuthEmail(value) {
+  const digits = normalizePhoneDigits(value);
+  if (!digits) throw new Error('Enter a valid phone number.');
+  return `phone_${digits}@worklinkup.local`;
+}
+
+async function generateAvailableUsername(seedValue, excludeUid = '') {
+  const baseSeed = sanitizeUsername(seedValue) || 'worklinkup_user';
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate = attempt === 0 ? baseSeed : `${baseSeed}_${attempt + 1}`;
+    const snapshot = await getDocs(query(collection(db, 'users'), where('usernameLower', '==', candidate)));
+    const taken = snapshot.docs.some((docSnapshot) => docSnapshot.id !== excludeUid);
+    if (!taken) return candidate;
+  }
+  return `${baseSeed}_${Date.now().toString().slice(-4)}`;
+}
+
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return [];
   return values
@@ -175,13 +210,15 @@ function normalizeObjectArray(values, mapper) {
 function getAccountPayload(user = auth.currentUser) {
   const stored = getStoredAccount();
   const name = stored?.name || fallbackNameFromUser(user);
-  const email = stored?.email || user?.email || '';
+  const email = stored?.email || '';
   const phone = stored?.phone || user?.phoneNumber || '';
+  const authEmail = stored?.authEmail || user?.email || '';
   const providerId = stored?.provider || user?.providerData?.[0]?.providerId || 'firebase';
   return {
     uid: user?.uid || stored?.uid || '',
     name,
     email,
+    authEmail,
     phone,
     provider: providerId,
     providerProfileComplete: Boolean(stored?.providerProfileComplete),
@@ -552,12 +589,15 @@ async function syncUserDocument(account, extra = {}) {
   await setDoc(userRef, {
     uid: account.uid,
     name: account.name,
-    email: account.email || '',
-    phone: account.phone || '',
+    email: extra.email ?? account.email ?? existingUser?.email ?? '',
+    authEmail: extra.authEmail ?? account.authEmail ?? existingUser?.authEmail ?? '',
+    phone: extra.phone ?? account.phone ?? existingUser?.phone ?? '',
+    phoneNormalized: extra.phoneNormalized ?? normalizePhoneDigits(extra.phone ?? account.phone ?? existingUser?.phone ?? ''),
     provider: account.provider,
     username: extra.username ?? account.username ?? existingUser?.username ?? '',
     usernameLower: extra.usernameLower ?? sanitizeUsername(extra.username ?? account.username ?? existingUser?.username ?? ''),
     userRole: extra.userRole ?? account.userRole ?? existingUser?.userRole ?? '',
+    clientProfileComplete: extra.clientProfileComplete ?? existingUser?.clientProfileComplete ?? false,
     cartCount: extra.cartCount ?? existingUser?.cartCount ?? 0,
     wishlistCount: extra.wishlistCount ?? existingUser?.wishlistCount ?? 0,
     providerProfileComplete: extra.providerProfileComplete ?? account.providerProfileComplete ?? false,
@@ -714,11 +754,33 @@ async function signInWithIdentifier(identifier, password, method = 'email') {
   const normalizedMethod = String(method || 'email').trim().toLowerCase();
   const rawIdentifier = String(identifier || '').trim();
   if (!rawIdentifier) {
-    throw new Error(normalizedMethod === 'username' ? 'Enter your username first.' : 'Enter your email address first.');
+    throw new Error(
+      normalizedMethod === 'username'
+        ? 'Enter your username first.'
+        : normalizedMethod === 'phone'
+          ? 'Enter your phone number first.'
+          : 'Enter your email address first.'
+    );
   }
 
-  if (normalizedMethod !== 'username') {
+  if (normalizedMethod === 'email') {
     return signInWithEmail(rawIdentifier, password);
+  }
+
+  if (normalizedMethod === 'phone') {
+    const phoneNormalized = normalizePhoneDigits(rawIdentifier);
+    if (!phoneNormalized) {
+      throw new Error('Enter a valid phone number first.');
+    }
+
+    const snapshot = await getDocs(query(collection(db, 'users'), where('phoneNormalized', '==', phoneNormalized)));
+    if (snapshot.empty) {
+      throw new Error('No account found for that phone number.');
+    }
+
+    const userDoc = snapshot.docs[0].data() || {};
+    const authEmail = String(userDoc.authEmail || userDoc.email || buildPhoneAuthEmail(phoneNormalized)).trim();
+    return signInWithEmail(authEmail, password);
   }
 
   const normalizedUsername = sanitizeUsername(rawIdentifier);
@@ -738,6 +800,94 @@ async function signInWithIdentifier(identifier, password, method = 'email') {
   }
 
   return signInWithEmail(email, password);
+}
+
+async function signUpWithIdentifier(name, identifier, password, method = 'email', extra = {}) {
+  const normalizedMethod = String(method || 'email').trim().toLowerCase();
+  const rawIdentifier = String(identifier || '').trim();
+  const normalizedName = normalizeName(name);
+  if (!rawIdentifier) {
+    throw new Error(normalizedMethod === 'phone' ? 'Enter your phone number first.' : 'Enter your email address first.');
+  }
+
+  if (normalizedMethod !== 'phone') {
+    const user = await signUpWithEmail(normalizedName, rawIdentifier, password);
+    const account = getAccountPayload(user);
+    const username = extra.username
+      ? sanitizeUsername(extra.username)
+      : await generateAvailableUsername(normalizedName || account.name || rawIdentifier.split('@')[0], account.uid);
+    await syncUserDocument({
+      ...account,
+      name: normalizedName || account.name
+    }, {
+      lastSeenAtMs: Date.now(),
+      createdAtMs: Date.now(),
+      username,
+      usernameLower: username,
+      userRole: String(extra.userRole || '').trim(),
+      email: rawIdentifier,
+      authEmail: rawIdentifier,
+      phone: String(extra.phone || '').trim(),
+      phoneNormalized: normalizePhoneDigits(extra.phone || '')
+    }).catch(() => {});
+    persistAccountDetails({
+      name: normalizedName || account.name,
+      email: rawIdentifier,
+      authEmail: rawIdentifier,
+      phone: String(extra.phone || '').trim(),
+      username,
+      userRole: String(extra.userRole || '').trim()
+    });
+    return user;
+  }
+
+  const phone = normalizePhoneNumber(rawIdentifier);
+  const phoneDigits = normalizePhoneDigits(phone);
+  if (!phoneDigits) {
+    throw new Error('Enter a valid phone number first.');
+  }
+
+  const authEmail = buildPhoneAuthEmail(phoneDigits);
+  const result = await createUserWithEmailAndPassword(auth, authEmail, password);
+  if (normalizedName) {
+    await updateProfile(result.user, {
+      displayName: normalizedName
+    }).catch(() => {});
+  }
+
+  const user = auth.currentUser || result.user;
+  const account = getAccountPayload(user);
+  const username = extra.username
+    ? sanitizeUsername(extra.username)
+    : await generateAvailableUsername(normalizedName || phoneDigits, account.uid);
+
+  await syncUserDocument({
+    ...account,
+    name: normalizedName || account.name,
+    email: '',
+    authEmail,
+    phone
+  }, {
+    lastSeenAtMs: Date.now(),
+    createdAtMs: Date.now(),
+    username,
+    usernameLower: username,
+    userRole: String(extra.userRole || '').trim(),
+    email: '',
+    authEmail,
+    phone,
+    phoneNormalized: phoneDigits
+  }).catch(() => {});
+
+  persistAccountDetails({
+    name: normalizedName || account.name,
+    email: '',
+    authEmail,
+    phone,
+    username,
+    userRole: String(extra.userRole || '').trim()
+  });
+  return user;
 }
 
 async function signUpWithEmail(name, email, password) {
@@ -1110,6 +1260,312 @@ async function saveProviderProfile(profileInput = {}) {
 
 async function updateProviderProfile(profileInput = {}) {
   return saveProviderProfile(profileInput);
+}
+
+async function getClientProfileByUid(uid = auth.currentUser?.uid) {
+  if (!uid) return null;
+  const snapshot = await getDoc(doc(db, CLIENTS_COLLECTION, uid));
+  return snapshot.exists() ? { uid: snapshot.id, ...snapshot.data() } : null;
+}
+
+async function saveClientProfile(profileInput = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const account = getAccountPayload(auth.currentUser);
+  const userRef = doc(db, 'users', account.uid);
+  const clientRef = doc(db, CLIENTS_COLLECTION, account.uid);
+  const existingUserDoc = await getUserDocument(account.uid).catch(() => null);
+  const existingClientProfile = await getClientProfileByUid(account.uid).catch(() => null);
+  const effectiveUserRole = String(existingUserDoc?.userRole || account.userRole || 'client').trim() || 'client';
+  const displayName = normalizeName(profileInput.displayName || existingClientProfile?.displayName || existingUserDoc?.name || account.name);
+  const phone = normalizePhoneNumber(profileInput.phone || existingClientProfile?.phone || existingUserDoc?.phone || account.phone || '');
+  const address = String(profileInput.address || existingClientProfile?.address || existingUserDoc?.address || '').trim();
+  const city = String(profileInput.city || existingClientProfile?.city || existingUserDoc?.city || '').trim();
+  const username = sanitizeUsername(profileInput.username || existingUserDoc?.username || account.username || '')
+    || await generateAvailableUsername(displayName || account.uid, account.uid);
+  const profilePayload = {
+    uid: account.uid,
+    displayName,
+    username,
+    usernameLower: username,
+    phone,
+    phoneNormalized: normalizePhoneDigits(phone),
+    email: String(profileInput.email || existingUserDoc?.email || account.email || '').trim(),
+    authEmail: String(existingUserDoc?.authEmail || account.authEmail || auth.currentUser.email || '').trim(),
+    address,
+    city,
+    bio: String(profileInput.bio || existingClientProfile?.bio || '').trim(),
+    profileImageData: String(profileInput.profileImageData || existingClientProfile?.profileImageData || '').trim(),
+    bannerImageData: String(profileInput.bannerImageData || existingClientProfile?.bannerImageData || '').trim(),
+    createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
+    updatedAtMs: Date.now(),
+    createdAt: existingUserDoc?.createdAt || serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(clientRef, profilePayload, { merge: true });
+  await setDoc(userRef, {
+    uid: account.uid,
+    name: displayName,
+    email: profilePayload.email,
+    authEmail: profilePayload.authEmail,
+    phone,
+    phoneNormalized: profilePayload.phoneNormalized,
+    username,
+    usernameLower: username,
+    userRole: effectiveUserRole,
+    clientProfileComplete: true,
+    address,
+    city,
+    bio: profilePayload.bio,
+    profileImageData: profilePayload.profileImageData,
+    bannerImageData: profilePayload.bannerImageData,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  persistAccountDetails({
+    name: displayName,
+    email: profilePayload.email,
+    authEmail: profilePayload.authEmail,
+    phone,
+    username,
+    userRole: effectiveUserRole,
+    clientProfileComplete: true
+  });
+
+  return profilePayload;
+}
+
+function normalizeJobPayload(payload = {}, owner = {}) {
+  const category = String(payload.category || '').trim();
+  const subcategory = String(payload.subcategory || '').trim();
+  const description = String(payload.description || '').trim();
+  const address = String(payload.address || '').trim();
+  const budget = Number(payload.budget || 0);
+  if (!category) throw new Error('Choose a job category.');
+  if (!description) throw new Error('Add a short description of the job.');
+  if (!address) throw new Error('Enter the job address.');
+  if (!Number.isFinite(budget) || budget <= 0) throw new Error('Enter a valid budget.');
+
+  return {
+    category,
+    subcategory,
+    description,
+    budget,
+    address,
+    city: String(payload.city || owner.city || '').trim(),
+    ownerUid: String(owner.uid || '').trim(),
+    ownerName: String(owner.displayName || owner.name || '').trim(),
+    ownerPhone: String(owner.phone || '').trim(),
+    ownerUsername: String(owner.username || '').trim(),
+    status: String(payload.status || 'open').trim() || 'open'
+  };
+}
+
+async function createJobPost(payload = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const account = getAccountPayload(auth.currentUser);
+  const [userDoc, clientProfile] = await Promise.all([
+    getUserDocument(account.uid).catch(() => null),
+    getClientProfileByUid(account.uid).catch(() => null)
+  ]);
+
+  const owner = {
+    uid: account.uid,
+    name: clientProfile?.displayName || userDoc?.name || account.name,
+    displayName: clientProfile?.displayName || userDoc?.name || account.name,
+    phone: clientProfile?.phone || userDoc?.phone || account.phone,
+    city: clientProfile?.city || userDoc?.city || '',
+    username: clientProfile?.username || userDoc?.username || account.username || ''
+  };
+
+  const jobPayload = normalizeJobPayload(payload, owner);
+  const now = Date.now();
+  const created = await addDoc(collection(db, JOBS_COLLECTION), {
+    ...jobPayload,
+    createdAtMs: now,
+    updatedAtMs: now,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    acceptedApplicationUid: '',
+    acceptedApplicationBudget: 0
+  });
+
+  await recordAdminActivity('job_post_created', {
+    actorUid: owner.uid,
+    actorName: owner.name,
+    actorEmail: account.email || '',
+    subjectUid: owner.uid,
+    subjectName: owner.name,
+    title: 'Job posted',
+    description: `${owner.name} posted a job in ${jobPayload.category}.`,
+    sourceRef: `${JOBS_COLLECTION}/${created.id}`,
+    createdAtMs: now
+  });
+
+  return {
+    id: created.id,
+    ...jobPayload,
+    createdAtMs: now,
+    updatedAtMs: now
+  };
+}
+
+async function listJobPosts() {
+  const snapshot = await getDocs(collection(db, JOBS_COLLECTION));
+  const jobs = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+    const data = docSnapshot.data() || {};
+    const applicationsSnapshot = await getDocs(collection(db, JOBS_COLLECTION, docSnapshot.id, 'applications')).catch(() => null);
+    const applicationCount = applicationsSnapshot?.size || 0;
+    return {
+      id: docSnapshot.id,
+      ...data,
+      applicationCount
+    };
+  }));
+
+  return jobs.sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+async function listJobsForUser(uid = auth.currentUser?.uid) {
+  if (!uid) return [];
+  const snapshot = await getDocs(query(collection(db, JOBS_COLLECTION), where('ownerUid', '==', uid)));
+  return snapshot.docs
+    .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+async function getJobPost(jobId = '') {
+  if (!jobId) return null;
+  const snapshot = await getDoc(doc(db, JOBS_COLLECTION, jobId));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
+async function listJobApplications(jobId = '') {
+  if (!jobId) return [];
+  const snapshot = await getDocs(collection(db, JOBS_COLLECTION, jobId, 'applications'));
+  return snapshot.docs
+    .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+    .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
+}
+
+async function applyToJob(jobId = '', payload = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+  if (!jobId) {
+    throw new Error('That job could not be found.');
+  }
+
+  const account = getAccountPayload(auth.currentUser);
+  const [job, providerProfile, userDoc] = await Promise.all([
+    getJobPost(jobId),
+    getProviderProfileByUid(auth.currentUser.uid).catch(() => null),
+    getUserDocument(auth.currentUser.uid).catch(() => null)
+  ]);
+
+  if (!job) {
+    throw new Error('That job could not be found.');
+  }
+  if (!providerProfile) {
+    throw new Error('Complete your provider profile before bidding on jobs.');
+  }
+  if (job.ownerUid === auth.currentUser.uid) {
+    throw new Error('You cannot bid on your own job.');
+  }
+
+  const proposedBudget = Number(payload.proposedBudget || job.budget || 0);
+  if (!Number.isFinite(proposedBudget) || proposedBudget <= 0) {
+    throw new Error('Enter a valid bid amount.');
+  }
+
+  const now = Date.now();
+  const applicationPayload = {
+    bidderUid: auth.currentUser.uid,
+    bidderName: providerProfile.displayName || userDoc?.name || account.name,
+    bidderProvinceSlug: providerProfile.provinceSlug || '',
+    bidderCategory: providerProfile.primaryCategory || '',
+    bidderSpecialty: providerProfile.specialty || '',
+    bidderProfileImageData: providerProfile.profileImageData || '',
+    bidderMessage: String(payload.message || '').trim(),
+    proposedBudget,
+    status: 'pending',
+    createdAtMs: now,
+    updatedAtMs: now,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(doc(db, JOBS_COLLECTION, jobId, 'applications', auth.currentUser.uid), applicationPayload, { merge: true });
+
+  await recordAdminActivity('job_bid_created', {
+    actorUid: auth.currentUser.uid,
+    actorName: applicationPayload.bidderName,
+    actorEmail: userDoc?.email || '',
+    subjectUid: job.ownerUid,
+    subjectName: job.ownerName,
+    title: 'Job bid submitted',
+    description: `${applicationPayload.bidderName} bid on ${job.category}.`,
+    sourceRef: `${JOBS_COLLECTION}/${jobId}/applications/${auth.currentUser.uid}`,
+    createdAtMs: now
+  });
+
+  return {
+    id: auth.currentUser.uid,
+    ...applicationPayload
+  };
+}
+
+async function updateJobApplicationStatus(jobId = '', applicationId = '', status = '') {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+  const nextStatus = String(status || '').trim().toLowerCase();
+  if (!jobId || !applicationId || !['accepted', 'rejected', 'pending'].includes(nextStatus)) {
+    throw new Error('Invalid job application update.');
+  }
+
+  const job = await getJobPost(jobId);
+  if (!job) throw new Error('That job could not be found.');
+  if (job.ownerUid !== auth.currentUser.uid) {
+    throw new Error('Only the job owner can manage bids.');
+  }
+
+  const applicationRef = doc(db, JOBS_COLLECTION, jobId, 'applications', applicationId);
+  const applicationSnapshot = await getDoc(applicationRef);
+  if (!applicationSnapshot.exists()) {
+    throw new Error('That bid could not be found.');
+  }
+  const application = applicationSnapshot.data() || {};
+  const now = Date.now();
+
+  await updateDoc(applicationRef, {
+    status: nextStatus,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  });
+
+  const jobUpdates = {
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  };
+  if (nextStatus === 'accepted') {
+    jobUpdates.acceptedApplicationUid = applicationId;
+    jobUpdates.acceptedApplicationBudget = Number(application.proposedBudget || 0);
+  }
+  await setDoc(doc(db, JOBS_COLLECTION, jobId), jobUpdates, { merge: true });
+
+  return {
+    id: applicationId,
+    ...application,
+    status: nextStatus,
+    updatedAtMs: now
+  };
 }
 
 async function listProviders() {
@@ -1626,9 +2082,12 @@ onAuthStateChanged(auth, (user) => {
         if (!userDoc) return null;
         persistAccountDetails({
           name: userDoc.name || account.name,
+          email: userDoc.email || '',
+          authEmail: userDoc.authEmail || account.authEmail || user.email || '',
           phone: userDoc.phone || account.phone,
           username: userDoc.username || '',
           userRole: userDoc.userRole || '',
+          clientProfileComplete: Boolean(userDoc.clientProfileComplete),
           providerProfileComplete: Boolean(userDoc.providerProfileComplete),
           providerProvince: userDoc.providerProvince || '',
           providerProvinceSlug: userDoc.providerProvinceSlug || '',
@@ -1894,6 +2353,7 @@ window.softGigglesAuth = {
   signInWithGoogle,
   signInWithEmail,
   signInWithIdentifier,
+  signUpWithIdentifier,
   signUpWithEmail,
   sendPhoneCode,
   verifyPhoneCode,
@@ -1905,6 +2365,8 @@ window.softGigglesAuth = {
   getUserDocument,
   checkUsernameAvailability,
   saveAccountSetup,
+  getClientProfileByUid,
+  saveClientProfile,
   listUsers,
   getProviderProfileByUid,
   saveProviderProfile,
@@ -1914,6 +2376,13 @@ window.softGigglesAuth = {
   createProviderPost,
   updateProviderPost,
   deleteProviderPost,
+  createJobPost,
+  listJobPosts,
+  listJobsForUser,
+  getJobPost,
+  listJobApplications,
+  applyToJob,
+  updateJobApplicationStatus,
   resolveAdminByPin,
   listAdmins,
   createAdmin,
