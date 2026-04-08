@@ -203,7 +203,7 @@
             ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
             : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
         </div>
-        <span>${escapeHtml(category.label)}</span>
+        <span>${escapeHtml(category.shortLabel || category.label)}</span>
       </a>
     `).join('');
 
@@ -220,7 +220,7 @@
               ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
               : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
           </div>
-          <span>${escapeHtml(category.label)}</span>
+          <span>${escapeHtml(category.shortLabel || category.label)}</span>
           <small>${services.length} service${services.length === 1 ? '' : 's'}</small>
         </a>
       `;
@@ -329,7 +329,7 @@
           type="button"
           class="service-filter-toggle ${selectedCategory === category.label || category.subservices.includes(selectedSubservice) ? 'is-active' : ''}"
           data-filter-group="${escapeHtml(category.label)}"
-          aria-expanded="${index === 0 ? 'true' : 'false'}"
+          aria-expanded="false"
           title="${escapeHtml(category.label)}"
         >
           <span class="service-filter-toggle-main">
@@ -338,7 +338,7 @@
           </span>
           <i class="fa-solid fa-chevron-down service-filter-toggle-chevron" aria-hidden="true"></i>
         </button>
-        <div class="service-filter-links" ${index === 0 ? '' : 'hidden'}>
+        <div class="service-filter-links" hidden>
           <button type="button" class="${selectedCategory === category.label && !selectedSubservice ? 'is-active' : ''}" data-filter-category="${escapeHtml(category.label)}">All ${escapeHtml(category.label)}</button>
           ${category.subservices.map((service) => `
             <button type="button" class="${selectedSubservice === service ? 'is-active' : ''}" data-filter-subservice="${escapeHtml(service)}" data-parent-category="${escapeHtml(category.label)}">
@@ -1130,20 +1130,7 @@
 
     function renderResultsActions() {
       if (!resultsActionsHost) return;
-      const focused = isResultsMode();
-      resultsActionsHost.innerHTML = focused
-        ? buildFindMoreButtonMarkup('More')
-        : buildFindMoreButtonMarkup('Find More');
-      const button = resultsActionsHost.querySelector('[data-find-more-trigger]');
-      button?.addEventListener('click', () => {
-        if (focused && relatedShell instanceof HTMLElement && !relatedShell.hidden) {
-          relatedShell.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          return;
-        }
-        if (searchInput instanceof HTMLInputElement) {
-          searchInput.focus();
-        }
-      });
+      resultsActionsHost.innerHTML = '';
     }
 
     function applyUiMode(filteredCount = 0) {
@@ -1335,11 +1322,11 @@
     const page = document.querySelector('[data-categories-page]');
     if (!page) return;
 
-    const base = getBase();
     const searchInput = page.querySelector('[data-categories-search]');
     const resultsCount = page.querySelector('[data-categories-count]');
     const grid = page.querySelector('[data-categories-grid]');
     const empty = page.querySelector('[data-categories-empty]');
+    const cards = Array.from(page.querySelectorAll('[data-category-card]'));
     const params = new URLSearchParams(window.location.search);
     let query = String(params.get('q') || '').trim();
 
@@ -1350,31 +1337,38 @@
       window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
     }
 
-    function getFilteredCategories() {
-      if (!query) return SPECIALIST_CATEGORIES;
+    function getFilteredLabels() {
+      if (!query) {
+        return new Set(SPECIALIST_CATEGORIES.map((category) => category.label));
+      }
       const normalized = query.toLowerCase();
-      return SPECIALIST_CATEGORIES.filter((category) => {
+      return new Set(SPECIALIST_CATEGORIES.filter((category) => {
         const haystack = [
           category.label,
+          category.shortLabel || '',
           ...(Array.isArray(category.subservices) ? category.subservices : [])
         ].join(' ').toLowerCase();
         return haystack.includes(normalized);
-      });
+      }).map((category) => category.label));
     }
 
     function render() {
-      const filtered = getFilteredCategories();
+      const filteredLabels = getFilteredLabels();
+      let visibleCount = 0;
       if (searchInput instanceof HTMLInputElement) {
         searchInput.value = query;
       }
+      cards.forEach((card) => {
+        const label = String(card.getAttribute('data-category-label') || '').trim();
+        const matches = filteredLabels.has(label);
+        card.hidden = !matches;
+        if (matches) visibleCount += 1;
+      });
       if (resultsCount instanceof HTMLElement) {
-        resultsCount.textContent = `${filtered.length} categor${filtered.length === 1 ? 'y' : 'ies'}`;
-      }
-      if (grid instanceof HTMLElement) {
-        grid.innerHTML = buildCategoryDirectoryMarkup(base, filtered);
+        resultsCount.textContent = `${visibleCount} categor${visibleCount === 1 ? 'y' : 'ies'}`;
       }
       if (empty instanceof HTMLElement) {
-        empty.hidden = filtered.length > 0;
+        empty.hidden = visibleCount > 0;
       }
       syncUrl();
     }
@@ -1715,7 +1709,7 @@
       if (editProfileBtn instanceof HTMLButtonElement) {
         editProfileBtn.hidden = !isOwner;
         editProfileBtn.onclick = () => {
-          window.location.href = `${getBase()}pages/account.html?setup=provider`;
+          window.location.href = `${getBase()}pages/edit-profile.html`;
         };
       }
 
@@ -1910,6 +1904,479 @@
     }
 
     refreshProfile();
+  }
+
+  function bindFileDropzone(card, input, onSelect) {
+    if (!(card instanceof HTMLElement) || !(input instanceof HTMLInputElement) || typeof onSelect !== 'function') return;
+
+    const prevent = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      card.addEventListener(eventName, (event) => {
+        prevent(event);
+        card.classList.add('is-dragover');
+      });
+    });
+
+    ['dragleave', 'dragend', 'drop'].forEach((eventName) => {
+      card.addEventListener(eventName, (event) => {
+        prevent(event);
+        card.classList.remove('is-dragover');
+      });
+    });
+
+    card.addEventListener('drop', async (event) => {
+      const files = Array.from(event.dataTransfer?.files || []);
+      if (!files.length) return;
+      await onSelect(files[0]);
+      input.value = '';
+    });
+
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      await onSelect(file);
+      input.value = '';
+    });
+  }
+
+  async function renderEditProfilePage() {
+    const page = document.querySelector('[data-edit-profile-page]');
+    if (!page) return;
+
+    const account = getStoredAccount();
+    if (!account?.loggedIn) {
+      window.location.href = `${getBase()}pages/account.html`;
+      return;
+    }
+
+    const authHelper = await waitForAuthHelper();
+    if (!authHelper || typeof authHelper.saveProviderProfile !== 'function' || typeof authHelper.getUserDocument !== 'function' || typeof authHelper.getProviderProfileByUid !== 'function') {
+      return;
+    }
+
+    let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
+    let providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => null);
+
+    if (!providerProfile && String(userDoc?.userRole || '').trim() !== 'provider') {
+      window.location.href = `${getBase()}pages/account.html`;
+      return;
+    }
+
+    const existingProvider = normalizeProvider(providerProfile || {
+      displayName: userDoc?.name || account.name || '',
+      province: userDoc?.providerProvince || 'Harare',
+      username: userDoc?.username || '',
+      specialty: userDoc?.specialty || ''
+    });
+
+    const providerMediaState = {
+      profileImageData: existingProvider.profileImageData || '',
+      bannerImageData: existingProvider.bannerImageData || '',
+      professionalDocuments: Array.isArray(existingProvider.professionalDocuments) ? existingProvider.professionalDocuments.slice() : []
+    };
+
+    page.innerHTML = `
+      <section class="edit-profile-shell">
+        <div class="edit-profile-head">
+          <button type="button" class="edit-profile-back" data-edit-profile-back>
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to profile</span>
+          </button>
+          <div class="edit-profile-head-copy">
+            <span class="account-auth-stage-kicker">Edit profile</span>
+            <h1>Update everything clients see</h1>
+            <p>Keep your WorkLinkUp profile current. Update your identity, services, experience, documents, and media from one page.</p>
+          </div>
+        </div>
+
+        <form class="account-provider-form edit-profile-form" data-edit-profile-form novalidate>
+          <div class="account-provider-grid">
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Identity</strong>
+                <span>How you appear to clients</span>
+              </div>
+              <div class="account-provider-fields two-col">
+                <label class="account-setup-field">
+                  <span>Display name</span>
+                  <input type="text" name="fullName" required value="${escapeHtml(existingProvider.displayName || '')}" />
+                </label>
+                <label class="account-setup-field">
+                  <span>Title</span>
+                  <input type="text" name="title" required value="${escapeHtml(existingProvider.title || '')}" placeholder="Hair stylist, Plumber, Tutor..." />
+                </label>
+                <label class="account-setup-field">
+                  <span>WhatsApp number</span>
+                  <input type="tel" name="whatsappNumber" required value="${escapeHtml(existingProvider.whatsappNumber || '')}" placeholder="+263 77 123 4567" />
+                </label>
+                <label class="account-setup-field">
+                  <span>Province</span>
+                  <select name="province" required>${buildSelectOptions(ZIMBABWE_PROVINCES, existingProvider.province || 'Harare')}</select>
+                </label>
+                <label class="account-setup-field">
+                  <span>City / suburb</span>
+                  <input type="text" name="city" required value="${escapeHtml(existingProvider.city || '')}" />
+                </label>
+                <label class="account-setup-field">
+                  <span>Address or service area</span>
+                  <input type="text" name="address" required value="${escapeHtml(existingProvider.address || '')}" />
+                </label>
+                <label class="account-setup-field">
+                  <span>Main category</span>
+                  <select name="primaryCategory" required>${buildSelectOptions(SPECIALIST_CATEGORIES.map((category) => category.label), existingProvider.primaryCategory || '', 'Choose a category')}</select>
+                </label>
+                <label class="account-setup-field">
+                  <span>Specialty</span>
+                  <select name="specialty" data-account-specialty-select required>${buildSubserviceOptionsMarkup(existingProvider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', existingProvider.specialty || '', 'Choose a service')}</select>
+                  <small>Choose the exact service you offer from this category.</small>
+                </label>
+                <label class="account-setup-field">
+                  <span>Experience</span>
+                  <input type="text" name="experience" required value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
+                </label>
+                <label class="account-setup-field">
+                  <span>Username</span>
+                  <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                </label>
+              </div>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>About</strong>
+                <span>Tell clients what you do best</span>
+              </div>
+              <label class="account-setup-field">
+                <span>About you</span>
+                <textarea name="bio" required minlength="80" placeholder="Share your experience, strengths, and the work you offer.">${escapeHtml(existingProvider.bio || '')}</textarea>
+              </label>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Languages</strong>
+                <span>Choose the languages you work in</span>
+              </div>
+              <div class="account-provider-repeater" data-language-list>
+                ${buildSetupRepeaterRows('language', existingProvider.languages)}
+              </div>
+              <button type="button" class="account-provider-add-row" data-add-language><i class="fa-solid fa-plus"></i><span>Add language</span></button>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Skills and expertise</strong>
+                <span>Add the skills that help clients find you</span>
+              </div>
+              <div class="account-provider-repeater" data-skill-list>
+                ${buildSetupRepeaterRows('skill', existingProvider.skills)}
+              </div>
+              <button type="button" class="account-provider-add-row" data-add-skill><i class="fa-solid fa-plus"></i><span>Add skill</span></button>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Work experience</strong>
+                <span>Optional</span>
+              </div>
+              <div class="account-provider-repeater" data-experience-list>
+                ${buildSetupRepeaterRows('experience', existingProvider.workExperience)}
+              </div>
+              <button type="button" class="account-provider-add-row" data-add-experience><i class="fa-solid fa-plus"></i><span>Add work experience</span></button>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Education and certifications</strong>
+                <span>Optional</span>
+              </div>
+              <div class="account-provider-subgrid">
+                <div>
+                  <div class="account-provider-repeater" data-education-list>
+                    ${buildSetupRepeaterRows('education', existingProvider.education)}
+                  </div>
+                  <button type="button" class="account-provider-add-row" data-add-education><i class="fa-solid fa-plus"></i><span>Add education</span></button>
+                </div>
+                <div>
+                  <div class="account-provider-repeater" data-certification-list>
+                    ${buildSetupRepeaterRows('certification', existingProvider.certifications)}
+                  </div>
+                  <button type="button" class="account-provider-add-row" data-add-certification><i class="fa-solid fa-plus"></i><span>Add certification</span></button>
+                </div>
+              </div>
+            </section>
+
+            <section class="account-provider-section">
+              <div class="account-provider-section-head">
+                <strong>Portfolio and documents</strong>
+                <span>Media, website links, and professional documents</span>
+              </div>
+              <div class="account-provider-repeater" data-link-list>
+                ${buildSetupRepeaterRows('link', existingProvider.portfolioLinks)}
+              </div>
+              <button type="button" class="account-provider-add-row" data-add-link><i class="fa-solid fa-plus"></i><span>Add website link</span></button>
+
+              <div class="edit-profile-upload-grid">
+                <label class="edit-profile-upload-card" data-edit-upload-card="profile">
+                  <span class="account-provider-upload-preview account-provider-upload-preview-avatar edit-profile-upload-preview" data-account-profile-preview></span>
+                  <strong>Profile image</strong>
+                  <p>Drag and drop your profile image here, or use the device uploader below.</p>
+                  <span class="edit-profile-upload-trigger">Upload from device</span>
+                  <input type="file" accept="image/*" data-account-profile-file hidden />
+                </label>
+                <label class="edit-profile-upload-card edit-profile-upload-card-banner" data-edit-upload-card="banner">
+                  <span class="account-provider-upload-preview account-provider-upload-preview-banner edit-profile-upload-preview" data-account-banner-preview></span>
+                  <strong>Banner image</strong>
+                  <p>Drop a wide banner here, or choose a file from your device.</p>
+                  <span class="edit-profile-upload-trigger">Upload from device</span>
+                  <input type="file" accept="image/*" data-account-banner-file hidden />
+                </label>
+              </div>
+
+              <label class="account-provider-doc-upload">
+                <span>Professional documents</span>
+                <input type="file" accept="application/pdf,image/*" multiple data-account-document-files />
+                <small>Upload CVs, certificates, licenses, or portfolio pages. Images are converted to AVIF, then stored in base64 for viewing later.</small>
+              </label>
+              <div class="account-provider-doc-list" data-account-document-list></div>
+            </section>
+          </div>
+
+          <div class="account-provider-form-actions edit-profile-form-actions">
+            <button type="button" class="provider-profile-action secondary" data-edit-profile-cancel>Cancel</button>
+            <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
+              <span class="account-btn-label">Save changes</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    `;
+
+    const form = page.querySelector('[data-edit-profile-form]');
+    if (!(form instanceof HTMLFormElement)) return;
+    const profilePreview = page.querySelector('[data-account-profile-preview]');
+    const bannerPreview = page.querySelector('[data-account-banner-preview]');
+    const documentList = page.querySelector('[data-account-document-list]');
+    const profileInput = page.querySelector('[data-account-profile-file]');
+    const bannerInput = page.querySelector('[data-account-banner-file]');
+    const documentInput = page.querySelector('[data-account-document-files]');
+    const providerCategorySelect = form.querySelector('select[name="primaryCategory"]');
+    const providerSpecialtySelect = form.querySelector('[data-account-specialty-select]');
+    const backBtn = page.querySelector('[data-edit-profile-back]');
+    const cancelBtn = page.querySelector('[data-edit-profile-cancel]');
+    const profileCard = page.querySelector('[data-edit-upload-card="profile"]');
+    const bannerCard = page.querySelector('[data-edit-upload-card="banner"]');
+
+    const profileUrl = (() => {
+      const url = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+      url.searchParams.set('uid', account.uid);
+      url.searchParams.set('province', existingProvider.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '');
+      return `${url.pathname}${url.search}`;
+    })();
+
+    backBtn?.addEventListener('click', () => {
+      window.location.href = profileUrl;
+    });
+    cancelBtn?.addEventListener('click', () => {
+      window.location.href = profileUrl;
+    });
+
+    updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
+    updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
+
+    providerCategorySelect?.addEventListener('change', () => {
+      if (!(providerCategorySelect instanceof HTMLSelectElement) || !(providerSpecialtySelect instanceof HTMLSelectElement)) return;
+      providerSpecialtySelect.innerHTML = buildSubserviceOptionsMarkup(providerCategorySelect.value, '', 'Choose a service');
+    });
+
+    function renderDocumentList() {
+      if (!(documentList instanceof HTMLElement)) return;
+      documentList.innerHTML = providerMediaState.professionalDocuments.length
+        ? providerMediaState.professionalDocuments.map((documentItem, index) => `
+          <article class="account-provider-doc-card">
+            <div>
+              <strong>${escapeHtml(documentItem.name)}</strong>
+              <span>${escapeHtml(documentItem.kind === 'image' ? 'Image document' : 'PDF document')}</span>
+            </div>
+            <button type="button" data-remove-document="${index}"><i class="fa-solid fa-xmark"></i></button>
+          </article>
+        `).join('')
+        : '<div class="account-provider-doc-empty">No professional documents uploaded yet.</div>';
+    }
+
+    renderDocumentList();
+
+    bindFileDropzone(profileCard, profileInput, async (file) => {
+      providerMediaState.profileImageData = await readImageAsBase64(file, {
+        maxWidth: 720,
+        maxHeight: 720,
+        quality: 0.84,
+        outputType: 'image/avif'
+      });
+      updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
+    });
+
+    bindFileDropzone(bannerCard, bannerInput, async (file) => {
+      providerMediaState.bannerImageData = await readImageAsBase64(file, {
+        maxWidth: 1600,
+        maxHeight: 900,
+        quality: 0.82,
+        outputType: 'image/avif'
+      });
+      updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
+    });
+
+    documentInput?.addEventListener('change', async () => {
+      const files = Array.from(documentInput.files || []);
+      for (const file of files) {
+        let data = '';
+        let kind = 'pdf';
+        if (file.type.startsWith('image/')) {
+          data = await readImageAsBase64(file, {
+            maxWidth: 1800,
+            maxHeight: 1800,
+            quality: 0.82,
+            outputType: 'image/avif'
+          });
+          kind = 'image';
+        } else {
+          data = await readFileAsDataUrl(file);
+        }
+
+        providerMediaState.professionalDocuments.push({
+          id: `${Date.now()}_${file.name}`,
+          name: file.name,
+          mimeType: data.match(/^data:([^;]+);/)?.[1] || file.type || 'application/pdf',
+          kind,
+          data
+        });
+      }
+      documentInput.value = '';
+      renderDocumentList();
+    });
+
+    documentList?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-remove-document]');
+      if (!(button instanceof HTMLElement)) return;
+      const index = Number(button.getAttribute('data-remove-document') || -1);
+      if (index >= 0) {
+        providerMediaState.professionalDocuments.splice(index, 1);
+        renderDocumentList();
+      }
+    });
+
+    function bindAddRow(selector, kind, containerSelector) {
+      page.querySelector(selector)?.addEventListener('click', () => {
+        const host = page.querySelector(containerSelector);
+        if (!(host instanceof HTMLElement)) return;
+        host.insertAdjacentHTML('beforeend', buildSetupRepeaterRows(kind, [{}]));
+      });
+    }
+
+    bindAddRow('[data-add-language]', 'language', '[data-language-list]');
+    bindAddRow('[data-add-skill]', 'skill', '[data-skill-list]');
+    bindAddRow('[data-add-experience]', 'experience', '[data-experience-list]');
+    bindAddRow('[data-add-education]', 'education', '[data-education-list]');
+    bindAddRow('[data-add-certification]', 'certification', '[data-certification-list]');
+    bindAddRow('[data-add-link]', 'link', '[data-link-list]');
+
+    page.addEventListener('click', (event) => {
+      const removeBtn = event.target.closest('[data-remove-row]');
+      if (!(removeBtn instanceof HTMLElement)) return;
+      const row = removeBtn.closest('.account-setup-repeater-row');
+      row?.remove();
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitBtn = form.querySelector('[data-account-provider-submit]');
+      const requiredFields = Array.from(form.querySelectorAll('input[required], select[required], textarea[required]'));
+      let hasErrors = false;
+
+      requiredFields.forEach((field) => {
+        if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
+        const invalid = !field.value.trim();
+        field.classList.toggle('is-invalid', invalid);
+        hasErrors = hasErrors || invalid;
+      });
+
+      const languages = collectRows(form.querySelector('[data-language-list]'), '[data-repeater-row="language"]', (row) => {
+        const name = String(row.querySelector('[data-language-name]')?.value || '').trim();
+        const level = String(row.querySelector('[data-language-level]')?.value || '').trim();
+        return name && level ? { name, level } : null;
+      });
+      const skills = collectRows(form.querySelector('[data-skill-list]'), '[data-repeater-row="skill"]', (row) => {
+        const name = String(row.querySelector('[data-skill-name]')?.value || '').trim();
+        const level = String(row.querySelector('[data-skill-level]')?.value || '').trim();
+        return name ? { name, level } : null;
+      });
+
+      if (!languages.length || !skills.length || !providerMediaState.profileImageData || !providerMediaState.bannerImageData) {
+        hasErrors = true;
+      }
+
+      if (hasErrors) {
+        form.querySelector('.is-invalid, input[required], select[required], textarea[required]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const workExperience = collectRows(form.querySelector('[data-experience-list]'), '[data-repeater-row="experience"]', (row) => {
+        const role = String(row.querySelector('[data-exp-role]')?.value || '').trim();
+        const company = String(row.querySelector('[data-exp-company]')?.value || '').trim();
+        const period = String(row.querySelector('[data-exp-period]')?.value || '').trim();
+        const summary = String(row.querySelector('[data-exp-summary]')?.value || '').trim();
+        return role || company || summary ? { role, company, period, summary } : null;
+      });
+      const education = collectRows(form.querySelector('[data-education-list]'), '[data-repeater-row="education"]', (row) => {
+        const school = String(row.querySelector('[data-edu-school]')?.value || '').trim();
+        const qualification = String(row.querySelector('[data-edu-qualification]')?.value || '').trim();
+        const period = String(row.querySelector('[data-edu-period]')?.value || '').trim();
+        return school || qualification ? { school, qualification, period } : null;
+      });
+      const certifications = collectRows(form.querySelector('[data-certification-list]'), '[data-repeater-row="certification"]', (row) => {
+        const name = String(row.querySelector('[data-cert-name]')?.value || '').trim();
+        const issuer = String(row.querySelector('[data-cert-issuer]')?.value || '').trim();
+        const year = String(row.querySelector('[data-cert-year]')?.value || '').trim();
+        return name || issuer ? { name, issuer, year } : null;
+      });
+      const portfolioLinks = collectRows(form.querySelector('[data-link-list]'), '[data-repeater-row="link"]', (row) => {
+        const value = String(row.querySelector('[data-link-url]')?.value || '').trim();
+        return value || null;
+      });
+
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      payload.username = userDoc?.username || '';
+      payload.languages = languages;
+      payload.skills = skills;
+      payload.workExperience = workExperience;
+      payload.education = education;
+      payload.certifications = certifications;
+      payload.portfolioLinks = portfolioLinks;
+      payload.profileImageData = providerMediaState.profileImageData;
+      payload.bannerImageData = providerMediaState.bannerImageData;
+      payload.professionalDocuments = providerMediaState.professionalDocuments;
+
+      if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, true);
+      try {
+        await authHelper.saveProviderProfile(payload);
+        userDoc = await authHelper.getUserDocument(account.uid).catch(() => userDoc) || userDoc;
+        providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => providerProfile);
+        const nextProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || existingProvider.provinceSlug || '';
+        const nextUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+        nextUrl.searchParams.set('uid', account.uid);
+        nextUrl.searchParams.set('province', nextProvince);
+        window.location.href = `${nextUrl.pathname}${nextUrl.search}`;
+      } catch (error) {
+        window.alert(error.message || 'Could not save your provider profile.');
+      } finally {
+        if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, false);
+      }
+    });
   }
 
   async function renderPostsPage() {
@@ -3773,6 +4240,7 @@
     renderSpecialistsPage();
     renderCategoriesPage();
     renderProviderProfilePage();
+    renderEditProfilePage();
     renderPostsPage();
     renderMessagesPage();
     initializeAccountPageExperience();

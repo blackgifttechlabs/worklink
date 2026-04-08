@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
             : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
         </div>
-        <span>${escapeHtml(category.label)}</span>
+        <span>${escapeHtml(category.shortLabel || category.label)}</span>
       </a>
     `).join('');
   }
