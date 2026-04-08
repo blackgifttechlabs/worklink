@@ -323,13 +323,15 @@
   }
 
   function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
-    return SPECIALIST_CATEGORIES.map((category, index) => `
+    return SPECIALIST_CATEGORIES.map((category) => {
+      const isOpen = selectedCategory === category.label || category.subservices.includes(selectedSubservice);
+      return `
       <div class="service-filter-group">
         <button
           type="button"
           class="service-filter-toggle ${selectedCategory === category.label || category.subservices.includes(selectedSubservice) ? 'is-active' : ''}"
           data-filter-group="${escapeHtml(category.label)}"
-          aria-expanded="false"
+          aria-expanded="${isOpen ? 'true' : 'false'}"
           title="${escapeHtml(category.label)}"
         >
           <span class="service-filter-toggle-main">
@@ -338,7 +340,7 @@
           </span>
           <i class="fa-solid fa-chevron-down service-filter-toggle-chevron" aria-hidden="true"></i>
         </button>
-        <div class="service-filter-links" hidden>
+        <div class="service-filter-links" ${isOpen ? '' : 'hidden'}>
           <button type="button" class="${selectedCategory === category.label && !selectedSubservice ? 'is-active' : ''}" data-filter-category="${escapeHtml(category.label)}">All ${escapeHtml(category.label)}</button>
           ${category.subservices.map((service) => `
             <button type="button" class="${selectedSubservice === service ? 'is-active' : ''}" data-filter-subservice="${escapeHtml(service)}" data-parent-category="${escapeHtml(category.label)}">
@@ -347,7 +349,8 @@
           `).join('')}
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function buildProviderSearchText(provider = {}) {
@@ -598,6 +601,17 @@
       <a href="${getBase()}pages/specialists.html?query=${encodeURIComponent(item.label)}&results=1" class="specialists-related-card">
         <strong>${escapeHtml(item.label)}</strong>
         <span>${escapeHtml(item.address)}</span>
+      </a>
+    `).join('');
+
+    return duplicate ? `${cards}${cards}` : cards;
+  }
+
+  function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
+    const cards = items.map((category) => `
+      <a href="${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}" class="specialists-related-card">
+        <strong>${escapeHtml(category.shortLabel || category.label)}</strong>
+        <span>${escapeHtml((category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`)}</span>
       </a>
     `).join('');
 
@@ -1007,6 +1021,8 @@
     const resultsActionsHost = page.querySelector('[data-specialists-results-actions]');
     const relatedShell = page.querySelector('[data-specialists-related-shell]');
     const relatedHost = page.querySelector('[data-specialists-related]');
+    const relatedKickerHost = page.querySelector('.specialists-related-kicker');
+    const relatedTitleHost = page.querySelector('.specialists-related-head h3');
     const suggestedAllBtn = page.querySelector('[data-specialists-suggested-all]');
     const searchInput = page.querySelector('[data-specialists-search]');
     const ratingButtons = Array.from(page.querySelectorAll('[data-rating-filter]'));
@@ -1117,6 +1133,25 @@
 
     function renderRelatedServices(filteredProviders) {
       if (!(relatedShell instanceof HTMLElement) || !(relatedHost instanceof HTMLElement)) return;
+
+      if (!filteredProviders.length) {
+        const fallbackCategories = SPECIALIST_CATEGORIES
+          .filter((category) => category.label !== state.category)
+          .slice(0, 8);
+
+        if (!fallbackCategories.length) {
+          relatedShell.hidden = true;
+          relatedHost.innerHTML = '';
+          return;
+        }
+
+        relatedShell.hidden = false;
+        if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested categories';
+        if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'Try another category';
+        relatedHost.innerHTML = buildSuggestedCategoriesMarkup(fallbackCategories, fallbackCategories.length > 4);
+        return;
+      }
+
       const suggestedProviders = getSuggestedProviders(providers, filteredProviders, state);
       if (!suggestedProviders.length) {
         relatedShell.hidden = true;
@@ -1125,6 +1160,8 @@
       }
 
       relatedShell.hidden = false;
+      if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested for you';
+      if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'More specialists you can explore';
       relatedHost.innerHTML = buildSuggestedProvidersMarkup(suggestedProviders, suggestedProviders.length > 4);
     }
 
