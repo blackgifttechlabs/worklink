@@ -812,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pending-setup-head">
             <div>
               <span class="pending-setup-kicker">Complete your account</span>
-              <h2 id="pending-setup-title">Get your profile started</h2>
+              <h2 id="pending-setup-title">Complete your sign up process</h2>
             </div>
             <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
           </div>
@@ -840,12 +840,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    let openTimer = 0;
     if (overlay instanceof HTMLElement) {
-      overlay.hidden = false;
-      requestAnimationFrame(() => {
-        overlay.classList.add('is-visible');
-        document.body.classList.add('pending-setup-open');
-      });
+      openTimer = window.setTimeout(() => {
+        overlay.hidden = false;
+        requestAnimationFrame(() => {
+          overlay.classList.add('is-visible');
+          document.body.classList.add('pending-setup-open');
+        });
+      }, 2000);
     }
 
     closeBtn?.addEventListener('click', () => closeModal(false));
@@ -861,6 +864,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'worklinkup-setup-complete') {
         closeModal(true);
+        if (openTimer) window.clearTimeout(openTimer);
+        if (event.data?.redirectUrl) {
+          window.location.href = event.data.redirectUrl;
+          return;
+        }
         window.location.reload();
       }
     });

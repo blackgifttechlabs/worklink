@@ -2872,21 +2872,36 @@
 
       if (step === 'dashboard') {
         if (isEmbedded) {
+          const redirectTarget = (() => {
+            if (String(userDoc?.userRole || '').trim() === 'provider') {
+              const profileUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+              profileUrl.searchParams.set('uid', account.uid);
+              profileUrl.searchParams.set('province', providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '');
+              return `${profileUrl.pathname}${profileUrl.search}`;
+            }
+            const specialistsUrl = new URL(`${getBase()}pages/specialists.html`, window.location.href);
+            return `${specialistsUrl.pathname}${specialistsUrl.search}`;
+          })();
           try {
             localStorage.removeItem('worklinkup_pending_setup');
           } catch (error) {
             // Ignore storage issues.
           }
-          window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, window.location.origin);
           setupStage.hidden = false;
           dashboard.hidden = true;
           setupBody.innerHTML = `
             <section class="account-setup-embed-success">
               <div class="account-setup-embed-success-icon"><i class="fa-solid fa-check"></i></div>
-              <h2>Profile setup complete</h2>
-              <p>Your WorkLinkUp profile is ready. Closing this window now.</p>
+              <h2>Profile completed</h2>
+              <p>Your WorkLinkUp profile is ready. Redirecting you now.</p>
             </section>
           `;
+          window.setTimeout(() => {
+            window.parent?.postMessage({
+              type: 'worklinkup-setup-complete',
+              redirectUrl: redirectTarget
+            }, window.location.origin);
+          }, 1800);
           return;
         }
         fillDashboard();

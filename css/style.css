@@ -3630,6 +3630,50 @@ footer {
   background: rgba(22, 163, 74, 0.12);
   color: #16a34a;
   font-size: 30px;
+  animation: setup-success-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.account-setup-embed-success-icon i {
+  animation: setup-success-check 0.9s ease 0.2s both;
+}
+
+.account-setup-embed-success h2 {
+  color: var(--brand-ink);
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.account-setup-embed-success p {
+  color: #64748b;
+  font-size: 17px;
+}
+
+@keyframes setup-success-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes setup-success-check {
+  0% {
+    transform: scale(0.4) rotate(-12deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 /* ========== PROVIDERS EXPERIENCE ========== */
