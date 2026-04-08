@@ -1697,6 +1697,7 @@
     const jobs = page.querySelector('[data-provider-jobs]');
     const messageLink = page.querySelector('[data-provider-message-link]');
     const editProfileBtn = page.querySelector('[data-provider-edit-profile]');
+    const myJobsLink = page.querySelector('[data-provider-my-jobs]');
     const documentsBtn = page.querySelector('[data-provider-documents-trigger]');
     const backBtn = page.querySelector('[data-provider-back]');
     const postGrid = page.querySelector('[data-provider-post-grid]');
@@ -1764,6 +1765,10 @@
         editProfileBtn.onclick = () => {
           window.location.href = `${getBase()}pages/edit-profile.html`;
         };
+      }
+      if (myJobsLink instanceof HTMLAnchorElement) {
+        myJobsLink.hidden = !isOwner;
+        myJobsLink.href = `${getBase()}pages/job-giver-profile.html`;
       }
 
       if (languagesCard instanceof HTMLElement && languagesHost instanceof HTMLElement) {

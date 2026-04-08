@@ -235,7 +235,7 @@ function renderHeader() {
   const firstName = accountName.split(' ')[0];
   const providerProfileHref = getProviderProfileHref(base);
   const jobsDashboardHref = account?.userRole === 'client' ? `${base}pages/job-giver-profile.html` : `${base}pages/my-posts.html`;
-  const jobsDashboardLabel = account?.userRole === 'client' ? 'My Jobs' : 'My Posts';
+  const jobsDashboardLabel = account?.userRole === 'client' ? 'My Jobs & Bids' : 'My Posts';
   const categoryHref = (label) => buildWorkLinkUpSpecialistsHref(label, { base, category: label, query: label });
   const serviceHref = (label, categoryLabel = '') => {
     const matchedCategory = categoryLabel || findCategoryByServiceLabel(label)?.label || '';

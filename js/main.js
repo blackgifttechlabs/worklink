@@ -359,6 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const prevBtn = shell.querySelector('[data-scroll-prev]');
       const nextBtn = shell.querySelector('[data-scroll-next]');
       const scrollAmount = () => Math.max(rail.clientWidth * 0.72, 180);
+      const autoScrollEnabled = rail.hasAttribute('data-auto-scroll');
+      const autoScrollSpeed = Math.max(0.008, Number.parseFloat(rail.getAttribute('data-auto-scroll-speed') || '0.02'));
+      let autoScrollDirection = 1;
+      let autoScrollFrame = 0;
+      let lastFrameAt = 0;
+      let pauseUntil = 0;
+      let pointerInside = false;
+
+      function pauseAutoScroll(durationMs = 2600) {
+        pauseUntil = Date.now() + durationMs;
+      }
 
       function syncButtons() {
         if (window.matchMedia('(max-width: 768px)').matches) {
@@ -372,12 +383,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       prevBtn?.addEventListener('click', () => {
+        pauseAutoScroll();
         rail.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
       });
       nextBtn?.addEventListener('click', () => {
+        pauseAutoScroll();
         rail.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
       });
       rail.addEventListener('scroll', syncButtons, { passive: true });
+      rail.addEventListener('pointerdown', () => pauseAutoScroll(3600), { passive: true });
+      rail.addEventListener('touchstart', () => pauseAutoScroll(3600), { passive: true });
+      rail.addEventListener('wheel', () => pauseAutoScroll(2600), { passive: true });
+      rail.addEventListener('focusin', () => pauseAutoScroll(2600));
+      rail.addEventListener('mouseenter', () => {
+        pointerInside = true;
+      });
+      rail.addEventListener('mouseleave', () => {
+        pointerInside = false;
+        pauseAutoScroll(900);
+      });
       window.addEventListener('resize', syncButtons);
 
       const track = rail.querySelector('[data-scroll-track]');
@@ -388,6 +412,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       rail.dataset.railBound = '1';
       syncButtons();
+
+      function tick(timestamp) {
+        if (!autoScrollEnabled) return;
+        if (!lastFrameAt) lastFrameAt = timestamp;
+        const delta = timestamp - lastFrameAt;
+        lastFrameAt = timestamp;
+        const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+
+        if (!pointerInside && Date.now() >= pauseUntil && maxScrollLeft > 6) {
+          let nextLeft = rail.scrollLeft + (autoScrollDirection * autoScrollSpeed * delta);
+          if (nextLeft >= maxScrollLeft) {
+            nextLeft = maxScrollLeft;
+            autoScrollDirection = -1;
+            pauseAutoScroll(1000);
+          } else if (nextLeft <= 0) {
+            nextLeft = 0;
+            autoScrollDirection = 1;
+            pauseAutoScroll(1000);
+          }
+          rail.scrollLeft = nextLeft;
+          syncButtons();
+        }
+
+        autoScrollFrame = window.requestAnimationFrame(tick);
+      }
+
+      if (autoScrollEnabled) {
+        autoScrollFrame = window.requestAnimationFrame(tick);
+        rail.dataset.autoScrollFrame = String(autoScrollFrame);
+      }
     });
   }
 
