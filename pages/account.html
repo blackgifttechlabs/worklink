@@ -16,13 +16,77 @@
 <div id="site-header"></div>
 
 <main class="account-page">
-  <section class="account-guest-card" id="account-guest-card" hidden>
-    <div class="account-guest-inner">
-      <i class="fa-regular fa-user-circle"></i>
-      <h1>Sign in to view your profile</h1>
-      <p>Your WorkLinkUp profile, contact details, and future hiring activity will appear here once you log in.</p>
-      <button type="button" class="account-guest-open">Sign In or Register</button>
+  <section class="account-auth-stage" id="account-guest-card" hidden>
+    <div class="account-auth-stage-visual">
+      <div class="account-auth-stage-copy">
+        <span class="account-auth-stage-kicker">WorkLinkUp account</span>
+        <h1>Sign in to view your profile</h1>
+        <p>Your WorkLinkUp profile, contact details, and future hiring activity will appear here once you log in.</p>
+        <ul class="account-auth-stage-points">
+          <li>Find specialists faster</li>
+          <li>Save your details and profile progress</li>
+          <li>Start getting found for the work you do</li>
+        </ul>
+      </div>
+      <div class="account-auth-stage-badges" aria-hidden="true">
+        <div class="account-auth-stage-badge">
+          <img src="../images/sections/addie.avif" alt="" />
+          <span>Addie</span>
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="account-auth-stage-badge is-offset">
+          <img src="../images/sections/ethel.avif" alt="" />
+          <span>Ethel_Hair_Salon</span>
+          <i class="fa-solid fa-check"></i>
+        </div>
+      </div>
+      <img src="../images/sections/login-side.avif" alt="WorkLinkUp sign in illustration" class="account-auth-stage-image" />
     </div>
+
+    <div class="account-auth-stage-panel">
+      <div class="account-auth-stage-panel-inner">
+        <h2 class="account-auth-page-heading">Create a new account</h2>
+        <p class="account-auth-page-subtext"><span class="account-auth-page-subtext-label">Already have an account?</span> <button type="button" class="account-page-mode-switch inline-link">Sign in</button></p>
+
+        <div class="account-auth-page-actions">
+          <button type="button" class="account-auth-btn account-google-btn account-page-google-btn">
+            <span class="google-mark" aria-hidden="true"><span class="google-g">G</span></span>
+            <span class="account-btn-label">Continue with Google</span>
+          </button>
+        </div>
+
+        <div class="account-auth-page-divider">
+          <span>Or sign up using email</span>
+        </div>
+
+        <form class="account-auth-page-form" id="account-page-email-form">
+          <div class="account-form-row account-page-name-row">
+            <label for="account-page-name">Full name</label>
+            <input id="account-page-name" name="name" type="text" placeholder="Tinashe Moyo" />
+          </div>
+          <div class="account-form-row">
+            <label for="account-page-email">Email address</label>
+            <input id="account-page-email" name="email" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="account-form-row">
+            <label for="account-page-password">Password</label>
+            <input id="account-page-password" name="password" type="password" placeholder="Enter password" required />
+          </div>
+          <button type="button" class="account-forgot-password account-page-forgot-password inline-link">Forgot password?</button>
+          <button type="submit" class="account-submit-btn account-submit-signup account-page-submit-btn">
+            <span class="account-btn-label">Create Account</span>
+          </button>
+        </form>
+
+        <p class="account-auth-page-note">Additional verification may be required at a later stage.</p>
+        <p class="account-auth-note">By joining, you agree to WorkLinkUp Terms of Service and Privacy Policy.</p>
+        <input type="hidden" id="account-page-mode" value="signup" />
+      </div>
+    </div>
+  </section>
+
+  <section class="account-setup-stage" id="account-setup-stage" hidden>
+    <div class="account-setup-shell" data-account-setup-body></div>
   </section>
 
   <section class="account-dashboard" id="account-dashboard" hidden>

@@ -137,6 +137,36 @@ function slugifyIdentifier(value) {
     .replace(/^-+|-+$/g, '') || 'worklinkup-user';
 }
 
+function sanitizeUsername(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function normalizeStringArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function normalizeObjectArray(values, mapper) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((value) => {
+      try {
+        return mapper(value || {});
+      } catch (error) {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
 function getAccountPayload(user = auth.currentUser) {
   const stored = getStoredAccount();
   const name = stored?.name || fallbackNameFromUser(user);
@@ -153,7 +183,9 @@ function getAccountPayload(user = auth.currentUser) {
     providerProvince: stored?.providerProvince || '',
     providerProvinceSlug: stored?.providerProvinceSlug || '',
     providerPublicId: stored?.providerPublicId || '',
-    whatsappNumber: stored?.whatsappNumber || ''
+    whatsappNumber: stored?.whatsappNumber || '',
+    username: stored?.username || '',
+    userRole: stored?.userRole || ''
   };
 }
 
@@ -502,6 +534,9 @@ async function syncUserDocument(account, extra = {}) {
     email: account.email || '',
     phone: account.phone || '',
     provider: account.provider,
+    username: extra.username ?? account.username ?? existingUser?.username ?? '',
+    usernameLower: extra.usernameLower ?? sanitizeUsername(extra.username ?? account.username ?? existingUser?.username ?? ''),
+    userRole: extra.userRole ?? account.userRole ?? existingUser?.userRole ?? '',
     cartCount: extra.cartCount ?? existingUser?.cartCount ?? 0,
     wishlistCount: extra.wishlistCount ?? existingUser?.wishlistCount ?? 0,
     providerProfileComplete: extra.providerProfileComplete ?? account.providerProfileComplete ?? false,
@@ -664,6 +699,76 @@ async function getUserDocument(uid = auth.currentUser?.uid) {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
+async function checkUsernameAvailability(username, excludeUid = auth.currentUser?.uid || '') {
+  const normalized = sanitizeUsername(username);
+  if (!/^[a-z0-9_]{3,30}$/.test(normalized)) {
+    return {
+      available: false,
+      normalized,
+      reason: 'Username must be 3 to 30 characters using letters, numbers, or underscores.'
+    };
+  }
+
+  const snapshot = await getDocs(query(collection(db, 'users'), where('usernameLower', '==', normalized)));
+  const isTaken = snapshot.docs.some((docSnapshot) => docSnapshot.id !== excludeUid);
+  return {
+    available: !isTaken,
+    normalized,
+    reason: isTaken ? 'That username is already in use.' : ''
+  };
+}
+
+async function saveAccountSetup(input = {}) {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+
+  const account = getAccountPayload(auth.currentUser);
+  const existingUser = await getUserDocument(account.uid);
+  const rawUsername = String(input.username ?? existingUser?.username ?? account.username ?? '').trim();
+  const usernameCheck = rawUsername
+    ? await checkUsernameAvailability(rawUsername, account.uid)
+    : { available: true, normalized: sanitizeUsername(existingUser?.username || account.username || ''), reason: '' };
+  if (!usernameCheck.available) {
+    throw new Error(usernameCheck.reason || 'Choose a different username.');
+  }
+
+  const requestedRole = String(input.userRole || '').trim();
+  const userRole = requestedRole === 'provider' || requestedRole === 'client'
+    ? requestedRole
+    : String(existingUser?.userRole || account.userRole || '').trim();
+  const nextName = normalizeName(input.displayName || existingUser?.name || account.name);
+  const setupPayload = {
+    username: usernameCheck.normalized,
+    usernameLower: usernameCheck.normalized,
+    userRole,
+    name: nextName,
+    updatedAtMs: Date.now(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(doc(db, 'users', account.uid), {
+    uid: account.uid,
+    email: account.email || '',
+    phone: account.phone || '',
+    provider: account.provider,
+    createdAtMs: existingUser?.createdAtMs || Date.now(),
+    createdAt: existingUser?.createdAt || serverTimestamp(),
+    ...setupPayload
+  }, { merge: true });
+
+  persistAccountDetails({
+    username: setupPayload.username,
+    userRole,
+    name: nextName
+  });
+
+  return {
+    ...(existingUser || {}),
+    ...setupPayload
+  };
+}
+
 async function getOrCreateProviderPublicId(uid) {
   if (!uid) throw new Error('No signed-in user found.');
 
@@ -745,7 +850,74 @@ async function saveProviderProfile(profileInput = {}) {
   const province = normalizeProvince(profileInput.province);
   const provinceSlug = slugifyIdentifier(province);
   const providerPublicId = existingUserDoc?.providerPublicId || await getOrCreateProviderPublicId(account.uid);
-  const displayName = normalizeName(profileInput.fullName || account.name);
+  const displayName = String(profileInput.fullName || existingProviderProfile?.displayName || account.name).trim() || account.name;
+  const username = sanitizeUsername(profileInput.username || existingUserDoc?.username || account.username || '');
+  const languages = normalizeObjectArray(
+    profileInput.languages || existingProviderProfile?.languages || [],
+    (entry) => {
+      const name = String(entry.name || entry.language || '').trim();
+      const level = String(entry.level || '').trim();
+      if (!name || !level) return null;
+      return { name, level };
+    }
+  );
+  const skills = normalizeObjectArray(
+    profileInput.skills || existingProviderProfile?.skills || [],
+    (entry) => {
+      const name = String(entry.name || entry.skill || '').trim();
+      const level = String(entry.level || '').trim();
+      if (!name) return null;
+      return { name, level: level || 'Intermediate' };
+    }
+  );
+  const workExperienceItems = normalizeObjectArray(
+    profileInput.workExperience || existingProviderProfile?.workExperience || [],
+    (entry) => {
+      const role = String(entry.role || '').trim();
+      const company = String(entry.company || '').trim();
+      const period = String(entry.period || '').trim();
+      const summary = String(entry.summary || '').trim();
+      if (!role && !company && !summary) return null;
+      return { role, company, period, summary };
+    }
+  );
+  const educationItems = normalizeObjectArray(
+    profileInput.education || existingProviderProfile?.education || [],
+    (entry) => {
+      const school = String(entry.school || '').trim();
+      const qualification = String(entry.qualification || '').trim();
+      const period = String(entry.period || '').trim();
+      if (!school && !qualification) return null;
+      return { school, qualification, period };
+    }
+  );
+  const certificationItems = normalizeObjectArray(
+    profileInput.certifications || existingProviderProfile?.certifications || [],
+    (entry) => {
+      const name = String(entry.name || '').trim();
+      const issuer = String(entry.issuer || '').trim();
+      const year = String(entry.year || '').trim();
+      if (!name && !issuer) return null;
+      return { name, issuer, year };
+    }
+  );
+  const portfolioLinks = normalizeStringArray(profileInput.portfolioLinks || existingProviderProfile?.portfolioLinks || []);
+  const professionalDocuments = normalizeObjectArray(
+    profileInput.professionalDocuments || existingProviderProfile?.professionalDocuments || [],
+    (entry) => {
+      const name = String(entry.name || '').trim();
+      const mimeType = String(entry.mimeType || '').trim();
+      const data = String(entry.data || '').trim();
+      if (!name || !data) return null;
+      return {
+        id: String(entry.id || `${Date.now()}_${name}`).trim(),
+        name,
+        mimeType: mimeType || 'application/octet-stream',
+        kind: String(entry.kind || '').trim() || (mimeType.startsWith('image/') ? 'image' : 'pdf'),
+        data
+      };
+    }
+  );
   const providerRef = doc(db, 'providers', provinceSlug, 'profiles', account.uid);
 
   if (existingUserDoc?.providerProvinceSlug && existingUserDoc.providerProvinceSlug !== provinceSlug) {
@@ -763,6 +935,9 @@ async function saveProviderProfile(profileInput = {}) {
     providerPublicId,
     displayName,
     email: account.email || '',
+    username,
+    usernameLower: username,
+    userRole: 'provider',
     whatsappNumber: String(profileInput.whatsappNumber || account.phone || '').trim(),
     address: String(profileInput.address || '').trim(),
     city: String(profileInput.city || '').trim(),
@@ -771,7 +946,15 @@ async function saveProviderProfile(profileInput = {}) {
     experience: String(profileInput.experience || '').trim(),
     primaryCategory: String(profileInput.primaryCategory || '').trim(),
     specialty: String(profileInput.specialty || '').trim(),
+    title: String(profileInput.title || existingProviderProfile?.title || '').trim(),
     bio: String(profileInput.bio || '').trim(),
+    languages,
+    skills,
+    workExperience: workExperienceItems,
+    education: educationItems,
+    certifications: certificationItems,
+    portfolioLinks,
+    professionalDocuments,
     profileImageData: String(profileInput.profileImageData || existingProviderProfile?.profileImageData || '').trim(),
     bannerImageData: String(profileInput.bannerImageData || existingProviderProfile?.bannerImageData || '').trim(),
     averageRating: Number(profileInput.averageRating || 4.8),
@@ -789,6 +972,9 @@ async function saveProviderProfile(profileInput = {}) {
     name: displayName,
     email: account.email || '',
     phone: providerProfile.whatsappNumber,
+    username,
+    usernameLower: username,
+    userRole: 'provider',
     providerProfileComplete: true,
     providerProvince: province,
     providerProvinceSlug: provinceSlug,
@@ -799,7 +985,12 @@ async function saveProviderProfile(profileInput = {}) {
     experience: providerProfile.experience,
     primaryCategory: providerProfile.primaryCategory,
     specialty: providerProfile.specialty,
+    title: providerProfile.title,
     bio: providerProfile.bio,
+    languages,
+    skills,
+    portfolioLinks,
+    professionalDocuments,
     createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
     updatedAt: serverTimestamp()
   }, { merge: true });
@@ -807,6 +998,8 @@ async function saveProviderProfile(profileInput = {}) {
   persistAccountDetails({
     name: displayName,
     phone: providerProfile.whatsappNumber,
+    username,
+    userRole: 'provider',
     providerProfileComplete: true,
     providerProvince: province,
     providerProvinceSlug: provinceSlug,
@@ -1335,6 +1528,8 @@ onAuthStateChanged(auth, (user) => {
         persistAccountDetails({
           name: userDoc.name || account.name,
           phone: userDoc.phone || account.phone,
+          username: userDoc.username || '',
+          userRole: userDoc.userRole || '',
           providerProfileComplete: Boolean(userDoc.providerProfileComplete),
           providerProvince: userDoc.providerProvince || '',
           providerProvinceSlug: userDoc.providerProvinceSlug || '',
@@ -1608,6 +1803,8 @@ window.softGigglesAuth = {
   addToCart,
   toggleWishlist,
   getUserDocument,
+  checkUsernameAvailability,
+  saveAccountSetup,
   listUsers,
   getProviderProfileByUid,
   saveProviderProfile,

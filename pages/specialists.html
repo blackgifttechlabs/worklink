@@ -50,7 +50,7 @@
                     <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
                   </svg>
                 </span>
-                <input type="text" placeholder="Search by service, city, or provider" data-specialists-search />
+                <input type="text" placeholder="Search by service, city, or provider" data-specialists-search data-search-context="specialists-page" />
               </div>
               <div class="specialists-rating-filter">
                 <button type="button" class="specialists-rating-chip" data-rating-filter="5">5.0+</button>
@@ -67,14 +67,29 @@
 
         <section class="specialists-results">
           <div class="specialists-results-head">
-            <h3>Available Specialists</h3>
-            <p data-specialists-total>0 specialists</p>
+            <div>
+              <h3 data-specialists-results-title>Available Specialists</h3>
+              <p data-specialists-total>0 specialists</p>
+            </div>
+            <div class="specialists-results-head-actions" data-specialists-results-actions></div>
           </div>
           <div class="specialists-results-grid" data-specialists-results>
             <article class="specialist-card specialist-card-skeleton"></article>
             <article class="specialist-card specialist-card-skeleton"></article>
             <article class="specialist-card specialist-card-skeleton"></article>
             <article class="specialist-card specialist-card-skeleton"></article>
+          </div>
+        </section>
+
+        <section class="specialists-related-shell" data-specialists-related-shell hidden>
+          <div class="specialists-related-head">
+            <div>
+              <span class="specialists-related-kicker">Related services</span>
+              <h3>People nearby also search for these services</h3>
+            </div>
+          </div>
+          <div class="specialists-related-track-wrap">
+            <div class="specialists-related-track" data-specialists-related></div>
           </div>
         </section>
       </div>

@@ -63,6 +63,39 @@
     'Midlands'
   ];
 
+  const SOUTHERN_AFRICAN_LANGUAGES = [
+    'Afrikaans',
+    'Bemba',
+    'Chichewa',
+    'English',
+    'French',
+    'Herero',
+    'Kalanga',
+    'Khoekhoegowab',
+    'Kikongo',
+    'Kinyarwanda',
+    'Lingala',
+    'Lozi',
+    'Lunda',
+    'Luvale',
+    'Ndau',
+    'Ndebele',
+    'Northern Sotho',
+    'Nyanja',
+    'Oshiwambo',
+    'Portuguese',
+    'Sena',
+    'Sesotho',
+    'Setswana',
+    'Shona',
+    'Siswati',
+    'Tshivenda',
+    'Xitsonga',
+    'Tumbuka',
+    'Xhosa',
+    'Zulu'
+  ];
+
   function getBase() {
     if (typeof getBasePath === 'function') return getBasePath();
     return window.location.pathname.includes('/pages/') ? '../' : '';
@@ -147,8 +180,17 @@
       reviewCount: Number(provider.reviewCount || 0),
       completedJobs: Number(provider.completedJobs || 0),
       bio: provider.bio || 'WorkLinkUp specialist ready to help.',
+      title: provider.title || specialty,
+      languages: Array.isArray(provider.languages) ? provider.languages : [],
+      skills: Array.isArray(provider.skills) ? provider.skills : [],
+      workExperience: Array.isArray(provider.workExperience) ? provider.workExperience : [],
+      education: Array.isArray(provider.education) ? provider.education : [],
+      certifications: Array.isArray(provider.certifications) ? provider.certifications : [],
+      portfolioLinks: Array.isArray(provider.portfolioLinks) ? provider.portfolioLinks : [],
+      professionalDocuments: Array.isArray(provider.professionalDocuments) ? provider.professionalDocuments : [],
+      username: provider.username || '',
       profileImageData: provider.profileImageData || getCategoryConfig(primaryCategory).image,
-      bannerImageData: provider.bannerImageData || 'images/sections/findme.png',
+      bannerImageData: provider.bannerImageData || 'images/sections/findme.avif',
       profileUrl: `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`,
       messageUrl: `${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`
     };
@@ -287,13 +329,13 @@
   function renderProviderCards(host, providers) {
     if (!host) return;
     if (!providers.length) {
-      host.innerHTML = `<div class="specialists-empty">No specialists match this filter yet. Try another category or rating.</div>`;
+      host.innerHTML = '';
       return;
     }
 
     host.innerHTML = providers.map((provider) => `
       <article class="specialist-card">
-        <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.png'))}');">
+        <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.avif'))}');">
           <div class="specialist-card-availability">
             <span class="specialist-card-availability-label">Available</span>
             <span class="specialist-card-rating">${Number(provider.averageRating || 0).toFixed(1)} ★</span>
@@ -335,12 +377,101 @@
     `).join('');
   }
 
+  function buildFindMoreButtonMarkup(label = 'Find More') {
+    return `
+      <button class="animated-button specialists-find-more-btn" type="button" data-find-more-trigger>
+        <svg xmlns="http://www.w3.org/2000/svg" class="arr-2" viewBox="0 0 24 24">
+          <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+        </svg>
+        <span class="text">${escapeHtml(label)}</span>
+        <span class="circle"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="arr-1" viewBox="0 0 24 24">
+          <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+        </svg>
+      </button>
+    `;
+  }
+
+  function buildSpecialistCardSkeletons(count = 4) {
+    return Array.from({ length: count }, () => `
+      <article class="specialist-card specialist-card-skeleton-card" aria-hidden="true">
+        <div class="specialist-card-banner specialist-card-skeleton-banner">
+          <div class="specialist-card-skeleton-pill provider-skeleton-block"></div>
+          <div class="specialist-card-skeleton-avatar provider-skeleton-block"></div>
+          <div class="specialist-card-banner-copy">
+            <span class="specialist-card-skeleton-line is-name provider-skeleton-line"></span>
+            <span class="specialist-card-skeleton-line is-role provider-skeleton-line"></span>
+          </div>
+        </div>
+        <div class="specialist-card-body">
+          <div class="specialist-card-skeleton-inline provider-skeleton-line"></div>
+          <div class="specialist-card-skeleton-stack">
+            <span class="specialist-card-skeleton-line provider-skeleton-line"></span>
+            <span class="specialist-card-skeleton-line short provider-skeleton-line"></span>
+          </div>
+          <div class="specialist-card-skeleton-stack">
+            <span class="specialist-card-skeleton-line provider-skeleton-line"></span>
+            <span class="specialist-card-skeleton-line short provider-skeleton-line"></span>
+          </div>
+          <div class="specialist-card-skeleton-copy">
+            <span class="specialist-card-skeleton-line provider-skeleton-line"></span>
+            <span class="specialist-card-skeleton-line provider-skeleton-line"></span>
+            <span class="specialist-card-skeleton-line short provider-skeleton-line"></span>
+          </div>
+          <div class="specialist-card-skeleton-actions">
+            <span class="specialist-card-skeleton-button provider-skeleton-block"></span>
+            <span class="specialist-card-skeleton-button provider-skeleton-block"></span>
+          </div>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function buildProviderInviteLink(serviceText = '') {
+    const target = new URL(`${getBase()}pages/account.html`, window.location.origin);
+    target.searchParams.set('setup', '1');
+    if (serviceText) target.searchParams.set('service', serviceText);
+    return `${target.pathname}${target.search}`;
+  }
+
+  function buildEmptyStateMarkup(serviceText = '') {
+    const label = serviceText || 'this service';
+    const inviteLink = buildProviderInviteLink(label);
+    const shareText = `I searched for ${label} on WorkLinkUp and there are no specialists listed yet. If you know someone who offers this service, invite them to join: ${window.location.origin}${inviteLink}`;
+    return `
+      <div class="specialists-empty specialists-empty-rich">
+        <div class="specialists-empty-icon"><i class="fa-regular fa-compass"></i></div>
+        <h3>No specialists yet for ${escapeHtml(label)}</h3>
+        <p>We could not find a provider for this search yet. Share WorkLinkUp with someone who offers ${escapeHtml(label)} so they can list themselves and start getting discovered here.</p>
+        <div class="specialists-empty-actions">
+          <a href="${escapeHtml(inviteLink)}" class="provider-profile-action">List this service</a>
+          <button type="button" class="provider-profile-action secondary" data-empty-share="${escapeHtml(shareText)}">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Share with a provider</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildRelatedServicesMarkup(items = [], duplicate = false) {
+    const cards = items.map((item) => `
+      <a href="${getBase()}pages/specialists.html?query=${encodeURIComponent(item.label)}&results=1" class="specialists-related-card">
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(item.address)}</span>
+      </a>
+    `).join('');
+
+    return duplicate ? `${cards}${cards}` : cards;
+  }
+
   async function readImageAsBase64(file, options = {}) {
     if (!file) return '';
     const {
       maxWidth = 1280,
       maxHeight = 1280,
-      quality = 0.82
+      quality = 0.82,
+      outputType = 'image/jpeg'
     } = options;
 
     const sourceDataUrl = await new Promise((resolve, reject) => {
@@ -369,7 +500,21 @@
     const context = canvas.getContext('2d');
     if (!context) return sourceDataUrl;
     context.drawImage(image, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', quality);
+    const encoded = canvas.toDataURL(outputType, quality);
+    if (outputType === 'image/avif' && !String(encoded || '').startsWith('data:image/avif')) {
+      return canvas.toDataURL('image/webp', quality);
+    }
+    return encoded;
+  }
+
+  async function readFileAsDataUrl(file) {
+    if (!file) return '';
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Could not read that file.'));
+      reader.readAsDataURL(file);
+    });
   }
 
   function ensureOnboardingModal(base) {
@@ -497,7 +642,7 @@
 
   function updateUploadPreview(target, imageData, mode) {
     if (!target) return;
-    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.jpg' : 'images/sections/findme.png');
+    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.jpg' : 'images/sections/findme.avif');
     target.innerHTML = `<img src="${escapeHtml(src)}" alt="" />`;
   }
 
@@ -680,37 +825,7 @@
     });
 
     async function maybePromptOnboarding() {
-      const account = getStoredAccount();
-      if (!account?.loggedIn) return;
-      if (window.location.pathname.endsWith('/help.html')) return;
-
-      const authHelper = await waitForAuthHelper();
-      if (!authHelper || typeof authHelper.getUserDocument !== 'function') return;
-
-      try {
-        const userDoc = await authHelper.getUserDocument(account.uid);
-        let providerProfile = null;
-        if (typeof authHelper.getProviderProfileByUid === 'function') {
-          providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug);
-        }
-
-        const hasCompletedProfile = Boolean(
-          userDoc?.providerProfileComplete ||
-          providerProfile?.uid ||
-          providerProfile?.provinceSlug
-        );
-
-        if (hasCompletedProfile) return;
-
-        openOnboarding({
-          ...(userDoc || {}),
-          ...(providerProfile || {}),
-          name: userDoc?.name || account.name,
-          phone: userDoc?.phone || account.phone
-        });
-      } catch (error) {
-        openOnboarding(account);
-      }
+      return;
     }
 
     syncSteps();
@@ -724,6 +839,7 @@
     if (!page) return;
 
     const base = getBase();
+    const params = new URLSearchParams(window.location.search);
     const categoriesHost = page.querySelector('[data-specialist-categories]');
     const sidebarHost = page.querySelector('[data-specialist-sidebar]');
     const sidebarLayout = page.querySelector('[data-specialists-layout]');
@@ -735,21 +851,60 @@
     const mobileRatingOptions = Array.from(document.querySelectorAll('[data-specialists-rating-sheet] [data-rating-filter]'));
     const resultsHost = page.querySelector('[data-specialists-results]');
     const totalHost = page.querySelector('[data-specialists-total]');
+    const resultsTitleHost = page.querySelector('[data-specialists-results-title]');
+    const resultsActionsHost = page.querySelector('[data-specialists-results-actions]');
+    const relatedShell = page.querySelector('[data-specialists-related-shell]');
+    const relatedHost = page.querySelector('[data-specialists-related]');
     const searchInput = page.querySelector('[data-specialists-search]');
     const ratingButtons = Array.from(page.querySelectorAll('[data-rating-filter]'));
     const filterBtn = page.querySelector('[data-open-specialists-sheet]');
     const ratingSheetBtn = page.querySelector('[data-open-specialists-rating-sheet]');
     const sheetCloseBtn = page.querySelector('[data-close-specialists-sheet]');
     const ratingSheetCloseBtn = page.querySelector('[data-close-specialists-rating-sheet]');
-    const currentCategory = new URLSearchParams(window.location.search).get('category') || '';
+    const currentCategory = params.get('category') || '';
+    const searchQueryParam = params.get('query') || '';
+    const initialSubservice = params.get('service') || '';
+    const initialResultsMode = params.get('results') === '1';
     const mobileQuery = window.matchMedia('(max-width: 768px)');
     const providers = [];
+    let renderRequestId = 0;
+    let manualSidebarCollapsed = false;
     const state = {
       category: currentCategory,
-      subservice: '',
+      subservice: initialSubservice,
       rating: 0,
-      search: ''
+      search: searchQueryParam,
+      resultsMode: initialResultsMode || Boolean(searchQueryParam || initialSubservice)
     };
+
+    if (searchInput instanceof HTMLInputElement) {
+      searchInput.value = searchQueryParam;
+    }
+
+    function isResultsMode() {
+      return Boolean(state.resultsMode || state.search || state.subservice);
+    }
+
+    function getActiveSearchLabel() {
+      return state.search || state.subservice || state.category || 'specialists';
+    }
+
+    function syncUrl() {
+      const nextUrl = new URL(window.location.href);
+      if (state.category) nextUrl.searchParams.set('category', state.category);
+      else nextUrl.searchParams.delete('category');
+      if (state.search) {
+        nextUrl.searchParams.set('query', state.search);
+        nextUrl.searchParams.set('results', '1');
+      } else {
+        nextUrl.searchParams.delete('query');
+        if (!state.subservice && !state.resultsMode) nextUrl.searchParams.delete('results');
+      }
+      if (state.subservice) nextUrl.searchParams.set('service', state.subservice);
+      else nextUrl.searchParams.delete('service');
+      if (state.resultsMode) nextUrl.searchParams.set('results', '1');
+      window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
+    }
 
     function renderCategoryRail() {
       if (!categoriesHost) return;
@@ -783,7 +938,8 @@
         button.addEventListener('click', () => {
           state.category = button.getAttribute('data-filter-category') || '';
           state.subservice = '';
-          update();
+          state.resultsMode = true;
+          update({ showSkeleton: true, source: 'sidebar-category' });
           if (mobileSheet) mobileSheet.hidden = true;
         });
       });
@@ -792,19 +948,121 @@
         button.addEventListener('click', () => {
           state.category = button.getAttribute('data-parent-category') || state.category;
           state.subservice = button.getAttribute('data-filter-subservice') || '';
-          update();
+          state.search = state.subservice;
+          state.resultsMode = true;
+          update({ showSkeleton: true, source: 'sidebar-service' });
           if (mobileSheet) mobileSheet.hidden = true;
         });
       });
     }
 
-    function update() {
+    function renderRelatedServices(filteredProviders) {
+      if (!(relatedShell instanceof HTMLElement) || !(relatedHost instanceof HTMLElement)) return;
+      if (!isResultsMode()) {
+        relatedShell.hidden = true;
+        relatedHost.innerHTML = '';
+        return;
+      }
+
+      const relatedCandidates = [
+        ...filteredProviders.slice(0, 8).map((provider) => ({
+          label: provider.specialty || provider.primaryCategory || 'Service',
+          address: provider.address || [provider.city, provider.province].filter(Boolean).join(', ') || 'Available on WorkLinkUp'
+        })),
+        ...SPECIALIST_CATEGORIES
+          .filter((category) => category.label !== state.category)
+          .flatMap((category) => category.subservices.slice(0, 2).map((service) => ({
+            label: service,
+            address: `${category.label} near you`
+          })))
+      ].filter((item, index, list) => item.label && list.findIndex((entry) => entry.label === item.label) === index).slice(0, 10);
+
+      if (!relatedCandidates.length) {
+        relatedShell.hidden = true;
+        return;
+      }
+
+      relatedShell.hidden = false;
+      relatedHost.innerHTML = buildRelatedServicesMarkup(relatedCandidates, true);
+    }
+
+    function renderResultsActions() {
+      if (!resultsActionsHost) return;
+      const focused = isResultsMode();
+      resultsActionsHost.innerHTML = focused
+        ? buildFindMoreButtonMarkup('More')
+        : buildFindMoreButtonMarkup('Find More');
+      const button = resultsActionsHost.querySelector('[data-find-more-trigger]');
+      button?.addEventListener('click', () => {
+        if (focused && relatedShell instanceof HTMLElement && !relatedShell.hidden) {
+          relatedShell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        if (searchInput instanceof HTMLInputElement) {
+          searchInput.focus();
+        }
+      });
+    }
+
+    function applyUiMode(filteredCount = 0) {
+      const focused = isResultsMode();
+      page.classList.toggle('is-results-mode', focused);
+      if (sidebarLayout instanceof HTMLElement) {
+        sidebarLayout.classList.toggle('is-sidebar-collapsed', focused || manualSidebarCollapsed);
+      }
+      if (resultsTitleHost instanceof HTMLElement) {
+        resultsTitleHost.textContent = focused
+          ? `Results for "${getActiveSearchLabel()}"`
+          : 'Available Specialists';
+      }
+      if (totalHost) {
+        totalHost.textContent = focused
+          ? `${filteredCount} result${filteredCount === 1 ? '' : 's'}`
+          : `${filteredCount} specialist${filteredCount === 1 ? '' : 's'}`;
+      }
+      renderResultsActions();
+    }
+
+    async function update({ showSkeleton = false } = {}) {
+      syncUrl();
       const filtered = filterProviders(providers, state);
       renderFilters();
       bindFilterInteractions(sidebarHost);
       bindFilterInteractions(mobileSheetBody);
-      renderProviderCards(resultsHost, filtered);
-      if (totalHost) totalHost.textContent = `${filtered.length} specialist${filtered.length === 1 ? '' : 's'}`;
+      applyUiMode(filtered.length);
+      renderRelatedServices(filtered);
+
+      const requestId = ++renderRequestId;
+      if (showSkeleton && resultsHost) {
+        resultsHost.innerHTML = buildSpecialistCardSkeletons(Math.max(4, Math.min(filtered.length || 4, 6)));
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, showSkeleton ? 520 : 0));
+      if (requestId !== renderRequestId) return;
+
+      if (!filtered.length) {
+        if (resultsHost) resultsHost.innerHTML = buildEmptyStateMarkup(getActiveSearchLabel());
+      } else {
+        renderProviderCards(resultsHost, filtered);
+      }
+
+      resultsHost?.querySelector('[data-empty-share]')?.addEventListener('click', async (event) => {
+        const shareText = event.currentTarget.getAttribute('data-empty-share') || '';
+        const shareUrl = `${window.location.origin}${buildProviderInviteLink(getActiveSearchLabel())}`;
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `Looking for ${getActiveSearchLabel()} on WorkLinkUp`,
+              text: shareText,
+              url: shareUrl
+            });
+            return;
+          } catch (error) {
+            // Fall back to WhatsApp link below.
+          }
+        }
+        window.open(buildWhatsAppShareLink(shareText), '_blank', 'noopener,noreferrer');
+      });
 
       page.querySelectorAll('[data-category-chip]').forEach((chip) => {
         chip.classList.toggle('is-active', chip.getAttribute('data-category-chip') === state.category);
@@ -822,6 +1080,7 @@
     renderFilters();
     bindFilterInteractions(sidebarHost);
     bindFilterInteractions(mobileSheetBody);
+    applyUiMode(0);
 
     categoriesHost?.addEventListener('click', (event) => {
       const chip = event.target.closest('[data-category-chip]');
@@ -829,6 +1088,8 @@
       event.preventDefault();
       state.category = chip.getAttribute('data-category-chip') || '';
       state.subservice = '';
+      state.search = '';
+      state.resultsMode = false;
       update();
     });
 
@@ -836,7 +1097,8 @@
       button.addEventListener('click', () => {
         const ratingValue = Number(button.getAttribute('data-rating-filter') || 0);
         state.rating = state.rating === ratingValue ? 0 : ratingValue;
-        update();
+        state.resultsMode = Boolean(state.search || state.subservice || state.resultsMode);
+        update({ showSkeleton: true });
       });
     });
 
@@ -844,14 +1106,17 @@
       button.addEventListener('click', () => {
         const ratingValue = Number(button.getAttribute('data-rating-filter') || 0);
         state.rating = ratingValue;
-        update();
+        state.resultsMode = Boolean(state.search || state.subservice || state.resultsMode);
+        update({ showSkeleton: true });
         if (mobileRatingSheet) mobileRatingSheet.hidden = true;
       });
     });
 
     searchInput?.addEventListener('input', () => {
       state.search = searchInput.value.trim();
-      update();
+      state.subservice = '';
+      state.resultsMode = Boolean(state.search);
+      update({ showSkeleton: true });
     });
 
     filterBtn?.addEventListener('click', () => {
@@ -886,7 +1151,8 @@
 
     sidebarToggle?.addEventListener('click', () => {
       if (!(sidebarLayout instanceof HTMLElement)) return;
-      sidebarLayout.classList.toggle('is-sidebar-collapsed');
+      manualSidebarCollapsed = !manualSidebarCollapsed;
+      sidebarLayout.classList.toggle('is-sidebar-collapsed', manualSidebarCollapsed || isResultsMode());
     });
 
     mobileQuery.addEventListener('change', renderCategoryRail);
@@ -895,7 +1161,7 @@
       if (page instanceof HTMLElement) page.classList.add('is-loading');
       const remoteProviders = await getProviders();
       providers.splice(0, providers.length, ...remoteProviders);
-      update();
+      update({ showSkeleton: true });
     } finally {
       if (page instanceof HTMLElement) page.classList.remove('is-loading');
     }
@@ -1081,7 +1347,7 @@
         <p>Update the caption or replace the image for this work post.</p>
         <form class="provider-editor-form" data-provider-post-editor-form>
           <div class="provider-post-preview provider-dialog-image-preview" data-provider-post-editor-preview>
-            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Post preview" />
+            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.avif'))}" alt="Post preview" />
           </div>
           <label><span>Caption</span><textarea name="caption" required>${escapeHtml(post.caption || '')}</textarea></label>
           <label><span>Replace image</span><input type="file" name="imageFile" accept="image/*" /></label>
@@ -1158,8 +1424,15 @@
     const jobs = page.querySelector('[data-provider-jobs]');
     const messageLink = page.querySelector('[data-provider-message-link]');
     const editProfileBtn = page.querySelector('[data-provider-edit-profile]');
+    const documentsBtn = page.querySelector('[data-provider-documents-trigger]');
     const backBtn = page.querySelector('[data-provider-back]');
     const postGrid = page.querySelector('[data-provider-post-grid]');
+    const languagesCard = page.querySelector('[data-provider-languages-card]');
+    const languagesHost = page.querySelector('[data-provider-languages]');
+    const skillsCard = page.querySelector('[data-provider-skills-card]');
+    const skillsHost = page.querySelector('[data-provider-skills]');
+    const linksCard = page.querySelector('[data-provider-links-card]');
+    const linksHost = page.querySelector('[data-provider-links]');
 
     backBtn?.addEventListener('click', () => {
       if (window.history.length > 1) {
@@ -1178,12 +1451,12 @@
       ]);
       if (!freshProvider) return;
 
-      const workLabel = [freshProvider.specialty, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
+      const workLabel = [freshProvider.title || freshProvider.specialty, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
       const locationLabel = freshProvider.address || [freshProvider.city, freshProvider.province].filter(Boolean).join(', ') || 'Location not shared';
       const phoneNumber = String(freshProvider.whatsappNumber || '').trim();
-      const bannerSrc = resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.png');
+      const bannerSrc = resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.avif');
       const avatarSrc = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
-      const postImageSources = posts.map((post) => resolveMediaSrc(post.imageData, 'images/sections/findme.png'));
+      const postImageSources = posts.map((post) => resolveMediaSrc(post.imageData, 'images/sections/findme.avif'));
 
       await Promise.all([
         preloadImage(bannerSrc),
@@ -1215,7 +1488,71 @@
       if (messageLink instanceof HTMLElement) messageLink.hidden = isOwner;
       if (editProfileBtn instanceof HTMLButtonElement) {
         editProfileBtn.hidden = !isOwner;
-        editProfileBtn.onclick = () => openProfileEditor(freshProvider, refreshProfile);
+        editProfileBtn.onclick = () => {
+          window.location.href = `${getBase()}pages/account.html?setup=provider`;
+        };
+      }
+
+      if (languagesCard instanceof HTMLElement && languagesHost instanceof HTMLElement) {
+        const languageItems = Array.isArray(freshProvider.languages) ? freshProvider.languages : [];
+        languagesCard.hidden = !languageItems.length;
+        languagesHost.innerHTML = languageItems.map((entry) => `
+          <span class="provider-meta-chip">${escapeHtml(entry.name)} • ${escapeHtml(entry.level)}</span>
+        `).join('');
+      }
+
+      if (skillsCard instanceof HTMLElement && skillsHost instanceof HTMLElement) {
+        const skillItems = Array.isArray(freshProvider.skills) ? freshProvider.skills : [];
+        skillsCard.hidden = !skillItems.length;
+        skillsHost.innerHTML = skillItems.map((entry) => `
+          <article class="provider-profile-skill-card">
+            <strong>${escapeHtml(entry.name)}</strong>
+            <span>${escapeHtml(entry.level || 'Experienced')}</span>
+          </article>
+        `).join('');
+      }
+
+      if (linksCard instanceof HTMLElement && linksHost instanceof HTMLElement) {
+        const linkItems = Array.isArray(freshProvider.portfolioLinks) ? freshProvider.portfolioLinks : [];
+        linksCard.hidden = !linkItems.length;
+        linksHost.innerHTML = linkItems.map((link) => `
+          <a href="${escapeHtml(link)}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>
+        `).join('');
+      }
+
+      if (documentsBtn instanceof HTMLButtonElement) {
+        const documentItems = Array.isArray(freshProvider.professionalDocuments) ? freshProvider.professionalDocuments : [];
+        documentsBtn.hidden = !documentItems.length;
+        documentsBtn.onclick = () => {
+          openProviderDialog(`
+            <div class="provider-dialog-card provider-dialog-card-documents">
+              <h3>Professional documents</h3>
+              <div class="provider-document-grid">
+                ${documentItems.map((documentItem) => `
+                  <button type="button" class="provider-document-card" data-open-provider-document="${escapeHtml(documentItem.id || documentItem.name)}">
+                    <strong>${escapeHtml(documentItem.name)}</strong>
+                    <span>${escapeHtml(documentItem.kind === 'image' ? 'Image document' : 'PDF document')}</span>
+                  </button>
+                `).join('')}
+              </div>
+              <div class="provider-document-preview" data-provider-document-preview>
+                <p>Select a document to view it in full.</p>
+              </div>
+            </div>
+          `, (body) => {
+            body.querySelectorAll('[data-open-provider-document]').forEach((button) => {
+              button.addEventListener('click', () => {
+                const key = button.getAttribute('data-open-provider-document') || '';
+                const selected = documentItems.find((item) => String(item.id || item.name) === key);
+                const preview = body.querySelector('[data-provider-document-preview]');
+                if (!(preview instanceof HTMLElement) || !selected) return;
+                preview.innerHTML = selected.kind === 'image'
+                  ? `<img src="${escapeHtml(selected.data)}" alt="${escapeHtml(selected.name)}" />`
+                  : `<iframe src="${escapeHtml(selected.data)}" title="${escapeHtml(selected.name)}"></iframe>`;
+              });
+            });
+          });
+        };
       }
 
       if (postGrid) {
@@ -1293,7 +1630,7 @@
             closeMenus();
             openProviderDialog(`
               <div class="provider-dialog-card provider-dialog-card-wide">
-                <img class="provider-dialog-hero-image" src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Work preview" />
+                <img class="provider-dialog-hero-image" src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.avif'))}" alt="Work preview" />
                 <div class="provider-dialog-copy">
                   <h3>${escapeHtml(freshProvider.displayName)}</h3>
                   <p>${escapeHtml(post.caption || 'Work posted by the provider.')}</p>
@@ -1390,7 +1727,7 @@
               </div>
             </div>
             <p>${escapeHtml(post.caption || '')}</p>
-            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.png'))}" alt="Provider post" />
+            <img src="${escapeHtml(resolveMediaSrc(post.imageData, 'images/sections/findme.avif'))}" alt="Provider post" />
           </article>
         `).join('')
         : `<div class="specialists-empty">Your posts will appear here once you upload your first piece of work.</div>`;
@@ -2350,33 +2687,708 @@
     }, { once: true });
   }
 
-  async function enrichAccountPage() {
-    if (!document.getElementById('account-dashboard')) return;
+  function buildSelectOptions(items = [], selected = '', placeholder = '') {
+    const normalizedSelected = String(selected || '').trim();
+    const placeholderMarkup = placeholder ? `<option value="">${escapeHtml(placeholder)}</option>` : '';
+    return `${placeholderMarkup}${items.map((item) => {
+      const value = String(item || '').trim();
+      return `<option value="${escapeHtml(value)}" ${value === normalizedSelected ? 'selected' : ''}>${escapeHtml(value)}</option>`;
+    }).join('')}`;
+  }
+
+  function buildSetupRepeaterRows(kind, items = []) {
+    const safeItems = Array.isArray(items) && items.length ? items : [{}];
+    return safeItems.map((item) => {
+      if (kind === 'language') {
+        return `
+          <div class="account-setup-repeater-row" data-repeater-row="language">
+            <select data-language-name>${buildSelectOptions(SOUTHERN_AFRICAN_LANGUAGES, item.name || '', 'Select language')}</select>
+            <select data-language-level>${buildSelectOptions(['Basic', 'Conversational', 'Fluent', 'Native/Bilingual'], item.level || '', 'Level')}</select>
+            <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove language"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }
+
+      if (kind === 'skill') {
+        return `
+          <div class="account-setup-repeater-row" data-repeater-row="skill">
+            <input type="text" data-skill-name placeholder="Skill or expertise" value="${escapeHtml(String(item.name || ''))}" />
+            <select data-skill-level>${buildSelectOptions(['Beginner', 'Intermediate', 'Pro'], item.level || '', 'Experience level')}</select>
+            <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove skill"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }
+
+      if (kind === 'experience') {
+        return `
+          <div class="account-setup-repeater-row is-wide" data-repeater-row="experience">
+            <input type="text" data-exp-role placeholder="Role or job title" value="${escapeHtml(String(item.role || ''))}" />
+            <input type="text" data-exp-company placeholder="Business or client" value="${escapeHtml(String(item.company || ''))}" />
+            <input type="text" data-exp-period placeholder="Period" value="${escapeHtml(String(item.period || ''))}" />
+            <textarea data-exp-summary placeholder="What did you do there?">${escapeHtml(String(item.summary || ''))}</textarea>
+            <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove experience"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }
+
+      if (kind === 'education') {
+        return `
+          <div class="account-setup-repeater-row is-wide" data-repeater-row="education">
+            <input type="text" data-edu-school placeholder="School or institution" value="${escapeHtml(String(item.school || ''))}" />
+            <input type="text" data-edu-qualification placeholder="Qualification" value="${escapeHtml(String(item.qualification || ''))}" />
+            <input type="text" data-edu-period placeholder="Year or period" value="${escapeHtml(String(item.period || ''))}" />
+            <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove education"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }
+
+      if (kind === 'certification') {
+        return `
+          <div class="account-setup-repeater-row" data-repeater-row="certification">
+            <input type="text" data-cert-name placeholder="Certificate name" value="${escapeHtml(String(item.name || ''))}" />
+            <input type="text" data-cert-issuer placeholder="Issuer" value="${escapeHtml(String(item.issuer || ''))}" />
+            <input type="text" data-cert-year placeholder="Year" value="${escapeHtml(String(item.year || ''))}" />
+            <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove certification"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="account-setup-repeater-row" data-repeater-row="link">
+          <input type="url" data-link-url placeholder="https://yourwebsite.com" value="${escapeHtml(String(item || ''))}" />
+          <button type="button" class="account-setup-remove-row" data-remove-row aria-label="Remove link"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function collectRows(container, rowSelector, mapper) {
+    if (!(container instanceof HTMLElement)) return [];
+    return Array.from(container.querySelectorAll(rowSelector))
+      .map((row) => mapper(row))
+      .filter(Boolean);
+  }
+
+  async function initializeAccountPageExperience() {
+    const guestStage = document.getElementById('account-guest-card');
+    const setupStage = document.getElementById('account-setup-stage');
+    const setupBody = document.querySelector('[data-account-setup-body]');
+    const dashboard = document.getElementById('account-dashboard');
+    if (!guestStage || !setupStage || !setupBody || !dashboard) return;
+
     const account = getStoredAccount();
-    if (!account?.loggedIn) return;
+    if (!account?.loggedIn) {
+      guestStage.hidden = false;
+      setupStage.hidden = true;
+      dashboard.hidden = true;
+      return;
+    }
 
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
 
-    try {
-      const userDoc = await authHelper.getUserDocument(account.uid);
-      const providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug);
+    const params = new URLSearchParams(window.location.search);
+    const providerInviteService = params.get('service') || '';
+    const forcedSetup = params.get('setup') || '';
+    let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
+    let providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => null);
+
+    function fillDashboard() {
       const providerIdEl = document.getElementById('account-provider-id');
       const provinceEl = document.getElementById('account-profile-province');
       const whatsappEl = document.getElementById('account-profile-whatsapp');
       const experienceEl = document.getElementById('account-profile-experience');
       const categoryEl = document.getElementById('account-profile-category');
       const specialtyEl = document.getElementById('account-profile-specialty');
+      const nameEl = document.getElementById('account-profile-name');
+      const emailEl = document.getElementById('account-profile-email');
+      const displayName = providerProfile?.displayName || userDoc?.name || account.name || 'WorkLinkUp User';
+      const email = account.email || userDoc?.email || 'you@example.com';
 
+      if (nameEl) nameEl.textContent = displayName;
+      if (emailEl) emailEl.textContent = email;
       if (providerIdEl) providerIdEl.textContent = userDoc?.providerPublicId || providerProfile?.providerPublicId || 'Pending';
       if (provinceEl) provinceEl.textContent = userDoc?.providerProvince || providerProfile?.province || 'Not set';
       if (whatsappEl) whatsappEl.textContent = userDoc?.whatsappNumber || providerProfile?.whatsappNumber || 'Not set';
       if (experienceEl) experienceEl.textContent = userDoc?.experience || providerProfile?.experience || 'Not set';
       if (categoryEl) categoryEl.textContent = userDoc?.primaryCategory || providerProfile?.primaryCategory || 'Not set';
       if (specialtyEl) specialtyEl.textContent = userDoc?.specialty || providerProfile?.specialty || 'Not set';
-    } catch (error) {
-      // Keep the account page usable even if provider data is unavailable.
     }
+
+    function getSetupStep() {
+      const providerComplete = Boolean(userDoc?.providerProfileComplete || providerProfile?.uid);
+      if (forcedSetup === 'provider') return 'provider';
+      if (forcedSetup === '1' && !userDoc?.username) return 'username';
+      if (!userDoc?.username) return 'username';
+      if (!userDoc?.userRole) return 'role';
+      if (userDoc.userRole === 'provider' && !providerComplete) return 'provider';
+      if (forcedSetup === '1' && userDoc.userRole === 'provider') return 'provider';
+      return 'dashboard';
+    }
+
+    async function refreshState() {
+      userDoc = await authHelper.getUserDocument(account.uid).catch(() => userDoc) || userDoc;
+      providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => providerProfile);
+    }
+
+    async function renderCurrentStep() {
+      const step = getSetupStep();
+
+      guestStage.hidden = true;
+      setupStage.hidden = step === 'dashboard';
+      dashboard.hidden = step !== 'dashboard';
+
+      if (step === 'dashboard') {
+        fillDashboard();
+        return;
+      }
+
+      if (step === 'username') {
+        setupBody.innerHTML = `
+          <section class="account-setup-split">
+            <div class="account-setup-split-visual">
+              <div class="account-auth-stage-badges" aria-hidden="true">
+                <div class="account-auth-stage-badge">
+                  <img src="../images/sections/addie.avif" alt="" />
+                  <span>Addie</span>
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="account-auth-stage-badge is-offset">
+                  <img src="../images/sections/ethel.avif" alt="" />
+                  <span>Ethel_Hair_Salon</span>
+                  <i class="fa-solid fa-check"></i>
+                </div>
+              </div>
+              <img src="../images/sections/login-side.avif" alt="Account setup" class="account-setup-split-image" />
+            </div>
+            <div class="account-setup-split-panel">
+              <button type="button" class="account-setup-back-link" data-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+              <div class="account-setup-content-block">
+                <h2>Get your profile started</h2>
+                <p>Add a username that is unique to you. This is how you'll appear to others on WorkLinkUp.</p>
+                <form class="account-setup-compact-form" data-account-username-form>
+                  <label class="account-setup-field">
+                    <span>Choose a username</span>
+                    <input type="text" data-account-username-input value="${escapeHtml(userDoc?.username || '')}" placeholder="john_smith" />
+                    <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
+                    <strong class="account-setup-field-message" data-account-username-message></strong>
+                  </label>
+                  <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit disabled>
+                    <span class="account-btn-label">Create my account</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+        `;
+
+        setupBody.querySelector('[data-back-home]')?.addEventListener('click', () => {
+          window.location.href = `${getBase()}index.html`;
+        });
+
+        const usernameInput = setupBody.querySelector('[data-account-username-input]');
+        const usernameMessage = setupBody.querySelector('[data-account-username-message]');
+        const usernameSubmit = setupBody.querySelector('[data-account-username-submit]');
+        let usernameTimer = 0;
+
+        const validateUsername = async () => {
+          if (!(usernameInput instanceof HTMLInputElement)) return false;
+          const value = usernameInput.value.trim();
+          if (!value) {
+            usernameInput.classList.remove('is-valid');
+            usernameInput.classList.add('is-invalid');
+            if (usernameMessage) {
+              usernameMessage.textContent = 'Choose a username before you continue.';
+              usernameMessage.classList.add('is-error');
+            }
+            if (usernameSubmit instanceof HTMLButtonElement) usernameSubmit.disabled = true;
+            return false;
+          }
+
+          const result = await authHelper.checkUsernameAvailability(value, account.uid);
+          usernameInput.classList.toggle('is-invalid', !result.available);
+          usernameInput.classList.toggle('is-valid', result.available);
+          if (usernameMessage) {
+            usernameMessage.textContent = result.available ? `@${result.normalized} is available` : (result.reason || 'That username is already taken.');
+            usernameMessage.classList.toggle('is-error', !result.available);
+            usernameMessage.classList.toggle('is-success', result.available);
+          }
+          if (usernameSubmit instanceof HTMLButtonElement) usernameSubmit.disabled = !result.available;
+          return result.available;
+        };
+
+        usernameInput?.addEventListener('input', () => {
+          window.clearTimeout(usernameTimer);
+          usernameTimer = window.setTimeout(() => {
+            validateUsername();
+          }, 240);
+        });
+
+        setupBody.querySelector('[data-account-username-form]')?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!await validateUsername()) return;
+          if (!(usernameInput instanceof HTMLInputElement) || !(usernameSubmit instanceof HTMLButtonElement)) return;
+          setButtonLoading(usernameSubmit, true);
+          try {
+            await authHelper.saveAccountSetup({
+              username: usernameInput.value.trim(),
+              displayName: userDoc?.name || account.name
+            });
+            await refreshState();
+            await renderCurrentStep();
+          } catch (error) {
+            if (usernameMessage) {
+              usernameMessage.textContent = error.message || 'Could not save that username.';
+              usernameMessage.classList.add('is-error');
+            }
+            usernameInput.classList.add('is-invalid');
+          } finally {
+            setButtonLoading(usernameSubmit, false);
+          }
+        });
+
+        return;
+      }
+
+      if (step === 'role') {
+        setupBody.innerHTML = `
+          <section class="account-setup-role-stage">
+            <div class="account-setup-role-copy">
+              <h2>${escapeHtml(userDoc?.username || account.name || 'WorkLinkUp user')}, your account has been created. What brings you to WorkLinkUp?</h2>
+              <p>We'll tailor your experience to fit your needs.</p>
+            </div>
+            <div class="account-setup-role-grid">
+              <button type="button" class="account-setup-role-card" data-role-card="client">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <strong>I am a client</strong>
+                <span>I want to find providers and browse specialists.</span>
+              </button>
+              <button type="button" class="account-setup-role-card" data-role-card="provider">
+                <i class="fa-solid fa-user-gear"></i>
+                <strong>Service Provider</strong>
+                <span>I want to list my services and get found by clients.</span>
+              </button>
+            </div>
+            <div class="account-setup-role-actions">
+              <button type="button" class="account-submit-btn account-submit-signup" data-role-next disabled><span class="account-btn-label">Next</span></button>
+            </div>
+          </section>
+        `;
+
+        let selectedRole = '';
+        setupBody.querySelectorAll('[data-role-card]').forEach((card) => {
+          card.addEventListener('click', () => {
+            selectedRole = card.getAttribute('data-role-card') || '';
+            setupBody.querySelectorAll('[data-role-card]').forEach((item) => item.classList.toggle('is-selected', item === card));
+            const nextBtn = setupBody.querySelector('[data-role-next]');
+            if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = !selectedRole;
+          });
+        });
+
+        setupBody.querySelector('[data-role-next]')?.addEventListener('click', async (event) => {
+          const nextBtn = event.currentTarget;
+          if (!(nextBtn instanceof HTMLButtonElement) || !selectedRole) return;
+          setButtonLoading(nextBtn, true);
+          try {
+            await authHelper.saveAccountSetup({
+              username: userDoc?.username,
+              userRole: selectedRole,
+              displayName: userDoc?.name || account.name
+            });
+            await refreshState();
+            if (selectedRole === 'client') {
+              window.location.href = `${getBase()}pages/specialists.html`;
+              return;
+            }
+            await renderCurrentStep();
+          } catch (error) {
+            window.alert(error.message || 'Could not save your account type.');
+          } finally {
+            setButtonLoading(nextBtn, false);
+          }
+        });
+
+        return;
+      }
+
+      const existingProvider = normalizeProvider(providerProfile || {
+        displayName: userDoc?.name || account.name || '',
+        province: userDoc?.providerProvince || 'Harare',
+        username: userDoc?.username || '',
+        specialty: providerInviteService || userDoc?.specialty || ''
+      });
+      const providerMediaState = {
+        profileImageData: existingProvider.profileImageData || '',
+        bannerImageData: existingProvider.bannerImageData || '',
+        professionalDocuments: Array.isArray(existingProvider.professionalDocuments) ? existingProvider.professionalDocuments.slice() : []
+      };
+
+      setupBody.innerHTML = `
+        <section class="account-provider-setup-stage">
+          <div class="account-provider-setup-head">
+            <span class="account-auth-stage-kicker">Service provider profile</span>
+            <h2>Complete your professional profile</h2>
+            <p>Fill in the details clients will see on your WorkLinkUp profile. Missing required fields will highlight in red when you try to continue.</p>
+          </div>
+
+          <form class="account-provider-form" data-account-provider-form novalidate>
+            <div class="account-provider-grid">
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Identity</strong>
+                  <span>How you appear to clients</span>
+                </div>
+                <div class="account-provider-fields two-col">
+                  <label class="account-setup-field">
+                    <span>Display name</span>
+                    <input type="text" name="fullName" required value="${escapeHtml(existingProvider.displayName || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Title</span>
+                    <input type="text" name="title" required value="${escapeHtml(existingProvider.title || '')}" placeholder="Hair stylist, Plumber, Tutor..." />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>WhatsApp number</span>
+                    <input type="tel" name="whatsappNumber" required value="${escapeHtml(existingProvider.whatsappNumber || '')}" placeholder="+263 77 123 4567" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Province</span>
+                    <select name="province" required>${buildSelectOptions(ZIMBABWE_PROVINCES, existingProvider.province || 'Harare')}</select>
+                  </label>
+                  <label class="account-setup-field">
+                    <span>City / suburb</span>
+                    <input type="text" name="city" required value="${escapeHtml(existingProvider.city || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Address or service area</span>
+                    <input type="text" name="address" required value="${escapeHtml(existingProvider.address || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Main category</span>
+                    <select name="primaryCategory" required>${buildSelectOptions(SPECIALIST_CATEGORIES.map((category) => category.label), existingProvider.primaryCategory || '', 'Choose a category')}</select>
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Specialty</span>
+                    <input type="text" name="specialty" required value="${escapeHtml(existingProvider.specialty || providerInviteService || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Experience</span>
+                    <input type="text" name="experience" required value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Username</span>
+                    <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                  </label>
+                </div>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>About</strong>
+                  <span>Tell clients what you do best</span>
+                </div>
+                <label class="account-setup-field">
+                  <span>About you</span>
+                  <textarea name="bio" required minlength="80" placeholder="Share your experience, strengths, and the work you offer.">${escapeHtml(existingProvider.bio || '')}</textarea>
+                </label>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Languages</strong>
+                  <span>Choose the languages you work in</span>
+                </div>
+                <div class="account-provider-repeater" data-language-list>
+                  ${buildSetupRepeaterRows('language', existingProvider.languages)}
+                </div>
+                <button type="button" class="account-provider-add-row" data-add-language><i class="fa-solid fa-plus"></i><span>Add language</span></button>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Skills and expertise</strong>
+                  <span>Add the skills that help clients find you</span>
+                </div>
+                <div class="account-provider-repeater" data-skill-list>
+                  ${buildSetupRepeaterRows('skill', existingProvider.skills)}
+                </div>
+                <button type="button" class="account-provider-add-row" data-add-skill><i class="fa-solid fa-plus"></i><span>Add skill</span></button>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Work experience</strong>
+                  <span>Optional</span>
+                </div>
+                <div class="account-provider-repeater" data-experience-list>
+                  ${buildSetupRepeaterRows('experience', existingProvider.workExperience)}
+                </div>
+                <button type="button" class="account-provider-add-row" data-add-experience><i class="fa-solid fa-plus"></i><span>Add work experience</span></button>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Education and certifications</strong>
+                  <span>Optional</span>
+                </div>
+                <div class="account-provider-subgrid">
+                  <div>
+                    <div class="account-provider-repeater" data-education-list>
+                      ${buildSetupRepeaterRows('education', existingProvider.education)}
+                    </div>
+                    <button type="button" class="account-provider-add-row" data-add-education><i class="fa-solid fa-plus"></i><span>Add education</span></button>
+                  </div>
+                  <div>
+                    <div class="account-provider-repeater" data-certification-list>
+                      ${buildSetupRepeaterRows('certification', existingProvider.certifications)}
+                    </div>
+                    <button type="button" class="account-provider-add-row" data-add-certification><i class="fa-solid fa-plus"></i><span>Add certification</span></button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="account-provider-section">
+                <div class="account-provider-section-head">
+                  <strong>Portfolio and documents</strong>
+                  <span>Optional website links and professional documents</span>
+                </div>
+                <div class="account-provider-repeater" data-link-list>
+                  ${buildSetupRepeaterRows('link', existingProvider.portfolioLinks)}
+                </div>
+                <button type="button" class="account-provider-add-row" data-add-link><i class="fa-solid fa-plus"></i><span>Add website link</span></button>
+
+                <div class="account-provider-media-grid">
+                  <label class="account-provider-upload-card">
+                    <span class="account-provider-upload-preview account-provider-upload-preview-avatar" data-account-profile-preview></span>
+                    <strong>Profile image</strong>
+                    <small>Images are converted before saving.</small>
+                    <input type="file" accept="image/*" data-account-profile-file />
+                  </label>
+                  <label class="account-provider-upload-card">
+                    <span class="account-provider-upload-preview account-provider-upload-preview-banner" data-account-banner-preview></span>
+                    <strong>Banner image</strong>
+                    <small>Wide image shown on your specialist card and profile.</small>
+                    <input type="file" accept="image/*" data-account-banner-file />
+                  </label>
+                </div>
+
+                <label class="account-provider-doc-upload">
+                  <span>Professional documents</span>
+                  <input type="file" accept="application/pdf,image/*" multiple data-account-document-files />
+                  <small>Upload CVs, certificates, licenses, or portfolio pages. Images are converted to AVIF, then stored in base64 for viewing later.</small>
+                </label>
+                <div class="account-provider-doc-list" data-account-document-list></div>
+              </section>
+            </div>
+
+            <div class="account-provider-form-actions">
+              <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
+                <span class="account-btn-label">Save profile</span>
+              </button>
+            </div>
+          </form>
+        </section>
+      `;
+
+      const form = setupBody.querySelector('[data-account-provider-form]');
+      if (!(form instanceof HTMLFormElement)) return;
+      const profilePreview = setupBody.querySelector('[data-account-profile-preview]');
+      const bannerPreview = setupBody.querySelector('[data-account-banner-preview]');
+      const documentList = setupBody.querySelector('[data-account-document-list]');
+      const profileInput = setupBody.querySelector('[data-account-profile-file]');
+      const bannerInput = setupBody.querySelector('[data-account-banner-file]');
+      const documentInput = setupBody.querySelector('[data-account-document-files]');
+
+      updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
+      updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
+
+      function renderDocumentList() {
+        if (!(documentList instanceof HTMLElement)) return;
+        documentList.innerHTML = providerMediaState.professionalDocuments.length
+          ? providerMediaState.professionalDocuments.map((documentItem, index) => `
+            <article class="account-provider-doc-card">
+              <div>
+                <strong>${escapeHtml(documentItem.name)}</strong>
+                <span>${escapeHtml(documentItem.kind === 'image' ? 'Image document' : 'PDF document')}</span>
+              </div>
+              <button type="button" data-remove-document="${index}"><i class="fa-solid fa-xmark"></i></button>
+            </article>
+          `).join('')
+          : '<div class="account-provider-doc-empty">No professional documents uploaded yet.</div>';
+      }
+
+      renderDocumentList();
+
+      profileInput?.addEventListener('change', async () => {
+        const file = profileInput.files?.[0];
+        if (!file) return;
+        providerMediaState.profileImageData = await readImageAsBase64(file, {
+          maxWidth: 720,
+          maxHeight: 720,
+          quality: 0.84,
+          outputType: 'image/avif'
+        });
+        updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
+      });
+
+      bannerInput?.addEventListener('change', async () => {
+        const file = bannerInput.files?.[0];
+        if (!file) return;
+        providerMediaState.bannerImageData = await readImageAsBase64(file, {
+          maxWidth: 1600,
+          maxHeight: 900,
+          quality: 0.82,
+          outputType: 'image/avif'
+        });
+        updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
+      });
+
+      documentInput?.addEventListener('change', async () => {
+        const files = Array.from(documentInput.files || []);
+        for (const file of files) {
+          let data = '';
+          let kind = 'pdf';
+          if (file.type.startsWith('image/')) {
+            data = await readImageAsBase64(file, {
+              maxWidth: 1800,
+              maxHeight: 1800,
+              quality: 0.82,
+              outputType: 'image/avif'
+            });
+            kind = 'image';
+          } else {
+            data = await readFileAsDataUrl(file);
+          }
+
+          providerMediaState.professionalDocuments.push({
+            id: `${Date.now()}_${file.name}`,
+            name: file.name,
+            mimeType: data.match(/^data:([^;]+);/)?.[1] || file.type || 'application/pdf',
+            kind,
+            data
+          });
+        }
+        documentInput.value = '';
+        renderDocumentList();
+      });
+
+      documentList?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-remove-document]');
+        if (!(button instanceof HTMLElement)) return;
+        const index = Number(button.getAttribute('data-remove-document') || -1);
+        if (index >= 0) {
+          providerMediaState.professionalDocuments.splice(index, 1);
+          renderDocumentList();
+        }
+      });
+
+      function bindAddRow(selector, kind, containerSelector) {
+        setupBody.querySelector(selector)?.addEventListener('click', () => {
+          const host = setupBody.querySelector(containerSelector);
+          if (!(host instanceof HTMLElement)) return;
+          host.insertAdjacentHTML('beforeend', buildSetupRepeaterRows(kind, [{}]));
+        });
+      }
+
+      bindAddRow('[data-add-language]', 'language', '[data-language-list]');
+      bindAddRow('[data-add-skill]', 'skill', '[data-skill-list]');
+      bindAddRow('[data-add-experience]', 'experience', '[data-experience-list]');
+      bindAddRow('[data-add-education]', 'education', '[data-education-list]');
+      bindAddRow('[data-add-certification]', 'certification', '[data-certification-list]');
+      bindAddRow('[data-add-link]', 'link', '[data-link-list]');
+
+      setupBody.addEventListener('click', (event) => {
+        const removeBtn = event.target.closest('[data-remove-row]');
+        if (!(removeBtn instanceof HTMLElement)) return;
+        const row = removeBtn.closest('.account-setup-repeater-row');
+        row?.remove();
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitBtn = form.querySelector('[data-account-provider-submit]');
+        const requiredFields = Array.from(form.querySelectorAll('input[required], select[required], textarea[required]'));
+        let hasErrors = false;
+
+        requiredFields.forEach((field) => {
+          if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
+          const invalid = !field.value.trim();
+          field.classList.toggle('is-invalid', invalid);
+          hasErrors = hasErrors || invalid;
+        });
+
+        const languages = collectRows(form.querySelector('[data-language-list]'), '[data-repeater-row="language"]', (row) => {
+          const name = String(row.querySelector('[data-language-name]')?.value || '').trim();
+          const level = String(row.querySelector('[data-language-level]')?.value || '').trim();
+          return name && level ? { name, level } : null;
+        });
+        const skills = collectRows(form.querySelector('[data-skill-list]'), '[data-repeater-row="skill"]', (row) => {
+          const name = String(row.querySelector('[data-skill-name]')?.value || '').trim();
+          const level = String(row.querySelector('[data-skill-level]')?.value || '').trim();
+          return name ? { name, level } : null;
+        });
+
+        if (!languages.length || !skills.length || !providerMediaState.profileImageData || !providerMediaState.bannerImageData) {
+          hasErrors = true;
+        }
+
+        if (hasErrors) {
+          form.querySelector('.is-invalid, input[required], select[required], textarea[required]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        const workExperience = collectRows(form.querySelector('[data-experience-list]'), '[data-repeater-row="experience"]', (row) => {
+          const role = String(row.querySelector('[data-exp-role]')?.value || '').trim();
+          const company = String(row.querySelector('[data-exp-company]')?.value || '').trim();
+          const period = String(row.querySelector('[data-exp-period]')?.value || '').trim();
+          const summary = String(row.querySelector('[data-exp-summary]')?.value || '').trim();
+          return role || company || summary ? { role, company, period, summary } : null;
+        });
+        const education = collectRows(form.querySelector('[data-education-list]'), '[data-repeater-row="education"]', (row) => {
+          const school = String(row.querySelector('[data-edu-school]')?.value || '').trim();
+          const qualification = String(row.querySelector('[data-edu-qualification]')?.value || '').trim();
+          const period = String(row.querySelector('[data-edu-period]')?.value || '').trim();
+          return school || qualification ? { school, qualification, period } : null;
+        });
+        const certifications = collectRows(form.querySelector('[data-certification-list]'), '[data-repeater-row="certification"]', (row) => {
+          const name = String(row.querySelector('[data-cert-name]')?.value || '').trim();
+          const issuer = String(row.querySelector('[data-cert-issuer]')?.value || '').trim();
+          const year = String(row.querySelector('[data-cert-year]')?.value || '').trim();
+          return name || issuer ? { name, issuer, year } : null;
+        });
+        const portfolioLinks = collectRows(form.querySelector('[data-link-list]'), '[data-repeater-row="link"]', (row) => {
+          const value = String(row.querySelector('[data-link-url]')?.value || '').trim();
+          return value || null;
+        });
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        payload.username = userDoc?.username || '';
+        payload.languages = languages;
+        payload.skills = skills;
+        payload.workExperience = workExperience;
+        payload.education = education;
+        payload.certifications = certifications;
+        payload.portfolioLinks = portfolioLinks;
+        payload.profileImageData = providerMediaState.profileImageData;
+        payload.bannerImageData = providerMediaState.bannerImageData;
+        payload.professionalDocuments = providerMediaState.professionalDocuments;
+
+        if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, true);
+        try {
+          await authHelper.saveProviderProfile(payload);
+          await refreshState();
+          window.history.replaceState({}, '', `${window.location.pathname}`);
+          await renderCurrentStep();
+        } catch (error) {
+          window.alert(error.message || 'Could not save your provider profile.');
+        } finally {
+          if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, false);
+        }
+      });
+    }
+
+    await renderCurrentStep();
   }
 
   function initialize() {
@@ -2385,7 +3397,7 @@
     renderProviderProfilePage();
     renderPostsPage();
     renderMessagesPage();
-    enrichAccountPage();
+    initializeAccountPageExperience();
   }
 
   if (document.readyState === 'loading') {

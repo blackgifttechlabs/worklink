@@ -125,6 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return matches.slice(0, query ? 6 : 8);
   }
 
+  function goToSpecialistsSearch(rawQuery) {
+    const query = String(rawQuery || '').trim();
+    const base = getSiteBasePath();
+    const target = new URL(`${base}pages/specialists.html`, window.location.origin);
+    if (query) target.searchParams.set('query', query);
+    target.searchParams.set('results', '1');
+    window.location.href = `${target.pathname}${target.search}`;
+  }
+
   function buildSearchItemMarkup(item, query, className) {
     return `
       <button type="button" class="${className}" data-value="${escapeHtml(item.value)}">
@@ -269,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.search-bar input').forEach(input => {
     const context = input.dataset.searchContext || 'inline';
+    if (context === 'specialists-page') return;
 
     input.addEventListener('focus', () => {
       if (context === 'overlay') {
@@ -289,8 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
-        if (context !== 'overlay') hideSearchSuggestions();
-        openSearchModal(input.value.trim());
+        if (context === 'overlay') {
+          goToSpecialistsSearch(input.value.trim());
+          return;
+        }
+        hideSearchSuggestions();
+        goToSpecialistsSearch(input.value.trim());
       }
 
       if (event.key === 'Escape' && context === 'overlay') {
@@ -309,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const value = button.getAttribute('data-value') || '';
       if (activeSearchInput) activeSearchInput.value = value;
       hideSearchSuggestions();
-      openSearchModal(value);
+      goToSpecialistsSearch(value);
     });
   }
 
@@ -325,8 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = target.closest('.mobile-search-result');
       if (result instanceof HTMLElement && searchModalInput) {
         const value = result.getAttribute('data-value') || '';
-        searchModalInput.value = value;
-        renderSearchModalResults(value);
+        goToSpecialistsSearch(value);
       }
     });
   }
@@ -518,6 +531,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountDeleteInput = document.getElementById('account-delete-confirmation');
   const accountDeleteLabel = document.getElementById('account-delete-label');
   const accountDeleteTargetLabel = document.getElementById('account-delete-target-label');
+  const accountPageModeInput = document.getElementById('account-page-mode');
+  const accountPageModeSwitch = document.querySelector('.account-page-mode-switch');
+  const accountPageGoogleBtn = document.querySelector('.account-page-google-btn');
+  const accountPageEmailForm = document.getElementById('account-page-email-form');
+  const accountPageNameRow = document.querySelector('.account-page-name-row');
+  const accountPageNameInput = document.getElementById('account-page-name');
+  const accountPageEmailInput = document.getElementById('account-page-email');
+  const accountPagePasswordInput = document.getElementById('account-page-password');
+  const accountPageHeading = document.querySelector('.account-auth-page-heading');
+  const accountPageSubtextLabel = document.querySelector('.account-auth-page-subtext-label');
+  const accountPageSubmitBtn = document.querySelector('.account-page-submit-btn');
+  const accountPageForgotPasswordBtn = document.querySelector('.account-page-forgot-password');
 
   function readAccount() {
     try {
@@ -605,16 +630,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1200);
   }
 
+  async function routeAfterAuthSuccess() {
+    const authHelper = await getAuthHelperReady();
+    const account = readAccount();
+    const base = getSiteBasePath();
+    const currentUrl = new URL(window.location.href);
+    const accountPageUrl = new URL(`${base}pages/account.html`, window.location.origin);
+    accountPageUrl.searchParams.set('setup', currentUrl.searchParams.get('setup') === 'provider' ? 'provider' : '1');
+    if (currentUrl.searchParams.get('service')) {
+      accountPageUrl.searchParams.set('service', currentUrl.searchParams.get('service'));
+    }
+
+    if (!authHelper || !account?.uid) {
+      window.location.reload();
+      return;
+    }
+
+    try {
+      const userDoc = await authHelper.getUserDocument(account.uid);
+      const providerProfile = await authHelper.getProviderProfileByUid(
+        account.uid,
+        userDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
+      ).catch(() => null);
+
+      const needsSetup = !userDoc?.username
+        || !userDoc?.userRole
+        || (userDoc?.userRole === 'provider' && !Boolean(userDoc?.providerProfileComplete || providerProfile?.uid));
+
+      if (needsSetup) {
+        window.location.href = `${accountPageUrl.pathname}${accountPageUrl.search}`;
+        return;
+      }
+    } catch (error) {
+      window.location.href = `${accountPageUrl.pathname}${accountPageUrl.search}`;
+      return;
+    }
+
+    if (window.location.pathname.endsWith('/account.html')) {
+      window.location.reload();
+      return;
+    }
+
+    window.location.reload();
+  }
+
   function finalizeAuthSuccess(message) {
     showAccountSuccess(message, () => {
       closeAccountPanel();
-      window.dispatchEvent(new CustomEvent('worklinkup:prompt-onboarding'));
-      window.setTimeout(() => {
-        const onboardingOverlay = document.getElementById('provider-onboarding-overlay');
-        if (!onboardingOverlay || onboardingOverlay.hidden) {
-          window.location.reload();
-        }
-      }, 420);
+      routeAfterAuthSuccess();
     });
   }
 
@@ -662,6 +725,27 @@ document.addEventListener('DOMContentLoaded', () => {
       accountNameInput.required = isSignup;
       if (!isSignup) accountNameInput.value = '';
     }
+  }
+
+  function syncAccountPageMode(mode) {
+    if (!accountPageModeInput) return;
+    const isSignup = mode === 'signup';
+    accountPageModeInput.value = mode;
+    if (accountPageHeading) accountPageHeading.textContent = isSignup ? 'Create a new account' : 'Sign in to your account';
+    if (accountPageSubtextLabel) accountPageSubtextLabel.textContent = isSignup ? 'Already have an account?' : 'New to WorkLinkUp?';
+    if (accountPageNameRow) accountPageNameRow.hidden = !isSignup;
+    if (accountPageNameInput) {
+      accountPageNameInput.disabled = !isSignup;
+      accountPageNameInput.required = isSignup;
+      if (!isSignup) accountPageNameInput.value = '';
+    }
+    if (accountPageSubmitBtn) {
+      accountPageSubmitBtn.classList.toggle('account-submit-signup', isSignup);
+      accountPageSubmitBtn.classList.toggle('account-submit-signin', !isSignup);
+      const label = accountPageSubmitBtn.querySelector('.account-btn-label');
+      if (label) label.textContent = isSignup ? 'Create Account' : 'Sign In';
+    }
+    if (accountPageModeSwitch) accountPageModeSwitch.textContent = isSignup ? 'Sign in' : 'Create account';
   }
 
   function applyAccountToPage() {
@@ -1113,6 +1197,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (accountPageModeSwitch && accountPageModeInput) {
+    accountPageModeSwitch.addEventListener('click', () => {
+      const nextMode = accountPageModeInput.value === 'signup' ? 'signin' : 'signup';
+      syncAccountPageMode(nextMode);
+    });
+  }
+
   if (accountForgotPasswordBtn && accountEmailInput) {
     accountForgotPasswordBtn.addEventListener('click', async () => {
       const authHelper = await getAuthHelperReady();
@@ -1132,6 +1223,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.alert(error.message || 'Could not send reset email.');
       } finally {
         accountForgotPasswordBtn.disabled = false;
+      }
+    });
+  }
+
+  if (accountPageForgotPasswordBtn && accountPageEmailInput) {
+    accountPageForgotPasswordBtn.addEventListener('click', async () => {
+      const authHelper = await getAuthHelperReady();
+      if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
+      const email = accountPageEmailInput.value.trim();
+      if (!email) {
+        window.alert('Enter your email address first so we can send the reset link.');
+        accountPageEmailInput.focus();
+        return;
+      }
+
+      accountPageForgotPasswordBtn.disabled = true;
+      try {
+        await authHelper.resetPassword(email);
+        showAccountSuccess('Password reset email sent');
+      } catch (error) {
+        window.alert(error.message || 'Could not send reset email.');
+      } finally {
+        accountPageForgotPasswordBtn.disabled = false;
       }
     });
   }
@@ -1162,6 +1276,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (accountPageGoogleBtn) {
+    accountPageGoogleBtn.addEventListener('click', async () => {
+      const authHelper = await getAuthHelperReady();
+      if (!authHelper) return;
+      setButtonLoading(accountPageGoogleBtn, true);
+      try {
+        await authHelper.signInWithGoogle();
+        finalizeAuthSuccess('Signed in successfully');
+      } catch (error) {
+        window.alert(error.message || 'Google sign-in failed.');
+      } finally {
+        setButtonLoading(accountPageGoogleBtn, false);
+      }
+    });
+  }
+
   if (accountEmailForm && accountModeInput) {
     accountEmailForm.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -1185,6 +1315,33 @@ document.addEventListener('DOMContentLoaded', () => {
         window.alert(error.message || 'Email authentication failed.');
       } finally {
         setButtonLoading(accountSubmitBtn, false);
+      }
+    });
+  }
+
+  if (accountPageEmailForm && accountPageModeInput) {
+    accountPageEmailForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const authHelper = await getAuthHelperReady();
+      if (!authHelper) return;
+      const formData = new FormData(accountPageEmailForm);
+      const email = String(formData.get('email') || '').trim();
+      const password = String(formData.get('password') || '');
+      const typedName = String(formData.get('name') || '').trim();
+      const isSignup = accountPageModeInput.value === 'signup';
+      setButtonLoading(accountPageSubmitBtn, true);
+
+      try {
+        if (isSignup) {
+          await authHelper.signUpWithEmail(typedName, email, password);
+        } else {
+          await authHelper.signInWithEmail(email, password);
+        }
+        finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
+      } catch (error) {
+        window.alert(error.message || 'Email authentication failed.');
+      } finally {
+        setButtonLoading(accountPageSubmitBtn, false);
       }
     });
   }
@@ -1276,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   syncAccountMode('signin');
+  syncAccountPageMode('signup');
   setMethodVisibility('all');
   applyAccountToPage();
 

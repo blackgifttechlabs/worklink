@@ -18,6 +18,1044 @@
   --brand-border: rgba(26, 50, 99, 0.12);
 }
 
+/* WorkLinkUp 2026 account + specialists refresh */
+.specialists-results-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.specialists-page.is-results-mode .specialists-categories-shell {
+  display: none;
+}
+
+.specialists-page.is-results-mode .specialists-main {
+  padding-top: 18px;
+}
+
+.specialist-card-skeleton-card {
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.specialist-card-skeleton-banner {
+  min-height: 196px;
+}
+
+.specialist-card-skeleton-pill,
+.specialist-card-skeleton-avatar,
+.specialist-card-skeleton-line,
+.specialist-card-skeleton-inline,
+.specialist-card-skeleton-button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #e2e8f0;
+}
+
+.specialist-card-skeleton-pill::after,
+.specialist-card-skeleton-avatar::after,
+.specialist-card-skeleton-line::after,
+.specialist-card-skeleton-inline::after,
+.specialist-card-skeleton-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.78) 48%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
+  animation: provider-work-wave 1.35s ease-in-out infinite;
+}
+
+.specialist-card-skeleton-pill {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 104px;
+  height: 28px;
+}
+
+.specialist-card-skeleton-avatar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+}
+
+.specialist-card-skeleton-line {
+  display: block;
+  height: 14px;
+}
+
+.specialist-card-skeleton-line.is-name {
+  width: 64%;
+  height: 22px;
+}
+
+.specialist-card-skeleton-line.is-role {
+  width: 42%;
+  margin-top: 8px;
+}
+
+.specialist-card-skeleton-inline {
+  height: 16px;
+  width: 74%;
+}
+
+.specialist-card-skeleton-stack,
+.specialist-card-skeleton-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.specialist-card-skeleton-line.short {
+  width: 60%;
+}
+
+.specialist-card-skeleton-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.specialist-card-skeleton-button {
+  height: 48px;
+}
+
+.specialists-empty-rich {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 52px 28px;
+  border-style: solid;
+  background:
+    radial-gradient(circle at top left, rgba(7, 111, 229, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+}
+
+.specialists-empty-icon {
+  width: 74px;
+  height: 74px;
+  border-radius: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 111, 229, 0.08);
+  color: #076fe5;
+  font-size: 30px;
+}
+
+.specialists-empty-rich h3 {
+  color: var(--brand-ink);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.specialists-empty-rich p {
+  max-width: 640px;
+  line-height: 1.7;
+}
+
+.specialists-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.specialists-related-shell {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(26, 50, 99, 0.1);
+}
+
+.specialists-related-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.specialists-related-kicker {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #076fe5;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.specialists-related-head h3 {
+  color: var(--brand-ink);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.specialists-related-track-wrap {
+  overflow: hidden;
+}
+
+.specialists-related-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: specialists-marquee 30s linear infinite;
+}
+
+.specialists-related-card {
+  min-width: 240px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(26, 50, 99, 0.08);
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+}
+
+.specialists-related-card strong {
+  display: block;
+  color: var(--brand-ink);
+  font-size: 16px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.specialists-related-card span {
+  display: block;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.animated-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 36px;
+  border: 4px solid transparent;
+  font-size: 16px;
+  background-color: #fff;
+  border-radius: 100px;
+  font-weight: 700;
+  color: #1f387e;
+  box-shadow: 0 0 0 2px #ffffff, 0 16px 30px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.animated-button svg {
+  position: absolute;
+  width: 24px;
+  fill: #1f387e;
+  z-index: 9;
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.animated-button .arr-1 {
+  right: 16px;
+}
+
+.animated-button .arr-2 {
+  left: -25%;
+}
+
+.animated-button .circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background-color: #c5e5e4;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.animated-button .text {
+  position: relative;
+  z-index: 1;
+  transform: translateX(-12px);
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  letter-spacing: 0.06em;
+}
+
+.animated-button:hover {
+  box-shadow: 0 0 0 12px transparent;
+  color: #212121;
+  border-radius: 12px;
+}
+
+.animated-button:hover .arr-1 {
+  right: -25%;
+}
+
+.animated-button:hover .arr-2 {
+  left: 16px;
+}
+
+.animated-button:hover .text {
+  transform: translateX(12px);
+}
+
+.animated-button:hover svg {
+  fill: #1f387e;
+}
+
+.animated-button:active {
+  scale: 0.95;
+  box-shadow: 0 0 0 4px greenyellow;
+}
+
+.animated-button:hover .circle {
+  width: 220px;
+  height: 220px;
+  opacity: 1;
+}
+
+.account-page {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: calc(100vh - 86px);
+  background:
+    radial-gradient(circle at top left, rgba(7, 111, 229, 0.08), transparent 30%),
+    linear-gradient(180deg, #fcfbf8 0%, #f5efe7 100%);
+}
+
+.account-auth-stage {
+  min-height: calc(100vh - 86px);
+  display: grid;
+  grid-template-columns: minmax(320px, 1.05fr) minmax(360px, 0.95fr);
+}
+
+.account-auth-stage-visual {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-direction: column;
+  padding: 54px 44px 28px;
+  background: linear-gradient(180deg, rgba(135, 48, 69, 0.96) 0%, rgba(98, 24, 44, 0.98) 100%);
+  color: #fff;
+  overflow: hidden;
+}
+
+.account-auth-stage-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 380px;
+}
+
+.account-auth-stage-kicker {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.account-auth-stage-copy h1 {
+  color: #fff;
+  font-size: clamp(40px, 4vw, 58px);
+  line-height: 1.02;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+
+.account-auth-stage-copy p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.account-auth-stage-points {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.account-auth-stage-points li {
+  position: relative;
+  padding-left: 28px;
+  font-size: 18px;
+}
+
+.account-auth-stage-points li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.account-auth-stage-image,
+.account-setup-split-image {
+  position: absolute;
+  inset: auto 0 0 auto;
+  width: min(100%, 560px);
+  height: auto;
+  object-fit: cover;
+}
+
+.account-auth-stage-badges {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.account-auth-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 62px;
+  padding: 8px 22px 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.98);
+  color: #3b3b3b;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.14);
+  width: fit-content;
+}
+
+.account-auth-stage-badge.is-offset {
+  margin-left: 42px;
+}
+
+.account-auth-stage-badge img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-auth-stage-badge span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-auth-stage-badge i {
+  color: #22c55e;
+  font-size: 20px;
+}
+
+.account-auth-stage-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 32px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.account-auth-stage-panel-inner {
+  width: min(100%, 420px);
+}
+
+.account-auth-page-heading {
+  color: #111827;
+  font-size: clamp(34px, 3vw, 46px);
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.account-auth-page-subtext {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 30px;
+  color: #4b5563;
+  font-size: 18px;
+}
+
+.inline-link {
+  border: none;
+  background: transparent;
+  color: #0b4fa8;
+  font-weight: 800;
+  padding: 0;
+}
+
+.account-auth-page-actions,
+.account-auth-page-form {
+  display: grid;
+  gap: 14px;
+}
+
+.account-auth-page-divider {
+  position: relative;
+  margin: 24px 0;
+  text-align: center;
+}
+
+.account-auth-page-divider::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px solid #e5e7eb;
+}
+
+.account-auth-page-divider span {
+  position: relative;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #6b7280;
+}
+
+.account-auth-page-note {
+  margin-top: 18px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.account-setup-stage {
+  min-height: calc(100vh - 86px);
+  padding: 30px 24px 72px;
+}
+
+.account-setup-shell {
+  width: min(100%, 1380px);
+  margin: 0 auto;
+}
+
+.account-setup-split {
+  min-height: calc(100vh - 170px);
+  display: grid;
+  grid-template-columns: minmax(320px, 1.02fr) minmax(360px, 0.98fr);
+  overflow: hidden;
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 26px 52px rgba(15, 23, 42, 0.08);
+}
+
+.account-setup-split-visual {
+  position: relative;
+  padding: 48px 34px;
+  background: linear-gradient(180deg, rgba(135, 48, 69, 0.96) 0%, rgba(98, 24, 44, 0.98) 100%);
+}
+
+.account-setup-split-panel {
+  padding: 34px 38px;
+}
+
+.account-setup-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 0;
+}
+
+.account-setup-content-block {
+  max-width: 440px;
+  margin-top: 54px;
+}
+
+.account-setup-content-block h2,
+.account-setup-role-copy h2,
+.account-provider-setup-head h2 {
+  color: #111827;
+  font-size: clamp(34px, 3vw, 50px);
+  line-height: 1.08;
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+
+.account-setup-content-block p,
+.account-setup-role-copy p,
+.account-provider-setup-head p {
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.account-setup-compact-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.account-setup-field {
+  display: grid;
+  gap: 10px;
+}
+
+.account-setup-field span {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.account-setup-field small {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.account-setup-field-message {
+  min-height: 18px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-setup-field-message.is-error {
+  color: orangered;
+}
+
+.account-setup-field-message.is-success {
+  color: #16a34a;
+}
+
+.account-form-row input.is-invalid,
+.account-setup-field input.is-invalid,
+.account-setup-field select.is-invalid,
+.account-setup-field textarea.is-invalid,
+.account-provider-form input.is-invalid,
+.account-provider-form select.is-invalid,
+.account-provider-form textarea.is-invalid {
+  border-color: orangered !important;
+  box-shadow: 0 0 0 4px rgba(255, 69, 0, 0.08) !important;
+}
+
+.account-form-row input.is-valid,
+.account-setup-field input.is-valid {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.08);
+}
+
+.account-setup-role-stage {
+  padding: 48px 22px 22px;
+}
+
+.account-setup-role-copy {
+  max-width: 920px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+
+.account-setup-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.account-setup-role-card {
+  min-height: 240px;
+  padding: 28px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 28px;
+  background: #fff;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  text-align: left;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.05);
+}
+
+.account-setup-role-card i {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 111, 229, 0.08);
+  color: #076fe5;
+  font-size: 28px;
+}
+
+.account-setup-role-card strong {
+  color: #111827;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.account-setup-role-card span {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.account-setup-role-card.is-selected {
+  border-color: #076fe5;
+  box-shadow: 0 0 0 4px rgba(7, 111, 229, 0.12);
+}
+
+.account-setup-role-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 26px;
+}
+
+.account-provider-setup-stage {
+  display: grid;
+  gap: 26px;
+}
+
+.account-provider-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.account-provider-section {
+  padding: 24px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.05);
+}
+
+.account-provider-section-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.account-provider-section-head strong {
+  color: #111827;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.account-provider-section-head span {
+  color: #6b7280;
+}
+
+.account-provider-fields.two-col,
+.account-provider-subgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-provider-form textarea,
+.account-provider-form input,
+.account-provider-form select,
+.account-setup-field input,
+.account-setup-field select,
+.account-setup-field textarea {
+  width: 100%;
+  min-height: 54px;
+  padding: 14px 16px;
+  border: 1px solid #d6dbe5;
+  border-radius: 16px;
+  background: #fff;
+  color: #111827;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 15px;
+}
+
+.account-provider-form textarea,
+.account-setup-field textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.account-provider-repeater {
+  display: grid;
+  gap: 12px;
+}
+
+.account-setup-repeater-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 48px;
+  gap: 12px;
+  align-items: start;
+}
+
+.account-setup-repeater-row.is-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.account-setup-repeater-row.is-wide textarea {
+  grid-column: 1 / -1;
+}
+
+.account-provider-add-row,
+.account-setup-remove-row {
+  border: 1px solid rgba(7, 111, 229, 0.12);
+  background: rgba(7, 111, 229, 0.05);
+  color: #076fe5;
+  border-radius: 14px;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 800;
+}
+
+.account-provider-add-row {
+  margin-top: 14px;
+  width: fit-content;
+  padding: 0 16px;
+}
+
+.account-provider-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.account-provider-upload-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #fff;
+}
+
+.account-provider-upload-preview {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(7, 111, 229, 0.08) 0%, rgba(15, 23, 42, 0.04) 100%);
+  overflow: hidden;
+}
+
+.account-provider-upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-provider-upload-preview-avatar {
+  min-height: 180px;
+}
+
+.account-provider-doc-upload {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.account-provider-doc-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.account-provider-doc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.account-provider-doc-card strong {
+  display: block;
+  color: #111827;
+  font-weight: 800;
+}
+
+.account-provider-doc-card span,
+.account-provider-doc-empty {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.account-provider-doc-card button {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+}
+
+.account-provider-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.provider-profile-detail-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.provider-profile-detail-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(26, 50, 99, 0.08);
+}
+
+.provider-profile-detail-card h3 {
+  color: var(--brand-ink);
+  font-size: 18px;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+
+.provider-profile-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.provider-profile-skill-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(26, 50, 99, 0.08);
+}
+
+.provider-profile-skill-card strong {
+  display: block;
+  color: var(--brand-ink);
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.provider-profile-skill-card span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.provider-profile-links {
+  display: grid;
+  gap: 10px;
+}
+
+.provider-profile-links a {
+  color: #076fe5;
+  word-break: break-word;
+}
+
+.provider-document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.provider-document-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(26, 50, 99, 0.08);
+  background: #fff;
+  text-align: left;
+}
+
+.provider-document-card strong {
+  display: block;
+  color: var(--brand-ink);
+  font-size: 15px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.provider-document-card span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.provider-document-preview {
+  min-height: 420px;
+  margin-top: 18px;
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(26, 50, 99, 0.08);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.provider-document-preview img,
+.provider-document-preview iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  border: 0;
+  object-fit: contain;
+  background: #fff;
+}
+
+@media (max-width: 980px) {
+  .account-auth-stage,
+  .account-setup-split,
+  .account-provider-fields.two-col,
+  .account-provider-subgrid,
+  .account-provider-media-grid,
+  .account-setup-role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-auth-stage {
+    min-height: auto;
+  }
+
+  .account-auth-stage-visual,
+  .account-setup-split-visual {
+    min-height: 440px;
+  }
+
+  .account-auth-stage-image,
+  .account-setup-split-image {
+    width: 100%;
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 768px) {
+  .specialists-results-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .specialists-results-head-actions {
+    justify-content: flex-start;
+  }
+
+  .specialists-related-track {
+    animation-duration: 42s;
+  }
+
+  .account-setup-stage {
+    padding-inline: 14px;
+  }
+
+  .account-auth-stage-visual,
+  .account-setup-split-visual,
+  .account-setup-split-panel,
+  .account-auth-stage-panel {
+    padding: 28px 18px;
+  }
+
+  .account-auth-stage-badge.is-offset {
+    margin-left: 0;
+  }
+
+  .account-setup-content-block {
+    margin-top: 26px;
+  }
+
+  .account-setup-repeater-row,
+  .account-setup-repeater-row.is-wide {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ========== WORKLINKUP THEME OVERRIDES ========== */
 body {
   background: linear-gradient(180deg, #f7f2eb 0%, #fcfaf7 260px, #fcfaf7 100%);
@@ -2402,6 +3440,12 @@ footer {
   .account-hero-chip {
     font-size: 16px;
   }
+}
+
+.account-page {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* ========== PROVIDERS EXPERIENCE ========== */
