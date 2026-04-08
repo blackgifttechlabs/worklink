@@ -67,6 +67,7 @@ const MESSAGE_THREADS_PATH = 'messages';
 const MESSAGE_INDEX_PATH = 'conversationIndex';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
 const GOOGLE_REDIRECT_SUCCESS_KEY = 'worklinkup_google_redirect_success';
+const GOOGLE_AUTH_FLOW_KEY = 'worklinkup_google_auth_flow';
 const ZIMBABWE_PROVINCES = [
   'Bulawayo',
   'Harare',
@@ -676,6 +677,7 @@ function ensureRecaptcha() {
 }
 
 async function signInWithGoogle() {
+  setSessionFlag(GOOGLE_AUTH_FLOW_KEY);
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
@@ -695,6 +697,7 @@ async function signInWithGoogle() {
         redirected: true
       };
     }
+    clearSessionFlag(GOOGLE_AUTH_FLOW_KEY);
     throw error;
   }
 }
@@ -1575,10 +1578,12 @@ getRedirectResult(auth)
     if (result?.user) {
       clearSessionFlag(GOOGLE_REDIRECT_PENDING_KEY);
       setSessionFlag(GOOGLE_REDIRECT_SUCCESS_KEY);
+      setSessionFlag(GOOGLE_AUTH_FLOW_KEY);
     }
   })
   .catch(() => {
     clearSessionFlag(GOOGLE_REDIRECT_PENDING_KEY);
+    clearSessionFlag(GOOGLE_AUTH_FLOW_KEY);
   });
 
 onAuthStateChanged(auth, (user) => {

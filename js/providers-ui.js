@@ -134,6 +134,22 @@
     }
   }
 
+  function setSessionFlag(key, value = '1') {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function clearSessionFlag(key) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
   function getStoredAccount() {
     try {
       const raw = localStorage.getItem('softgiggles_account');
@@ -2795,6 +2811,11 @@
     const account = getStoredAccount();
     const params = new URLSearchParams(window.location.search);
     const isEmbedded = params.get('embed') === '1';
+    const isGoogleAuthFlow = Boolean(
+      readSessionFlag('worklinkup_google_auth_flow')
+      || readSessionFlag('worklinkup_google_redirect_pending')
+      || readSessionFlag('worklinkup_google_redirect_success')
+    );
     const isGoogleRedirectReturn = Boolean(
       readSessionFlag('worklinkup_google_redirect_pending')
       || readSessionFlag('worklinkup_google_redirect_success')
@@ -2899,6 +2920,29 @@
       const nextParams = new URLSearchParams();
       nextParams.set('setup', step === 'provider' ? 'provider' : '1');
       if (providerInviteService) nextParams.set('service', providerInviteService);
+
+      if (!isEmbedded && isGetFoundPage && isGoogleAuthFlow) {
+        clearSessionFlag('worklinkup_google_auth_flow');
+        clearSessionFlag('worklinkup_google_redirect_pending');
+        clearSessionFlag('worklinkup_google_redirect_success');
+
+        if (step !== 'dashboard') {
+          try {
+            localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
+            setSessionFlag('worklinkup_show_setup_modal_once');
+          } catch (error) {
+            // Ignore storage issues and continue redirect.
+          }
+          window.location.replace(`${getBase()}index.html`);
+          return;
+        }
+
+        const redirectUrl = String(userDoc?.userRole || '').trim() === 'provider'
+          ? `${getBase()}pages/my-posts.html`
+          : `${getBase()}pages/specialists.html`;
+        window.location.replace(redirectUrl);
+        return;
+      }
 
       if (!isEmbedded && step !== 'dashboard') {
         try {
