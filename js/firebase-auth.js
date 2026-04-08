@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   getAuth,
+  getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
   RecaptchaVerifier,
@@ -10,6 +11,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
   signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   updateProfile
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js';
@@ -63,6 +65,8 @@ const ADMIN_BOOTSTRAP_ID = 'primary-admin';
 const ADMIN_BOOTSTRAP_PIN = '1677';
 const MESSAGE_THREADS_PATH = 'messages';
 const MESSAGE_INDEX_PATH = 'conversationIndex';
+const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
+const GOOGLE_REDIRECT_SUCCESS_KEY = 'worklinkup_google_redirect_success';
 const ZIMBABWE_PROVINCES = [
   'Bulawayo',
   'Harare',
@@ -196,6 +200,22 @@ function persistAccountDetails(extra = {}) {
       ...current,
       ...extra
     }));
+  } catch (error) {
+    // Ignore storage issues.
+  }
+}
+
+function setSessionFlag(key, value = '1') {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch (error) {
+    // Ignore storage issues.
+  }
+}
+
+function clearSessionFlag(key) {
+  try {
+    sessionStorage.removeItem(key);
   } catch (error) {
     // Ignore storage issues.
   }
@@ -656,23 +676,56 @@ function ensureRecaptcha() {
 }
 
 async function signInWithGoogle() {
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const account = getAccountPayload(user);
+    await syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
+    return {
+      user,
+      redirected: false
+    };
+  } catch (error) {
+    const code = String(error?.code || '').trim();
+    if (code === 'auth/popup-blocked') {
+      setSessionFlag(GOOGLE_REDIRECT_PENDING_KEY);
+      await signInWithRedirect(auth, provider);
+      return {
+        user: null,
+        redirected: true
+      };
+    }
+    throw error;
+  }
 }
 
 async function signInWithEmail(email, password) {
   const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user;
+  const user = result.user;
+  const account = getAccountPayload(user);
+  await syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
+  return user;
 }
 
 async function signUpWithEmail(name, email, password) {
   const result = await createUserWithEmailAndPassword(auth, email, password);
+  const normalizedName = normalizeName(name);
   if (name) {
     await updateProfile(result.user, {
-      displayName: normalizeName(name)
+      displayName: normalizedName
     });
   }
-  return auth.currentUser || result.user;
+  const user = auth.currentUser || result.user;
+  const account = getAccountPayload(user);
+  const nextName = normalizedName || account.name;
+  await syncUserDocument({
+    ...account,
+    name: nextName
+  }, { lastSeenAtMs: Date.now(), createdAtMs: Date.now() }).catch(() => {});
+  persistAccountDetails({
+    name: nextName
+  });
+  return user;
 }
 
 async function sendPhoneCode(phoneNumber) {
@@ -1516,6 +1569,17 @@ async function toggleWishlist(product) {
     wishlistCount: nextWishlistItems.length
   };
 }
+
+getRedirectResult(auth)
+  .then((result) => {
+    if (result?.user) {
+      clearSessionFlag(GOOGLE_REDIRECT_PENDING_KEY);
+      setSessionFlag(GOOGLE_REDIRECT_SUCCESS_KEY);
+    }
+  })
+  .catch(() => {
+    clearSessionFlag(GOOGLE_REDIRECT_PENDING_KEY);
+  });
 
 onAuthStateChanged(auth, (user) => {
   persistUser(user);

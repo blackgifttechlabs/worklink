@@ -2777,6 +2777,11 @@
     if (!guestStage || !setupStage || !setupBody || !dashboard) return;
 
     const account = getStoredAccount();
+    const params = new URLSearchParams(window.location.search);
+    const isEmbedded = params.get('embed') === '1';
+    if (isEmbedded) {
+      document.body.classList.add('account-embed-mode');
+    }
     if (!account?.loggedIn) {
       guestStage.hidden = false;
       setupStage.hidden = true;
@@ -2787,7 +2792,6 @@
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
 
-    const params = new URLSearchParams(window.location.search);
     const providerInviteService = params.get('service') || '';
     const forcedSetup = params.get('setup') || '';
     let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
@@ -2839,6 +2843,24 @@
       dashboard.hidden = step !== 'dashboard';
 
       if (step === 'dashboard') {
+        if (isEmbedded) {
+          try {
+            localStorage.removeItem('worklinkup_pending_setup');
+          } catch (error) {
+            // Ignore storage issues.
+          }
+          window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, window.location.origin);
+          setupStage.hidden = false;
+          dashboard.hidden = true;
+          setupBody.innerHTML = `
+            <section class="account-setup-embed-success">
+              <div class="account-setup-embed-success-icon"><i class="fa-solid fa-check"></i></div>
+              <h2>Profile setup complete</h2>
+              <p>Your WorkLinkUp profile is ready. Closing this window now.</p>
+            </section>
+          `;
+          return;
+        }
         fillDashboard();
         return;
       }
@@ -2996,7 +3018,7 @@
               displayName: userDoc?.name || account.name
             });
             await refreshState();
-            if (selectedRole === 'client') {
+            if (selectedRole === 'client' && !isEmbedded) {
               window.location.href = `${getBase()}pages/specialists.html`;
               return;
             }

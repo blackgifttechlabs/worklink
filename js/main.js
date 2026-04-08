@@ -658,11 +658,21 @@ document.addEventListener('DOMContentLoaded', () => {
         || (userDoc?.userRole === 'provider' && !Boolean(userDoc?.providerProfileComplete || providerProfile?.uid));
 
       if (needsSetup) {
-        window.location.href = `${accountPageUrl.pathname}${accountPageUrl.search}`;
+        try {
+          localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
+        } catch (error) {
+          // Ignore storage issues and fall back to home redirect.
+        }
+        window.location.href = `${base}index.html`;
         return;
       }
     } catch (error) {
-      window.location.href = `${accountPageUrl.pathname}${accountPageUrl.search}`;
+      try {
+        localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
+      } catch (storageError) {
+        // Ignore storage issues and fall back to home redirect.
+      }
+      window.location.href = `${base}index.html`;
       return;
     }
 
@@ -746,6 +756,111 @@ document.addEventListener('DOMContentLoaded', () => {
       if (label) label.textContent = isSignup ? 'Create Account' : 'Sign In';
     }
     if (accountPageModeSwitch) accountPageModeSwitch.textContent = isSignup ? 'Sign in' : 'Create account';
+  }
+
+  function readSessionFlag(key) {
+    try {
+      return sessionStorage.getItem(key) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function clearSessionFlag(key) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  async function maybeHandleRedirectedGoogleAuth() {
+    const hasRedirectSuccess = readSessionFlag('worklinkup_google_redirect_success');
+    if (!hasRedirectSuccess) return;
+    const authHelper = await getAuthHelperReady();
+    if (authHelper && typeof authHelper.waitForAuthSession === 'function') {
+      await authHelper.waitForAuthSession('', 12000).catch(() => null);
+    }
+    clearSessionFlag('worklinkup_google_redirect_success');
+    showAccountSuccess('Signed in successfully', () => {
+      closeAccountPanel();
+      routeAfterAuthSuccess();
+    });
+  }
+
+  function initPendingSetupModal() {
+    if (!document.body.classList.contains('home-page-body')) return;
+
+    let pendingSearch = '';
+    try {
+      pendingSearch = localStorage.getItem('worklinkup_pending_setup') || '';
+    } catch (error) {
+      pendingSearch = '';
+    }
+
+    const account = readAccount();
+    if (!account?.loggedIn || !pendingSearch) return;
+
+    const normalizedSearch = pendingSearch.startsWith('?') ? pendingSearch : `?${pendingSearch}`;
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="pending-setup-overlay" id="pending-setup-overlay" hidden>
+        <div class="pending-setup-backdrop"></div>
+        <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-labelledby="pending-setup-title">
+          <div class="pending-setup-head">
+            <div>
+              <span class="pending-setup-kicker">Complete your account</span>
+              <h2 id="pending-setup-title">Get your profile started</h2>
+            </div>
+            <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
+          </div>
+          <iframe class="pending-setup-frame" src="pages/account.html${normalizedSearch}${normalizedSearch.includes('embed=1') ? '' : `${normalizedSearch ? '&' : '?'}embed=1`}" title="WorkLinkUp account setup"></iframe>
+        </div>
+      </div>
+    `);
+
+    const overlay = document.getElementById('pending-setup-overlay');
+    const closeBtn = overlay?.querySelector('.pending-setup-close');
+
+    function closeModal(clearPending = false) {
+      if (!(overlay instanceof HTMLElement)) return;
+      overlay.classList.remove('is-visible');
+      document.body.classList.remove('pending-setup-open');
+      window.setTimeout(() => {
+        overlay.hidden = true;
+      }, 180);
+      if (clearPending) {
+        try {
+          localStorage.removeItem('worklinkup_pending_setup');
+        } catch (error) {
+          // Ignore storage issues.
+        }
+      }
+    }
+
+    if (overlay instanceof HTMLElement) {
+      overlay.hidden = false;
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-visible');
+        document.body.classList.add('pending-setup-open');
+      });
+    }
+
+    closeBtn?.addEventListener('click', () => closeModal(false));
+    overlay?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.classList.contains('pending-setup-backdrop')) {
+        closeModal(false);
+      }
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'worklinkup-setup-complete') {
+        closeModal(true);
+        window.location.reload();
+      }
+    });
   }
 
   function applyAccountToPage() {
@@ -1266,7 +1381,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!authHelper) return;
       setButtonLoading(accountGoogleBtn, true);
       try {
-        await authHelper.signInWithGoogle();
+        const result = await authHelper.signInWithGoogle();
+        if (result?.redirected) return;
         finalizeAuthSuccess('Signed in successfully');
       } catch (error) {
         window.alert(error.message || 'Google sign-in failed.');
@@ -1282,7 +1398,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!authHelper) return;
       setButtonLoading(accountPageGoogleBtn, true);
       try {
-        await authHelper.signInWithGoogle();
+        const result = await authHelper.signInWithGoogle();
+        if (result?.redirected) return;
         finalizeAuthSuccess('Signed in successfully');
       } catch (error) {
         window.alert(error.message || 'Google sign-in failed.');
@@ -1436,6 +1553,8 @@ document.addEventListener('DOMContentLoaded', () => {
   syncAccountPageMode('signup');
   setMethodVisibility('all');
   applyAccountToPage();
+  maybeHandleRedirectedGoogleAuth();
+  initPendingSetupModal();
 
   // Filter group collapse
   document.querySelectorAll('.filter-group-header').forEach(header => {

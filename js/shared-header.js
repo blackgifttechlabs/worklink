@@ -20,8 +20,21 @@ function pageNeedsProvidersUi(pathname = window.location.pathname) {
   return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname);
 }
 
+function hasPendingAuthBootstrapState() {
+  try {
+    return Boolean(
+      sessionStorage.getItem('worklinkup_google_redirect_pending')
+      || sessionStorage.getItem('worklinkup_google_redirect_success')
+      || localStorage.getItem('worklinkup_pending_setup')
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
 function pageNeedsEagerAuth(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname);
+  return /\/pages\/(specialists|provider-profile|my-posts|messages|account)\.html$/.test(pathname)
+    || (pathname.endsWith('/index.html') || pathname === '/' || pathname === '') && hasPendingAuthBootstrapState();
 }
 
 function ensureFirebaseAuthScript() {
