@@ -992,9 +992,20 @@
       return;
     }
     let jobs = await authHelper.listJobPosts().catch(() => []);
+    let placedBids = [];
+    if (typeof authHelper.listPlacedJobBids === 'function') {
+      const currentAccount = getStoredAccount();
+      if (currentAccount?.loggedIn && currentAccount?.uid) {
+        placedBids = await authHelper.listPlacedJobBids(currentAccount.uid).catch(() => []);
+      }
+    }
     let activeFilter = 'all';
     let query = '';
     let viewMode = 'grid';
+
+    function getPlacedBidJobIds() {
+      return new Set(placedBids.map((bid) => String(bid.jobId || '').trim()).filter(Boolean));
+    }
 
     function closeModal(modal) {
       if (!(modal instanceof HTMLElement)) return;
@@ -1028,6 +1039,7 @@
       const filteredJobs = getFilteredJobs();
       const currentAccount = getStoredAccount();
       const currentUid = String(currentAccount?.uid || '').trim();
+      const placedBidJobIds = getPlacedBidJobIds();
       if (availableCountLabel) {
         availableCountLabel.textContent = String(filteredJobs.length);
       }
@@ -1040,7 +1052,7 @@
           </div>
           <div class="job-card-grid ${viewMode === 'list' ? 'is-list' : 'is-grid'}">
             ${items.map((job) => `
-              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''}">
+              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${placedBidJobIds.has(String(job.id || '').trim()) ? 'is-bid-placed' : ''}">
                 <div class="job-card-top">
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -1069,8 +1081,10 @@
                   ` : ''}
                 </div>
                 <div class="job-card-actions">
-                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(job.id)}">View More Detail</button>
-                  <button type="button" class="btn-primary" data-job-bid="${escapeHtml(job.id)}">Accept & Bid</button>
+                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(job.id)}">View More</button>
+                  ${placedBidJobIds.has(String(job.id || '').trim())
+                    ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already put a bid</button>`
+                    : `<button type="button" class="btn-primary" data-job-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
                 </div>
               </article>
             `).join('')}
@@ -1089,6 +1103,7 @@
         button.addEventListener('click', () => {
           const job = jobs.find((item) => item.id === button.getAttribute('data-job-view-more'));
           if (!job) return;
+          const hasPlacedBid = getPlacedBidJobIds().has(String(job.id || '').trim());
           openModal(detailModal, `
             <div class="job-modal-panel">
               <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
@@ -1103,7 +1118,9 @@
               <div class="job-modal-address"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(job.address)}</span></div>
               <div class="job-modal-actions">
                 <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
-                <button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>
+                ${hasPlacedBid
+                  ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already put a bid</button>`
+                  : `<button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
               </div>
             </div>
           `);
@@ -1180,6 +1197,13 @@
           clearPendingJobBid();
           window.alert('Your bid was sent.');
           jobs = await authHelper.listJobPosts().catch(() => jobs);
+          if (typeof authHelper.listPlacedJobBids === 'function') {
+            const currentAccount = getStoredAccount();
+            if (currentAccount?.uid) {
+              placedBids = await authHelper.listPlacedJobBids(currentAccount.uid).catch(() => placedBids);
+            }
+          }
+          window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
           renderJobs();
         } catch (error) {
           window.alert(error.message || 'Could not send your bid.');
@@ -1243,10 +1267,13 @@
       await authHelper.waitForAuthSession(account.uid, 12000).catch(() => null);
     }
 
-    const [userDoc, clientProfile, jobs] = await Promise.all([
+    const [userDoc, clientProfile, jobs, placedBidRecords] = await Promise.all([
       authHelper.getUserDocument(account.uid).catch(() => null),
       authHelper.getClientProfileByUid(account.uid).catch(() => null),
-      authHelper.listJobsForUser(account.uid).catch(() => [])
+      authHelper.listJobsForUser(account.uid).catch(() => []),
+      typeof authHelper.listPlacedJobBids === 'function'
+        ? authHelper.listPlacedJobBids(account.uid).catch(() => [])
+        : Promise.resolve([])
     ]);
     const profile = clientProfile || {
       displayName: userDoc?.name || account.name || 'WorkLinkUp client',
@@ -1261,10 +1288,22 @@
       ...job,
       applications: await authHelper.listJobApplications(job.id).catch(() => [])
     })));
+    const placedBidsWithJobs = await Promise.all((placedBidRecords || []).map(async (bid) => ({
+      ...bid,
+      job: await authHelper.getJobPost(bid.jobId).catch(() => null)
+    })));
+    let activeTab = new URLSearchParams(window.location.search).get('tab') === 'bids'
+      ? 'bids'
+      : (!jobsWithApplications.length && placedBidsWithJobs.length ? 'bids' : 'jobs');
 
-    function renderDashboard(currentProfile, currentJobs) {
+    function renderDashboard(currentProfile, currentJobs, currentPlacedBids) {
       const bannerSrc = resolveMediaSrc(currentProfile.bannerImageData, `${getBase()}images/sections/findme.avif`);
       const avatarSrc = resolveMediaSrc(currentProfile.profileImageData, `${getBase()}images/logo/logo.jpg`);
+      const receivedBidCount = currentJobs.reduce((total, job) => total + (Array.isArray(job.applications) ? job.applications.length : 0), 0);
+      const placedBidCount = currentPlacedBids.length;
+      const dashboardTitle = activeTab === 'bids' ? 'Bids you placed' : 'Jobs you posted';
+      const dashboardKicker = activeTab === 'bids' ? 'Your offers' : 'Responses';
+      const dashboardCount = activeTab === 'bids' ? placedBidCount : currentJobs.length;
       page.innerHTML = `
         <section class="job-giver-shell">
           <section class="job-giver-hero" style="background-image: linear-gradient(180deg, rgba(9, 18, 34, 0.18) 0%, rgba(9, 18, 34, 0.74) 100%), url('${escapeHtml(bannerSrc)}');">
@@ -1288,14 +1327,24 @@
           </section>
 
           <section class="job-giver-dashboard">
+            <div class="job-dashboard-tabs">
+              <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
+                <span>Jobs I Posted</span>
+                ${receivedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${receivedBidCount}</span>` : ''}
+              </button>
+              <button type="button" class="${activeTab === 'bids' ? 'is-active' : ''}" data-job-dashboard-tab="bids">
+                <span>Bids I Placed</span>
+                ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
+              </button>
+            </div>
             <div class="job-giver-dashboard-head">
               <div>
-                <span class="job-page-kicker">Responses</span>
-                <h2>Your posted jobs</h2>
+                <span class="job-page-kicker">${dashboardKicker}</span>
+                <h2>${dashboardTitle}</h2>
               </div>
-              <span>${currentJobs.length} job${currentJobs.length === 1 ? '' : 's'}</span>
+              <span>${dashboardCount} ${activeTab === 'bids' ? `bid${dashboardCount === 1 ? '' : 's'}` : `job${dashboardCount === 1 ? '' : 's'}`}</span>
             </div>
-            ${currentJobs.length ? currentJobs.map((job) => `
+            ${activeTab === 'jobs' ? (currentJobs.length ? currentJobs.map((job) => `
               <article class="job-owner-card">
                 <div class="job-owner-card-head">
                   <div>
@@ -1349,7 +1398,38 @@
                   <p>Post your first job and providers will start bidding here.</p>
                 </div>
               </div>
-            `}
+            `) : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+              <article class="job-owner-card job-placed-bid-card">
+                <div class="job-owner-card-head">
+                  <div>
+                    <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+                    ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+                    <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+                  </div>
+                  <div class="job-placed-bid-side">
+                    <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+                    <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+                  </div>
+                </div>
+                <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+                <div class="job-card-meta">
+                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+                  <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+                  <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+                </div>
+                <div class="job-card-actions">
+                  ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+                  <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+                </div>
+              </article>
+            `).join('') : `
+              <div class="specialists-empty">
+                <div>
+                  <h2>No bids placed yet</h2>
+                  <p>When you bid on a job, it will show here with its current status.</p>
+                </div>
+              </div>
+            `)}
           </section>
         </section>
 
@@ -1359,6 +1439,13 @@
       const editModal = page.querySelector('[data-job-giver-edit-modal]');
       page.querySelector('[data-job-giver-edit]')?.addEventListener('click', () => {
         openEditModal(editModal, currentProfile);
+      });
+
+      page.querySelectorAll('[data-job-dashboard-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+          activeTab = button.getAttribute('data-job-dashboard-tab') === 'bids' ? 'bids' : 'jobs';
+          renderDashboard(currentProfile, currentJobs, currentPlacedBids);
+        });
       });
 
       page.querySelectorAll('[data-job-application-action]').forEach((button) => {
@@ -1373,7 +1460,7 @@
               ...job,
               applications: await authHelper.listJobApplications(job.id).catch(() => [])
             })));
-            renderDashboard(currentProfile, refreshedJobs);
+            renderDashboard(currentProfile, refreshedJobs, currentPlacedBids);
           } catch (error) {
             window.alert(error.message || 'Could not update that bid.');
           } finally {
@@ -1518,7 +1605,7 @@
           modal.hidden = true;
           modal.innerHTML = '';
           document.body.classList.remove('job-modal-open');
-          renderDashboard(updatedProfile, currentJobs);
+          renderDashboard(updatedProfile, currentJobs, currentPlacedBids);
         } catch (error) {
           window.alert(error.message || 'Could not update your hiring profile.');
         } finally {
@@ -1527,7 +1614,7 @@
       });
     }
 
-    renderDashboard(profile, jobsWithApplications);
+    renderDashboard(profile, jobsWithApplications, placedBidsWithJobs);
   }
 
   function initialize() {

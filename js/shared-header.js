@@ -225,11 +225,7 @@ function getProviderProfileHref(base = getBasePath()) {
 }
 
 function getJobsAndBidsHref(base = getBasePath()) {
-  const account = getStoredAccount();
-  if (account?.userRole === 'client' && account?.uid) {
-    return `${base}pages/job-giver-profile.html`;
-  }
-  return `${base}pages/job-posts.html`;
+  return `${base}pages/job-giver-profile.html`;
 }
 
 function getAccountSettingsHref(base = getBasePath()) {
@@ -288,7 +284,10 @@ function renderHeader() {
             </a>
           `}
           <a href="${isLoggedIn ? profileHref : '#'}" class="account-trigger account-link" data-account-trigger="account">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="account-trigger-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="account-job-badge" data-account-jobs-badge hidden>0</span>
+            </span>
             ${isLoggedIn ? firstName : 'Account'}
           </a>
           ${isLoggedIn ? `
@@ -301,6 +300,7 @@ function renderHeader() {
               <a href="${jobsAndBidsHref}" class="account-dropdown-item">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Jobs and Bids</span>
+                <span class="account-dropdown-badge" data-account-jobs-badge-dropdown hidden>0</span>
               </a>
               ${isProvider ? `
                 <a href="${base}pages/my-posts.html" class="account-dropdown-item">
@@ -797,10 +797,54 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountMenuHost = headerEl.querySelector('.account-menu-host');
   const accountTriggers = headerEl.querySelectorAll('.account-trigger');
   const accountDropdown = headerEl.querySelector('.account-dropdown');
+  const accountJobsBadge = headerEl.querySelector('[data-account-jobs-badge]');
+  const accountJobsBadgeDropdown = headerEl.querySelector('[data-account-jobs-badge-dropdown]');
   const dropdownLogoutBtn = headerEl.querySelector('.account-dropdown-logout');
   const mobileQuery = window.matchMedia('(max-width: 768px)');
   const desktopQuery = window.matchMedia('(min-width: 769px)');
   let lastScrollY = window.scrollY;
+
+  function updateAccountJobsBadges(totalCount = 0) {
+    [accountJobsBadge, accountJobsBadgeDropdown].forEach((badge) => {
+      if (!(badge instanceof HTMLElement)) return;
+      const normalizedCount = Math.max(0, Number(totalCount || 0));
+      badge.textContent = String(normalizedCount);
+      badge.hidden = normalizedCount <= 0;
+    });
+  }
+
+  async function syncAccountJobBadges() {
+    const currentAccount = getStoredAccount();
+    if (!currentAccount?.loggedIn || !currentAccount?.uid) {
+      updateAccountJobsBadges(0);
+      return;
+    }
+
+    try {
+      const authHelper = await ensureFirebaseAuthScript().catch(() => window.softGigglesAuth || null);
+      if (!authHelper) {
+        updateAccountJobsBadges(0);
+        return;
+      }
+
+      const [postedJobs, placedBids] = await Promise.all([
+        typeof authHelper.listJobsForUser === 'function' ? authHelper.listJobsForUser(currentAccount.uid).catch(() => []) : Promise.resolve([]),
+        typeof authHelper.listPlacedJobBids === 'function' ? authHelper.listPlacedJobBids(currentAccount.uid).catch(() => []) : Promise.resolve([])
+      ]);
+
+      const postedBidCounts = await Promise.all((postedJobs || []).map((job) => (
+        typeof authHelper.listJobApplications === 'function'
+          ? authHelper.listJobApplications(job.id).then((applications) => Array.isArray(applications) ? applications.length : 0).catch(() => 0)
+          : Promise.resolve(0)
+      )));
+
+      const receivedBidCount = postedBidCounts.reduce((total, count) => total + Number(count || 0), 0);
+      const placedBidCount = Array.isArray(placedBids) ? placedBids.length : 0;
+      updateAccountJobsBadges(receivedBidCount + placedBidCount);
+    } catch (error) {
+      updateAccountJobsBadges(0);
+    }
+  }
 
   function setMobileMenuState(isOpen) {
     headerEl.classList.toggle('mobile-nav-open', isOpen);
@@ -991,6 +1035,15 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.reload();
     });
   }
+
+  syncAccountJobBadges();
+  window.addEventListener('focus', syncAccountJobBadges);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncAccountJobBadges();
+    }
+  });
+  window.addEventListener('worklinkup-job-badges-refresh', syncAccountJobBadges);
 
   window.addEventListener('resize', () => {
     syncMobileNav();

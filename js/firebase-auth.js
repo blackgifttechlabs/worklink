@@ -1454,6 +1454,22 @@ async function listJobApplications(jobId = '') {
     .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
 }
 
+async function listPlacedJobBids(uid = auth.currentUser?.uid) {
+  if (!uid) return [];
+  const snapshot = await getDocs(query(collectionGroup(db, 'applications'), where('bidderUid', '==', uid)));
+  return snapshot.docs
+    .map((docSnapshot) => {
+      const parentJobRef = docSnapshot.ref.parent?.parent;
+      return {
+        id: docSnapshot.id,
+        jobId: parentJobRef?.id || '',
+        ...docSnapshot.data()
+      };
+    })
+    .filter((application) => application.jobId)
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
 async function applyToJob(jobId = '', payload = {}) {
   if (!auth.currentUser) {
     throw new Error('Please sign in first.');
@@ -2391,6 +2407,7 @@ window.softGigglesAuth = {
   listJobsForUser,
   getJobPost,
   listJobApplications,
+  listPlacedJobBids,
   applyToJob,
   updateJobApplicationStatus,
   resolveAdminByPin,

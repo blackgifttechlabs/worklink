@@ -361,14 +361,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const scrollAmount = () => Math.max(rail.clientWidth * 0.72, 180);
       const autoScrollEnabled = rail.hasAttribute('data-auto-scroll');
       const autoScrollSpeed = Math.max(0.008, Number.parseFloat(rail.getAttribute('data-auto-scroll-speed') || '0.02'));
-      let autoScrollDirection = 1;
       let autoScrollFrame = 0;
       let lastFrameAt = 0;
       let pauseUntil = 0;
       let pointerInside = false;
+      let autoScrollPhase = 'moving';
+      let phaseStartedAt = 0;
+      const autoScrollMoveDuration = 5000;
+      const autoScrollRestDuration = 3000;
 
-      function pauseAutoScroll(durationMs = 2600) {
+      function resetAutoScrollCycle(nextPhase = 'moving', timestamp = performance.now()) {
+        autoScrollPhase = nextPhase;
+        phaseStartedAt = timestamp;
+      }
+
+      function pauseAutoScroll(durationMs = 4000, timestamp = performance.now()) {
         pauseUntil = Date.now() + durationMs;
+        resetAutoScrollCycle('moving', timestamp);
       }
 
       function syncButtons() {
@@ -391,16 +400,16 @@ document.addEventListener('DOMContentLoaded', () => {
         rail.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
       });
       rail.addEventListener('scroll', syncButtons, { passive: true });
-      rail.addEventListener('pointerdown', () => pauseAutoScroll(3600), { passive: true });
-      rail.addEventListener('touchstart', () => pauseAutoScroll(3600), { passive: true });
-      rail.addEventListener('wheel', () => pauseAutoScroll(2600), { passive: true });
-      rail.addEventListener('focusin', () => pauseAutoScroll(2600));
+      rail.addEventListener('pointerdown', () => pauseAutoScroll(4000), { passive: true });
+      rail.addEventListener('touchstart', () => pauseAutoScroll(4000), { passive: true });
+      rail.addEventListener('wheel', () => pauseAutoScroll(4000), { passive: true });
+      rail.addEventListener('focusin', () => pauseAutoScroll(4000));
       rail.addEventListener('mouseenter', () => {
         pointerInside = true;
       });
       rail.addEventListener('mouseleave', () => {
         pointerInside = false;
-        pauseAutoScroll(900);
+        resetAutoScrollCycle('moving', performance.now());
       });
       window.addEventListener('resize', syncButtons);
 
@@ -416,23 +425,28 @@ document.addEventListener('DOMContentLoaded', () => {
       function tick(timestamp) {
         if (!autoScrollEnabled) return;
         if (!lastFrameAt) lastFrameAt = timestamp;
+        if (!phaseStartedAt) phaseStartedAt = timestamp;
         const delta = timestamp - lastFrameAt;
         lastFrameAt = timestamp;
         const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
 
         if (!pointerInside && Date.now() >= pauseUntil && maxScrollLeft > 6) {
-          let nextLeft = rail.scrollLeft + (autoScrollDirection * autoScrollSpeed * delta);
-          if (nextLeft >= maxScrollLeft) {
-            nextLeft = maxScrollLeft;
-            autoScrollDirection = -1;
-            pauseAutoScroll(1000);
-          } else if (nextLeft <= 0) {
-            nextLeft = 0;
-            autoScrollDirection = 1;
-            pauseAutoScroll(1000);
+          const phaseElapsed = timestamp - phaseStartedAt;
+
+          if (autoScrollPhase === 'moving') {
+            let nextLeft = rail.scrollLeft + (autoScrollSpeed * delta);
+            if (nextLeft >= maxScrollLeft - 1) {
+              nextLeft = 0;
+            }
+            rail.scrollLeft = nextLeft;
+            syncButtons();
+
+            if (phaseElapsed >= autoScrollMoveDuration) {
+              resetAutoScrollCycle('resting', timestamp);
+            }
+          } else if (phaseElapsed >= autoScrollRestDuration) {
+            resetAutoScrollCycle('moving', timestamp);
           }
-          rail.scrollLeft = nextLeft;
-          syncButtons();
         }
 
         autoScrollFrame = window.requestAnimationFrame(tick);
@@ -1151,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = account.name || 'WorkLinkUp User';
     const email = account.email || 'you@example.com';
     const isProvider = String(account.userRole || '').trim().toLowerCase() === 'provider';
-    const jobsAndBidsHref = isProvider ? 'job-posts.html' : 'job-giver-profile.html';
+    const jobsAndBidsHref = 'job-giver-profile.html';
     if (accountDisplayName) accountDisplayName.textContent = name;
     if (accountProfileName) accountProfileName.textContent = name;
     if (accountProfileEmail) accountProfileEmail.textContent = email;
