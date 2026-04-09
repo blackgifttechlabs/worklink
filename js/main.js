@@ -174,11 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
   }
 
-  function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = []) {
+  function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {
+    const isClone = Boolean(options.isClone);
     return categories.map((category) => `
       <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
         ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle home-category-circle">
+        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -194,7 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!categoryRow) return;
     const categories = getServiceCatalog();
     if (!categories.length) return;
-    categoryRow.innerHTML = buildHomepageCategoryMarkup(getSiteBasePath(), categories);
+    const base = getSiteBasePath();
+    categoryRow.innerHTML = `${buildHomepageCategoryMarkup(base, categories)}${buildHomepageCategoryMarkup(base, categories, { isClone: true })}`;
     initScrollableRails(document);
   }
 

@@ -30,6 +30,46 @@
     }
   }
 
+  function getJobNotificationStorageKey(uid = '') {
+    return `worklinkup_job_notification_state_${String(uid || '').trim()}`;
+  }
+
+  function readJobNotificationState(uid = '') {
+    try {
+      const raw = localStorage.getItem(getJobNotificationStorageKey(uid));
+      const parsed = raw ? JSON.parse(raw) : {};
+      return {
+        receivedAt: Number(parsed?.receivedAt || 0),
+        placedAt: Number(parsed?.placedAt || 0)
+      };
+    } catch (error) {
+      return {
+        receivedAt: 0,
+        placedAt: 0
+      };
+    }
+  }
+
+  function writeJobNotificationState(uid = '', nextState = {}) {
+    if (!uid) return;
+    try {
+      localStorage.setItem(getJobNotificationStorageKey(uid), JSON.stringify({
+        receivedAt: Number(nextState.receivedAt || 0),
+        placedAt: Number(nextState.placedAt || 0)
+      }));
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function getPlacedBidNotificationTime(bid = {}) {
+    return Math.max(
+      Number(bid.statusChangedAtMs || 0),
+      Number(bid.updatedAtMs || 0),
+      Number(bid.createdAtMs || 0)
+    );
+  }
+
   function setButtonLoading(button, isLoading) {
     if (!(button instanceof HTMLElement)) return;
     button.classList.toggle('is-loading', Boolean(isLoading));
@@ -1297,8 +1337,35 @@
       : (!jobsWithApplications.length && placedBidsWithJobs.length ? 'bids' : 'jobs');
 
     function renderDashboard(currentProfile, currentJobs, currentPlacedBids) {
-      const receivedBidCount = currentJobs.reduce((total, job) => total + (Array.isArray(job.applications) ? job.applications.length : 0), 0);
-      const placedBidCount = currentPlacedBids.length;
+      const notificationState = readJobNotificationState(account.uid);
+      const latestReceivedBidAt = currentJobs.reduce((latest, job) => Math.max(
+        latest,
+        ...(Array.isArray(job.applications) ? job.applications.map((application) => Number(application.createdAtMs || 0)) : [0])
+      ), 0);
+      const latestPlacedBidAt = currentPlacedBids.reduce((latest, bid) => Math.max(latest, getPlacedBidNotificationTime(bid)), 0);
+
+      let didUpdateNotificationState = false;
+      if (activeTab === 'jobs' && latestReceivedBidAt > notificationState.receivedAt) {
+        notificationState.receivedAt = latestReceivedBidAt;
+        didUpdateNotificationState = true;
+      }
+      if (activeTab === 'bids' && latestPlacedBidAt > notificationState.placedAt) {
+        notificationState.placedAt = latestPlacedBidAt;
+        didUpdateNotificationState = true;
+      }
+      if (didUpdateNotificationState) {
+        writeJobNotificationState(account.uid, notificationState);
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+        }, 0);
+      }
+
+      const receivedBidCount = currentJobs.reduce((total, job) => total + (
+        Array.isArray(job.applications)
+          ? job.applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
+          : 0
+      ), 0);
+      const placedBidCount = currentPlacedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length;
       page.innerHTML = `
         <section class="job-page-shell">
           <section class="job-giver-dashboard">

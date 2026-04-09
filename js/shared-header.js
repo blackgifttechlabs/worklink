@@ -117,6 +117,34 @@ function getStoredAccount() {
   }
 }
 
+function getJobNotificationStorageKey(uid = '') {
+  return `worklinkup_job_notification_state_${String(uid || '').trim()}`;
+}
+
+function readJobNotificationState(uid = '') {
+  try {
+    const raw = localStorage.getItem(getJobNotificationStorageKey(uid));
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      receivedAt: Number(parsed?.receivedAt || 0),
+      placedAt: Number(parsed?.placedAt || 0)
+    };
+  } catch (error) {
+    return {
+      receivedAt: 0,
+      placedAt: 0
+    };
+  }
+}
+
+function getPlacedBidNotificationTime(bid = {}) {
+  return Math.max(
+    Number(bid.statusChangedAtMs || 0),
+    Number(bid.updatedAtMs || 0),
+    Number(bid.createdAtMs || 0)
+  );
+}
+
 function pageNeedsProvidersUi(pathname = window.location.pathname) {
   return /\/pages\/(specialists|provider-profile|my-posts|messages|account|categories|edit-profile|post-job|job-posts|job-giver-profile)\.html$/.test(pathname);
 }
@@ -234,6 +262,7 @@ function getAccountSettingsHref(base = getBasePath()) {
 
 function renderHeader() {
   const base = getBasePath();
+  const isMessagesPage = /\/pages\/messages\.html$/.test(window.location.pathname);
   const account = getStoredAccount();
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
@@ -321,15 +350,17 @@ function renderHeader() {
             </div>
           ` : ''}
         </div>
-        <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-            <path d="M4 7h16M4 12h16M4 17h16"/>
-          </svg>
-        </button>
+        ${isMessagesPage ? '' : `
+          <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path d="M4 7h16M4 12h16M4 17h16"/>
+            </svg>
+          </button>
+        `}
       </div>
     </div>
   </header>
-  <div class="mobile-nav-overlay" aria-hidden="true"></div>
+  ${isMessagesPage ? '' : `<div class="mobile-nav-overlay" aria-hidden="true"></div>`}
   <div class="mobile-search-overlay" id="mobile-search-overlay" hidden>
     <div class="mobile-search-panel" aria-modal="true" role="dialog" aria-labelledby="mobile-search-title">
       <div class="mobile-search-head">
@@ -350,6 +381,7 @@ function renderHeader() {
       <div class="mobile-search-results" id="mobile-search-results"></div>
     </div>
   </div>
+  ${isMessagesPage ? '' : `
   <nav id="site-nav">
     <button class="mobile-nav-close" type="button" aria-label="Close menu">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
@@ -478,7 +510,7 @@ function renderHeader() {
         <a href="${base}index.html#for-workers" class="nav-link promo">For Workers</a>
       </div>
     </div>
-  </nav>`;
+  </nav>`}`;
 }
 
 function renderAccountPanel() {
@@ -900,12 +932,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const postedBidCounts = await Promise.all((postedJobs || []).map((job) => (
         typeof authHelper.listJobApplications === 'function'
-          ? authHelper.listJobApplications(job.id).then((applications) => Array.isArray(applications) ? applications.length : 0).catch(() => 0)
-          : Promise.resolve(0)
+          ? authHelper.listJobApplications(job.id).then((applications) => Array.isArray(applications) ? applications : []).catch(() => [])
+          : Promise.resolve([])
       )));
 
-      const receivedBidCount = postedBidCounts.reduce((total, count) => total + Number(count || 0), 0);
-      const placedBidCount = Array.isArray(placedBids) ? placedBids.length : 0;
+      const notificationState = readJobNotificationState(currentAccount.uid);
+      const receivedBidCount = postedBidCounts.reduce((total, applications) => total + (
+        Array.isArray(applications)
+          ? applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
+          : 0
+      ), 0);
+      const placedBidCount = Array.isArray(placedBids)
+        ? placedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length
+        : 0;
       accountJobsBadgeCount = receivedBidCount + placedBidCount;
       renderAccountBadgeState();
       await syncAccountMessageBadges(authHelper, currentAccount);
