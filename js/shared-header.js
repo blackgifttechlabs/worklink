@@ -311,6 +311,7 @@ function renderHeader() {
               <a href="${base}pages/messages.html" class="account-dropdown-item">
                 <i class="fa-regular fa-message"></i>
                 <span>Messages</span>
+                <span class="account-dropdown-badge" data-account-messages-badge-dropdown hidden>0</span>
               </a>
               <a href="${settingsHref}" class="account-dropdown-item">
                 <i class="fa-solid fa-sliders"></i>
@@ -799,31 +800,96 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountDropdown = headerEl.querySelector('.account-dropdown');
   const accountJobsBadge = headerEl.querySelector('[data-account-jobs-badge]');
   const accountJobsBadgeDropdown = headerEl.querySelector('[data-account-jobs-badge-dropdown]');
+  const accountMessagesBadgeDropdown = headerEl.querySelector('[data-account-messages-badge-dropdown]');
   const dropdownLogoutBtn = headerEl.querySelector('.account-dropdown-logout');
   const mobileQuery = window.matchMedia('(max-width: 768px)');
   const desktopQuery = window.matchMedia('(min-width: 769px)');
   let lastScrollY = window.scrollY;
+  let accountJobsBadgeCount = 0;
+  let accountMessagesBadgeCount = 0;
+  let accountConversationBadgeUnsubscribe = null;
 
-  function updateAccountJobsBadges(totalCount = 0) {
-    [accountJobsBadge, accountJobsBadgeDropdown].forEach((badge) => {
-      if (!(badge instanceof HTMLElement)) return;
-      const normalizedCount = Math.max(0, Number(totalCount || 0));
-      badge.textContent = String(normalizedCount);
-      badge.hidden = normalizedCount <= 0;
-    });
+  function setBadgeCount(badge, count = 0) {
+    if (!(badge instanceof HTMLElement)) return;
+    const normalizedCount = Math.max(0, Number(count || 0));
+    badge.textContent = String(normalizedCount);
+    badge.hidden = normalizedCount <= 0;
+  }
+
+  function renderAccountBadgeState() {
+    setBadgeCount(accountJobsBadge, accountJobsBadgeCount + accountMessagesBadgeCount);
+    setBadgeCount(accountJobsBadgeDropdown, accountJobsBadgeCount);
+    setBadgeCount(accountMessagesBadgeDropdown, accountMessagesBadgeCount);
+  }
+
+  function stopAccountConversationBadgeSubscription() {
+    if (typeof accountConversationBadgeUnsubscribe === 'function') {
+      accountConversationBadgeUnsubscribe();
+    }
+    accountConversationBadgeUnsubscribe = null;
+  }
+
+  function updateMessageBadgeCount(conversations = []) {
+    accountMessagesBadgeCount = Array.isArray(conversations)
+      ? conversations.reduce((total, conversation) => total + Number(conversation.unreadCount || 0), 0)
+      : 0;
+    renderAccountBadgeState();
+  }
+
+  async function syncAccountMessageBadges(authHelper, currentAccount) {
+    if (!authHelper || !currentAccount?.uid) {
+      accountMessagesBadgeCount = 0;
+      renderAccountBadgeState();
+      stopAccountConversationBadgeSubscription();
+      return;
+    }
+
+    if (!accountConversationBadgeUnsubscribe && typeof authHelper.subscribeConversations === 'function') {
+      accountConversationBadgeUnsubscribe = await authHelper.subscribeConversations((conversations) => {
+        updateMessageBadgeCount(conversations);
+      }).catch(() => null);
+      if (accountConversationBadgeUnsubscribe) return;
+    }
+
+    if (typeof authHelper.listConversations === 'function') {
+      const conversations = await authHelper.listConversations().catch(() => []);
+      updateMessageBadgeCount(conversations);
+      return;
+    }
+
+    accountMessagesBadgeCount = 0;
+    renderAccountBadgeState();
+  }
+
+  async function refreshAccountMessageBadges() {
+    const currentAccount = getStoredAccount();
+    if (!currentAccount?.loggedIn || !currentAccount?.uid) {
+      accountMessagesBadgeCount = 0;
+      renderAccountBadgeState();
+      stopAccountConversationBadgeSubscription();
+      return;
+    }
+
+    const authHelper = await ensureFirebaseAuthScript().catch(() => window.softGigglesAuth || null);
+    await syncAccountMessageBadges(authHelper, currentAccount);
   }
 
   async function syncAccountJobBadges() {
     const currentAccount = getStoredAccount();
     if (!currentAccount?.loggedIn || !currentAccount?.uid) {
-      updateAccountJobsBadges(0);
+      accountJobsBadgeCount = 0;
+      accountMessagesBadgeCount = 0;
+      renderAccountBadgeState();
+      stopAccountConversationBadgeSubscription();
       return;
     }
 
     try {
       const authHelper = await ensureFirebaseAuthScript().catch(() => window.softGigglesAuth || null);
       if (!authHelper) {
-        updateAccountJobsBadges(0);
+        accountJobsBadgeCount = 0;
+        accountMessagesBadgeCount = 0;
+        renderAccountBadgeState();
         return;
       }
 
@@ -840,9 +906,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const receivedBidCount = postedBidCounts.reduce((total, count) => total + Number(count || 0), 0);
       const placedBidCount = Array.isArray(placedBids) ? placedBids.length : 0;
-      updateAccountJobsBadges(receivedBidCount + placedBidCount);
+      accountJobsBadgeCount = receivedBidCount + placedBidCount;
+      renderAccountBadgeState();
+      await syncAccountMessageBadges(authHelper, currentAccount);
     } catch (error) {
-      updateAccountJobsBadges(0);
+      accountJobsBadgeCount = 0;
+      renderAccountBadgeState();
     }
   }
 
@@ -1044,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   window.addEventListener('worklinkup-job-badges-refresh', syncAccountJobBadges);
+  window.addEventListener('worklinkup-messages-badges-refresh', refreshAccountMessageBadges);
 
   window.addEventListener('resize', () => {
     syncMobileNav();
@@ -1067,4 +1137,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   syncMobileNav();
   syncDesktopNav();
+
+  window.addEventListener('beforeunload', () => {
+    stopAccountConversationBadgeSubscription();
+  }, { once: true });
 });

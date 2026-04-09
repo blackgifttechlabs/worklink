@@ -1195,7 +1195,6 @@
           });
           closeModal(bidModal);
           clearPendingJobBid();
-          window.alert('Your bid was sent.');
           jobs = await authHelper.listJobPosts().catch(() => jobs);
           if (typeof authHelper.listPlacedJobBids === 'function') {
             const currentAccount = getStoredAccount();
@@ -1205,6 +1204,7 @@
           }
           window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
           renderJobs();
+          showJobToast('Job accepted, waiting for approval.');
         } catch (error) {
           window.alert(error.message || 'Could not send your bid.');
         } finally {
@@ -1297,35 +1297,10 @@
       : (!jobsWithApplications.length && placedBidsWithJobs.length ? 'bids' : 'jobs');
 
     function renderDashboard(currentProfile, currentJobs, currentPlacedBids) {
-      const bannerSrc = resolveMediaSrc(currentProfile.bannerImageData, `${getBase()}images/sections/findme.avif`);
-      const avatarSrc = resolveMediaSrc(currentProfile.profileImageData, `${getBase()}images/logo/logo.jpg`);
       const receivedBidCount = currentJobs.reduce((total, job) => total + (Array.isArray(job.applications) ? job.applications.length : 0), 0);
       const placedBidCount = currentPlacedBids.length;
-      const dashboardTitle = activeTab === 'bids' ? 'Bids you placed' : 'Jobs you posted';
-      const dashboardKicker = activeTab === 'bids' ? 'Your offers' : 'Responses';
-      const dashboardCount = activeTab === 'bids' ? placedBidCount : currentJobs.length;
       page.innerHTML = `
-        <section class="job-giver-shell">
-          <section class="job-giver-hero" style="background-image: linear-gradient(180deg, rgba(9, 18, 34, 0.18) 0%, rgba(9, 18, 34, 0.74) 100%), url('${escapeHtml(bannerSrc)}');">
-            <div class="job-giver-avatar">
-              <img src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(currentProfile.displayName || 'Profile')} image" />
-            </div>
-            <div class="job-giver-copy">
-              <span class="job-page-kicker">Hiring Profile</span>
-              <h1>${escapeHtml(currentProfile.displayName || 'WorkLinkUp client')}</h1>
-              <p>${escapeHtml(currentProfile.bio || 'Post jobs, compare bids, and move the accepted deal into messages.')}</p>
-              <div class="job-giver-meta">
-                <span><i class="fa-solid fa-phone"></i>${escapeHtml(currentProfile.phone || 'Phone not added')}</span>
-                <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(currentProfile.address || currentProfile.city || 'Address not added')}</span>
-              </div>
-            </div>
-            <div class="job-giver-actions">
-              <button type="button" class="btn-secondary fleece-secondary" data-job-giver-edit>Edit Profile</button>
-              <a href="${getBase()}pages/post-job.html" class="btn-primary">Post another job</a>
-              <a href="${getBase()}pages/edit-profile.html" class="btn-secondary fleece-secondary">Become a provider</a>
-            </div>
-          </section>
-
+        <section class="job-page-shell">
           <section class="job-giver-dashboard">
             <div class="job-dashboard-tabs">
               <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
@@ -1336,13 +1311,6 @@
                 <span>Bids I Placed</span>
                 ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
               </button>
-            </div>
-            <div class="job-giver-dashboard-head">
-              <div>
-                <span class="job-page-kicker">${dashboardKicker}</span>
-                <h2>${dashboardTitle}</h2>
-              </div>
-              <span>${dashboardCount} ${activeTab === 'bids' ? `bid${dashboardCount === 1 ? '' : 's'}` : `job${dashboardCount === 1 ? '' : 's'}`}</span>
             </div>
             ${activeTab === 'jobs' ? (currentJobs.length ? currentJobs.map((job) => `
               <article class="job-owner-card">
@@ -1378,7 +1346,7 @@
                         <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
                         <div class="job-bidder-actions">
                           ${application.status === 'accepted' ? `
-                            <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.id)}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I accept this deal lets continue chatting')}">Finalise deal</a>
+                            <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
                           ` : `
                             <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
                           `}
@@ -1432,18 +1400,14 @@
             `)}
           </section>
         </section>
-
-        <div class="job-modal-shell" data-job-giver-edit-modal hidden></div>
       `;
-
-      const editModal = page.querySelector('[data-job-giver-edit-modal]');
-      page.querySelector('[data-job-giver-edit]')?.addEventListener('click', () => {
-        openEditModal(editModal, currentProfile);
-      });
 
       page.querySelectorAll('[data-job-dashboard-tab]').forEach((button) => {
         button.addEventListener('click', () => {
           activeTab = button.getAttribute('data-job-dashboard-tab') === 'bids' ? 'bids' : 'jobs';
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set('tab', activeTab);
+          window.history.replaceState({}, '', nextUrl.toString());
           renderDashboard(currentProfile, currentJobs, currentPlacedBids);
         });
       });
@@ -1456,6 +1420,13 @@
           setButtonLoading(button, true);
           try {
             await authHelper.updateJobApplicationStatus(jobId, applicationId, status);
+            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+            const selectedJob = currentJobs.find((job) => job.id === jobId);
+            const selectedApplication = selectedJob?.applications?.find((application) => application.id === applicationId) || null;
+            if (status === 'accepted' && selectedApplication?.bidderUid) {
+              window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
+              return;
+            }
             const refreshedJobs = await Promise.all((await authHelper.listJobsForUser(account.uid).catch(() => currentJobs)).map(async (job) => ({
               ...job,
               applications: await authHelper.listJobApplications(job.id).catch(() => [])

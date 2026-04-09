@@ -1512,6 +1512,13 @@ async function applyToJob(jobId = '', payload = {}) {
   const applicationPayload = {
     bidderUid: auth.currentUser.uid,
     bidderName,
+    jobOwnerUid: String(job.ownerUid || '').trim(),
+    jobOwnerName: String(job.ownerName || '').trim(),
+    jobCategory: String(job.category || '').trim(),
+    jobSubcategory: String(job.subcategory || '').trim(),
+    jobAddress: String(job.address || '').trim(),
+    jobBudget: Number(job.budget || 0),
+    jobCreatedAtMs: Number(job.createdAtMs || now),
     bidderProvinceSlug: providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || '',
     bidderCategory: providerProfile?.primaryCategory || clientProfile?.city || userDoc?.city || '',
     bidderSpecialty: providerProfile?.specialty || userDoc?.title || '',
@@ -1521,6 +1528,10 @@ async function applyToJob(jobId = '', payload = {}) {
     bidderMessage: String(payload.message || '').trim(),
     proposedBudget,
     status: 'pending',
+    acceptedAtMs: 0,
+    rejectedAtMs: 0,
+    statusChangedAtMs: now,
+    statusChangedByUid: auth.currentUser.uid,
     createdAtMs: now,
     updatedAtMs: now,
     createdAt: serverTimestamp(),
@@ -1572,6 +1583,10 @@ async function updateJobApplicationStatus(jobId = '', applicationId = '', status
 
   await updateDoc(applicationRef, {
     status: nextStatus,
+    acceptedAtMs: nextStatus === 'accepted' ? now : 0,
+    rejectedAtMs: nextStatus === 'rejected' ? now : 0,
+    statusChangedAtMs: now,
+    statusChangedByUid: auth.currentUser.uid,
     updatedAtMs: now,
     updatedAt: serverTimestamp()
   });
@@ -1583,6 +1598,9 @@ async function updateJobApplicationStatus(jobId = '', applicationId = '', status
   if (nextStatus === 'accepted') {
     jobUpdates.acceptedApplicationUid = applicationId;
     jobUpdates.acceptedApplicationBudget = Number(application.proposedBudget || 0);
+  } else if (String(job.acceptedApplicationUid || '').trim() === applicationId) {
+    jobUpdates.acceptedApplicationUid = '';
+    jobUpdates.acceptedApplicationBudget = 0;
   }
   await setDoc(doc(db, JOBS_COLLECTION, jobId), jobUpdates, { merge: true });
 

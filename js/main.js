@@ -737,8 +737,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPageSubtextLabel = document.querySelector('.account-auth-page-subtext-label');
   const accountPageSubmitBtn = document.querySelector('.account-page-submit-btn');
   const accountPageForgotPasswordBtn = document.querySelector('.account-page-forgot-password');
+  const homeGetFoundBtn = document.querySelector('[data-home-get-found]');
   const accountPageParams = new URLSearchParams(window.location.search);
   const isEmbeddedAccountPage = accountPageParams.get('embed') === '1';
+  const requestedAccountPageMode = accountPageParams.get('mode') === 'signin' ? 'signin' : 'signup';
 
   function readAccount() {
     try {
@@ -1054,14 +1056,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.insertAdjacentHTML('beforeend', `
       <div class="pending-setup-overlay" id="pending-setup-overlay" hidden>
         <div class="pending-setup-backdrop"></div>
-        <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-labelledby="pending-setup-title">
-          <div class="pending-setup-head">
-            <div>
-              <span class="pending-setup-kicker">Complete your account</span>
-              <h2 id="pending-setup-title">Complete your sign up process</h2>
-            </div>
-            <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
-          </div>
+        <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-label="Complete your account setup">
+          <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
           <iframe class="pending-setup-frame" src="${frameSrc}" title="WorkLinkUp account setup"></iframe>
         </div>
       </div>
@@ -1129,6 +1125,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.openWorkLinkUpSetupModal = openWorkLinkUpSetupModal;
+
+  async function handleHomeGetFoundClick() {
+    const base = getSiteBasePath();
+    const account = readAccount();
+    if (!account?.loggedIn || !account?.uid) {
+      window.location.href = `${base}pages/account.html?mode=signin`;
+      return;
+    }
+
+    const authHelper = await getAuthHelperReady();
+    if (!authHelper) {
+      window.location.href = `${base}pages/account.html?mode=signin`;
+      return;
+    }
+
+    try {
+      const userDoc = await authHelper.getUserDocument(account.uid).catch(() => null);
+      const providerProfile = await authHelper.getProviderProfileByUid(
+        account.uid,
+        userDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
+      ).catch(() => null);
+      const isProvider = String(userDoc?.userRole || account.userRole || '').trim().toLowerCase() === 'provider';
+      const providerComplete = Boolean(userDoc?.providerProfileComplete || providerProfile?.uid);
+
+      if (isProvider && providerComplete) {
+        window.location.href = `${base}pages/my-posts.html`;
+        return;
+      }
+
+      openWorkLinkUpSetupModal('?setup=provider', {
+        clearPendingOnClose: true
+      });
+    } catch (error) {
+      openWorkLinkUpSetupModal('?setup=provider', {
+        clearPendingOnClose: true
+      });
+    }
+  }
 
   function initPendingSetupModal() {
     if (!document.body.classList.contains('home-page-body')) return;
@@ -1867,7 +1901,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   syncAccountMode('signin');
   if (!isEmbeddedAccountPage) {
-    syncAccountPageMode('signup');
+    syncAccountPageMode(requestedAccountPageMode);
   }
   bindIdentifierSwitch(
     accountIdentifierSwitch,
@@ -1883,6 +1917,12 @@ document.addEventListener('DOMContentLoaded', () => {
     accountPageIdentifierLabel,
     () => accountPageModeInput?.value === 'signup'
   );
+
+  if (homeGetFoundBtn) {
+    homeGetFoundBtn.addEventListener('click', () => {
+      handleHomeGetFoundClick();
+    });
+  }
   setMethodVisibility('all');
   applyAccountToPage();
   maybeHandleRedirectedGoogleAuth();

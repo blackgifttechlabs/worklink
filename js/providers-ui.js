@@ -3235,6 +3235,7 @@
       state.conversations = nextConversations;
       renderFilterChips();
       renderChatList();
+      window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
     }
 
     function renderThreadMessages(messages) {
@@ -3302,10 +3303,12 @@
           ));
           if (hasUnreadIncoming) {
             authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
+            window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
           }
         });
       } else {
         await authHelper.markConversationViewed?.(state.activePeerUid).catch(() => {});
+        window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
         const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
         renderThreadMessages(messages);
       }
@@ -3424,6 +3427,7 @@
         window.history.replaceState({}, '', nextUrl.toString());
         refreshComposerState();
         scrollThreadToBottom(true);
+        window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
       } catch (error) {
         window.alert(error.message || 'Could not send message.');
       } finally {
@@ -3725,10 +3729,7 @@
         if (isEmbedded) {
           const redirectTarget = (() => {
             if (String(userDoc?.userRole || '').trim() === 'provider') {
-              const profileUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
-              profileUrl.searchParams.set('uid', account.uid);
-              profileUrl.searchParams.set('province', providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '');
-              return `${profileUrl.pathname}${profileUrl.search}`;
+              return `${getBase()}pages/my-posts.html`;
             }
             const specialistsUrl = new URL(`${getBase()}pages/specialists.html`, window.location.href);
             return `${specialistsUrl.pathname}${specialistsUrl.search}`;
@@ -3941,11 +3942,13 @@
 
       setupBody.innerHTML = `
         <section class="account-provider-setup-stage">
-          <div class="account-provider-setup-head">
-            <span class="account-auth-stage-kicker">Service provider profile</span>
-            <h2>Complete your professional profile</h2>
-            <p>Fill in the details clients will see on your WorkLinkUp profile. Missing required fields will highlight in red when you try to continue.</p>
-          </div>
+          ${isEmbedded ? '' : `
+            <div class="account-provider-setup-head">
+              <span class="account-auth-stage-kicker">Service provider profile</span>
+              <h2>Complete your professional profile</h2>
+              <p>Fill in the details clients will see on your WorkLinkUp profile. Missing required fields will highlight in red when you try to continue.</p>
+            </div>
+          `}
 
           <form class="account-provider-form" data-account-provider-form novalidate>
             <div class="account-provider-grid">
