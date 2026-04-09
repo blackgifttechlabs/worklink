@@ -698,6 +698,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountProfileName = document.getElementById('account-profile-name');
   const accountProfileEmail = document.getElementById('account-profile-email');
   const accountPageLogout = document.querySelector('.account-side-logout');
+  const accountJobsAndBidsLinks = document.querySelectorAll('[data-account-jobs-bids-link]');
+  const accountProviderOnlyLinks = document.querySelectorAll('[data-account-provider-only]');
   const accountDeleteLink = document.querySelector('.account-delete-link');
   const accountDeleteOverlay = document.getElementById('account-delete-overlay');
   const accountDeleteClose = document.querySelector('.account-delete-close');
@@ -1148,9 +1150,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const name = account.name || 'WorkLinkUp User';
     const email = account.email || 'you@example.com';
+    const isProvider = String(account.userRole || '').trim().toLowerCase() === 'provider';
+    const jobsAndBidsHref = isProvider ? 'job-posts.html' : 'job-giver-profile.html';
     if (accountDisplayName) accountDisplayName.textContent = name;
     if (accountProfileName) accountProfileName.textContent = name;
     if (accountProfileEmail) accountProfileEmail.textContent = email;
+    accountJobsAndBidsLinks.forEach((link) => {
+      if (link instanceof HTMLAnchorElement) {
+        link.href = jobsAndBidsHref;
+      }
+    });
+    accountProviderOnlyLinks.forEach((link) => {
+      if (!(link instanceof HTMLElement)) return;
+      link.hidden = !isProvider;
+    });
   }
 
   function getDeleteIdentifier(account) {

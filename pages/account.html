@@ -100,7 +100,7 @@
   </section>
 
   <section class="account-dashboard" id="account-dashboard" hidden>
-    <div class="account-hero-banner work-account-hero">
+    <div class="account-hero-banner work-account-hero" id="account-profile">
       <div class="work-account-hero-copy">
         <span class="work-account-kicker">WorkLinkUp Profile</span>
         <div class="account-hero-chip">Hi, <span id="account-display-name">WorkLinkUp User</span></div>
@@ -110,14 +110,15 @@
 
     <div class="account-dashboard-layout">
       <aside class="account-side-nav">
-        <a href="#" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>Profile</span></a>
-        <a href="my-posts.html" class="account-side-link"><i class="fa-regular fa-images"></i><span>My Posts</span></a>
+        <a href="#account-profile" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>My Profile</span></a>
+        <a href="job-posts.html" class="account-side-link" data-account-jobs-bids-link><i class="fa-solid fa-briefcase"></i><span>Jobs and Bids</span></a>
+        <a href="my-posts.html" class="account-side-link" data-account-provider-only hidden><i class="fa-regular fa-images"></i><span>My Posts</span></a>
         <a href="messages.html" class="account-side-link"><i class="fa-regular fa-message"></i><span>Messages</span></a>
-        <a href="specialists.html" class="account-side-link"><i class="fa-solid fa-magnifying-glass"></i><span>Browse Specialists</span></a>
+        <a href="#account-settings" class="account-side-link"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
         <button type="button" class="account-side-logout">Log Out</button>
       </aside>
 
-      <section class="account-profile-card">
+      <section class="account-profile-card" id="account-settings">
         <h2>Profile Details</h2>
         <div class="account-detail-box">
           <span>Name</span>

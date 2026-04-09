@@ -219,12 +219,21 @@ window.ensureWorkLinkAuth = ensureFirebaseAuthScript;
 function getProviderProfileHref(base = getBasePath()) {
   const account = getStoredAccount();
   const isLoggedIn = Boolean(account && account.loggedIn);
-  if (isLoggedIn && account?.userRole === 'client' && account?.uid) {
-    return `${base}pages/job-giver-profile.html`;
-  }
   return isLoggedIn && account?.providerProfileComplete && account?.uid && account?.providerProvinceSlug
     ? `${base}pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(account.providerProvinceSlug)}`
-    : `${base}pages/account.html`;
+    : `${base}pages/account.html#account-profile`;
+}
+
+function getJobsAndBidsHref(base = getBasePath()) {
+  const account = getStoredAccount();
+  if (account?.userRole === 'client' && account?.uid) {
+    return `${base}pages/job-giver-profile.html`;
+  }
+  return `${base}pages/job-posts.html`;
+}
+
+function getAccountSettingsHref(base = getBasePath()) {
+  return `${base}pages/account.html#account-settings`;
 }
 
 function renderHeader() {
@@ -233,9 +242,10 @@ function renderHeader() {
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
   const firstName = accountName.split(' ')[0];
-  const providerProfileHref = getProviderProfileHref(base);
-  const jobsDashboardHref = account?.userRole === 'client' ? `${base}pages/job-giver-profile.html` : `${base}pages/my-posts.html`;
-  const jobsDashboardLabel = account?.userRole === 'client' ? 'My Jobs & Bids' : 'My Posts';
+  const profileHref = getProviderProfileHref(base);
+  const jobsAndBidsHref = getJobsAndBidsHref(base);
+  const settingsHref = getAccountSettingsHref(base);
+  const isProvider = account?.userRole === 'provider';
   const categoryHref = (label) => buildWorkLinkUpSpecialistsHref(label, { base, category: label, query: label });
   const serviceHref = (label, categoryLabel = '') => {
     const matchedCategory = categoryLabel || findCategoryByServiceLabel(label)?.label || '';
@@ -277,26 +287,32 @@ function renderHeader() {
               Create Profile
             </a>
           `}
-          <a href="${isLoggedIn ? providerProfileHref : '#'}" class="account-trigger account-link" data-account-trigger="account">
+          <a href="${isLoggedIn ? profileHref : '#'}" class="account-trigger account-link" data-account-trigger="account">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             ${isLoggedIn ? firstName : 'Account'}
           </a>
           ${isLoggedIn ? `
             <div class="account-dropdown" aria-hidden="true">
               <div class="account-dropdown-greeting">Hi, ${accountName}</div>
-              <a href="${providerProfileHref}" class="account-dropdown-item">
+              <a href="${profileHref}" class="account-dropdown-item">
                 <i class="fa-regular fa-user"></i>
                 <span>My Profile</span>
               </a>
-              <a href="${jobsDashboardHref}" class="account-dropdown-item">
-                <i class="fa-regular fa-images"></i>
-                <span>${jobsDashboardLabel}</span>
+              <a href="${jobsAndBidsHref}" class="account-dropdown-item">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Jobs and Bids</span>
               </a>
+              ${isProvider ? `
+                <a href="${base}pages/my-posts.html" class="account-dropdown-item">
+                  <i class="fa-regular fa-images"></i>
+                  <span>My Posts</span>
+                </a>
+              ` : ''}
               <a href="${base}pages/messages.html" class="account-dropdown-item">
                 <i class="fa-regular fa-message"></i>
                 <span>Messages</span>
               </a>
-              <a href="${base}pages/account.html" class="account-dropdown-item">
+              <a href="${settingsHref}" class="account-dropdown-item">
                 <i class="fa-solid fa-sliders"></i>
                 <span>Settings</span>
               </a>
@@ -936,14 +952,14 @@ document.addEventListener('DOMContentLoaded', () => {
     accountTriggers.forEach((trigger) => {
       trigger.addEventListener('click', (event) => {
         if (!accountMenuHost.classList.contains('is-logged-in')) return;
+        event.preventDefault();
         if (mobileQuery.matches) {
           event.preventDefault();
           const willOpen = !accountMenuHost.classList.contains('is-open');
           accountMenuHost.classList.toggle('is-open', willOpen);
           return;
         }
-        if (trigger.classList.contains('account-link')) return;
-        event.preventDefault();
+        openAccountDropdown();
       });
     });
 

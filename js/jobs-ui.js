@@ -124,11 +124,17 @@
         </div>
         <section class="job-board-toolbar job-skeleton-toolbar">
           <span class="job-skeleton-block job-skeleton-search"></span>
-          <div class="job-skeleton-filter-row">
-            <span class="job-skeleton-block job-skeleton-chip"></span>
-            <span class="job-skeleton-block job-skeleton-chip"></span>
-            <span class="job-skeleton-block job-skeleton-chip"></span>
-            <span class="job-skeleton-block job-skeleton-chip"></span>
+          <div class="job-skeleton-toolbar-actions">
+            <div class="job-skeleton-filter-row">
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+            </div>
+            <div class="job-skeleton-filter-row">
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+              <span class="job-skeleton-block job-skeleton-chip"></span>
+            </div>
           </div>
         </section>
         <section class="job-board-groups">
@@ -178,7 +184,11 @@
   }
 
   function getCategoryConfig(label = '') {
-    return CATALOG.find((category) => category.label === label) || CATALOG[0] || { label: '', subservices: [] };
+    const normalizedLabel = String(label || '').trim();
+    if (!normalizedLabel) {
+      return { label: '', subservices: [], icon: 'fa-solid fa-layer-group' };
+    }
+    return CATALOG.find((category) => category.label === normalizedLabel) || { label: '', subservices: [], icon: 'fa-solid fa-layer-group' };
   }
 
   function getSubservicesForCategory(label = '') {
@@ -203,7 +213,7 @@
   }
 
   function getCategoryIcon(categoryLabel = '') {
-    return getCategoryConfig(categoryLabel)?.icon || 'fa-solid fa-layer-group';
+    return getCategoryConfig(categoryLabel).icon || 'fa-solid fa-layer-group';
   }
 
   function buildJobComboboxMarkup({ type, label, placeholder, value = '', required = false }) {
@@ -699,7 +709,7 @@
     const clientProfile = account?.loggedIn && authHelper?.getClientProfileByUid
       ? await authHelper.getClientProfileByUid(account.uid).catch(() => null)
       : null;
-    const defaultCategory = CATALOG[0]?.label || '';
+    const defaultCategory = '';
 
     page.innerHTML = `
       <section class="job-page-shell">
@@ -717,7 +727,7 @@
             ${buildJobComboboxMarkup({
               type: 'category',
               label: 'Job category',
-              placeholder: 'Search category',
+              placeholder: 'Select job category',
               value: defaultCategory,
               required: true
             })}
@@ -795,13 +805,13 @@
     const subcategoryCombobox = bindJobCombobox(subcategoryHost, {
       type: 'subcategory',
       value: '',
-      defaultIcon: getCategoryIcon(defaultCategory),
+      defaultIcon: 'fa-solid fa-list-ul',
       getItems: (query) => getSubcategoryItems(activeCategory, query)
     });
     const categoryCombobox = bindJobCombobox(categoryHost, {
       type: 'category',
       value: defaultCategory,
-      defaultIcon: getCategoryIcon(defaultCategory),
+      defaultIcon: 'fa-solid fa-layer-group',
       getItems: getCategoryItems,
       onSelect: (match) => {
         activeCategory = match.value;
@@ -814,7 +824,6 @@
         subcategoryCombobox?.clear();
       }
     });
-    categoryCombobox?.setValue(defaultCategory);
     activeCategory = categoryCombobox?.getValue() || defaultCategory;
     subcategoryCombobox?.clear();
 
@@ -921,7 +930,7 @@
     page.innerHTML = `
       <section class="job-page-shell">
         <div class="job-page-hero">
-          <span class="job-page-kicker">Available Jobs</span>
+          <span class="job-page-kicker job-page-kicker-jobs-count">Available jobs: <strong data-job-available-count>0</strong></span>
           <h1>Browse open jobs and place your bid.</h1>
           <p>Jobs are grouped by date, and you can quickly filter down to today, this week, or this month.</p>
           <div class="job-page-hero-actions">
@@ -934,11 +943,23 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="search" placeholder="Search by category, subcategory, address, or job detail" data-job-search />
           </label>
-          <div class="job-board-filters" data-job-filters>
-            <button type="button" class="is-active" data-job-filter="all">All</button>
-            <button type="button" data-job-filter="today">Today</button>
-            <button type="button" data-job-filter="week">This Week</button>
-            <button type="button" data-job-filter="month">This Month</button>
+          <div class="job-board-toolbar-actions">
+            <div class="job-board-filters" data-job-filters>
+              <button type="button" class="is-active" data-job-filter="all">All</button>
+              <button type="button" data-job-filter="today">Today</button>
+              <button type="button" data-job-filter="week">This Week</button>
+              <button type="button" data-job-filter="month">This Month</button>
+            </div>
+            <div class="job-board-view-toggle" data-job-view-toggle>
+              <button type="button" class="is-active" data-job-view-mode="grid" aria-pressed="true" title="Show grid view">
+                <i class="fa-solid fa-grip"></i>
+                <span>Grid</span>
+              </button>
+              <button type="button" data-job-view-mode="list" aria-pressed="false" title="Show list view">
+                <i class="fa-solid fa-list"></i>
+                <span>List</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -955,7 +976,9 @@
     const detailModal = page.querySelector('[data-job-detail-modal]');
     const bidModal = page.querySelector('[data-job-bid-modal]');
     const authModal = page.querySelector('[data-job-auth-modal]');
+    const availableCountLabel = page.querySelector('[data-job-available-count]');
     const filterButtons = Array.from(page.querySelectorAll('[data-job-filter]'));
+    const viewModeButtons = Array.from(page.querySelectorAll('[data-job-view-mode]'));
     const params = new URLSearchParams(window.location.search);
     if (!authHelper || typeof authHelper.listJobPosts !== 'function') {
       groupsHost.innerHTML = `
@@ -971,6 +994,7 @@
     let jobs = await authHelper.listJobPosts().catch(() => []);
     let activeFilter = 'all';
     let query = '';
+    let viewMode = 'grid';
 
     function closeModal(modal) {
       if (!(modal instanceof HTMLElement)) return;
@@ -1002,6 +1026,11 @@
 
     function renderJobs() {
       const filteredJobs = getFilteredJobs();
+      const currentAccount = getStoredAccount();
+      const currentUid = String(currentAccount?.uid || '').trim();
+      if (availableCountLabel) {
+        availableCountLabel.textContent = String(filteredJobs.length);
+      }
       const grouped = groupJobsByDate(filteredJobs);
       groupsHost.innerHTML = grouped.length ? grouped.map(([label, items]) => `
         <section class="job-group">
@@ -1009,22 +1038,35 @@
             <h2>${escapeHtml(label)}</h2>
             <span>${items.length} job${items.length === 1 ? '' : 's'}</span>
           </div>
-          <div class="job-card-grid">
+          <div class="job-card-grid ${viewMode === 'list' ? 'is-list' : 'is-grid'}">
             ${items.map((job) => `
-              <article class="job-card">
+              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''}">
                 <div class="job-card-top">
-                  <div>
+                  <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
                     ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
                   </div>
-                  <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+                  <strong class="job-card-price">${escapeHtml(formatCurrency(job.budget))}</strong>
                 </div>
                 <h3>${escapeHtml(job.subcategory || job.category)}</h3>
-                <p>${escapeHtml(String(job.description || '').slice(0, 150))}${String(job.description || '').length > 150 ? '…' : ''}</p>
+                <div class="job-card-summary">
+                  <p>${escapeHtml(String(job.description || '').slice(0, 96))}${String(job.description || '').length > 96 ? '…' : ''}</p>
+                </div>
                 <div class="job-card-meta">
-                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address || 'Address not shared')}</span>
-                  <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
-                  <span><i class="fa-regular fa-user"></i>${Number(job.applicationCount || 0)} bid${Number(job.applicationCount || 0) === 1 ? '' : 's'}</span>
+                  <span class="job-card-meta-item is-location">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span class="job-card-meta-text">${escapeHtml(job.address || 'Address not shared')}</span>
+                  </span>
+                  <span class="job-card-meta-item is-date">
+                    <i class="fa-regular fa-clock"></i>
+                    <span class="job-card-meta-text job-card-meta-date">${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+                  </span>
+                  ${currentUid && currentUid === String(job.ownerUid || '').trim() ? `
+                    <span class="job-card-meta-item is-bids">
+                      <i class="fa-regular fa-user"></i>
+                      <span class="job-card-meta-text">${Number(job.applicationCount || 0)} bid${Number(job.applicationCount || 0) === 1 ? '' : 's'}</span>
+                    </span>
+                  ` : ''}
                 </div>
                 <div class="job-card-actions">
                   <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(job.id)}">View More Detail</button>
@@ -1151,6 +1193,18 @@
       button.addEventListener('click', () => {
         activeFilter = button.getAttribute('data-job-filter') || 'all';
         filterButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+        renderJobs();
+      });
+    });
+
+    viewModeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        viewMode = button.getAttribute('data-job-view-mode') || 'grid';
+        viewModeButtons.forEach((item) => {
+          const isActive = item === button;
+          item.classList.toggle('is-active', isActive);
+          item.setAttribute('aria-pressed', String(isActive));
+        });
         renderJobs();
       });
     });
