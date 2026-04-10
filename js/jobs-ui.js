@@ -1040,8 +1040,12 @@
       }
     }
     let activeFilter = 'all';
-    let query = '';
+    let query = String(params.get('query') || params.get('category') || params.get('service') || '').trim();
     let viewMode = 'grid';
+
+    if (searchInput && query) {
+      searchInput.value = query;
+    }
 
     function getPlacedBidJobIds() {
       return new Set(placedBids.map((bid) => String(bid.jobId || '').trim()).filter(Boolean));

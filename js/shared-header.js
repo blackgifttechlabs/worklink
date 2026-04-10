@@ -293,7 +293,7 @@ function renderHeader() {
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
         </span>
-        <input type="text" placeholder="Search gardeners, plumbers, therapists, programmers..." data-search-context="inline" />
+        <input type="text" placeholder="Search services, skills, providers, or cities" data-search-context="inline" />
       </div>
       <div class="header-actions">
         <a href="${base}index.html#how-it-works" class="header-how-link">
@@ -691,9 +691,9 @@ function injectSharedHeaderOverrides() {
     .logo-work { color: #076fe5; }
     .logo-link { color: rgba(7, 111, 229, 0.42); }
     .desktop-search-bar { justify-self: center; width: 100%; max-width: 560px; }
-    .search-bar { border-color: rgba(7, 111, 229, 0.14); background: rgba(255, 255, 255, 0.86); }
-    .search-bar:focus-within { border-color: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.18); }
-    .search-match { color: #076fe5; background: rgba(7, 111, 229, 0.12); }
+    .search-bar { border-color: rgba(15, 23, 42, 0.10); background: rgba(255, 255, 255, 0.96); }
+    .search-bar:focus-within { border-color: rgba(26, 115, 232, 0.42); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
+    .search-match { color: #1a73e8; background: transparent; }
     .header-actions { justify-self: end; gap: 18px; }
     .header-actions a, .mobile-search-trigger, .mobile-menu-toggle { color: var(--text-muted); }
     .header-actions a:hover, .mobile-search-trigger:hover, .mobile-menu-toggle:hover { color: #076fe5; }
@@ -702,15 +702,15 @@ function injectSharedHeaderOverrides() {
     .mobile-search-overlay[hidden] { display: none !important; }
     .mobile-search-overlay { position: fixed; inset: 0; z-index: 1750; padding: 80px 12px 16px; background: rgba(15, 23, 42, 0.18); backdrop-filter: blur(16px); opacity: 0; pointer-events: none; transition: opacity 0.24s ease; }
     .mobile-search-overlay.is-visible { opacity: 1; pointer-events: auto; }
-    .mobile-search-panel { width: min(100%, 620px); margin: 0 auto; background: rgba(252, 250, 247, 0.98); border: 1px solid rgba(26, 50, 99, 0.08); border-radius: 28px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16); overflow: hidden; transform: translateY(28px) scale(0.96); opacity: 0; transform-origin: top center; transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease; }
+    .mobile-search-panel { width: min(100%, 620px); margin: 0 auto; background: #fff; border: 1px solid rgba(15, 23, 42, 0.10); border-radius: 24px; box-shadow: 0 20px 44px rgba(15, 23, 42, 0.14); overflow: hidden; transform: translateY(20px) scale(0.98); opacity: 0; transform-origin: top center; transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease; }
     .mobile-search-overlay.is-visible .mobile-search-panel { transform: translateY(0) scale(1); opacity: 1; }
     .mobile-search-head { display: flex; align-items: center; gap: 12px; padding: 14px; }
     .mobile-search-toast-bar { max-width: none; width: 100%; transform: scale(0.98); transform-origin: top center; transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
     .mobile-search-overlay.is-visible .mobile-search-toast-bar { transform: scale(1); }
     .mobile-search-close { border: none; background: transparent; color: #132647; font-size: 30px; line-height: 1; padding: 0; }
     .mobile-search-copy { padding: 0 18px 10px; }
-    .mobile-search-results { display: grid; gap: 10px; padding: 0 14px 16px; max-height: min(62vh, 470px); overflow-y: auto; }
-    .mobile-search-result { border: 1px solid rgba(26, 50, 99, 0.08); border-radius: 18px; background: #fff; padding: 12px; }
+    .mobile-search-results { display: grid; gap: 0; padding: 0 10px 12px; max-height: min(62vh, 470px); overflow-y: auto; }
+    .mobile-search-result { border: none; border-radius: 14px; background: transparent; padding: 12px 14px; }
     body.mobile-search-open { overflow: hidden; }
     .a-plus-btn { background: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.22); }
     .a-plus-btn:hover, .a-plus-btn:focus-visible { background: #0558b8 !important; }

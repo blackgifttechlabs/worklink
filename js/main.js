@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchModalRequestId = 0;
   let providerSearchCache = [];
   let providerSearchPromise = null;
+  let serviceSearchCache = [];
 
   if (!searchSuggestions) {
     document.body.insertAdjacentHTML('beforeend', `<div class="search-suggestions" id="search-suggestions" hidden></div>`);
@@ -66,7 +67,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!searchSuggestions) return;
     searchSuggestions.hidden = true;
     searchSuggestions.innerHTML = '';
+    searchSuggestions.classList.remove('is-visible');
     activeSearchInput = null;
+  }
+
+  function normalizeSearchTerms(values = []) {
+    return values
+      .flatMap((value) => {
+        if (Array.isArray(value)) return normalizeSearchTerms(value);
+        return [String(value || '').trim()];
+      })
+      .filter(Boolean);
+  }
+
+  function normalizeSkillLabels(values = []) {
+    if (!Array.isArray(values)) return [];
+    return values
+      .map((entry) => String(entry?.name || entry?.skill || '').trim())
+      .filter(Boolean);
+  }
+
+  function normalizeWorkExperienceLabels(values = []) {
+    if (!Array.isArray(values)) return [];
+    return values
+      .flatMap((entry) => [
+        String(entry?.role || '').trim(),
+        String(entry?.company || '').trim(),
+        String(entry?.summary || '').trim()
+      ])
+      .filter(Boolean);
   }
 
   function normalizeProviderSearchItems(rawProviders = []) {
@@ -76,18 +105,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = String(provider.username || '').trim();
         const specialty = String(provider.specialty || provider.title || provider.primaryCategory || '').trim();
         const primaryCategory = String(provider.primaryCategory || '').trim();
+        const title = String(provider.title || '').trim();
         const city = String(provider.city || '').trim();
         const province = String(provider.province || '').trim();
         const address = String(provider.address || '').trim();
+        const bio = String(provider.bio || '').trim();
+        const providerPublicId = String(provider.providerPublicId || '').trim();
+        const skills = normalizeSkillLabels(provider.skills);
+        const workExperience = normalizeWorkExperienceLabels(provider.workExperience);
         if (!displayName && !specialty && !city && !province) return null;
         return {
+          kind: 'provider',
           displayName: displayName || specialty || 'WorkLinkUp specialist',
           username,
           specialty: specialty || primaryCategory || 'Specialist',
           primaryCategory,
+          title,
           city,
           province,
           address,
+          bio,
+          providerPublicId,
+          skills,
+          workExperience,
           averageRating: Number(provider.averageRating || 0)
         };
       })
@@ -126,16 +166,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'fa-solid fa-magnifying-glass';
   }
 
+  function getSearchItemIcon(item = {}) {
+    if (item.kind === 'service' || item.kind === 'category') {
+      return item.icon || getSearchProviderIcon(item);
+    }
+    return getSearchProviderIcon(item);
+  }
+
   function getSearchProviderText(item = {}) {
-    return [
+    return normalizeSearchTerms([
       item.displayName,
       item.username,
       item.specialty,
+      item.title,
       item.primaryCategory,
       item.city,
       item.province,
-      item.address
-    ].join(' ').toLowerCase();
+      item.address,
+      item.bio,
+      item.providerPublicId,
+      item.skills,
+      item.workExperience
+    ]).join(' ').toLowerCase();
   }
 
   function scoreSearchProvider(item, rawQuery) {
@@ -145,19 +197,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = String(item.displayName || '').toLowerCase();
     const username = String(item.username || '').toLowerCase();
     const specialty = String(item.specialty || '').toLowerCase();
+    const title = String(item.title || '').toLowerCase();
     const category = String(item.primaryCategory || '').toLowerCase();
     const city = String(item.city || '').toLowerCase();
     const province = String(item.province || '').toLowerCase();
     const address = String(item.address || '').toLowerCase();
+    const bio = String(item.bio || '').toLowerCase();
+    const providerPublicId = String(item.providerPublicId || '').toLowerCase();
+    const skills = Array.isArray(item.skills) ? item.skills.map((value) => String(value || '').toLowerCase()) : [];
+    const workExperience = Array.isArray(item.workExperience) ? item.workExperience.map((value) => String(value || '').toLowerCase()) : [];
     const haystack = getSearchProviderText(item);
 
     let score = 0;
-    if (name === query || username === query) score += 120;
+    if (name === query || username === query || providerPublicId === query) score += 120;
     if (name.startsWith(query) || username.startsWith(query)) score += 84;
-    if (specialty === query || category === query) score += 72;
-    if (specialty.startsWith(query) || category.startsWith(query)) score += 46;
+    if (specialty === query || title === query || category === query) score += 72;
+    if (specialty.startsWith(query) || title.startsWith(query) || category.startsWith(query)) score += 46;
+    if (skills.some((value) => value === query)) score += 66;
+    if (skills.some((value) => value.startsWith(query))) score += 44;
+    if (workExperience.some((value) => value.includes(query))) score += 34;
     if (city === query || province === query) score += 42;
     if (address.includes(query)) score += 20;
+    if (bio.includes(query)) score += 18;
     if (haystack.includes(query)) score += 18;
     return score;
   }
@@ -173,6 +234,77 @@ document.addEventListener('DOMContentLoaded', () => {
   function getServiceCatalog() {
     return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
   }
+
+  function buildServiceSearchItems() {
+    const categories = getServiceCatalog();
+    return categories.flatMap((category) => {
+      const categoryLabel = String(category.label || '').trim();
+      const shortLabel = String(category.shortLabel || '').trim();
+      const subservices = Array.isArray(category.subservices) ? category.subservices : [];
+      const categoryTerms = normalizeSearchTerms([categoryLabel, shortLabel, subservices]);
+      const categoryItem = {
+        kind: 'category',
+        title: categoryLabel,
+        subtitle: `${subservices.length} services`,
+        query: categoryLabel,
+        category: categoryLabel,
+        icon: category.icon || 'fa-solid fa-briefcase',
+        terms: categoryTerms
+      };
+
+      const serviceItems = subservices.map((service) => ({
+        kind: 'service',
+        title: String(service || '').trim(),
+        subtitle: categoryLabel,
+        query: String(service || '').trim(),
+        service: String(service || '').trim(),
+        category: categoryLabel,
+        icon: category.icon || 'fa-solid fa-briefcase',
+        terms: normalizeSearchTerms([service, categoryLabel, shortLabel])
+      }));
+
+      return [categoryItem, ...serviceItems];
+    });
+  }
+
+  function getServiceSearchItems() {
+    if (!serviceSearchCache.length) {
+      serviceSearchCache = buildServiceSearchItems();
+    }
+    return serviceSearchCache;
+  }
+
+  function scoreServiceSearchItem(item = {}, rawQuery) {
+    const query = String(rawQuery || '').trim().toLowerCase();
+    if (!query) return 0;
+
+    const title = String(item.title || '').toLowerCase();
+    const subtitle = String(item.subtitle || '').toLowerCase();
+    const terms = Array.isArray(item.terms) ? item.terms.map((value) => String(value || '').toLowerCase()) : [];
+
+    let score = item.kind === 'service' ? 8 : 0;
+    if (title === query) score += 180;
+    if (terms.some((value) => value === query)) score += 150;
+    if (title.startsWith(query)) score += 110;
+    if (terms.some((value) => value.startsWith(query))) score += 82;
+    if (title.includes(query)) score += 58;
+    if (subtitle.includes(query)) score += 36;
+    if (terms.some((value) => value.includes(query))) score += 34;
+    return score;
+  }
+
+  const HOME_TRENDING_JOBS = [
+    { category: 'Plumbing', service: 'Leak Repairs', image: 'images/categories/fix.avif', budget: 'From $25', blurb: 'Burst pipes, blocked drains, and urgent home call-outs.' },
+    { category: 'Electrical', service: 'Solar System Installation', image: 'images/categories/Solar-power-in-Africa-.avif', budget: 'From $120', blurb: 'Backup power setups for homes, shops, and offices.' },
+    { category: 'Cleaning Services', service: 'Deep House Cleaning', image: 'images/categories/Commercial_Cleaning_Services_Gauteng-4883639.avif', budget: 'From $30', blurb: 'Move-ins, weekly resets, and office clean-ups.' },
+    { category: 'Construction & Building', service: 'Bricklayer', image: 'images/categories/bricklayer.avif', budget: 'From $85', blurb: 'Boundary walls, room extensions, and tank stands.' },
+    { category: 'Food & Catering', service: 'Event Caterer', image: 'images/categories/Catering.avif', budget: 'From $60', blurb: 'Weddings, parties, and office platters booking fast.' },
+    { category: 'Digital & Business', service: 'Graphic Designer', image: 'images/categories/graphics.avif', budget: 'From $40', blurb: 'Posters, brand packs, and fast-turnaround content.' },
+    { category: 'Transport & Logistics', service: 'Moving & Relocation Services', image: 'images/categories/moving out.avif', budget: 'From $50', blurb: 'House moves, furniture runs, and local deliveries.' },
+    { category: 'Photography & Videography', service: 'Wedding Photographer', image: 'images/categories/wedding.avif', budget: 'From $150', blurb: 'Full-day shoots, edited galleries, and reels.' },
+    { category: 'Agriculture & Farming', service: 'Irrigation Setup', image: 'images/categories/farmer-togo.avif', budget: 'From $90', blurb: 'Borehole-fed lines, garden systems, and small plots.' },
+    { category: 'Beauty & Wellness', service: 'Hairdresser', image: 'images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif', budget: 'From $20', blurb: 'Home appointments, salon shifts, and event styling.' }
+  ];
 
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {
     const isClone = Boolean(options.isClone);
@@ -190,6 +322,49 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  function getHomepageCategoryConfig(label = '') {
+    return getServiceCatalog().find((category) => category.label === label) || null;
+  }
+
+  function buildHomepageTrendingHref(base = getSiteBasePath(), item = {}) {
+    const target = new URL(`${base}pages/job-posts.html`, window.location.origin);
+    const searchValue = String(item.service || item.category || '').trim();
+    const categoryValue = String(item.category || '').trim();
+    if (searchValue) target.searchParams.set('query', searchValue);
+    if (categoryValue) target.searchParams.set('category', categoryValue);
+    return `${target.pathname}${target.search}`;
+  }
+
+  function buildHomepageTrendingJobsMarkup(base = getSiteBasePath(), items = [], options = {}) {
+    const isClone = Boolean(options.isClone);
+    return items.map((item, index) => {
+      const rank = index + 1;
+      const categoryConfig = getHomepageCategoryConfig(item.category);
+      const imagePath = String(item.image || categoryConfig?.image || '').trim();
+      const iconClass = escapeHtml(categoryConfig?.icon || 'fa-solid fa-briefcase');
+      const href = buildHomepageTrendingHref(base, item);
+
+      return `
+        <a href="${escapeHtml(href)}" class="home-trending-job-card"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''} aria-label="Browse ${escapeHtml(item.service || item.category || 'trending jobs')} jobs">
+          <div class="home-trending-job-art">
+            ${imagePath
+              ? `<img src="${escapeHtml(`${base}${imagePath}`)}" alt="${escapeHtml(item.service || item.category || 'Trending job')}" loading="lazy" decoding="async" />`
+              : `<span class="home-trending-job-icon" aria-hidden="true"><i class="${iconClass}"></i></span>`}
+          </div>
+          <span class="home-trending-job-rank" aria-hidden="true">${rank}</span>
+          <div class="home-trending-job-copy">
+            <div class="home-trending-job-chips">
+              <span>${escapeHtml(item.category || 'Trending')}</span>
+              <span>${escapeHtml(item.budget || 'Open')}</span>
+            </div>
+            <h3>${escapeHtml(item.service || item.category || 'Trending job')}</h3>
+            <p>${escapeHtml(item.blurb || 'High-demand work on WorkLinkUp right now.')}</p>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
   function renderHomepageCategories() {
     const categoryRow = document.querySelector('[data-home-categories]');
     if (!categoryRow) return;
@@ -200,10 +375,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollableRails(document);
   }
 
+  function renderHomepageTrendingJobs() {
+    const trendingRow = document.querySelector('[data-home-trending-jobs]');
+    if (!trendingRow) return;
+    const base = getSiteBasePath();
+    trendingRow.innerHTML = `${buildHomepageTrendingJobsMarkup(base, HOME_TRENDING_JOBS)}${buildHomepageTrendingJobsMarkup(base, HOME_TRENDING_JOBS, { isClone: true })}`;
+  }
+
   async function getSearchMatches(rawQuery) {
     const query = String(rawQuery || '').trim().toLowerCase();
-    const providers = await getSearchProviders();
-    const ranked = providers
+    const [providers, serviceItems] = await Promise.all([
+      getSearchProviders(),
+      Promise.resolve(getServiceSearchItems())
+    ]);
+
+    const rankedProviders = providers
       .map((item) => ({
         ...item,
         _score: scoreSearchProvider(item, query)
@@ -214,33 +400,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scoreDiff !== 0) return scoreDiff;
         return Number(second.averageRating || 0) - Number(first.averageRating || 0);
       })
-      .slice(0, query ? 6 : 8);
+      .slice(0, query ? 4 : 6)
+      .map((item) => ({
+        kind: 'provider',
+        query: buildSearchQueryFromProvider(item),
+        title: item.displayName,
+        subtitle: [item.specialty || item.title || item.primaryCategory, item.city || item.province || item.address].filter(Boolean).join(' • '),
+        icon: getSearchProviderIcon(item),
+        averageRating: item.averageRating,
+        _score: item._score
+      }));
 
-    return ranked.map((item) => ({
-      query: buildSearchQueryFromProvider(item),
-      title: item.displayName,
-      subtitle: [item.specialty, item.city || item.province || item.address].filter(Boolean).join(' • '),
-      icon: getSearchProviderIcon(item)
-    }));
+    const rankedServices = serviceItems
+      .map((item) => ({
+        ...item,
+        _score: scoreServiceSearchItem(item, query)
+      }))
+      .filter((item) => query && item._score > 0)
+      .sort((first, second) => Number(second._score || 0) - Number(first._score || 0))
+      .slice(0, 4)
+      .map((item) => ({
+        kind: item.kind,
+        query: item.query,
+        title: item.title,
+        subtitle: item.kind === 'category' ? `Category • ${item.subtitle}` : `Service • ${item.subtitle}`,
+        icon: item.icon,
+        category: item.category || '',
+        service: item.service || '',
+        _score: item._score
+      }));
+
+    return [...rankedServices, ...rankedProviders]
+      .sort((first, second) => Number(second._score || 0) - Number(first._score || 0))
+      .slice(0, query ? 8 : 8);
   }
 
-  function goToSpecialistsSearch(rawQuery) {
+  function goToSpecialistsSearch(rawQuery, options = {}) {
     const query = String(rawQuery || '').trim();
+    const category = String(options.category || '').trim();
+    const service = String(options.service || '').trim();
     const base = getSiteBasePath();
     const target = new URL(`${base}pages/specialists.html`, window.location.origin);
     if (query) target.searchParams.set('query', query);
+    if (category) target.searchParams.set('category', category);
+    if (service) target.searchParams.set('service', service);
     target.searchParams.set('results', '1');
     window.location.href = `${target.pathname}${target.search}`;
   }
 
   function buildSearchItemMarkup(item, query, className) {
     return `
-      <button type="button" class="${className}" data-query="${escapeHtml(item.query)}">
-        <span class="search-result-icon" aria-hidden="true"><i class="${item.icon}"></i></span>
+      <button type="button" class="${className}" data-query="${escapeHtml(item.query)}"${item.category ? ` data-category="${escapeHtml(item.category)}"` : ''}${item.service ? ` data-service="${escapeHtml(item.service)}"` : ''}>
+        <span class="search-result-icon is-${escapeHtml(item.kind || 'search')}" aria-hidden="true"><i class="${escapeHtml(getSearchItemIcon(item))}"></i></span>
         <span class="search-result-copy">
           <strong>${highlightMatch(item.title, query)}</strong>
           <small>${highlightMatch(item.subtitle, query)}</small>
         </span>
+        <span class="search-result-type">${escapeHtml(item.kind === 'provider' ? 'Provider' : item.kind === 'category' ? 'Category' : 'Service')}</span>
       </button>
     `;
   }
@@ -249,13 +465,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!searchModalResults) return;
     const requestId = ++searchModalRequestId;
     searchModalResults.innerHTML = query
-      ? `<div class="mobile-search-empty">Searching specialists...</div>`
-      : `<div class="mobile-search-empty">Loading available specialists...</div>`;
+      ? `<div class="mobile-search-empty">Searching services and providers...</div>`
+      : `<div class="mobile-search-empty">Start typing a service, skill, provider, or city.</div>`;
     const matches = await getSearchMatches(query);
     if (requestId !== searchModalRequestId) return;
     searchModalResults.innerHTML = matches.length
       ? matches.map((item) => buildSearchItemMarkup(item, query, 'mobile-search-result')).join('')
-      : `<div class="mobile-search-empty">No specialists matched that search yet.</div>`;
+      : `<div class="mobile-search-empty">No matches found for that search yet.</div>`;
   }
 
   function openSearchModal(prefill = '') {
@@ -328,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const requestId = ++searchSuggestionRequestId;
-    searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">Searching specialists...</button>`;
+    searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">Searching services and providers...</button>`;
     positionSearchSuggestions(input);
     searchSuggestions.hidden = false;
     activeSearchInput = input;
@@ -336,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (requestId !== searchSuggestionRequestId) return;
 
     if (!matches.length) {
-      searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">No specialists found</button>`;
+      searchSuggestions.innerHTML = `<button type="button" class="search-suggestion is-empty">No matching services or providers found</button>`;
     } else {
       searchSuggestions.innerHTML = matches
         .map((item) => buildSearchItemMarkup(item, rawQuery, 'search-suggestion'))
@@ -363,14 +579,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const scrollAmount = () => Math.max(rail.clientWidth * 0.72, 180);
       const autoScrollEnabled = rail.hasAttribute('data-auto-scroll');
       const autoScrollSpeed = Math.max(0.008, Number.parseFloat(rail.getAttribute('data-auto-scroll-speed') || '0.02'));
+      const autoScrollDirection = rail.getAttribute('data-auto-scroll-direction') === 'backward' ? -1 : 1;
       let autoScrollFrame = 0;
       let lastFrameAt = 0;
       let pauseUntil = 0;
       let pointerInside = false;
       let autoScrollPhase = 'moving';
       let phaseStartedAt = 0;
-      const autoScrollMoveDuration = 5000;
-      const autoScrollRestDuration = 3000;
+      let autoScrollPrimed = false;
+      const autoScrollMoveDuration = Math.max(1000, Number.parseInt(rail.getAttribute('data-auto-scroll-move-duration') || '5000', 10) || 5000);
+      const autoScrollRestDuration = Math.max(0, Number.parseInt(rail.getAttribute('data-auto-scroll-rest-duration') || '3000', 10) || 3000);
 
       function resetAutoScrollCycle(nextPhase = 'moving', timestamp = performance.now()) {
         autoScrollPhase = nextPhase;
@@ -432,13 +650,24 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFrameAt = timestamp;
         const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
 
+        if (!autoScrollPrimed && maxScrollLeft > 6) {
+          if (autoScrollDirection < 0 && rail.scrollLeft <= 1) {
+            rail.scrollLeft = maxScrollLeft;
+          }
+          autoScrollPrimed = true;
+          syncButtons();
+        }
+
         if (!pointerInside && Date.now() >= pauseUntil && maxScrollLeft > 6) {
           const phaseElapsed = timestamp - phaseStartedAt;
 
           if (autoScrollPhase === 'moving') {
-            let nextLeft = rail.scrollLeft + (autoScrollSpeed * delta);
-            if (nextLeft >= maxScrollLeft - 1) {
+            let nextLeft = rail.scrollLeft + (autoScrollDirection * autoScrollSpeed * delta);
+            if (autoScrollDirection > 0 && nextLeft >= maxScrollLeft - 1) {
               nextLeft = 0;
+            }
+            if (autoScrollDirection < 0 && nextLeft <= 1) {
+              nextLeft = maxScrollLeft;
             }
             rail.scrollLeft = nextLeft;
             syncButtons();
@@ -501,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderHomepageCategories();
+  renderHomepageTrendingJobs();
   initScrollableRails(document);
 
   if (searchSuggestions) {
@@ -509,9 +739,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!button || button.classList.contains('is-empty')) return;
       event.preventDefault();
       const value = button.getAttribute('data-query') || '';
+      const category = button.getAttribute('data-category') || '';
+      const service = button.getAttribute('data-service') || '';
       if (activeSearchInput) activeSearchInput.value = value;
       hideSearchSuggestions();
-      goToSpecialistsSearch(value);
+      goToSpecialistsSearch(value, { category, service });
     });
   }
 
@@ -527,7 +759,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = target.closest('.mobile-search-result');
       if (result instanceof HTMLElement && searchModalInput) {
         const value = result.getAttribute('data-query') || '';
-        goToSpecialistsSearch(value);
+        const category = result.getAttribute('data-category') || '';
+        const service = result.getAttribute('data-service') || '';
+        goToSpecialistsSearch(value, { category, service });
       }
     });
   }

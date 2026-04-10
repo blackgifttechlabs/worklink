@@ -612,14 +612,24 @@
   }
 
   function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
-    const cards = items.map((category) => `
-      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
+    const cards = items.map((category) => {
+      const href = typeof buildWorkLinkUpSpecialistsHref === 'function'
         ? buildWorkLinkUpSpecialistsHref(category.label, { base: getBase(), category: category.label, query: category.label })
-        : `${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="specialists-related-card">
-        <strong>${escapeHtml(category.shortLabel || category.label)}</strong>
-        <span>${escapeHtml((category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`)}</span>
-      </a>
-    `).join('');
+        : `${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`;
+      const summary = (category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`;
+      const imageSrc = resolveMediaSrc(category.image || 'images/logo/logo.jpg');
+
+      return `
+        <article class="specialists-suggested-card specialists-suggested-category-card">
+          <a href="${escapeHtml(href)}" class="specialists-suggested-card-link">
+            <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(category.label)}" class="specialists-suggested-avatar" loading="lazy" decoding="async" />
+            <strong>${escapeHtml(category.shortLabel || category.label)}</strong>
+            <span class="specialists-suggested-meta">${escapeHtml(summary)}</span>
+          </a>
+          <a href="${escapeHtml(href)}" class="specialists-suggested-action">Explore</a>
+        </article>
+      `;
+    }).join('');
 
     return duplicate ? `${cards}${cards}` : cards;
   }
@@ -1141,20 +1151,17 @@
       if (!(relatedShell instanceof HTMLElement) || !(relatedHost instanceof HTMLElement)) return;
 
       if (!filteredProviders.length) {
-        const fallbackCategories = SPECIALIST_CATEGORIES
-          .filter((category) => category.label !== state.category)
-          .slice(0, 8);
-
-        if (!fallbackCategories.length) {
+        const suggestedProviders = getSuggestedProviders(providers, [], state);
+        if (!suggestedProviders.length) {
           relatedShell.hidden = true;
           relatedHost.innerHTML = '';
           return;
         }
 
         relatedShell.hidden = false;
-        if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested categories';
-        if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'Try another category';
-        relatedHost.innerHTML = buildSuggestedCategoriesMarkup(fallbackCategories, fallbackCategories.length > 4);
+        if (relatedKickerHost instanceof HTMLElement) relatedKickerHost.textContent = 'Suggested profiles';
+        if (relatedTitleHost instanceof HTMLElement) relatedTitleHost.textContent = 'Try another specialist';
+        relatedHost.innerHTML = buildSuggestedProvidersMarkup(suggestedProviders, suggestedProviders.length > 4);
         if (typeof window.initScrollableRails === 'function') window.initScrollableRails(page);
         return;
       }

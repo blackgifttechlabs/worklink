@@ -16,38 +16,47 @@
 <div id="site-header"></div>
 
 <main class="homepage-main">
-  <section class="categories-section homepage-categories" id="service-types">
-    <h2 class="section-title">Find or Get Found</h2>
-    <div class="worklinkup-rail-shell homepage-categories-rail">
-      <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll categories left">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <div class="homepage-categories-track-wrap" data-scroll-rail data-auto-scroll data-auto-scroll-speed="0.065">
-        <div class="category-circles" data-home-categories data-scroll-track></div>
+  <section class="categories-section homepage-categories home-stream-hero" id="service-types">
+    <div class="home-stream-shell">
+      <div class="home-stream-copy">
+        <span class="home-stream-kicker">WorkLinkUp</span>
+        <h1>Find Job  Find Worker</h1>
+        <p>"Two needs. One platform. Endless possibilities. Across every industry."</p>
+        <div class="fleece-btns home-stream-actions">
+          <a href="pages/specialists.html" class="btn-primary">Find Specialist</a>
+          <button type="button" class="btn-secondary fleece-secondary" data-home-get-found>Get Found</button>
+        </div>
       </div>
-      <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll categories right">
-        <i class="fa-solid fa-chevron-right"></i>
-      </button>
-    </div>
-    <div class="homepage-categories-action">
-      <a href="pages/categories.html" class="homepage-categories-view-more">View All Categories</a>
-      <a href="pages/job-posts.html" class="homepage-categories-view-more secondary">View Available Jobs</a>
-    </div>
-  </section>
 
-  <section class="fleece-banner homepage-banner">
-    <div class="fleece-banner-img">
-      <picture>
-        <source media="(max-width: 768px)" srcset="images/sections/findme.avif" type="image/avif" />
-        <img src="images/sections/findme.avif" alt="WorkLinkUp services" width="1000" height="667" fetchpriority="high" decoding="async" />
-      </picture>
-    </div>
-    <div class="fleece-banner-content">
-      <h2>WorkLinkUp</h2>
-      <p>Find the right person for the job, or create your profile and get found for the work you do in Zimbabwe.</p>
-      <div class="fleece-btns">
-        <button class="btn-primary" onclick="location.href='pages/specialists.html'">Find Specialist</button>
-        <button type="button" class="btn-secondary fleece-secondary" data-home-get-found>Get Found</button>
+      <div class="home-stream-discovery">
+        <div class="home-stream-panel home-stream-category-panel">
+          <div class="worklinkup-rail-shell homepage-categories-rail">
+            <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll categories left">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="homepage-categories-track-wrap">
+              <div class="category-circles" data-home-categories data-scroll-track></div>
+            </div>
+            <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll categories right">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="home-stream-panel home-stream-trending-panel">
+          <h2 class="home-stream-row-title">Searched Services In Zimbabwe</h2>
+          <div class="worklinkup-rail-shell home-trending-jobs-shell">
+            <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll trending jobs left">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="home-trending-jobs-track-wrap">
+              <div class="home-trending-jobs-track" data-home-trending-jobs data-scroll-track></div>
+            </div>
+            <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll trending jobs right">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
