@@ -4400,8 +4400,47 @@ body.home-page-body {
   margin: 0 auto;
 }
 
-.home-trending-mobile-featured {
-  display: none;
+.home-trending-featured {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.home-trending-featured .home-trending-job-card {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 2.48;
+  border-radius: 30px;
+  animation: home-featured-swap 0.42s ease;
+}
+
+.home-trending-featured .home-trending-job-rank {
+  left: 8px;
+  bottom: 6px;
+  font-size: clamp(102px, 8vw, 138px);
+}
+
+.home-trending-featured .home-trending-job-copy {
+  max-width: min(62%, 760px);
+  padding: 28px 26px 24px 122px;
+}
+
+.home-trending-featured .home-trending-job-copy h3 {
+  font-size: clamp(28px, 3vw, 42px);
+}
+
+.home-trending-featured .home-trending-job-copy p {
+  max-width: 540px;
+  font-size: 16px;
+}
+
+.home-trending-featured .home-trending-job-chips {
+  margin-bottom: 12px;
+}
+
+.home-trending-featured .home-trending-job-chips span {
+  min-height: 28px;
+  padding: 0 12px;
+  font-size: 10px;
 }
 
 @keyframes home-marquee-left {
@@ -4536,45 +4575,46 @@ body.home-page-body {
     font-size: 10px;
   }
 
-  .home-trending-mobile-featured {
+  .home-trending-featured {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 14px;
   }
 
-  .home-trending-mobile-featured .home-trending-job-card {
+  .home-trending-featured .home-trending-job-card {
     min-width: 0;
     aspect-ratio: 0.84;
     border-radius: 20px;
     animation: home-featured-swap 0.42s ease;
   }
 
-  .home-trending-mobile-featured .home-trending-job-rank {
+  .home-trending-featured .home-trending-job-rank {
     left: -1px;
     bottom: 2px;
     font-size: 58px;
     -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.88);
   }
 
-  .home-trending-mobile-featured .home-trending-job-copy {
+  .home-trending-featured .home-trending-job-copy {
+    max-width: none;
     padding: 12px 10px 10px 46px;
   }
 
-  .home-trending-mobile-featured .home-trending-job-copy h3 {
+  .home-trending-featured .home-trending-job-copy h3 {
     font-size: 16px;
   }
 
-  .home-trending-mobile-featured .home-trending-job-copy p {
+  .home-trending-featured .home-trending-job-copy p {
     display: none;
   }
 
-  .home-trending-mobile-featured .home-trending-job-chips {
+  .home-trending-featured .home-trending-job-chips {
     gap: 6px;
     margin-bottom: 8px;
   }
 
-  .home-trending-mobile-featured .home-trending-job-chips span {
+  .home-trending-featured .home-trending-job-chips span {
     min-height: 22px;
     padding: 0 8px;
     font-size: 9px;
@@ -4637,11 +4677,11 @@ body.home-page-body {
     font-size: 36px;
   }
 
-  .home-trending-mobile-featured {
+  .home-trending-featured {
     gap: 8px;
   }
 
-  .home-trending-mobile-featured .home-trending-job-card {
+  .home-trending-featured .home-trending-job-card {
     aspect-ratio: 0.88;
   }
 

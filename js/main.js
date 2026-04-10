@@ -382,6 +382,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return [items[firstIndex], items[secondIndex]];
   }
 
+  function getDesktopFeaturedTrendingItems(items = [], cursor = 0) {
+    if (!items.length) return [];
+    return [items[cursor % items.length]];
+  }
+
   function renderHomepageCategories() {
     const categoryRow = document.querySelector('[data-home-categories]');
     if (!categoryRow) return;
@@ -398,24 +403,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!trendingRow) return;
     const base = getSiteBasePath();
     const trendingItems = getHomepageTrendingItems();
+    const mobileTrendingQuery = window.matchMedia('(max-width: 768px)');
     trendingRow.innerHTML = `${buildHomepageTrendingJobsMarkup(base, trendingItems)}${buildHomepageTrendingJobsMarkup(base, trendingItems, { isClone: true })}`;
 
     if (featuredRow) {
-      let mobileFeaturedCursor = 0;
+      let featuredCursor = 0;
+      let featuredTimerId = 0;
       const renderFeatured = () => {
-        featuredRow.innerHTML = buildHomepageTrendingJobsMarkup(base, getMobileFeaturedTrendingItems(trendingItems, mobileFeaturedCursor), {
-          cardClass: 'is-mobile-featured'
+        const featuredItems = mobileTrendingQuery.matches
+          ? getMobileFeaturedTrendingItems(trendingItems, featuredCursor)
+          : getDesktopFeaturedTrendingItems(trendingItems, featuredCursor);
+        featuredRow.innerHTML = buildHomepageTrendingJobsMarkup(base, featuredItems, {
+          cardClass: mobileTrendingQuery.matches ? 'is-mobile-featured' : 'is-desktop-featured'
         });
       };
 
-      renderFeatured();
-
-      if (trendingItems.length > 2) {
-        window.setInterval(() => {
-          mobileFeaturedCursor = (mobileFeaturedCursor + 1) % trendingItems.length;
+      const scheduleFeaturedSwap = () => {
+        if (featuredTimerId) window.clearTimeout(featuredTimerId);
+        if (trendingItems.length <= 1) return;
+        featuredTimerId = window.setTimeout(() => {
+          featuredCursor = (featuredCursor + 1) % trendingItems.length;
           renderFeatured();
-        }, 3000);
-      }
+          scheduleFeaturedSwap();
+        }, mobileTrendingQuery.matches ? 3000 : 5000);
+      };
+
+      renderFeatured();
+      scheduleFeaturedSwap();
+      mobileTrendingQuery.addEventListener('change', () => {
+        renderFeatured();
+        scheduleFeaturedSwap();
+      });
     }
   }
 
