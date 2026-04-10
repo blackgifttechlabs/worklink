@@ -26,6 +26,24 @@
           <a href="pages/specialists.html" class="btn-primary">Find Specialist</a>
           <button type="button" class="btn-secondary fleece-secondary" data-home-get-found>Get Found</button>
         </div>
+
+        <form class="search-bar hero-search-bar home-copy-search" action="pages/specialists.html" method="get" role="search" data-home-hero-search>
+          <span class="search-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+          </span>
+          <input
+            type="search"
+            name="query"
+            placeholder="Search services, skills, providers, or cities"
+            data-search-context="inline"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="home-hero-search-submit" type="submit">Search</button>
+        </form>
       </div>
 
       <div class="home-stream-discovery">
@@ -42,20 +60,25 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="home-stream-panel home-stream-trending-panel">
-          <h2 class="home-stream-row-title">Searched Services In Zimbabwe</h2>
-          <div class="worklinkup-rail-shell home-trending-jobs-shell">
-            <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll trending jobs left">
-              <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <div class="home-trending-jobs-track-wrap">
-              <div class="home-trending-jobs-track" data-home-trending-jobs data-scroll-track></div>
-            </div>
-            <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll trending jobs right">
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
+  <section class="home-trending-section">
+    <div class="home-trending-section-inner">
+      <div class="home-stream-panel home-stream-trending-panel">
+        <h2 class="home-stream-row-title home-trending-section-title">Most Searched Services & Jobs</h2>
+        <div class="home-trending-mobile-featured" data-home-trending-featured></div>
+        <div class="worklinkup-rail-shell home-trending-jobs-shell">
+          <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll trending jobs left">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="home-trending-jobs-track-wrap">
+            <div class="home-trending-jobs-track" data-home-trending-jobs data-scroll-track></div>
           </div>
+          <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll trending jobs right">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
     </div>

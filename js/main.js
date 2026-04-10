@@ -337,15 +337,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildHomepageTrendingJobsMarkup(base = getSiteBasePath(), items = [], options = {}) {
     const isClone = Boolean(options.isClone);
+    const cardClass = String(options.cardClass || '').trim();
     return items.map((item, index) => {
-      const rank = index + 1;
+      const rank = Number(item._homeRank || 0) || (index + 1);
       const categoryConfig = getHomepageCategoryConfig(item.category);
       const imagePath = String(item.image || categoryConfig?.image || '').trim();
       const iconClass = escapeHtml(categoryConfig?.icon || 'fa-solid fa-briefcase');
       const href = buildHomepageTrendingHref(base, item);
 
       return `
-        <a href="${escapeHtml(href)}" class="home-trending-job-card"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''} aria-label="Browse ${escapeHtml(item.service || item.category || 'trending jobs')} jobs">
+        <a href="${escapeHtml(href)}" class="home-trending-job-card${cardClass ? ` ${escapeHtml(cardClass)}` : ''}"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''} aria-label="Browse ${escapeHtml(item.service || item.category || 'trending jobs')} jobs">
           <div class="home-trending-job-art">
             ${imagePath
               ? `<img src="${escapeHtml(`${base}${imagePath}`)}" alt="${escapeHtml(item.service || item.category || 'Trending job')}" loading="lazy" decoding="async" />`
@@ -365,6 +366,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+  function getHomepageTrendingItems() {
+    return HOME_TRENDING_JOBS.map((item, index) => ({
+      ...item,
+      _homeRank: index + 1
+    }));
+  }
+
+  function getMobileFeaturedTrendingItems(items = [], cursor = 0) {
+    if (!items.length) return [];
+    if (items.length === 1) return [items[0]];
+    const firstIndex = cursor % items.length;
+    const secondIndex = (cursor + Math.ceil(items.length / 2)) % items.length;
+    if (secondIndex === firstIndex) return [items[firstIndex], items[(firstIndex + 1) % items.length]];
+    return [items[firstIndex], items[secondIndex]];
+  }
+
   function renderHomepageCategories() {
     const categoryRow = document.querySelector('[data-home-categories]');
     if (!categoryRow) return;
@@ -377,9 +394,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderHomepageTrendingJobs() {
     const trendingRow = document.querySelector('[data-home-trending-jobs]');
+    const featuredRow = document.querySelector('[data-home-trending-featured]');
     if (!trendingRow) return;
     const base = getSiteBasePath();
-    trendingRow.innerHTML = `${buildHomepageTrendingJobsMarkup(base, HOME_TRENDING_JOBS)}${buildHomepageTrendingJobsMarkup(base, HOME_TRENDING_JOBS, { isClone: true })}`;
+    const trendingItems = getHomepageTrendingItems();
+    trendingRow.innerHTML = `${buildHomepageTrendingJobsMarkup(base, trendingItems)}${buildHomepageTrendingJobsMarkup(base, trendingItems, { isClone: true })}`;
+
+    if (featuredRow) {
+      let mobileFeaturedCursor = 0;
+      const renderFeatured = () => {
+        featuredRow.innerHTML = buildHomepageTrendingJobsMarkup(base, getMobileFeaturedTrendingItems(trendingItems, mobileFeaturedCursor), {
+          cardClass: 'is-mobile-featured'
+        });
+      };
+
+      renderFeatured();
+
+      if (trendingItems.length > 2) {
+        window.setInterval(() => {
+          mobileFeaturedCursor = (mobileFeaturedCursor + 1) % trendingItems.length;
+          renderFeatured();
+        }, 3000);
+      }
+    }
   }
 
   async function getSearchMatches(rawQuery) {
@@ -446,6 +483,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (service) target.searchParams.set('service', service);
     target.searchParams.set('results', '1');
     window.location.href = `${target.pathname}${target.search}`;
+  }
+
+  function submitInlineSearch(input) {
+    const query = input instanceof HTMLInputElement ? input.value.trim() : '';
+
+    if (!query && input instanceof HTMLInputElement && input.closest('[data-home-hero-search]')) {
+      const base = getSiteBasePath();
+      const target = new URL(`${base}pages/specialists.html`, window.location.origin);
+      window.location.href = target.pathname;
+      return;
+    }
+
+    hideSearchSuggestions();
+    goToSpecialistsSearch(query);
   }
 
   function buildSearchItemMarkup(item, query, className) {
@@ -719,8 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
           goToSpecialistsSearch(input.value.trim());
           return;
         }
-        hideSearchSuggestions();
-        goToSpecialistsSearch(input.value.trim());
+        submitInlineSearch(input);
       }
 
       if (event.key === 'Escape' && context === 'overlay') {
@@ -728,6 +778,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const homeHeroSearchForm = document.querySelector('[data-home-hero-search]');
+  if (homeHeroSearchForm instanceof HTMLFormElement) {
+    const homeHeroSearchInput = homeHeroSearchForm.querySelector('input[name="query"]');
+    homeHeroSearchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitInlineSearch(homeHeroSearchInput);
+    });
+  }
 
   renderHomepageCategories();
   renderHomepageTrendingJobs();

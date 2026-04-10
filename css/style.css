@@ -3922,7 +3922,7 @@ body.home-page-body {
   width: 100vw;
   max-width: none;
   min-height: calc(100svh - var(--home-hero-header-offset));
-  margin: 0 calc(50% - 50vw) 52px;
+  margin: 0 calc(50% - 50vw) 0;
   padding: 0;
   overflow: clip;
   color: #fff;
@@ -3937,9 +3937,9 @@ body.home-page-body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(5, 7, 11, 0.28) 0%, rgba(5, 7, 11, 0.72) 55%, rgba(5, 7, 11, 0.92) 100%),
+    linear-gradient(180deg, rgba(5, 7, 11, 0.14) 0%, rgba(5, 7, 11, 0.56) 55%, rgba(5, 7, 11, 0.8) 100%),
     url("../images/sections/findme.avif") center 24% / cover no-repeat;
-  opacity: 0.82;
+  opacity: 0.68;
   transform: scale(1.03);
   transform-origin: center;
 }
@@ -3958,6 +3958,8 @@ body.home-page-body {
 }
 
 .home-stream-copy {
+  position: relative;
+  z-index: 2;
   max-width: 760px;
   margin: 0 auto;
   text-align: center;
@@ -3987,6 +3989,7 @@ body.home-page-body {
   line-height: 0.95;
   letter-spacing: -0.06em;
   color: #fff;
+  text-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
   text-wrap: balance;
 }
 
@@ -3996,6 +3999,7 @@ body.home-page-body {
   font-size: clamp(16px, 2vw, 20px);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
 }
 
 .home-stream-actions {
@@ -4035,12 +4039,50 @@ body.home-page-body {
   color: #fff;
 }
 
+.home-copy-search {
+  width: min(100%, 620px);
+  max-width: 620px;
+  margin: 34px auto 0;
+  border: 1px solid rgba(250, 185, 91, 0.2);
+  background: rgba(5, 5, 5, 0.92);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+}
+
+.home-copy-search:focus-within {
+  border-color: rgba(250, 185, 91, 0.56);
+  box-shadow: 0 18px 42px rgba(250, 185, 91, 0.16);
+}
+
+.home-copy-search .search-icon {
+  padding-left: 18px;
+  color: rgba(250, 224, 169, 0.82);
+}
+
+.home-copy-search input {
+  min-height: 60px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.home-copy-search input::placeholder {
+  color: rgba(255, 244, 220, 0.46);
+}
+
 .home-stream-discovery {
   display: grid;
   gap: 24px;
+  width: 100%;
+  min-width: 0;
+  margin-top: auto;
 }
 
 .home-stream-panel {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -4057,6 +4099,13 @@ body.home-page-body {
   font-size: clamp(20px, 2.4vw, 30px);
   font-weight: 800;
   letter-spacing: -0.03em;
+  text-shadow: 0 10px 22px rgba(0, 0, 0, 0.34);
+}
+
+.home-trending-section-title {
+  margin-bottom: 20px;
+  font-size: clamp(30px, 3.6vw, 46px);
+  line-height: 1;
 }
 
 .home-stream-hero .homepage-categories-view-more {
@@ -4088,9 +4137,16 @@ body.home-page-body {
   opacity: 0.28;
 }
 
+.home-stream-hero .worklinkup-rail-shell {
+  width: 100%;
+  min-width: 0;
+}
+
 .home-stream-category-panel .homepage-categories-track-wrap,
 .home-trending-jobs-track-wrap {
   flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-behavior: smooth;
@@ -4122,6 +4178,7 @@ body.home-page-body {
 .homepage-categories-rail,
 .home-trending-jobs-shell {
   width: 100%;
+  min-width: 0;
   gap: 0;
 }
 
@@ -4161,6 +4218,27 @@ body.home-page-body {
 .home-stream-category-panel .home-category-circle:hover .category-circle-img {
   border-color: rgba(255, 255, 255, 0.58);
   transform: scale(1.05);
+}
+
+.home-hero-search-submit {
+  flex: 0 0 auto;
+  min-height: 48px;
+  margin-right: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7d089 0%, #d6a84f 100%);
+  color: #090909;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(214, 168, 79, 0.24);
+}
+
+.home-hero-search-submit:hover,
+.home-hero-search-submit:focus-visible {
+  background: linear-gradient(180deg, #ffe0a5 0%, #e0b760 100%);
 }
 
 .home-trending-jobs-track {
@@ -4306,6 +4384,26 @@ body.home-page-body {
   margin-top: 0;
 }
 
+.home-trending-section {
+  position: relative;
+  width: 100vw;
+  max-width: none;
+  margin: 0 calc(50% - 50vw) 0;
+  padding: 8px 0 44px;
+  background:
+    radial-gradient(circle at top right, rgba(250, 185, 91, 0.1), transparent 28%),
+    linear-gradient(180deg, #05070b 0%, #0a1019 100%);
+}
+
+.home-trending-section-inner {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+}
+
+.home-trending-mobile-featured {
+  display: none;
+}
+
 @keyframes home-marquee-left {
   from {
     transform: translateX(0);
@@ -4326,6 +4424,18 @@ body.home-page-body {
   }
 }
 
+@keyframes home-featured-swap {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 1100px) {
   .home-stream-shell {
     width: 100%;
@@ -4339,13 +4449,13 @@ body.home-page-body {
 @media (max-width: 768px) {
   .home-stream-hero {
     --home-hero-header-offset: 58px;
-    margin-bottom: 36px;
+    margin-bottom: 0;
   }
 
   .home-stream-shell {
     width: 100%;
     min-height: calc(100svh - var(--home-hero-header-offset));
-    padding: 18px 0 28px;
+    padding: 18px 0 20px;
     gap: 18px;
   }
 
@@ -4375,10 +4485,33 @@ body.home-page-body {
     padding: 0;
   }
 
+  .home-copy-search {
+    width: 100%;
+    max-width: none;
+    margin-top: 22px;
+  }
+
+  .home-copy-search input {
+    min-height: 56px;
+    font-size: 15px;
+  }
+
+  .home-hero-search-submit {
+    min-height: 42px;
+    margin-right: 6px;
+    padding: 0 14px;
+  }
+
   .home-stream-row-title {
     margin-bottom: 10px;
     padding: 0 16px;
     font-size: 20px;
+  }
+
+  .home-trending-section-title {
+    margin-bottom: 14px;
+    font-size: 28px;
+    text-align: left;
   }
 
   .home-stream-hero .worklinkup-rail-arrow {
@@ -4403,30 +4536,99 @@ body.home-page-body {
     font-size: 10px;
   }
 
+  .home-trending-mobile-featured {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-card {
+    min-width: 0;
+    aspect-ratio: 0.84;
+    border-radius: 20px;
+    animation: home-featured-swap 0.42s ease;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-rank {
+    left: -1px;
+    bottom: 2px;
+    font-size: 58px;
+    -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.88);
+  }
+
+  .home-trending-mobile-featured .home-trending-job-copy {
+    padding: 12px 10px 10px 46px;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-copy h3 {
+    font-size: 16px;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-copy p {
+    display: none;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-chips {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-chips span {
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .home-trending-jobs-shell {
+    display: block;
+  }
+
+  .home-trending-jobs-track-wrap {
+    overflow: hidden;
+  }
+
   .home-trending-jobs-track {
-    gap: 14px;
+    gap: 10px;
   }
 
   .home-trending-job-card {
-    min-width: 214px;
+    min-width: 150px;
+    border-radius: 20px;
   }
 
   .home-trending-job-rank {
     left: -1px;
     bottom: 3px;
-    font-size: 94px;
+    font-size: 68px;
   }
 
   .home-trending-job-copy {
-    padding: 16px 14px 14px 70px;
+    padding: 12px 10px 10px 48px;
   }
 
   .home-trending-job-copy h3 {
-    font-size: 22px;
+    font-size: 15px;
   }
 
   .home-trending-job-copy p {
-    font-size: 13px;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .home-trending-job-chips {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .home-trending-job-chips span {
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .home-trending-section {
+    padding: 8px 0 34px;
   }
 }
 
@@ -4435,16 +4637,38 @@ body.home-page-body {
     font-size: 36px;
   }
 
+  .home-trending-mobile-featured {
+    gap: 8px;
+  }
+
+  .home-trending-mobile-featured .home-trending-job-card {
+    aspect-ratio: 0.88;
+  }
+
   .home-trending-job-card {
-    min-width: 196px;
+    min-width: 136px;
   }
 
   .home-trending-job-rank {
-    font-size: 82px;
+    font-size: 60px;
   }
 
   .home-trending-job-copy {
-    padding-left: 62px;
+    padding-left: 42px;
+  }
+
+  .home-trending-job-copy h3 {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 769px) {
+  .home-page-body #site-header .desktop-search-bar {
+    display: none !important;
+  }
+
+  .home-page-body #site-header .header-inner {
+    grid-template-columns: minmax(0, 1fr) auto !important;
   }
 }
 
