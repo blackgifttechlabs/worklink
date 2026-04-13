@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return categories.map((category) => `
       <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
         ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
+        : `${base}pages/search-results.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -322,17 +322,44 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  function splitHomepageCategoriesIntoRows(categories = [], rowCount = 3) {
+    return categories.reduce((rows, category, index) => {
+      rows[index % rowCount].push(category);
+      return rows;
+    }, Array.from({ length: rowCount }, () => []));
+  }
+
+  function buildHomepageCategoryRailsMarkup(base = getSiteBasePath(), categories = []) {
+    const desktopMarkup = `${buildHomepageCategoryMarkup(base, categories)}${buildHomepageCategoryMarkup(base, categories, { isClone: true })}`;
+    const mobileRows = splitHomepageCategoriesIntoRows(categories, 3)
+      .map((rowCategories, index) => {
+        const directionClass = index % 2 === 1 ? 'is-reverse' : 'is-forward';
+        return `
+          <div class="home-mobile-category-row-shell">
+            <div class="home-mobile-category-row ${directionClass}">
+              ${buildHomepageCategoryMarkup(base, rowCategories)}${buildHomepageCategoryMarkup(base, rowCategories, { isClone: true })}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    return `
+      <div class="home-category-desktop-row">${desktopMarkup}</div>
+      <div class="home-mobile-category-rows">${mobileRows}</div>
+    `;
+  }
+
   function getHomepageCategoryConfig(label = '') {
     return getServiceCatalog().find((category) => category.label === label) || null;
   }
 
   function buildHomepageTrendingHref(base = getSiteBasePath(), item = {}) {
-    const target = new URL(`${base}pages/job-posts.html`, window.location.origin);
+    const target = new URL(`${base}pages/search-results.html`, window.location.href);
     const searchValue = String(item.service || item.category || '').trim();
     const categoryValue = String(item.category || '').trim();
     if (searchValue) target.searchParams.set('query', searchValue);
     if (categoryValue) target.searchParams.set('category', categoryValue);
-    return `${target.pathname}${target.search}`;
+    return `${base}pages/search-results.html${target.search}`;
   }
 
   function buildHomepageTrendingJobsMarkup(base = getSiteBasePath(), items = [], options = {}) {
@@ -393,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const categories = getServiceCatalog();
     if (!categories.length) return;
     const base = getSiteBasePath();
-    categoryRow.innerHTML = `${buildHomepageCategoryMarkup(base, categories)}${buildHomepageCategoryMarkup(base, categories, { isClone: true })}`;
+    categoryRow.innerHTML = buildHomepageCategoryRailsMarkup(base, categories);
     initScrollableRails(document);
   }
 
@@ -435,6 +462,83 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleFeaturedSwap();
       });
     }
+  }
+
+  function initHomeMarketScrollers() {
+    document.querySelectorAll('.home-market-booked-shell').forEach((shell) => {
+      if (!(shell instanceof HTMLElement) || shell.dataset.marketScrollBound === '1') return;
+      const windowEl = shell.querySelector('[data-home-market-scroll-window]');
+      if (!(windowEl instanceof HTMLElement)) return;
+      const buttons = shell.querySelectorAll('[data-home-market-scroll]');
+
+      function syncButtons() {
+        const maxScrollLeft = Math.max(0, windowEl.scrollWidth - windowEl.clientWidth);
+        buttons.forEach((button) => {
+          if (!(button instanceof HTMLButtonElement)) return;
+          const direction = button.getAttribute('data-home-market-scroll');
+          button.disabled = direction === 'prev'
+            ? windowEl.scrollLeft <= 4
+            : windowEl.scrollLeft >= maxScrollLeft - 4;
+        });
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const direction = button.getAttribute('data-home-market-scroll') === 'prev' ? -1 : 1;
+          windowEl.scrollBy({ left: direction * Math.max(windowEl.clientWidth * 0.92, 220), behavior: 'smooth' });
+        });
+      });
+
+      windowEl.addEventListener('scroll', syncButtons, { passive: true });
+      window.addEventListener('resize', syncButtons);
+      shell.dataset.marketScrollBound = '1';
+      syncButtons();
+    });
+  }
+
+  function initHomeCardCarousels() {
+    document.querySelectorAll('[data-home-card-carousel]').forEach((carousel) => {
+      if (!(carousel instanceof HTMLElement) || carousel.dataset.carouselBound === '1') return;
+      const slides = Array.from(carousel.querySelectorAll('.home-carousel-slide')).filter((slide) => slide instanceof HTMLElement);
+      const dotsHost = carousel.querySelector('.home-carousel-dots');
+      if (!slides.length || !(dotsHost instanceof HTMLElement)) return;
+      let activeIndex = Math.max(0, slides.findIndex((slide) => slide.classList.contains('is-active')));
+      let timerId = 0;
+
+      dotsHost.innerHTML = slides.map((_, index) => `
+        <button type="button" class="home-carousel-dot" data-home-carousel-dot="${index}" aria-label="Show slide ${index + 1}"></button>
+      `).join('');
+
+      const dots = Array.from(dotsHost.querySelectorAll('.home-carousel-dot')).filter((dot) => dot instanceof HTMLButtonElement);
+
+      function renderSlide(index) {
+        activeIndex = (index + slides.length) % slides.length;
+        slides.forEach((slide, slideIndex) => {
+          slide.classList.toggle('is-active', slideIndex === activeIndex);
+        });
+        dots.forEach((dot, dotIndex) => {
+          dot.classList.toggle('is-active', dotIndex === activeIndex);
+        });
+      }
+
+      function scheduleNext() {
+        if (timerId) window.clearInterval(timerId);
+        timerId = window.setInterval(() => {
+          renderSlide(activeIndex + 1);
+        }, 3600);
+      }
+
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+          renderSlide(index);
+          scheduleNext();
+        });
+      });
+
+      carousel.dataset.carouselBound = '1';
+      renderSlide(activeIndex);
+      scheduleNext();
+    });
   }
 
   async function getSearchMatches(rawQuery) {
@@ -495,12 +599,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const category = String(options.category || '').trim();
     const service = String(options.service || '').trim();
     const base = getSiteBasePath();
-    const target = new URL(`${base}pages/specialists.html`, window.location.origin);
-    if (query) target.searchParams.set('query', query);
-    if (category) target.searchParams.set('category', category);
-    if (service) target.searchParams.set('service', service);
-    target.searchParams.set('results', '1');
-    window.location.href = `${target.pathname}${target.search}`;
+    const params = new URLSearchParams();
+    if (query) params.set('query', query);
+    if (category) params.set('category', category);
+    if (service) params.set('service', service);
+    const queryString = params.toString();
+    window.location.href = `${base}pages/search-results.html${queryString ? `?${queryString}` : ''}`;
   }
 
   function submitInlineSearch(input) {
@@ -508,8 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!query && input instanceof HTMLInputElement && input.closest('[data-home-hero-search]')) {
       const base = getSiteBasePath();
-      const target = new URL(`${base}pages/specialists.html`, window.location.origin);
-      window.location.href = target.pathname;
+      window.location.href = `${base}pages/search-results.html`;
       return;
     }
 
@@ -808,6 +911,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderHomepageCategories();
   renderHomepageTrendingJobs();
+  initHomeMarketScrollers();
+  initHomeCardCarousels();
   initScrollableRails(document);
 
   if (searchSuggestions) {

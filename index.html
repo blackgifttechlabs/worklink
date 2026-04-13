@@ -20,14 +20,14 @@
     <div class="home-stream-shell">
       <div class="home-stream-copy">
         <span class="home-stream-kicker">WorkLinkUp</span>
-        <h1>Find Job  Find Worker</h1>
-        <p>"Two needs. One platform. Endless possibilities. Across every industry."</p>
+        <h1><span>Find Job</span> <span>Find Worker</span></h1>
+        <p>"Two needs. One platform. Endless possibilities.<span class="home-mobile-copy-trim"> Across every industry.</span>"</p>
         <div class="fleece-btns home-stream-actions">
           <a href="pages/specialists.html" class="btn-primary">Find Specialist</a>
           <button type="button" class="btn-secondary fleece-secondary" data-home-get-found>Get Found</button>
         </div>
 
-        <form class="search-bar hero-search-bar home-copy-search" action="pages/specialists.html" method="get" role="search" data-home-hero-search>
+        <form class="search-bar hero-search-bar home-copy-search" action="pages/search-results.html" method="get" role="search" data-home-hero-search>
           <span class="search-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <circle cx="11" cy="11" r="8"></circle>
@@ -64,22 +64,202 @@
     </div>
   </section>
 
-  <section class="home-trending-section">
-    <div class="home-trending-section-inner">
-      <div class="home-stream-panel home-stream-trending-panel">
-        <h2 class="home-stream-row-title home-trending-section-title">Most Searched Services & Jobs</h2>
-        <div class="home-trending-featured" data-home-trending-featured></div>
-        <div class="worklinkup-rail-shell home-trending-jobs-shell">
-          <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll trending jobs left">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          <div class="home-trending-jobs-track-wrap">
-            <div class="home-trending-jobs-track" data-home-trending-jobs data-scroll-track></div>
+  <section class="home-market-section" aria-label="Fresh work picks">
+    <div class="home-market-desktop">
+      <aside class="home-market-categories" aria-label="Categories for you">
+        <a href="pages/search-results.html?category=Home%20Services"><i class="fa-regular fa-star"></i><span>Home services</span><i class="fa-solid fa-chevron-right"></i></a>
+        <a href="pages/search-results.html?category=Electrical"><i class="fa-solid fa-bolt"></i><span>Electrical</span><i class="fa-solid fa-chevron-right"></i></a>
+        <a href="pages/search-results.html?category=Cleaning%20Services"><i class="fa-solid fa-broom"></i><span>Cleaning</span><i class="fa-solid fa-chevron-right"></i></a>
+        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness"><i class="fa-solid fa-spa"></i><span>Beauty</span><i class="fa-solid fa-chevron-right"></i></a>
+        <a href="pages/search-results.html?category=Transport%20%26%20Logistics"><i class="fa-solid fa-truck-fast"></i><span>Transport</span><i class="fa-solid fa-chevron-right"></i></a>
+      </aside>
+
+      <div class="home-market-booked-shell">
+        <button type="button" class="home-market-scroll-btn is-prev" data-home-market-scroll="prev" aria-label="Scroll Frequently Booked left">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="home-market-booked-window" data-home-market-scroll-window>
+          <div class="home-market-booked-track">
+            <a href="pages/search-results.html?category=Plumbing&query=Leak%20Repairs" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Plumber</strong>
+              <img src="images/categories/plumbing.avif" alt="Plumbing service" loading="lazy" decoding="async" />
+            </a>
+            <a href="pages/search-results.html?category=Digital%20%26%20Business&query=Graphic%20Designer" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Designer</strong>
+              <img src="images/categories/graphics.avif" alt="Graphic design service" loading="lazy" decoding="async" />
+            </a>
+            <a href="pages/search-results.html?category=Construction%20%26%20Building&query=Bricklayer" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Bricklayer</strong>
+              <img src="images/categories/bricklayer.avif" alt="Bricklayer service" loading="lazy" decoding="async" />
+            </a>
+            <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Cleaner</strong>
+              <img src="images/categories/cleaning.avif" alt="Cleaning service" loading="lazy" decoding="async" />
+            </a>
+            <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Caterer</strong>
+              <img src="images/categories/Catering.avif" alt="Catering service" loading="lazy" decoding="async" />
+            </a>
+            <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-market-card home-market-search-card">
+              <span>Frequently Booked</span>
+              <strong>Stylist</strong>
+              <img src="images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif" alt="Hairdresser service" loading="lazy" decoding="async" />
+            </a>
           </div>
-          <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll trending jobs right">
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
         </div>
+        <button type="button" class="home-market-scroll-btn is-next" data-home-market-scroll="next" aria-label="Scroll Frequently Booked right">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <article class="home-market-promo home-market-hot-picks" data-home-card-carousel>
+        <h2>Hot Picks</h2>
+        <div class="home-carousel-slides">
+          <div class="home-carousel-slide is-active">
+            <img src="images/categories/Solar-power-in-Africa-.avif" alt="Solar installation tools" loading="lazy" decoding="async" />
+            <strong>Solar</strong>
+          </div>
+          <div class="home-carousel-slide">
+            <img src="images/categories/security-services.avif" alt="Security service" loading="lazy" decoding="async" />
+            <strong>Security</strong>
+          </div>
+          <div class="home-carousel-slide">
+            <img src="images/categories/farming.avif" alt="Agriculture service" loading="lazy" decoding="async" />
+            <strong>Farming</strong>
+          </div>
+          <div class="home-carousel-slide">
+            <img src="images/categories/events.avif" alt="Events service" loading="lazy" decoding="async" />
+            <strong>Events</strong>
+          </div>
+        </div>
+        <a href="pages/search-results.html?category=Electrical&query=Solar%20System%20Installation">View more</a>
+        <div class="home-carousel-dots" aria-label="Hot Picks slides"></div>
+      </article>
+
+      <div class="home-market-divider"><span>Recommended for your next job</span></div>
+
+      <div class="home-market-recommendations">
+        <article class="home-market-wide-promo">
+          <h2>Fast job matching</h2>
+          <p>Post once and compare local bidders.</p>
+          <ul>
+            <li>Clear job details</li>
+            <li>Local provider profiles</li>
+            <li>Direct conversations</li>
+          </ul>
+          <a href="pages/post-job.html">post a job</a>
+        </article>
+
+        <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-market-product-card">
+          <img src="images/categories/Commercial_Cleaning_Services_Gauteng-4883639.avif" alt="Deep house cleaning" loading="lazy" decoding="async" />
+          <span>Home reset</span>
+          <strong>Deep cleaning</strong>
+          <small>From $30</small>
+        </a>
+        <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-market-product-card">
+          <img src="images/categories/Catering.avif" alt="Event catering" loading="lazy" decoding="async" />
+          <span>Events</span>
+          <strong>Event caterer</strong>
+          <small>From $60</small>
+        </a>
+        <a href="pages/search-results.html?category=Transport%20%26%20Logistics&query=Moving%20%26%20Relocation%20Services" class="home-market-product-card">
+          <img src="images/categories/moving out.avif" alt="Moving and relocation" loading="lazy" decoding="async" />
+          <span>Logistics</span>
+          <strong>Moving help</strong>
+          <small>From $50</small>
+        </a>
+        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-market-product-card">
+          <img src="images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif" alt="Hairdresser" loading="lazy" decoding="async" />
+          <span>Beauty</span>
+          <strong>Hairdresser</strong>
+          <small>From $20</small>
+        </a>
+      </div>
+    </div>
+
+    <div class="home-market-mobile">
+      <h2>Most Listed Services</h2>
+      <p class="home-market-mobile-subtitle">Find the providers most people trust.</p>
+      <div class="home-mobile-arrivals">
+        <a href="pages/search-results.html?category=Plumbing&query=Leak%20Repairs" class="home-mobile-mini-card">
+          <img src="images/categories/plumbing.avif" alt="Plumbing service" loading="lazy" decoding="async" />
+          <strong>Plumber</strong>
+          <span>Harare</span>
+        </a>
+        <a href="pages/search-results.html?category=Electrical&query=Solar%20System%20Installation" class="home-mobile-mini-card">
+          <img src="images/categories/Solar-power-in-Africa-.avif" alt="Solar installation" loading="lazy" decoding="async" />
+          <strong>Solar</strong>
+          <span>Bulawayo</span>
+        </a>
+        <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-mobile-mini-card">
+          <img src="images/categories/cleaning.avif" alt="Cleaning service" loading="lazy" decoding="async" />
+          <strong>Cleaner</strong>
+          <span>Mutare</span>
+        </a>
+        <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-mobile-mini-card">
+          <img src="images/categories/Catering.avif" alt="Catering service" loading="lazy" decoding="async" />
+          <strong>Caterer</strong>
+          <span>Gweru</span>
+        </a>
+        <a href="pages/search-results.html?category=Transport%20%26%20Logistics&query=Moving%20%26%20Relocation%20Services" class="home-mobile-mini-card">
+          <img src="images/categories/moving out.avif" alt="Moving service" loading="lazy" decoding="async" />
+          <strong>Mover</strong>
+          <span>Masvingo</span>
+        </a>
+        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-mobile-mini-card">
+          <img src="images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif" alt="Hairdresser service" loading="lazy" decoding="async" />
+          <strong>Stylist</strong>
+          <span>Kwekwe</span>
+        </a>
+      </div>
+
+      <div class="home-mobile-card-grid">
+        <article class="home-mobile-supplier-card" data-home-card-carousel>
+          <h3>Discover reputable providers</h3>
+          <div class="home-carousel-slides">
+            <div class="home-carousel-slide is-active">
+              <img src="images/categories/graphics.avif" alt="Digital provider work preview" loading="lazy" decoding="async" />
+              <strong>Designers</strong>
+            </div>
+            <div class="home-carousel-slide">
+              <img src="images/categories/electrician.avif" alt="Electrical provider work preview" loading="lazy" decoding="async" />
+              <strong>Electricians</strong>
+            </div>
+            <div class="home-carousel-slide">
+              <img src="images/categories/gardening.avif" alt="Gardening provider work preview" loading="lazy" decoding="async" />
+              <strong>Gardeners</strong>
+            </div>
+            <div class="home-carousel-slide">
+              <img src="images/categories/beauty-and-wellness.avif" alt="Beauty provider work preview" loading="lazy" decoding="async" />
+              <strong>Stylists</strong>
+            </div>
+          </div>
+          <a href="pages/search-results.html">View more</a>
+          <div class="home-carousel-dots" aria-label="Provider slides"></div>
+        </article>
+        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Makeup%20Artist" class="home-mobile-large-card">
+          <img src="images/categories/beauty-and-wellness.avif" alt="Beauty and wellness service" loading="lazy" decoding="async" />
+          <span>Makeup, hair, and wellness bookings</span>
+          <strong>Makeup</strong>
+          <small>Chitungwiza</small>
+        </a>
+        <a href="pages/search-results.html?category=Clothing%20%26%20Textiles" class="home-mobile-large-card">
+          <img src="images/categories/textile.avif" alt="Textile service" loading="lazy" decoding="async" />
+          <span>Tailoring and repairs</span>
+          <strong>Tailor</strong>
+          <small>Harare</small>
+        </a>
+        <a href="pages/search-results.html?category=Transport%20%26%20Logistics" class="home-mobile-large-card">
+          <img src="images/categories/logistrics.avif" alt="Transport service" loading="lazy" decoding="async" />
+          <span>Deliveries and moving help</span>
+          <strong>Courier</strong>
+          <small>Bulawayo</small>
+        </a>
       </div>
     </div>
   </section>

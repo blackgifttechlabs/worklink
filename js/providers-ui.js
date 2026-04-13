@@ -54,6 +54,25 @@
     return window.location.pathname.includes('/pages/') ? '../' : '';
   }
 
+  function buildSearchResultsHref(query = '', options = {}) {
+    const base = typeof options.base === 'string' ? options.base : getBase();
+    const params = new URLSearchParams();
+    const category = String(options.category || '').trim();
+    const service = String(options.service || '').trim();
+    const rating = Number(options.rating || 0);
+    const searchQuery = String(query || service || category || '').trim();
+    if (searchQuery) params.set('query', searchQuery);
+    if (category) params.set('category', category);
+    if (service) params.set('service', service);
+    if (rating) params.set('rating', String(rating));
+    const queryString = params.toString();
+    return `${base}pages/search-results.html${queryString ? `?${queryString}` : ''}`;
+  }
+
+  function goToSearchResults(query = '', options = {}) {
+    window.location.href = buildSearchResultsHref(query, options);
+  }
+
   function slugify(value) {
     return String(value || '')
       .toLowerCase()
@@ -197,9 +216,7 @@
 
   function createCircleCardsMarkup(base, isLoop = false) {
     const cards = SPECIALIST_CATEGORIES.map((category) => `
-      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
-        ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-        : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
+      <a href="${buildSearchResultsHref(category.label, { base, category: category.label })}" class="category-circle specialist-category-chip" data-category-chip="${category.label}">
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -218,7 +235,7 @@
       return `
         <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
           ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-          : `${base}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`}" class="category-circle categories-directory-circle">
+          : buildSearchResultsHref(category.label, { base, category: category.label })}" class="category-circle categories-directory-circle">
           <div class="category-circle-img">
             ${category.image
               ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -602,7 +619,7 @@
 
   function buildRelatedServicesMarkup(items = [], duplicate = false) {
     const cards = items.map((item) => `
-      <a href="${getBase()}pages/specialists.html?query=${encodeURIComponent(item.label)}&results=1" class="specialists-related-card">
+      <a href="${buildSearchResultsHref(item.label, { service: item.label })}" class="specialists-related-card">
         <strong>${escapeHtml(item.label)}</strong>
         <span>${escapeHtml(item.address)}</span>
       </a>
@@ -613,9 +630,7 @@
 
   function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
     const cards = items.map((category) => {
-      const href = typeof buildWorkLinkUpSpecialistsHref === 'function'
-        ? buildWorkLinkUpSpecialistsHref(category.label, { base: getBase(), category: category.label, query: category.label })
-        : `${getBase()}pages/specialists.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}&results=1`;
+      const href = buildSearchResultsHref(category.label, { category: category.label });
       const summary = (category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`;
       const imageSrc = resolveMediaSrc(category.image || 'images/logo/logo.jpg');
 
@@ -1041,6 +1056,7 @@
     const relatedTitleHost = page.querySelector('.specialists-related-head h3');
     const suggestedAllBtn = page.querySelector('[data-specialists-suggested-all]');
     const searchInput = page.querySelector('[data-specialists-search]');
+    const searchIcon = searchInput?.closest('.search-bar')?.querySelector('.search-icon');
     const ratingButtons = Array.from(page.querySelectorAll('[data-rating-filter]'));
     const filterBtn = page.querySelector('[data-open-specialists-sheet]');
     const ratingSheetBtn = page.querySelector('[data-open-specialists-rating-sheet]');
@@ -1127,24 +1143,29 @@
 
       scope.querySelectorAll('[data-filter-category]').forEach((button) => {
         button.addEventListener('click', () => {
-          state.category = button.getAttribute('data-filter-category') || '';
-          state.subservice = '';
-          state.resultsMode = true;
-          update({ showSkeleton: true, source: 'sidebar-category' });
-          if (mobileSheet) mobileSheet.hidden = true;
+          const category = button.getAttribute('data-filter-category') || '';
+          goToSearchResults(category, { category, rating: state.rating });
         });
       });
 
       scope.querySelectorAll('[data-filter-subservice]').forEach((button) => {
         button.addEventListener('click', () => {
-          state.category = button.getAttribute('data-parent-category') || state.category;
-          state.subservice = button.getAttribute('data-filter-subservice') || '';
-          state.search = state.subservice;
-          state.resultsMode = true;
-          update({ showSkeleton: true, source: 'sidebar-service' });
-          if (mobileSheet) mobileSheet.hidden = true;
+          const category = button.getAttribute('data-parent-category') || state.category;
+          const service = button.getAttribute('data-filter-subservice') || '';
+          goToSearchResults(service, { category, service, rating: state.rating });
         });
       });
+    }
+
+    function goToCurrentSearchResults(overrides = {}) {
+      const category = typeof overrides.category === 'string' ? overrides.category : state.category;
+      const service = typeof overrides.service === 'string' ? overrides.service : state.subservice;
+      const rating = Object.prototype.hasOwnProperty.call(overrides, 'rating') ? Number(overrides.rating || 0) : state.rating;
+      const query = typeof overrides.query === 'string'
+        ? overrides.query
+        : state.search || service || category;
+      if (!query && !category && !service && !rating) return;
+      goToSearchResults(query, { category, service, rating });
     }
 
     function renderRelatedServices(filteredProviders) {
@@ -1271,38 +1292,47 @@
       const chip = event.target.closest('[data-category-chip]');
       if (!(chip instanceof HTMLElement)) return;
       event.preventDefault();
-      state.category = chip.getAttribute('data-category-chip') || '';
-      state.subservice = '';
-      state.search = '';
-      state.resultsMode = false;
-      update();
+      const category = chip.getAttribute('data-category-chip') || '';
+      goToCurrentSearchResults({ query: category, category, service: '' });
     });
 
     ratingButtons.forEach((button) => {
       button.addEventListener('click', () => {
         const ratingValue = Number(button.getAttribute('data-rating-filter') || 0);
-        state.rating = state.rating === ratingValue ? 0 : ratingValue;
-        state.resultsMode = Boolean(state.search || state.subservice || state.resultsMode);
-        update({ showSkeleton: true });
+        const nextRating = state.rating === ratingValue ? 0 : ratingValue;
+        goToCurrentSearchResults({ rating: nextRating });
       });
     });
 
     mobileRatingOptions.forEach((button) => {
       button.addEventListener('click', () => {
         const ratingValue = Number(button.getAttribute('data-rating-filter') || 0);
-        state.rating = ratingValue;
-        state.resultsMode = Boolean(state.search || state.subservice || state.resultsMode);
-        update({ showSkeleton: true });
-        if (mobileRatingSheet) mobileRatingSheet.hidden = true;
+        goToCurrentSearchResults({ rating: ratingValue });
       });
     });
 
-    searchInput?.addEventListener('input', () => {
-      state.search = searchInput.value.trim();
-      state.subservice = '';
-      state.resultsMode = Boolean(state.search);
-      update({ showSkeleton: true });
+    searchInput?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      goToCurrentSearchResults({ query: searchInput.value.trim(), service: '' });
     });
+
+    searchInput?.addEventListener('change', () => {
+      goToCurrentSearchResults({ query: searchInput.value.trim(), service: '' });
+    });
+
+    if (searchIcon instanceof HTMLElement) {
+      searchIcon.setAttribute('role', 'button');
+      searchIcon.setAttribute('tabindex', '0');
+      searchIcon.addEventListener('click', () => {
+        goToCurrentSearchResults({ query: searchInput instanceof HTMLInputElement ? searchInput.value.trim() : '', service: '' });
+      });
+      searchIcon.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        goToCurrentSearchResults({ query: searchInput instanceof HTMLInputElement ? searchInput.value.trim() : '', service: '' });
+      });
+    }
 
     filterBtn?.addEventListener('click', () => {
       if (!mobileSheet) return;
@@ -1401,7 +1431,7 @@
       if (card instanceof HTMLAnchorElement) {
         card.href = typeof buildWorkLinkUpSpecialistsHref === 'function'
           ? buildWorkLinkUpSpecialistsHref(label, { category: label, query: label })
-          : `${getBase()}pages/specialists.html?category=${encodeURIComponent(label)}&query=${encodeURIComponent(label)}&results=1`;
+          : buildSearchResultsHref(label, { category: label });
       }
     });
 

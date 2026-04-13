@@ -89,23 +89,24 @@ function findCategoryByServiceLabel(serviceLabel = '') {
   }) || null;
 }
 
-function buildWorkLinkUpSpecialistsHref(searchTerm = '', options = {}) {
+function buildWorkLinkUpSearchHref(searchTerm = '', options = {}) {
   const base = typeof options.base === 'string' ? options.base : getBasePath();
-  const url = new URL(`${base}pages/specialists.html`, window.location.href);
+  const params = new URLSearchParams();
   const category = String(options.category || '').trim();
   const service = String(options.service || '').trim();
   const query = String(options.query || searchTerm || '').trim();
 
-  if (category) url.searchParams.set('category', category);
-  if (service) url.searchParams.set('service', service);
-  if (query) {
-    url.searchParams.set('query', query);
-    url.searchParams.set('results', '1');
-  }
+  if (query) params.set('query', query);
+  if (category) params.set('category', category);
+  if (service) params.set('service', service);
 
-  return `${url.pathname}${url.search}`;
+  const queryString = params.toString();
+  return `${base}pages/search-results.html${queryString ? `?${queryString}` : ''}`;
 }
 
+window.buildWorkLinkUpSearchHref = buildWorkLinkUpSearchHref;
+// Keep the legacy name for existing callers, but route searches to the search page.
+const buildWorkLinkUpSpecialistsHref = buildWorkLinkUpSearchHref;
 window.buildWorkLinkUpSpecialistsHref = buildWorkLinkUpSpecialistsHref;
 
 function getStoredAccount() {
