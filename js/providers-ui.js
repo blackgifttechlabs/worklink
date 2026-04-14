@@ -16,6 +16,88 @@
     'Midlands'
   ];
 
+  const ZIMBABWE_LOCATION_GROUPS = [
+    {
+      province: 'Harare',
+      city: 'Harare',
+      type: 'City',
+      aliases: ['Harare CBD', 'Salisbury'],
+      areas: ['Avenues', 'Avondale', 'Belvedere', 'Borrowdale', 'Budiriro', 'Chisipite', 'Dzivarasekwa', 'Eastlea', 'Glen Lorne', 'Glen Norah', 'Glen View', 'Greendale', 'Hatfield', 'Highfield', 'Kambuzuma', 'Kuwadzana', 'Mabelreign', 'Mbare', 'Marlborough', 'Milton Park', 'Mount Pleasant', 'Newlands', 'Southerton', 'Tynwald', 'Waterfalls', 'Westgate', 'Warren Park']
+    },
+    { province: 'Harare', city: 'Chitungwiza', type: 'City', aliases: ['Zengeza', 'Seke'], areas: ['Unit A', 'Unit C', 'Unit D', 'Unit F', 'Unit J', 'Unit K', 'Unit L', 'Makoni', 'Manyame Park', 'St Marys', 'Zengeza 1', 'Zengeza 2', 'Zengeza 3', 'Zengeza 4'] },
+    { province: 'Harare', city: 'Epworth', type: 'Town', areas: ['Domboramwari', 'Overspill', 'Magada', 'Solani', 'Stopover'] },
+    { province: 'Harare', city: 'Ruwa', type: 'Town', areas: ['Damofalls', 'Fairview', 'Chipukutu Park', 'Ruwa Local Board', 'Zimre Park'] },
+    { province: 'Harare', city: 'Norton', type: 'Town', areas: ['Katanga', 'Knowe', 'Maridale', 'Ngoni', 'Twinlakes'] },
+    { province: 'Bulawayo', city: 'Bulawayo', type: 'City', aliases: ['City of Kings'], areas: ['Ascot', 'Barbourfields', 'Bellevue', 'Burnside', 'Cowdray Park', 'Emganwini', 'Entumbane', 'Hillside', 'Ilanda', 'Khumalo', 'Lobengula', 'Luveve', 'Magwegwe', 'Makokoba', 'Mahatshula', 'Mpopoma', 'Nkulumane', 'North End', 'Pumula', 'Queens Park', 'Richmond', 'Sizinda', 'Thorngrove', 'Tshabalala', 'Waterford'] },
+    { province: 'Manicaland', city: 'Mutare', type: 'City', areas: ['Dangamvura', 'Fairbridge Park', 'Fern Valley', 'Florida', 'Hobhouse', 'Murambi', 'Palmerston', 'Sakubva', 'Weirmouth', 'Yeovil'] },
+    { province: 'Manicaland', city: 'Rusape', type: 'Town', areas: ['Mabvazuva', 'Magamba', 'Tsanzaguru', 'Vengere'] },
+    { province: 'Manicaland', city: 'Chipinge', type: 'Town', areas: ['Checheche', 'Gaza', 'Jersey', 'Mount Selinda'] },
+    { province: 'Manicaland', city: 'Chimanimani', type: 'Town', areas: ['Bridal Veil', 'Cashel', 'Ngangu'] },
+    { province: 'Manicaland', city: 'Nyanga', type: 'Town', areas: ['Juliasdale', 'Rochdale', 'Troutbeck'] },
+    { province: 'Manicaland', city: 'Buhera', type: 'District', areas: ['Birchenough Bridge', 'Murambinda', 'Nyashanu'] },
+    { province: 'Manicaland', city: 'Penhalonga', type: 'Town', areas: ['Tsvingwe', 'Old West'] },
+    { province: 'Mashonaland Central', city: 'Bindura', type: 'Town', areas: ['Aerodrome', 'Chipadze', 'Chiwaridzo', 'Town Centre'] },
+    { province: 'Mashonaland Central', city: 'Mazowe', type: 'Town', areas: ['Concession', 'Glendale', 'Mazowe Mine'] },
+    { province: 'Mashonaland Central', city: 'Shamva', type: 'Town', areas: ['Madziwa', 'Shamva Mine'] },
+    { province: 'Mashonaland Central', city: 'Mount Darwin', type: 'Town', aliases: ['Mt Darwin'], areas: ['Dotito', 'Kandeya'] },
+    { province: 'Mashonaland Central', city: 'Guruve', type: 'Town', areas: ['Kachuta', 'Mushumbi Pools'] },
+    { province: 'Mashonaland Central', city: 'Rushinga', type: 'Town', areas: ['Marymount', 'Rusambo'] },
+    { province: 'Mashonaland Central', city: 'Centenary', type: 'Town', areas: ['Muzarabani', 'St Alberts'] },
+    { province: 'Mashonaland Central', city: 'Mvurwi', type: 'Town', areas: ['Forestry', 'Town Centre'] },
+    { province: 'Mashonaland East', city: 'Marondera', type: 'Town', areas: ['Cherutombo', 'Dombotombo', 'Nyameni', 'Ruzawi'] },
+    { province: 'Mashonaland East', city: 'Chivhu', type: 'Town', areas: ['Gomba', 'Highview', 'Manyene'] },
+    { province: 'Mashonaland East', city: 'Murehwa', type: 'Town', aliases: ['Murewa'], areas: ['Dombwe', 'Macheke', 'Murewa Centre'] },
+    { province: 'Mashonaland East', city: 'Mutoko', type: 'Town', areas: ['All Souls', 'Nyamuzuwe', 'Nyamapanda'] },
+    { province: 'Mashonaland East', city: 'Wedza', type: 'Town', aliases: ['Hwedza'], areas: ['Makwiro', 'Mt St Marys'] },
+    { province: 'Mashonaland East', city: 'Goromonzi', type: 'District', areas: ['Arcturus', 'Domboshava', 'Juru', 'Ruwa', 'Shamva Road'] },
+    { province: 'Mashonaland East', city: 'Seke', type: 'District', areas: ['Dema', 'Mahusekwa', 'Manyame'] },
+    { province: 'Mashonaland West', city: 'Chinhoyi', type: 'Town', areas: ['Brundish', 'Cold Stream', 'Gadzema', 'Hunyani', 'Mpata'] },
+    { province: 'Mashonaland West', city: 'Kadoma', type: 'City', areas: ['Chemukute', 'Ingezi', 'Rimuka', 'Waverley'] },
+    { province: 'Mashonaland West', city: 'Chegutu', type: 'Town', areas: ['Chinengundu', 'Kaguvi', 'Pfupajena', 'Rifle Range'] },
+    { province: 'Mashonaland West', city: 'Karoi', type: 'Town', areas: ['Chikangwe', 'Chiedza', 'Tengwe'] },
+    { province: 'Mashonaland West', city: 'Kariba', type: 'Town', areas: ['Mahombekombe', 'Nyamhunga', 'Siavonga Border'] },
+    { province: 'Mashonaland West', city: 'Banket', type: 'Town', areas: ['Dzikiti', 'Kuwadzana Banket'] },
+    { province: 'Mashonaland West', city: 'Mhangura', type: 'Town', areas: ['Doma', 'Mhangura Mine'] },
+    { province: 'Mashonaland West', city: 'Zvimba', type: 'District', areas: ['Murombedzi', 'Raffingora', 'Trelawney'] },
+    {
+      province: 'Masvingo',
+      city: 'Masvingo',
+      type: 'City',
+      aliases: ['Masvingo City', 'Fort Victoria'],
+      areas: ['Rujeko A', 'Rujeko B', 'Rujeko C', 'Pangolin', 'Majange', 'Siski', 'Sisk', 'Mucheke', 'Runyararo West', 'Rhodene', 'Clipsham', 'Victoria Ranch', 'Target Kopje', 'Morningside', 'Eastvale', 'Industrial Area', 'Zimre Park']
+    },
+    { province: 'Masvingo', city: 'Chivi', type: 'District', aliases: ['Chivi District'], areas: ['Chivi Growth Point', 'Mhandamabwe', 'Ngundu', 'Chibi', 'Makamure', 'Madamombe', 'Denga', 'Nyaningwe', 'Takavarasha', 'Sese'] },
+    { province: 'Masvingo', city: 'Chiredzi', type: 'Town', areas: ['Buffalo Range', 'Hippo Valley', 'Tshovani', 'Triangle'] },
+    { province: 'Masvingo', city: 'Gutu', type: 'District', areas: ['Mpandawana', 'Chatsworth', 'Mupandawana', 'Serima'] },
+    { province: 'Masvingo', city: 'Bikita', type: 'District', areas: ['Bikita Minerals', 'Nyika', 'Gutu Road'] },
+    { province: 'Masvingo', city: 'Zaka', type: 'District', areas: ['Jerera', 'Jichidza', 'Rupiri'] },
+    { province: 'Masvingo', city: 'Mwenezi', type: 'District', areas: ['Rutenga', 'Neshuro', 'Sarahuru'] },
+    { province: 'Masvingo', city: 'Mashava', type: 'Town', areas: ['King Mine', 'Temeraire'] },
+    { province: 'Matabeleland North', city: 'Victoria Falls', type: 'City', areas: ['Chinotimba', 'Mkhosana', 'Town Centre'] },
+    { province: 'Matabeleland North', city: 'Hwange', type: 'Town', areas: ['Baobab', 'Empumalanga', 'Lwendulu'] },
+    { province: 'Matabeleland North', city: 'Lupane', type: 'Town', areas: ['Lupane Centre', 'Lupane State University'] },
+    { province: 'Matabeleland North', city: 'Binga', type: 'Town', areas: ['Binga Centre', 'Siabuwa'] },
+    { province: 'Matabeleland North', city: 'Tsholotsho', type: 'District', areas: ['Dlamini', 'Sipepa'] },
+    { province: 'Matabeleland North', city: 'Nkayi', type: 'District', areas: ['Nkayi Centre', 'Sivalo'] },
+    { province: 'Matabeleland North', city: 'Dete', type: 'Town', areas: ['Cross Dete', 'Hwange National Park'] },
+    { province: 'Matabeleland South', city: 'Gwanda', type: 'Town', areas: ['Jahunda', 'Phakama', 'Spitzkop North'] },
+    { province: 'Matabeleland South', city: 'Beitbridge', type: 'Town', areas: ['Dulivhadzimu', 'Mashavire', 'Tshitaudze'] },
+    { province: 'Matabeleland South', city: 'Plumtree', type: 'Town', areas: ['Dingumuzi', 'Mathendele'] },
+    { province: 'Matabeleland South', city: 'Esigodini', type: 'Town', areas: ['Habane', 'How Mine'] },
+    { province: 'Matabeleland South', city: 'Filabusi', type: 'Town', areas: ['Avoca', 'Fort Rixon'] },
+    { province: 'Matabeleland South', city: 'Kezi', type: 'District', areas: ['Maphisa', 'Matobo', 'Whitewater'] },
+    { province: 'Matabeleland South', city: 'West Nicholson', type: 'Town', areas: ['Colleen Bawn', 'Vumbachikwe'] },
+    { province: 'Midlands', city: 'Gweru', type: 'City', areas: ['Ascot', 'Athlone', 'Mkoba 1', 'Mkoba 2', 'Mkoba 6', 'Mkoba 14', 'Nashville', 'Senga', 'Southdowns', 'Woodlands'] },
+    { province: 'Midlands', city: 'Kwekwe', type: 'City', areas: ['Amaveni', 'Mbizo', 'Newtown', 'Redcliff', 'Torwood'] },
+    { province: 'Midlands', city: 'Redcliff', type: 'Town', areas: ['Rutendo', 'Torwood'] },
+    { province: 'Midlands', city: 'Zvishavane', type: 'Town', areas: ['Eastlea', 'Highlands', 'Mandava', 'Maglas'] },
+    { province: 'Midlands', city: 'Shurugwi', type: 'Town', areas: ['Makusha', 'Peak Mine'] },
+    { province: 'Midlands', city: 'Mvuma', type: 'Town', areas: ['Athens Mine', 'Fairfields'] },
+    { province: 'Midlands', city: 'Gokwe', type: 'Town', areas: ['Gokwe Centre', 'Nembudziya', 'Sanyati'] },
+    { province: 'Midlands', city: 'Mberengwa', type: 'District', areas: ['Buchwa', 'Mataga', 'Mberengwa Centre'] },
+    { province: 'Midlands', city: 'Lalapanzi', type: 'Town', areas: ['Lalapanzi Mine', 'Somabhula'] }
+  ];
+
   const SOUTHERN_AFRICAN_LANGUAGES = [
     'Afrikaans',
     'Bemba',
@@ -164,6 +246,243 @@
   function buildSubserviceOptionsMarkup(categoryLabel = '', selectedValue = '', placeholder = 'Choose a service') {
     const subservices = getSubservicesForCategory(categoryLabel);
     return buildSelectOptions(subservices, selectedValue, placeholder);
+  }
+
+  function normalizeTypeaheadTerm(value) {
+    return String(value || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ');
+  }
+
+  function uniqueTypeaheadItems(items = [], keyGetter = (item) => item.label) {
+    const seen = new Set();
+    return items.filter((item) => {
+      const key = normalizeTypeaheadTerm(keyGetter(item));
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function buildLocationTypeaheadItems() {
+    const items = ZIMBABWE_LOCATION_GROUPS.flatMap((group) => {
+      const city = String(group.city || '').trim();
+      const province = String(group.province || '').trim();
+      const aliases = Array.isArray(group.aliases) ? group.aliases : [];
+      const baseTerms = [city, province, group.type, aliases].flat().filter(Boolean);
+      const cityItem = {
+        kind: 'city',
+        label: city,
+        detail: `${group.type || 'Location'} • ${province}`,
+        city,
+        province,
+        area: '',
+        terms: baseTerms
+      };
+      const areaItems = (Array.isArray(group.areas) ? group.areas : []).map((area) => ({
+        kind: 'area',
+        label: `${area}, ${city}`,
+        detail: province,
+        city,
+        province,
+        area,
+        terms: [area, city, province, aliases].flat().filter(Boolean)
+      }));
+      const aliasItems = aliases.map((alias) => ({
+        kind: 'alias',
+        label: alias,
+        detail: `${city} • ${province}`,
+        city,
+        province,
+        area: '',
+        terms: [alias, city, province]
+      }));
+      return [cityItem, ...aliasItems, ...areaItems];
+    });
+
+    return uniqueTypeaheadItems(items, (item) => `${item.label}_${item.city}_${item.province}`);
+  }
+
+  const LOCATION_TYPEAHEAD_ITEMS = buildLocationTypeaheadItems();
+
+  function scoreTypeaheadItem(item, query) {
+    const normalizedQuery = normalizeTypeaheadTerm(query);
+    if (!normalizedQuery) return item.kind === 'city' || item.kind === 'category' ? 20 : 8;
+    const terms = uniqueTypeaheadItems(
+      [item.label, item.detail, item.city, item.province, item.area, item.category, item.service, item.terms].flat()
+        .filter(Boolean)
+        .map((term) => ({ label: String(term) }))
+    ).map((entry) => normalizeTypeaheadTerm(entry.label));
+
+    let score = 0;
+    terms.forEach((term) => {
+      if (!term) return;
+      if (term === normalizedQuery) score = Math.max(score, 120);
+      else if (term.startsWith(normalizedQuery)) score = Math.max(score, 86);
+      else if (term.includes(normalizedQuery)) score = Math.max(score, 54);
+      else if (normalizedQuery.split(' ').every((part) => term.includes(part))) score = Math.max(score, 38);
+    });
+
+    if (item.kind === 'city' || item.kind === 'service') score += 6;
+    return score;
+  }
+
+  function getTypeaheadSuggestions(items, query, limit = 24) {
+    return items
+      .map((item, index) => ({
+        ...item,
+        index,
+        score: scoreTypeaheadItem(item, query)
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, limit);
+  }
+
+  function findExactTypeaheadItem(items, value) {
+    const normalized = normalizeTypeaheadTerm(value);
+    if (!normalized) return null;
+    return items.find((item) => [
+      item.label,
+      item.city,
+      item.area,
+      `${item.area || ''} ${item.city || ''}`,
+      `${item.area || ''}, ${item.city || ''}`,
+      item.service,
+      item.category
+    ].some((term) => normalizeTypeaheadTerm(term) === normalized)) || null;
+  }
+
+  function buildServiceTypeaheadItems() {
+    const items = SPECIALIST_CATEGORIES.flatMap((category) => {
+      const categoryLabel = String(category.label || '').trim();
+      const shortLabel = String(category.shortLabel || '').trim();
+      const subservices = Array.isArray(category.subservices) ? category.subservices : [];
+      const categoryItem = {
+        kind: 'category',
+        label: categoryLabel,
+        detail: `${subservices.length} services`,
+        category: categoryLabel,
+        service: '',
+        icon: category.icon || 'fa-solid fa-briefcase',
+        terms: [categoryLabel, shortLabel, subservices].flat().filter(Boolean)
+      };
+      const serviceItems = subservices.map((service) => ({
+        kind: 'service',
+        label: String(service || '').trim(),
+        detail: categoryLabel,
+        category: categoryLabel,
+        service: String(service || '').trim(),
+        icon: category.icon || 'fa-solid fa-briefcase',
+        terms: [service, categoryLabel, shortLabel]
+      }));
+      return [categoryItem, ...serviceItems];
+    });
+
+    return uniqueTypeaheadItems(items, (item) => `${item.label}_${item.category}`);
+  }
+
+  const SERVICE_TYPEAHEAD_ITEMS = buildServiceTypeaheadItems();
+
+  function renderSetupTypeaheadList(host, items, emptyText = 'No matches found') {
+    if (!(host instanceof HTMLElement)) return;
+    host.innerHTML = items.length
+      ? items.map((item, index) => `
+        <button type="button" class="account-typeahead-option" data-typeahead-index="${index}">
+          <span class="account-typeahead-main">${escapeHtml(item.label)}</span>
+          <span class="account-typeahead-detail">${escapeHtml(item.detail || '')}</span>
+        </button>
+      `).join('')
+      : `<div class="account-typeahead-empty">${escapeHtml(emptyText)}</div>`;
+  }
+
+  function bindSetupTypeahead({ input, list, items, hiddenFields, emptyText, onSelect }) {
+    if (!(input instanceof HTMLInputElement) || !(list instanceof HTMLElement)) {
+      return {
+        getSelection: () => null,
+        setInvalid: () => {}
+      };
+    }
+
+    let currentItems = [];
+    let selectedItem = null;
+
+    function syncHidden(item) {
+      Object.entries(hiddenFields || {}).forEach(([fieldKey, selector]) => {
+        const field = input.form?.querySelector(selector);
+        if (field instanceof HTMLInputElement) {
+          field.value = item ? String(item[fieldKey] || '') : '';
+        }
+      });
+    }
+
+    function showSuggestions(query = input.value) {
+      currentItems = getTypeaheadSuggestions(items, query, 26);
+      renderSetupTypeaheadList(list, currentItems, emptyText);
+      list.hidden = false;
+      list.classList.add('is-open');
+    }
+
+    function hideSuggestions() {
+      list.hidden = true;
+      list.classList.remove('is-open');
+    }
+
+    function selectItem(item) {
+      if (!item) return;
+      selectedItem = item;
+      input.value = item.label;
+      input.classList.remove('is-invalid');
+      input.classList.add('is-valid');
+      syncHidden(item);
+      if (typeof onSelect === 'function') onSelect(item);
+      hideSuggestions();
+    }
+
+    input.addEventListener('focus', () => showSuggestions());
+    input.addEventListener('input', () => {
+      selectedItem = null;
+      input.classList.remove('is-valid');
+      syncHidden(null);
+      showSuggestions();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !list.hidden && currentItems[0]) {
+        event.preventDefault();
+        selectItem(currentItems[0]);
+      }
+      if (event.key === 'Escape') hideSuggestions();
+    });
+    input.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        const exact = selectedItem || findExactTypeaheadItem(items, input.value);
+        if (exact) {
+          selectItem(exact);
+        } else {
+          hideSuggestions();
+        }
+      }, 140);
+    });
+
+    list.addEventListener('pointerdown', (event) => {
+      const button = event.target.closest('[data-typeahead-index]');
+      if (!(button instanceof HTMLElement)) return;
+      event.preventDefault();
+      selectItem(currentItems[Number(button.getAttribute('data-typeahead-index') || -1)]);
+    });
+
+    const existing = findExactTypeaheadItem(items, input.value);
+    if (existing) selectItem(existing);
+
+    return {
+      getSelection: () => selectedItem || findExactTypeaheadItem(items, input.value),
+      setInvalid: (invalid) => {
+        input.classList.toggle('is-invalid', Boolean(invalid));
+        input.classList.toggle('is-valid', !invalid && Boolean(input.value.trim()));
+      }
+    };
   }
 
   function resolveMediaSrc(value, fallback = '') {
@@ -3976,171 +4295,61 @@
         bannerImageData: existingProvider.bannerImageData || '',
         professionalDocuments: Array.isArray(existingProvider.professionalDocuments) ? existingProvider.professionalDocuments.slice() : []
       };
+      const existingLocationValue = existingProvider.address || existingProvider.city || existingProvider.province || '';
+      const existingServiceValue = existingProvider.specialty || providerInviteService || existingProvider.primaryCategory || '';
 
       setupBody.innerHTML = `
         <section class="account-provider-setup-stage">
           ${isEmbedded ? '' : `
             <div class="account-provider-setup-head">
               <span class="account-auth-stage-kicker">Service provider profile</span>
-              <h2>Complete your professional profile</h2>
-              <p>Fill in the details clients will see on your WorkLinkUp profile. Missing required fields will highlight in red when you try to continue.</p>
+              <h2>Complete your provider account</h2>
+              <p>Choose your location and the service clients should find you for. Start typing, then choose the best match.</p>
             </div>
           `}
 
           <form class="account-provider-form" data-account-provider-form novalidate>
             <div class="account-provider-grid">
-              <section class="account-provider-section">
+              <section class="account-provider-section account-provider-section-minimal">
                 <div class="account-provider-section-head">
-                  <strong>Identity</strong>
-                  <span>How you appear to clients</span>
+                  <strong>Provider details</strong>
+                  <span>Only these details are required now.</span>
                 </div>
-                <div class="account-provider-fields two-col">
-                  <label class="account-setup-field">
-                    <span>Display name</span>
-                    <input type="text" name="fullName" required value="${escapeHtml(existingProvider.displayName || '')}" />
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Title</span>
-                    <input type="text" name="title" required value="${escapeHtml(existingProvider.title || '')}" placeholder="Hair stylist, Plumber, Tutor..." />
-                  </label>
-                  <label class="account-setup-field">
-                    <span>WhatsApp number</span>
-                    <input type="tel" name="whatsappNumber" required value="${escapeHtml(existingProvider.whatsappNumber || '')}" placeholder="+263 77 123 4567" />
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Province</span>
-                    <select name="province" required>${buildSelectOptions(ZIMBABWE_PROVINCES, existingProvider.province || 'Harare')}</select>
-                  </label>
-                  <label class="account-setup-field">
-                    <span>City / suburb</span>
-                    <input type="text" name="city" required value="${escapeHtml(existingProvider.city || '')}" />
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Address or service area</span>
-                    <input type="text" name="address" required value="${escapeHtml(existingProvider.address || '')}" />
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Main category</span>
-                    <select name="primaryCategory" required>${buildSelectOptions(SPECIALIST_CATEGORIES.map((category) => category.label), existingProvider.primaryCategory || '', 'Choose a category')}</select>
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Specialty</span>
-                    <select name="specialty" data-account-specialty-select required>${buildSubserviceOptionsMarkup(existingProvider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', existingProvider.specialty || providerInviteService || '', 'Choose a service')}</select>
-                    <small>Choose the exact service you offer from this category.</small>
-                  </label>
-                  <label class="account-setup-field">
-                    <span>Experience</span>
-                    <input type="text" name="experience" required value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
-                  </label>
+                <div class="account-provider-fields account-provider-minimal-fields">
                   <label class="account-setup-field">
                     <span>Username</span>
                     <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                    <small>Your username was already reserved for this account.</small>
+                  </label>
+                  <label class="account-setup-field account-typeahead-field">
+                    <span>Location</span>
+                    <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
+                    <div class="account-typeahead-list" data-provider-location-list hidden></div>
+                    <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
+                  </label>
+                  <label class="account-setup-field account-typeahead-field">
+                    <span>Service you provide</span>
+                    <input type="search" name="serviceSearch" required value="${escapeHtml(existingServiceValue)}" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                    <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                    <small>Choose the closest service. You can edit more profile details later.</small>
                   </label>
                 </div>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>About</strong>
-                  <span>Tell clients what you do best</span>
-                </div>
-                <label class="account-setup-field">
-                  <span>About you</span>
-                  <textarea name="bio" required minlength="80" placeholder="Share your experience, strengths, and the work you offer.">${escapeHtml(existingProvider.bio || '')}</textarea>
-                </label>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>Languages</strong>
-                  <span>Choose the languages you work in</span>
-                </div>
-                <div class="account-provider-repeater" data-language-list>
-                  ${buildSetupRepeaterRows('language', existingProvider.languages)}
-                </div>
-                <button type="button" class="account-provider-add-row" data-add-language><i class="fa-solid fa-plus"></i><span>Add language</span></button>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>Skills and expertise</strong>
-                  <span>Add the skills that help clients find you</span>
-                </div>
-                <div class="account-provider-repeater" data-skill-list>
-                  ${buildSetupRepeaterRows('skill', existingProvider.skills)}
-                </div>
-                <button type="button" class="account-provider-add-row" data-add-skill><i class="fa-solid fa-plus"></i><span>Add skill</span></button>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>Work experience</strong>
-                  <span>Optional</span>
-                </div>
-                <div class="account-provider-repeater" data-experience-list>
-                  ${buildSetupRepeaterRows('experience', existingProvider.workExperience)}
-                </div>
-                <button type="button" class="account-provider-add-row" data-add-experience><i class="fa-solid fa-plus"></i><span>Add work experience</span></button>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>Education and certifications</strong>
-                  <span>Optional</span>
-                </div>
-                <div class="account-provider-subgrid">
-                  <div>
-                    <div class="account-provider-repeater" data-education-list>
-                      ${buildSetupRepeaterRows('education', existingProvider.education)}
-                    </div>
-                    <button type="button" class="account-provider-add-row" data-add-education><i class="fa-solid fa-plus"></i><span>Add education</span></button>
-                  </div>
-                  <div>
-                    <div class="account-provider-repeater" data-certification-list>
-                      ${buildSetupRepeaterRows('certification', existingProvider.certifications)}
-                    </div>
-                    <button type="button" class="account-provider-add-row" data-add-certification><i class="fa-solid fa-plus"></i><span>Add certification</span></button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="account-provider-section">
-                <div class="account-provider-section-head">
-                  <strong>Portfolio and documents</strong>
-                  <span>Optional website links and professional documents</span>
-                </div>
-                <div class="account-provider-repeater" data-link-list>
-                  ${buildSetupRepeaterRows('link', existingProvider.portfolioLinks)}
-                </div>
-                <button type="button" class="account-provider-add-row" data-add-link><i class="fa-solid fa-plus"></i><span>Add website link</span></button>
-
-                <div class="account-provider-media-grid">
-                  <label class="account-provider-upload-card">
-                    <span class="account-provider-upload-preview account-provider-upload-preview-avatar" data-account-profile-preview></span>
-                    <strong>Profile image</strong>
-                    <small>Images are converted before saving.</small>
-                    <input type="file" accept="image/*" data-account-profile-file />
-                  </label>
-                  <label class="account-provider-upload-card">
-                    <span class="account-provider-upload-preview account-provider-upload-preview-banner" data-account-banner-preview></span>
-                    <strong>Banner image</strong>
-                    <small>Wide image shown on your specialist card and profile.</small>
-                    <input type="file" accept="image/*" data-account-banner-file />
-                  </label>
-                </div>
-
-                <label class="account-provider-doc-upload">
-                  <span>Professional documents</span>
-                  <input type="file" accept="application/pdf,image/*" multiple data-account-document-files />
-                  <small>Upload CVs, certificates, licenses, or portfolio pages. Images are converted to AVIF, then stored in base64 for viewing later.</small>
-                </label>
-                <div class="account-provider-doc-list" data-account-document-list></div>
               </section>
             </div>
+            <input type="hidden" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || userDoc?.username || 'WorkLinkUp Provider')}" />
+            <input type="hidden" name="whatsappNumber" value="${escapeHtml(existingProvider.whatsappNumber || account.phone || '')}" />
+            <input type="hidden" name="province" value="${escapeHtml(existingProvider.province || '')}" data-provider-location-province />
+            <input type="hidden" name="city" value="${escapeHtml(existingProvider.city || '')}" data-provider-location-city />
+            <input type="hidden" name="address" value="${escapeHtml(existingProvider.address || '')}" data-provider-location-address />
+            <input type="hidden" name="primaryCategory" value="${escapeHtml(existingProvider.primaryCategory || '')}" data-provider-service-category />
+            <input type="hidden" name="specialty" value="${escapeHtml(existingProvider.specialty || providerInviteService || '')}" data-provider-service-name />
+            <input type="hidden" name="title" value="${escapeHtml(existingProvider.title || existingProvider.specialty || providerInviteService || '')}" data-provider-service-title />
+            <input type="hidden" name="experience" value="${escapeHtml(existingProvider.experience || '')}" />
+            <input type="hidden" name="bio" value="${escapeHtml(existingProvider.bio || '')}" />
 
             <div class="account-provider-form-actions">
               <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
-                <span class="account-btn-label">Save profile</span>
+                <span class="account-btn-label">Complete provider account</span>
               </button>
             </div>
           </form>
@@ -4157,6 +4366,45 @@
       const documentInput = setupBody.querySelector('[data-account-document-files]');
       const providerCategorySelect = form.querySelector('select[name="primaryCategory"]');
       const providerSpecialtySelect = form.querySelector('[data-account-specialty-select]');
+      const locationInput = form.querySelector('[data-provider-location-input]');
+      const locationList = form.querySelector('[data-provider-location-list]');
+      const serviceInput = form.querySelector('[data-provider-service-input]');
+      const serviceList = form.querySelector('[data-provider-service-list]');
+      const locationAddressField = form.querySelector('[data-provider-location-address]');
+      const serviceTitleField = form.querySelector('[data-provider-service-title]');
+
+      const locationPicker = bindSetupTypeahead({
+        input: locationInput,
+        list: locationList,
+        items: LOCATION_TYPEAHEAD_ITEMS,
+        emptyText: 'No Zimbabwe location found',
+        hiddenFields: {
+          province: '[data-provider-location-province]',
+          city: '[data-provider-location-city]'
+        },
+        onSelect: (item) => {
+          if (locationAddressField instanceof HTMLInputElement) {
+            locationAddressField.value = item.area ? `${item.area}, ${item.city}` : item.city;
+          }
+        }
+      });
+
+      const servicePicker = bindSetupTypeahead({
+        input: serviceInput,
+        list: serviceList,
+        items: SERVICE_TYPEAHEAD_ITEMS,
+        emptyText: 'No service found',
+        hiddenFields: {
+          category: '[data-provider-service-category]',
+          service: '[data-provider-service-name]'
+        },
+        onSelect: (item) => {
+          const serviceName = item.service || item.category || item.label;
+          const specialtyField = form.querySelector('[data-provider-service-name]');
+          if (specialtyField instanceof HTMLInputElement) specialtyField.value = serviceName;
+          if (serviceTitleField instanceof HTMLInputElement) serviceTitleField.value = serviceName;
+        }
+      });
 
       updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
       updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
@@ -4281,6 +4529,12 @@
           hasErrors = hasErrors || invalid;
         });
 
+        const selectedLocation = locationPicker.getSelection();
+        const selectedService = servicePicker.getSelection();
+        locationPicker.setInvalid(!selectedLocation);
+        servicePicker.setInvalid(!selectedService);
+        hasErrors = hasErrors || !selectedLocation || !selectedService;
+
         const languages = collectRows(form.querySelector('[data-language-list]'), '[data-repeater-row="language"]', (row) => {
           const name = String(row.querySelector('[data-language-name]')?.value || '').trim();
           const level = String(row.querySelector('[data-language-level]')?.value || '').trim();
@@ -4291,10 +4545,6 @@
           const level = String(row.querySelector('[data-skill-level]')?.value || '').trim();
           return name ? { name, level } : null;
         });
-
-        if (!languages.length || !skills.length || !providerMediaState.profileImageData || !providerMediaState.bannerImageData) {
-          hasErrors = true;
-        }
 
         if (hasErrors) {
           form.querySelector('.is-invalid, input[required], select[required], textarea[required]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4327,15 +4577,25 @@
 
         const formData = new FormData(form);
         const payload = Object.fromEntries(formData.entries());
+        const selectedServiceName = selectedService.service || selectedService.category || selectedService.label;
+        payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'WorkLinkUp Provider';
         payload.username = userDoc?.username || '';
-        payload.languages = languages;
-        payload.skills = skills;
-        payload.workExperience = workExperience;
-        payload.education = education;
-        payload.certifications = certifications;
-        payload.portfolioLinks = portfolioLinks;
-        payload.profileImageData = providerMediaState.profileImageData;
-        payload.bannerImageData = providerMediaState.bannerImageData;
+        payload.province = selectedLocation.province;
+        payload.city = selectedLocation.city;
+        payload.address = selectedLocation.area ? `${selectedLocation.area}, ${selectedLocation.city}` : selectedLocation.city;
+        payload.primaryCategory = selectedService.category;
+        payload.specialty = selectedServiceName;
+        payload.title = selectedServiceName;
+        payload.bio = String(payload.bio || existingProvider.bio || '').trim()
+          || `I provide ${selectedServiceName} services in ${payload.address}.`;
+        payload.languages = languages.length ? languages : existingProvider.languages;
+        payload.skills = skills.length ? skills : (existingProvider.skills.length ? existingProvider.skills : [{ name: selectedServiceName, level: 'Intermediate' }]);
+        payload.workExperience = workExperience.length ? workExperience : existingProvider.workExperience;
+        payload.education = education.length ? education : existingProvider.education;
+        payload.certifications = certifications.length ? certifications : existingProvider.certifications;
+        payload.portfolioLinks = portfolioLinks.length ? portfolioLinks : existingProvider.portfolioLinks;
+        payload.profileImageData = providerMediaState.profileImageData || getCategoryConfig(selectedService.category)?.image || '';
+        payload.bannerImageData = providerMediaState.bannerImageData || 'images/sections/findme.avif';
         payload.professionalDocuments = providerMediaState.professionalDocuments;
 
         if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, true);
