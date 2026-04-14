@@ -633,7 +633,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 6px;
-  border-radius: 18px;
+  border-radius: 4px;
   background: rgba(26, 50, 99, 0.06);
 }
 
@@ -641,7 +641,7 @@
   min-height: 42px;
   padding: 0 14px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 4px;
   background: transparent;
   color: #64748b;
   font-size: 14px;
@@ -11340,7 +11340,7 @@ header {
   width: 100%;
   min-height: 54px;
   border: none;
-  border-radius: 18px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -11355,29 +11355,17 @@ header {
   border: 1px solid #e5e7eb;
 }
 .google-mark {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .google-g {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  background: linear-gradient(90deg, #4285f4 0 28%, #34a853 28% 48%, #fbbc05 48% 68%, #ea4335 68% 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: Arial, sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 .account-email-toggle,
 .account-submit-btn,
@@ -11491,7 +11479,7 @@ header {
 .account-form-row input {
   width: 100%;
   border: 1px solid #dfe3ea;
-  border-radius: 16px;
+  border-radius: 4px;
   background: #fff;
   padding: 14px 16px;
   font-size: 15px;
@@ -11500,6 +11488,21 @@ header {
 .account-form-row input:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 4px rgba(45, 179, 74, 0.1);
+}
+
+.account-form-error {
+  padding: 11px 12px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 4px;
+  background: rgba(254, 242, 242, 0.96);
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.account-form-error[hidden] {
+  display: none !important;
 }
 .account-auth-switch-copy {
   margin-top: 18px;
@@ -17708,5 +17711,109 @@ body.home-page-body {
 .home-page-body .social-links a:hover {
   background: #111111;
   color: #ffffff;
+}
+
+.pending-setup-panel {
+  display: grid;
+}
+
+.pending-setup-frame {
+  min-width: 0;
+  min-height: 0;
+}
+
+body.account-embed-mode {
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+}
+
+.account-embed-mode .account-page,
+.account-embed-mode .account-setup-stage,
+.account-embed-mode .account-setup-shell {
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+.account-embed-mode .account-setup-shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.account-embed-mode .account-setup-split {
+  min-height: 100%;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.94fr);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+}
+
+.account-embed-mode .account-setup-split-visual,
+.account-embed-mode .account-setup-split-panel {
+  min-height: 0;
+  height: 100%;
+}
+
+.account-embed-mode .account-setup-split-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(32px, 5vw, 60px);
+  overflow-y: auto;
+}
+
+.account-embed-mode .account-setup-back-link {
+  align-self: flex-start;
+  margin-bottom: clamp(24px, 5vh, 48px);
+}
+
+.account-embed-mode .account-setup-content-block {
+  width: min(100%, 520px);
+  max-width: 520px;
+  margin-top: 0;
+}
+
+@media (max-width: 768px) {
+  body.account-embed-mode {
+    overflow: auto;
+  }
+
+  .account-embed-mode .account-page,
+  .account-embed-mode .account-setup-stage,
+  .account-embed-mode .account-setup-shell {
+    min-height: 100dvh;
+    height: auto;
+  }
+
+  .account-embed-mode .account-setup-split {
+    min-height: 100dvh;
+    height: auto;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .account-embed-mode .account-setup-split-visual {
+    display: none;
+  }
+
+  .account-embed-mode .account-setup-split-panel {
+    min-height: 100dvh;
+    height: auto;
+    justify-content: center;
+    padding: 24px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    overflow: visible;
+  }
+
+  .account-embed-mode .account-setup-back-link {
+    margin-bottom: 26px;
+  }
+
+  .account-embed-mode .account-setup-content-block {
+    width: 100%;
+    max-width: none;
+  }
 }
 /* EOF anchor */

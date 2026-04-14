@@ -1108,6 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPhoneVerify = document.querySelector('.account-phone-verify');
   const accountEmailFormWrap = document.querySelector('.account-email-form-wrap');
   const accountEmailForm = document.getElementById('account-email-form');
+  const accountFormError = document.querySelector('[data-account-form-error]');
   const accountEmailInput = document.getElementById('account-email');
   const accountIdentifierModeInput = document.getElementById('account-identifier-mode');
   const accountIdentifierSwitch = document.querySelector('[data-account-identifier-switch]');
@@ -1144,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountPageModeSwitch = document.querySelector('.account-page-mode-switch');
   const accountPageGoogleBtn = document.querySelector('.account-page-google-btn');
   const accountPageEmailForm = document.getElementById('account-page-email-form');
+  const accountPageFormError = document.querySelector('[data-account-page-form-error]');
   const accountPageNameRow = document.querySelector('.account-page-name-row');
   const accountPageNameInput = document.getElementById('account-page-name');
   const accountPageEmailInput = document.getElementById('account-page-email');
@@ -1211,6 +1213,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     return null;
+  }
+
+  function getAccountErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+    return String(error?.message || fallback).trim();
+  }
+
+  function setAccountFormError(target, message = '') {
+    if (!(target instanceof HTMLElement)) return;
+    const text = String(message || '').trim();
+    target.textContent = text;
+    target.hidden = !text;
+    target.classList.toggle('is-visible', Boolean(text));
+  }
+
+  function clearAccountFormError(target) {
+    setAccountFormError(target, '');
   }
 
   function setMethodVisibility(method) {
@@ -1335,6 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function syncAccountMode(mode) {
+    clearAccountFormError(accountFormError);
     if (!accountModeInput) return;
     accountModeInput.value = mode;
     const isSignup = mode === 'signup';
@@ -1361,6 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function syncAccountPageMode(mode) {
+    clearAccountFormError(accountPageFormError);
     if (!accountPageModeInput || isEmbeddedAccountPage) return;
     const isSignup = mode === 'signup';
     accountPageModeInput.value = mode;
@@ -1410,6 +1430,7 @@ document.addEventListener('DOMContentLoaded', () => {
           item.classList.toggle('is-active', item === button);
         });
         syncIdentifierField(input, label, hiddenInput.value, false);
+        clearAccountFormError(container.closest('#account-page-email-form') ? accountPageFormError : accountFormError);
         input?.focus();
       });
     });
@@ -2075,15 +2096,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountForgotPasswordBtn && accountEmailInput) {
     accountForgotPasswordBtn.addEventListener('click', async () => {
+      clearAccountFormError(accountFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
+      if (!authHelper || typeof authHelper.resetPassword !== 'function') {
+        setAccountFormError(accountFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       if (accountIdentifierModeInput?.value === 'username' && accountModeInput?.value !== 'signup') {
-        window.alert('Password reset works with email. Switch to Email first.');
+        setAccountFormError(accountFormError, 'Password reset works with email. Switch to Email first.');
         return;
       }
       const email = accountEmailInput.value.trim();
       if (!email) {
-        window.alert('Enter your email address first so we can send the reset link.');
+        setAccountFormError(accountFormError, 'Enter your email address first so we can send the reset link.');
         accountEmailInput.focus();
         return;
       }
@@ -2091,9 +2116,10 @@ document.addEventListener('DOMContentLoaded', () => {
       accountForgotPasswordBtn.disabled = true;
       try {
         await authHelper.resetPassword(email);
+        clearAccountFormError(accountFormError);
         showAccountSuccess('Password reset email sent');
       } catch (error) {
-        window.alert(error.message || 'Could not send reset email.');
+        setAccountFormError(accountFormError, getAccountErrorMessage(error, 'Could not send reset email.'));
       } finally {
         accountForgotPasswordBtn.disabled = false;
       }
@@ -2102,15 +2128,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!isEmbeddedAccountPage && accountPageForgotPasswordBtn && accountPageEmailInput) {
     accountPageForgotPasswordBtn.addEventListener('click', async () => {
+      clearAccountFormError(accountPageFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper || typeof authHelper.resetPassword !== 'function') return;
+      if (!authHelper || typeof authHelper.resetPassword !== 'function') {
+        setAccountFormError(accountPageFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       if (accountPageIdentifierModeInput?.value === 'username' && accountPageModeInput?.value !== 'signup') {
-        window.alert('Password reset works with email. Switch to Email first.');
+        setAccountFormError(accountPageFormError, 'Password reset works with email. Switch to Email first.');
         return;
       }
       const email = accountPageEmailInput.value.trim();
       if (!email) {
-        window.alert('Enter your email address first so we can send the reset link.');
+        setAccountFormError(accountPageFormError, 'Enter your email address first so we can send the reset link.');
         accountPageEmailInput.focus();
         return;
       }
@@ -2118,9 +2148,10 @@ document.addEventListener('DOMContentLoaded', () => {
       accountPageForgotPasswordBtn.disabled = true;
       try {
         await authHelper.resetPassword(email);
+        clearAccountFormError(accountPageFormError);
         showAccountSuccess('Password reset email sent');
       } catch (error) {
-        window.alert(error.message || 'Could not send reset email.');
+        setAccountFormError(accountPageFormError, getAccountErrorMessage(error, 'Could not send reset email.'));
       } finally {
         accountPageForgotPasswordBtn.disabled = false;
       }
@@ -2139,15 +2170,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountGoogleBtn) {
     accountGoogleBtn.addEventListener('click', async () => {
+      clearAccountFormError(accountFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       setButtonLoading(accountGoogleBtn, true);
       try {
         const result = await authHelper.signInWithGoogle();
         if (result?.redirected) return;
+        clearAccountFormError(accountFormError);
         finalizeAuthSuccess('Signed in successfully');
       } catch (error) {
-        window.alert(error.message || 'Google sign-in failed.');
+        setAccountFormError(accountFormError, getAccountErrorMessage(error, 'Google sign-in failed.'));
       } finally {
         setButtonLoading(accountGoogleBtn, false);
       }
@@ -2156,15 +2192,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!isEmbeddedAccountPage && accountPageGoogleBtn) {
     accountPageGoogleBtn.addEventListener('click', async () => {
+      clearAccountFormError(accountPageFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountPageFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       setButtonLoading(accountPageGoogleBtn, true);
       try {
         const result = await authHelper.signInWithGoogle();
         if (result?.redirected) return;
+        clearAccountFormError(accountPageFormError);
         finalizeAuthSuccess('Signed in successfully');
       } catch (error) {
-        window.alert(error.message || 'Google sign-in failed.');
+        setAccountFormError(accountPageFormError, getAccountErrorMessage(error, 'Google sign-in failed.'));
       } finally {
         setButtonLoading(accountPageGoogleBtn, false);
       }
@@ -2174,8 +2215,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (accountEmailForm && accountModeInput) {
     accountEmailForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      clearAccountFormError(accountFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       const formData = new FormData(accountEmailForm);
       const identifier = String(formData.get('identifier') || '').trim();
       const password = String(formData.get('password') || '');
@@ -2192,9 +2237,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ? authHelper.signInWithIdentifier(identifier, password, method)
             : authHelper.signInWithEmail(identifier, password));
         }
+        clearAccountFormError(accountFormError);
         finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
       } catch (error) {
-        window.alert(error.message || 'Email authentication failed.');
+        setAccountFormError(accountFormError, getAccountErrorMessage(error, 'Email authentication failed.'));
       } finally {
         setButtonLoading(accountSubmitBtn, false);
       }
@@ -2204,8 +2250,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!isEmbeddedAccountPage && accountPageEmailForm && accountPageModeInput) {
     accountPageEmailForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      clearAccountFormError(accountPageFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountPageFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       const formData = new FormData(accountPageEmailForm);
       const identifier = String(formData.get('identifier') || '').trim();
       const password = String(formData.get('password') || '');
@@ -2222,9 +2272,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ? authHelper.signInWithIdentifier(identifier, password, method)
             : authHelper.signInWithEmail(identifier, password));
         }
+        clearAccountFormError(accountPageFormError);
         finalizeAuthSuccess(isSignup ? 'Account created successfully' : 'Signed in successfully');
       } catch (error) {
-        window.alert(error.message || 'Email authentication failed.');
+        setAccountFormError(accountPageFormError, getAccountErrorMessage(error, 'Email authentication failed.'));
       } finally {
         setButtonLoading(accountPageSubmitBtn, false);
       }
@@ -2233,15 +2284,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountPhoneSubmit && accountPhoneInput) {
     accountPhoneSubmit.addEventListener('click', async () => {
+      clearAccountFormError(accountFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       setButtonLoading(accountPhoneSubmit, true);
       try {
         await authHelper.sendPhoneCode(accountPhoneInput.value.trim());
+        clearAccountFormError(accountFormError);
         if (accountCodeRow) accountCodeRow.hidden = false;
         if (accountPhoneVerify) accountPhoneVerify.hidden = false;
       } catch (error) {
-        window.alert(error.message || 'Could not send verification code.');
+        setAccountFormError(accountFormError, getAccountErrorMessage(error, 'Could not send verification code.'));
       } finally {
         setButtonLoading(accountPhoneSubmit, false);
       }
@@ -2250,14 +2306,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (accountPhoneVerify && accountPhoneCode) {
     accountPhoneVerify.addEventListener('click', async () => {
+      clearAccountFormError(accountFormError);
       const authHelper = await getAuthHelperReady();
-      if (!authHelper) return;
+      if (!authHelper) {
+        setAccountFormError(accountFormError, 'Authentication is still loading. Please try again.');
+        return;
+      }
       setButtonLoading(accountPhoneVerify, true);
       try {
         await authHelper.verifyPhoneCode(accountPhoneCode.value.trim());
+        clearAccountFormError(accountFormError);
         showAccountSuccess('Signed in successfully', () => window.location.reload());
       } catch (error) {
-        window.alert(error.message || 'Verification failed.');
+        setAccountFormError(accountFormError, getAccountErrorMessage(error, 'Verification failed.'));
       } finally {
         setButtonLoading(accountPhoneVerify, false);
       }

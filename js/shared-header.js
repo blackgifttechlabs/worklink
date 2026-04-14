@@ -537,6 +537,7 @@ function renderAccountPanel() {
           <div class="account-method-label">Sign In Options</div>
           <div class="account-email-form-wrap is-open">
             <form class="account-email-form" id="account-email-form">
+              <div class="account-form-error" data-account-form-error hidden></div>
               <div class="account-form-row account-name-row" hidden>
                 <label for="account-name">Full name</label>
                 <input id="account-name" name="name" type="text" placeholder="Tinashe Moyo" />
@@ -563,7 +564,14 @@ function renderAccountPanel() {
       </div>
       <div class="account-auth-secondary">
         <button type="button" class="account-auth-btn account-google-btn">
-          <span class="google-mark" aria-hidden="true"><span class="google-g">G</span></span>
+          <span class="google-mark" aria-hidden="true">
+            <svg class="google-g" viewBox="0 0 18 18" focusable="false">
+              <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z" />
+              <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.94v2.33A9 9 0 0 0 9 18Z" />
+              <path fill="#FBBC05" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
+              <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A8.63 8.63 0 0 0 9 0 9 9 0 0 0 .94 4.96l3.01 2.33C4.66 5.16 6.65 3.58 9 3.58Z" />
+            </svg>
+          </span>
           <span class="account-btn-label">Sign in with Google</span>
         </button>
         <p class="account-auth-switch-copy">
@@ -728,11 +736,11 @@ function injectSharedHeaderOverrides() {
     .account-inline-actions button,
     .account-google-btn,
     .account-search-result,
-    .account-auth-close { border-radius: 20px; }
-    .account-auth-method-card { border-radius: 20px; }
-    .account-form-row input { border-radius: 20px; }
+    .account-auth-close { border-radius: 4px; }
+    .account-auth-method-card { border-radius: 4px; }
+    .account-form-row input { border-radius: 4px; }
     .account-auth-btn,
-    .account-submit-btn { border-radius: 20px; }
+    .account-submit-btn { border-radius: 4px; }
     .account-form-inline-link { justify-self: start; border: none; background: transparent; padding: 0; color: #076fe5; font-size: 14px; font-weight: 700; }
     .account-auth-switch-copy { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; text-align: left; }
     .account-switch-label { color: #64748b; }
