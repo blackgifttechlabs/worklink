@@ -87,6 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
       .filter(Boolean);
   }
 
+  function normalizeProviderServiceLabels(values = []) {
+    if (!Array.isArray(values)) return [];
+    return values
+      .flatMap((entry) => [
+        String(entry?.service || entry?.specialty || entry?.name || '').trim(),
+        String(entry?.category || entry?.primaryCategory || '').trim()
+      ])
+      .filter(Boolean);
+  }
+
   function normalizeWorkExperienceLabels(values = []) {
     if (!Array.isArray(values)) return [];
     return values
@@ -112,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bio = String(provider.bio || '').trim();
         const providerPublicId = String(provider.providerPublicId || '').trim();
         const skills = normalizeSkillLabels(provider.skills);
+        const services = normalizeProviderServiceLabels(provider.services);
         const workExperience = normalizeWorkExperienceLabels(provider.workExperience);
         if (!displayName && !specialty && !city && !province) return null;
         return {
@@ -126,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
           address,
           bio,
           providerPublicId,
+          services,
           skills,
           workExperience,
           averageRating: Number(provider.averageRating || 0)
@@ -156,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getSearchProviderIcon(item = {}) {
-    const label = `${item.specialty} ${item.primaryCategory}`.toLowerCase();
+    const label = `${item.specialty} ${item.primaryCategory} ${(item.services || []).join(' ')}`.toLowerCase();
     if (label.includes('plumb')) return 'fa-solid fa-faucet-drip';
     if (label.includes('garden')) return 'fa-solid fa-seedling';
     if (label.includes('nail') || label.includes('hair') || label.includes('beauty')) return 'fa-solid fa-spa';
@@ -180,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
       item.specialty,
       item.title,
       item.primaryCategory,
+      item.services,
       item.city,
       item.province,
       item.address,
@@ -205,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bio = String(item.bio || '').toLowerCase();
     const providerPublicId = String(item.providerPublicId || '').toLowerCase();
     const skills = Array.isArray(item.skills) ? item.skills.map((value) => String(value || '').toLowerCase()) : [];
+    const services = Array.isArray(item.services) ? item.services.map((value) => String(value || '').toLowerCase()) : [];
     const workExperience = Array.isArray(item.workExperience) ? item.workExperience.map((value) => String(value || '').toLowerCase()) : [];
     const haystack = getSearchProviderText(item);
 
@@ -213,6 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (name.startsWith(query) || username.startsWith(query)) score += 84;
     if (specialty === query || title === query || category === query) score += 72;
     if (specialty.startsWith(query) || title.startsWith(query) || category.startsWith(query)) score += 46;
+    if (services.some((value) => value === query)) score += 74;
+    if (services.some((value) => value.startsWith(query))) score += 48;
+    if (services.some((value) => value.includes(query))) score += 26;
     if (skills.some((value) => value === query)) score += 66;
     if (skills.some((value) => value.startsWith(query))) score += 44;
     if (workExperience.some((value) => value.includes(query))) score += 34;

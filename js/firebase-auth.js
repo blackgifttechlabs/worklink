@@ -207,6 +207,31 @@ function normalizeObjectArray(values, mapper) {
     .filter(Boolean);
 }
 
+function normalizeProviderServices(values, fallback = {}) {
+  const source = Array.isArray(values) ? values : [];
+  const fallbackService = String(fallback.specialty || fallback.service || fallback.title || fallback.primaryCategory || '').trim();
+  const fallbackCategory = String(fallback.primaryCategory || fallback.category || '').trim();
+  const items = source.length ? source : (fallbackService ? [{ category: fallbackCategory, service: fallbackService }] : []);
+  const seen = new Set();
+  return items
+    .map((entry) => {
+      const rawService = typeof entry === 'string'
+        ? entry
+        : entry?.service || entry?.specialty || entry?.name || entry?.label || '';
+      const service = String(rawService || '').trim();
+      const category = String((typeof entry === 'string' ? '' : entry?.category || entry?.primaryCategory) || fallbackCategory || service).trim();
+      if (!service) return null;
+      return { category, service };
+    })
+    .filter((entry) => {
+      if (!entry) return false;
+      const key = `${slugifyIdentifier(entry.category)}_${slugifyIdentifier(entry.service)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 function getAccountPayload(user = auth.currentUser) {
   const stored = getStoredAccount();
   const name = stored?.name || fallbackNameFromUser(user);
@@ -1088,6 +1113,14 @@ async function saveProviderProfile(profileInput = {}) {
   const providerPublicId = existingUserDoc?.providerPublicId || await getOrCreateProviderPublicId(account.uid);
   const displayName = String(profileInput.fullName || existingProviderProfile?.displayName || account.name).trim() || account.name;
   const username = sanitizeUsername(profileInput.username || existingUserDoc?.username || account.username || '');
+  const services = normalizeProviderServices(profileInput.services || existingProviderProfile?.services || [], {
+    primaryCategory: profileInput.primaryCategory || existingProviderProfile?.primaryCategory || '',
+    specialty: profileInput.specialty || existingProviderProfile?.specialty || profileInput.title || existingProviderProfile?.title || ''
+  });
+  const primaryService = services[0] || {
+    category: String(profileInput.primaryCategory || existingProviderProfile?.primaryCategory || '').trim(),
+    service: String(profileInput.specialty || existingProviderProfile?.specialty || '').trim()
+  };
   const languages = normalizeObjectArray(
     profileInput.languages || existingProviderProfile?.languages || [],
     (entry) => {
@@ -1180,10 +1213,11 @@ async function saveProviderProfile(profileInput = {}) {
     province,
     provinceSlug,
     experience: String(profileInput.experience || '').trim(),
-    primaryCategory: String(profileInput.primaryCategory || '').trim(),
-    specialty: String(profileInput.specialty || '').trim(),
-    title: String(profileInput.title || existingProviderProfile?.title || '').trim(),
+    primaryCategory: String(profileInput.primaryCategory || primaryService.category || '').trim(),
+    specialty: String(profileInput.specialty || primaryService.service || '').trim(),
+    title: String(profileInput.title || existingProviderProfile?.title || primaryService.service || '').trim(),
     bio: String(profileInput.bio || '').trim(),
+    services,
     languages,
     skills,
     workExperience: workExperienceItems,
@@ -1223,6 +1257,7 @@ async function saveProviderProfile(profileInput = {}) {
     specialty: providerProfile.specialty,
     title: providerProfile.title,
     bio: providerProfile.bio,
+    services,
     languages,
     skills,
     portfolioLinks,

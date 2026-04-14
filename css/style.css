@@ -905,6 +905,10 @@
   gap: 16px;
 }
 
+.account-setup-field-span {
+  grid-column: 1 / -1;
+}
+
 .account-provider-minimal-fields {
   display: grid;
   gap: 16px;
@@ -984,6 +988,70 @@
   color: #6b7280;
   font-size: 13px;
   font-weight: 750;
+}
+
+.account-service-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 12px;
+  background: rgba(249, 250, 251, 0.92);
+}
+
+.account-service-chip-list.is-invalid {
+  border-color: rgba(220, 38, 38, 0.68);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
+}
+
+.account-service-chip,
+.account-service-chip-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 5px 8px 5px 10px;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.account-service-chip small {
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 10px;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-service-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-service-chip button {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.account-service-chip-empty {
+  background: transparent;
+  color: #6b7280;
+  padding-inline: 2px;
 }
 
 .account-provider-form textarea,
@@ -17814,6 +17882,398 @@ body.account-embed-mode {
   .account-embed-mode .account-setup-content-block {
     width: 100%;
     max-width: none;
+  }
+}
+
+/* Find specialists white / black / gold palette */
+body.specialists-page-body {
+  --green: #c9972e;
+  --green-dark: #111111;
+  --black: #111111;
+  --white: #ffffff;
+  --light-gray: #f7f5f0;
+  --mid-gray: #e6dfd0;
+  --text-dark: #111111;
+  --text-muted: #5f5f5f;
+  --brand-ink: #111111;
+  --brand-slate: #3f3f3f;
+  --brand-gold: #c9972e;
+  --brand-cream: #f5efe2;
+  --brand-cream-soft: #fbfaf7;
+  --brand-border: rgba(17, 17, 17, 0.12);
+  background:
+    radial-gradient(circle at 82% 8%, rgba(201, 151, 46, 0.16), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #fbfaf7 56%, #f6f0e3 100%);
+  color: #111111;
+}
+
+.specialists-page-body #site-header header,
+.specialists-page-body #site-header nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(17, 17, 17, 0.1);
+  box-shadow: 0 12px 28px rgba(17, 17, 17, 0.08);
+}
+
+.specialists-page-body .logo-work,
+.specialists-page-body .nav-link,
+.specialists-page-body .header-actions a,
+.specialists-page-body .mobile-search-trigger,
+.specialists-page-body .specialists-page-title,
+.specialists-page-body .specialists-sidebar h2,
+.specialists-page-body .specialists-results-head h3,
+.specialists-page-body .specialists-related-head h3,
+.specialists-page-body .specialist-card-fact strong,
+.specialists-page-body .specialists-suggested-card strong,
+.specialists-page-body .specialists-related-card strong {
+  color: #111111;
+}
+
+.specialists-page-body .logo-link,
+.specialists-page-body .nav-link:hover,
+.specialists-page-body .nav-link.promo,
+.specialists-page-body .header-actions a:hover,
+.specialists-page-body .mobile-search-trigger:hover,
+.specialists-page-body .search-match,
+.specialists-page-body .search-icon,
+.specialists-page-body .specialists-sidebar-label,
+.specialists-page-body .specialists-related-kicker,
+.specialists-page-body .specialists-suggested-all,
+.specialists-page-body .specialist-card-location i,
+.specialists-page-body .specialist-card-fact i {
+  color: #c9972e;
+}
+
+.specialists-page-body .nav-link::after,
+.specialists-page-body .cart-badge {
+  background: #c9972e;
+}
+
+.specialists-page-body .specialists-page {
+  background: transparent;
+}
+
+.specialists-page-body .specialists-sidebar,
+.specialists-page-body .specialist-card,
+.specialists-page-body .specialists-related-card,
+.specialists-page-body .specialists-suggested-card,
+.specialists-page-body .specialists-empty,
+.specialists-page-body .providers-mobile-sheet-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(17, 17, 17, 0.1);
+  box-shadow: 0 20px 42px rgba(17, 17, 17, 0.08);
+}
+
+.specialists-page-body .specialists-sidebar {
+  box-shadow: none;
+}
+
+.specialists-page-body .search-bar,
+.specialists-page-body .specialists-rating-chip,
+.specialists-page-body .specialists-sidebar-toggle,
+.specialists-page-body .worklinkup-rail-arrow,
+.specialists-page-body .sheet-close-btn,
+.specialists-page-body .specialists-rating-option {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(17, 17, 17, 0.12);
+  color: #111111;
+}
+
+.specialists-page-body .search-bar:focus-within {
+  border-color: rgba(201, 151, 46, 0.72);
+  box-shadow: 0 14px 30px rgba(201, 151, 46, 0.16);
+}
+
+.specialists-page-body .specialists-search-line .search-bar input,
+.specialists-page-body .search-bar input {
+  color: #111111;
+}
+
+.specialists-page-body .specialists-search-line .search-bar input::placeholder,
+.specialists-page-body .search-bar input::placeholder,
+.specialists-page-body .specialists-results-head p,
+.specialists-page-body .specialist-card-location,
+.specialists-page-body .specialist-card-fact,
+.specialists-page-body .specialist-card-bio,
+.specialists-page-body .specialists-related-card span,
+.specialists-page-body .specialists-suggested-meta,
+.specialists-page-body .specialists-suggested-place,
+.specialists-page-body .specialists-empty {
+  color: #5f5f5f;
+}
+
+.specialists-page-body .specialists-rating-chip.is-active,
+.specialists-page-body .specialists-filter-btn,
+.specialists-page-body .specialists-view-btn,
+.specialists-page-body .specialists-suggested-action,
+.specialists-page-body .homepage-categories-view-more,
+.specialists-page-body .specialists-rating-option.is-active,
+.specialists-page-body .service-filter-toggle.is-active .service-filter-toggle-icon {
+  background: #111111;
+  border-color: #111111;
+  color: #ffffff;
+}
+
+.specialists-page-body .provider-contact-btn,
+.specialists-page-body .whatsapp-btn {
+  background: #c9972e;
+  border-color: #c9972e;
+  color: #111111;
+}
+
+.specialists-page-body .provider-contact-btn:hover,
+.specialists-page-body .whatsapp-btn:hover,
+.specialists-page-body .specialists-view-btn:hover,
+.specialists-page-body .specialists-view-btn:focus-visible,
+.specialists-page-body .specialists-suggested-action:hover,
+.specialists-page-body .specialists-suggested-action:focus-visible,
+.specialists-page-body .homepage-categories-view-more:hover,
+.specialists-page-body .homepage-categories-view-more:focus-visible {
+  background: #c9972e;
+  border-color: #c9972e;
+  color: #111111;
+}
+
+.specialists-page-body .service-filter-group + .service-filter-group,
+.specialists-page-body .specialists-related-shell {
+  border-color: rgba(17, 17, 17, 0.1);
+}
+
+.specialists-page-body .service-filter-toggle,
+.specialists-page-body .service-filter-links button {
+  color: #111111;
+}
+
+.specialists-page-body .service-filter-toggle-icon,
+.specialists-page-body .provider-meta-chip {
+  background: rgba(201, 151, 46, 0.16);
+  color: #111111;
+}
+
+.specialists-page-body .service-filter-links button.is-active,
+.specialists-page-body .service-filter-links button:hover,
+.specialists-page-body .specialists-rating-option.is-active {
+  background: rgba(201, 151, 46, 0.18);
+  color: #111111;
+}
+
+.specialists-page-body .category-circle-img,
+.specialists-page-body .specialist-category-chip .category-circle-img,
+.specialists-page-body .specialists-suggested-avatar {
+  background: linear-gradient(180deg, #ffffff 0%, #fbf7ec 100%);
+  border-color: rgba(17, 17, 17, 0.1);
+  box-shadow: 0 12px 24px rgba(17, 17, 17, 0.08);
+}
+
+.specialists-page-body .category-circle-icon {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82) 34%, transparent 35%),
+    linear-gradient(180deg, #ffffff 0%, #fbf7ec 100%);
+  color: #111111;
+}
+
+.specialists-page-body .category-circle span,
+.specialists-page-body .specialist-category-chip span {
+  color: #111111;
+}
+
+.specialists-page-body .specialist-category-chip:hover span,
+.specialists-page-body .specialist-category-chip:focus-visible span {
+  color: #c9972e;
+}
+
+.specialists-page-body .specialist-card-avatar {
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 28px rgba(17, 17, 17, 0.22);
+}
+
+.specialists-page-body .specialist-card-rating {
+  background: rgba(201, 151, 46, 0.92);
+  color: #111111;
+}
+
+.specialists-page-body .specialist-card-availability-label {
+  color: #ffffff;
+}
+
+.specialists-page-body .specialist-card-skeleton {
+  border-color: rgba(17, 17, 17, 0.1);
+  background:
+    linear-gradient(90deg, rgba(230, 223, 208, 0.4) 25%, rgba(255, 255, 255, 0.96) 50%, rgba(230, 223, 208, 0.4) 75%);
+  background-size: 220% 100%;
+}
+
+.specialists-page-body .providers-mobile-sheet-backdrop {
+  background: rgba(17, 17, 17, 0.5);
+}
+
+.specialists-page-body .providers-mobile-sheet-handle {
+  background: rgba(17, 17, 17, 0.22);
+}
+
+.specialists-page-body footer {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  color: #5f5f5f;
+  border-top-color: rgba(17, 17, 17, 0.1);
+}
+
+.specialists-page-body .footer-col h4,
+.specialists-page-body .newsletter-col h4 {
+  color: #111111;
+}
+
+.specialists-page-body .footer-col ul li a,
+.specialists-page-body .newsletter-col p,
+.specialists-page-body .newsletter-col a,
+.specialists-page-body .footer-links a {
+  color: #5f5f5f !important;
+}
+
+.specialists-page-body .footer-col ul li a:hover,
+.specialists-page-body .footer-links a:hover,
+.specialists-page-body .newsletter-col a:hover {
+  color: #c9972e !important;
+}
+
+.specialists-page-body .email-form {
+  border-color: rgba(17, 17, 17, 0.12);
+  background: #ffffff;
+}
+
+.specialists-page-body .email-form input {
+  color: #111111;
+}
+
+.specialists-page-body .email-form button,
+.specialists-page-body .work-footer-highlight,
+.specialists-page-body .social-links a,
+.specialists-page-body .footer-admin-link {
+  background: rgba(201, 151, 46, 0.18);
+  color: #111111;
+}
+
+.specialists-page-body .social-links a:hover {
+  background: #111111;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .pending-setup-panel {
+    width: calc(100vw - 18px);
+    height: min(86dvh, 680px);
+    max-height: calc(100dvh - 18px);
+    margin: max(9px, 5dvh) auto 0;
+    border-radius: 18px;
+  }
+
+  .pending-setup-close {
+    top: 8px;
+    right: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 22px;
+  }
+
+  body.account-embed-mode {
+    overflow: hidden;
+  }
+
+  .account-embed-mode .account-page,
+  .account-embed-mode .account-setup-stage,
+  .account-embed-mode .account-setup-shell {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .account-embed-mode .account-setup-split {
+    min-height: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .account-embed-mode .account-setup-split-panel {
+    min-height: 0;
+    height: 100%;
+    justify-content: flex-start;
+    padding: 14px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .account-embed-mode .account-provider-setup-stage {
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .account-embed-mode .account-provider-grid,
+  .account-embed-mode .account-provider-minimal-fields,
+  .account-embed-mode .account-setup-field,
+  .account-embed-mode .account-typeahead-field {
+    min-width: 0;
+  }
+
+  .account-embed-mode .account-provider-section {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+
+  .account-embed-mode .account-provider-section-head {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .account-embed-mode .account-provider-section-head strong {
+    font-size: 17px;
+  }
+
+  .account-embed-mode .account-provider-section-head span,
+  .account-embed-mode .account-setup-field small {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .account-embed-mode .account-provider-form input,
+  .account-embed-mode .account-provider-form select,
+  .account-embed-mode .account-provider-form textarea,
+  .account-embed-mode .account-setup-field input,
+  .account-embed-mode .account-setup-field select,
+  .account-embed-mode .account-setup-field textarea {
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .account-embed-mode .account-typeahead-list {
+    max-height: min(208px, 42dvh);
+    border-radius: 12px;
+  }
+
+  .account-embed-mode .account-typeahead-option {
+    min-height: 34px;
+    padding: 6px 8px;
+  }
+
+  .account-embed-mode .account-service-chip-list {
+    min-height: 34px;
+    padding: 6px;
+  }
+
+  .account-embed-mode .account-service-chip,
+  .account-embed-mode .account-service-chip-empty {
+    min-height: 28px;
+    font-size: 11px;
+  }
+
+  .account-embed-mode .account-submit-btn {
+    min-height: 46px;
+    border-radius: 8px;
+  }
+
+  .account-embed-mode .account-provider-form-actions {
+    margin-top: 12px;
   }
 }
 /* EOF anchor */

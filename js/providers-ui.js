@@ -386,6 +386,72 @@
 
   const SERVICE_TYPEAHEAD_ITEMS = buildServiceTypeaheadItems();
 
+  function normalizeProviderServiceItem(item = {}) {
+    if (typeof item === 'string') {
+      const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, item);
+      return normalizeProviderServiceItem(exact || { service: item, label: item });
+    }
+
+    const rawService = String(item.service || item.specialty || item.name || item.label || item.category || '').trim();
+    const service = rawService || String(item.primaryCategory || '').trim();
+    if (!service) return null;
+    const category = String(item.category || item.primaryCategory || getCategoryBySubservice(service)?.label || service).trim();
+    return {
+      category,
+      service
+    };
+  }
+
+  function normalizeProviderServiceList(services = []) {
+    const source = Array.isArray(services) ? services : [];
+    const seen = new Set();
+    return source
+      .map((item) => normalizeProviderServiceItem(item))
+      .filter((item) => {
+        if (!item) return false;
+        const key = `${normalizeTypeaheadTerm(item.category)}_${normalizeTypeaheadTerm(item.service)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function getProviderServiceList(provider = {}, fallbackService = '') {
+    const explicitServices = normalizeProviderServiceList(provider.services || provider.serviceList || []);
+    if (explicitServices.length) return explicitServices;
+    return normalizeProviderServiceList([
+      {
+        category: provider.primaryCategory || '',
+        service: provider.specialty || provider.title || fallbackService || provider.primaryCategory || ''
+      }
+    ]);
+  }
+
+  function getServiceListLabel(providerOrServices = {}, limit = 3) {
+    const services = Array.isArray(providerOrServices)
+      ? normalizeProviderServiceList(providerOrServices)
+      : getProviderServiceList(providerOrServices);
+    if (!services.length) return '';
+    const labels = services.map((item) => item.service || item.category).filter(Boolean);
+    const visible = labels.slice(0, limit).join(', ');
+    return labels.length > limit ? `${visible} +${labels.length - limit} more` : visible;
+  }
+
+  function syncPrimaryServiceFields(form, services = []) {
+    if (!(form instanceof HTMLFormElement)) return;
+    const firstService = normalizeProviderServiceList(services)[0] || null;
+    const serviceName = firstService?.service || '';
+    const categoryName = firstService?.category || '';
+    const categoryField = form.querySelector('[data-provider-service-category]');
+    const specialtyField = form.querySelector('[data-provider-service-name]');
+    const titleField = form.querySelector('[data-provider-service-title]');
+    if (categoryField instanceof HTMLInputElement) categoryField.value = categoryName;
+    if (specialtyField instanceof HTMLInputElement) specialtyField.value = serviceName;
+    if (titleField instanceof HTMLInputElement) {
+      titleField.value = getServiceListLabel(services) || serviceName;
+    }
+  }
+
   function renderSetupTypeaheadList(host, items, emptyText = 'No matches found') {
     if (!(host instanceof HTMLElement)) return;
     host.innerHTML = items.length
@@ -485,6 +551,112 @@
     };
   }
 
+  function bindServiceMultiPicker({ input, list, chipHost, initialServices, emptyText = 'No service found', onChange }) {
+    if (!(input instanceof HTMLInputElement) || !(list instanceof HTMLElement) || !(chipHost instanceof HTMLElement)) {
+      return {
+        getSelections: () => [],
+        setInvalid: () => {}
+      };
+    }
+
+    let currentItems = [];
+    let selectedServices = normalizeProviderServiceList(initialServices);
+
+    function hideSuggestions() {
+      list.hidden = true;
+      list.classList.remove('is-open');
+    }
+
+    function showSuggestions(query = input.value) {
+      currentItems = getTypeaheadSuggestions(SERVICE_TYPEAHEAD_ITEMS, query, 26);
+      renderSetupTypeaheadList(list, currentItems, emptyText);
+      list.hidden = false;
+      list.classList.add('is-open');
+    }
+
+    function emitChange() {
+      if (typeof onChange === 'function') onChange(selectedServices.slice());
+    }
+
+    function renderChips() {
+      chipHost.innerHTML = selectedServices.length
+        ? selectedServices.map((item, index) => `
+          <span class="account-service-chip">
+            <span>${escapeHtml(item.service)}</span>
+            <small>${escapeHtml(item.category)}</small>
+            <button type="button" data-remove-service="${index}" aria-label="Remove ${escapeHtml(item.service)}"><i class="fa-solid fa-xmark"></i></button>
+          </span>
+        `).join('')
+        : '<span class="account-service-chip-empty">No services added yet.</span>';
+      chipHost.classList.toggle('is-empty', !selectedServices.length);
+      input.classList.toggle('is-valid', Boolean(selectedServices.length));
+    }
+
+    function addService(item) {
+      const normalized = normalizeProviderServiceItem(item);
+      if (!normalized) return;
+      selectedServices = normalizeProviderServiceList([...selectedServices, normalized]);
+      input.value = '';
+      input.classList.remove('is-invalid');
+      hideSuggestions();
+      renderChips();
+      emitChange();
+    }
+
+    input.addEventListener('focus', () => showSuggestions());
+    input.addEventListener('input', () => {
+      input.classList.remove('is-invalid');
+      showSuggestions();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, input.value);
+        const nextItem = exact || currentItems[0];
+        if (nextItem) {
+          event.preventDefault();
+          addService(nextItem);
+        }
+      }
+      if (event.key === 'Escape') hideSuggestions();
+    });
+    input.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, input.value);
+        if (exact) addService(exact);
+        else hideSuggestions();
+      }, 140);
+    });
+
+    list.addEventListener('pointerdown', (event) => {
+      const button = event.target.closest('[data-typeahead-index]');
+      if (!(button instanceof HTMLElement)) return;
+      event.preventDefault();
+      addService(currentItems[Number(button.getAttribute('data-typeahead-index') || -1)]);
+    });
+
+    chipHost.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-remove-service]');
+      if (!(button instanceof HTMLElement)) return;
+      const index = Number(button.getAttribute('data-remove-service') || -1);
+      if (index < 0) return;
+      selectedServices.splice(index, 1);
+      selectedServices = normalizeProviderServiceList(selectedServices);
+      renderChips();
+      emitChange();
+    });
+
+    renderChips();
+    emitChange();
+
+    return {
+      getSelections: () => selectedServices.slice(),
+      setInvalid: (invalid) => {
+        input.classList.toggle('is-invalid', Boolean(invalid));
+        chipHost.classList.toggle('is-invalid', Boolean(invalid));
+      }
+    };
+  }
+
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
     if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.jpg`;
@@ -503,21 +675,23 @@
   }
 
   function normalizeProvider(provider) {
+    const services = getProviderServiceList(provider);
     const provinceSlug = provider.provinceSlug || slugify(provider.province || 'harare');
-    const specialty = provider.specialty || 'Specialist';
-    const primaryCategory = provider.primaryCategory || getCategoryConfig('').label;
+    const specialty = provider.specialty || services[0]?.service || 'Specialist';
+    const primaryCategory = provider.primaryCategory || services[0]?.category || getCategoryConfig('').label;
     const city = provider.city || provider.address || provider.province || '';
     return {
       ...provider,
       provinceSlug,
       specialty,
       primaryCategory,
+      services,
       city,
       averageRating: Number(provider.averageRating || 4.7),
       reviewCount: Number(provider.reviewCount || 0),
       completedJobs: Number(provider.completedJobs || 0),
       bio: provider.bio || 'WorkLinkUp specialist ready to help.',
-      title: provider.title || specialty,
+      title: provider.title || getServiceListLabel(services) || specialty,
       languages: Array.isArray(provider.languages) ? provider.languages : [],
       skills: Array.isArray(provider.skills) ? provider.skills : [],
       workExperience: Array.isArray(provider.workExperience) ? provider.workExperience : [],
@@ -696,12 +870,14 @@
   function buildProviderSearchText(provider = {}) {
     const languages = Array.isArray(provider.languages) ? provider.languages.map((entry) => entry?.name || '').join(' ') : '';
     const skills = Array.isArray(provider.skills) ? provider.skills.map((entry) => entry?.name || '').join(' ') : '';
+    const services = getProviderServiceList(provider).flatMap((item) => [item.service, item.category]).join(' ');
     return [
       provider.displayName,
       provider.username,
       provider.title,
       provider.primaryCategory,
       provider.specialty,
+      services,
       provider.city,
       provider.province,
       provider.address,
@@ -720,6 +896,10 @@
     const title = String(provider.title || '').toLowerCase();
     const category = String(provider.primaryCategory || '').toLowerCase();
     const specialty = String(provider.specialty || '').toLowerCase();
+    const serviceTerms = getProviderServiceList(provider).flatMap((item) => [
+      String(item.service || '').toLowerCase(),
+      String(item.category || '').toLowerCase()
+    ]);
     const city = String(provider.city || '').toLowerCase();
     const province = String(provider.province || '').toLowerCase();
     const address = String(provider.address || '').toLowerCase();
@@ -731,6 +911,9 @@
     if (specialty === query || title === query) score += 75;
     if (specialty.startsWith(query) || title.startsWith(query)) score += 52;
     if (category === query) score += 48;
+    if (serviceTerms.some((value) => value === query)) score += 78;
+    if (serviceTerms.some((value) => value.startsWith(query))) score += 54;
+    if (serviceTerms.some((value) => value.includes(query))) score += 34;
     if (city === query || province === query) score += 46;
     if (address.includes(query)) score += 24;
     if (haystack.includes(query)) score += 18;
@@ -750,8 +933,10 @@
 
   function filterProviders(providers, state) {
     const filtered = providers.filter((provider) => {
-      const categoryMatch = !state.category || provider.primaryCategory === state.category;
-      const subserviceMatch = !state.subservice || String(provider.specialty || '').toLowerCase().includes(state.subservice.toLowerCase());
+      const providerServices = getProviderServiceList(provider);
+      const categoryMatch = !state.category || provider.primaryCategory === state.category || providerServices.some((item) => item.category === state.category);
+      const subserviceQuery = String(state.subservice || '').toLowerCase();
+      const subserviceMatch = !state.subservice || providerServices.some((item) => String(item.service || '').toLowerCase().includes(subserviceQuery));
       const ratingMatch = !state.rating || Number(provider.averageRating || 0) >= state.rating;
       const searchHaystack = buildProviderSearchText(provider);
       const searchMatch = !state.search || searchHaystack.includes(state.search.toLowerCase());
@@ -767,7 +952,9 @@
       return;
     }
 
-    host.innerHTML = providers.map((provider) => `
+    host.innerHTML = providers.map((provider) => {
+      const serviceLabel = getServiceListLabel(provider) || provider.specialty || provider.primaryCategory || 'Specialist';
+      return `
       <article class="specialist-card">
         <div class="specialist-card-banner" style="background-image: linear-gradient(180deg, rgba(12, 24, 48, 0.18) 0%, rgba(12, 24, 48, 0.82) 100%), url('${escapeHtml(resolveMediaSrc(provider.bannerImageData, 'images/sections/findme.avif'))}');">
           <div class="specialist-card-availability">
@@ -777,7 +964,7 @@
           <img class="specialist-card-avatar" src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)} profile image" />
           <div class="specialist-card-banner-copy">
             <h3>${escapeHtml(provider.displayName)}</h3>
-            <p>${escapeHtml(provider.specialty)}</p>
+            <p>${escapeHtml(serviceLabel)}</p>
           </div>
         </div>
         <div class="specialist-card-body">
@@ -788,7 +975,7 @@
           <div class="specialist-card-facts">
             <div class="specialist-card-fact">
               <i class="fa-solid fa-screwdriver-wrench"></i>
-              <span><strong>Service:</strong> ${escapeHtml(provider.primaryCategory)}</span>
+              <span><strong>Services:</strong> ${escapeHtml(serviceLabel)}</span>
             </div>
             <div class="specialist-card-fact">
               <i class="fa-regular fa-clock"></i>
@@ -808,7 +995,8 @@
           </div>
         </div>
       </article>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function buildFindMoreButtonMarkup(label = 'Find More') {
@@ -894,7 +1082,7 @@
         <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-card-link">
           <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
           <strong>${escapeHtml(provider.displayName)}</strong>
-          <span class="specialists-suggested-meta">${escapeHtml(provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
+          <span class="specialists-suggested-meta">${escapeHtml(getServiceListLabel(provider, 2) || provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
           <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on WorkLinkUp')}</span>
         </a>
         <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-action">View</a>
@@ -912,7 +1100,7 @@
       ...sortProvidersForSearch(
         allProviders.filter((provider) => {
           if (filteredProviders.some((item) => item.uid === provider.uid)) return false;
-          if (activeCategory && provider.primaryCategory === activeCategory) return true;
+          if (activeCategory && (provider.primaryCategory === activeCategory || getProviderServiceList(provider).some((item) => item.category === activeCategory))) return true;
           return activeQuery ? scoreProviderMatch(provider, activeQuery) > 0 : true;
         }),
         activeQuery
@@ -926,12 +1114,12 @@
 
   function buildSearchSuggestionLabel(provider = {}) {
     const city = provider.city || provider.province || '';
-    const service = provider.specialty || provider.title || provider.primaryCategory || 'Specialist';
+    const service = getServiceListLabel(provider, 2) || provider.specialty || provider.title || provider.primaryCategory || 'Specialist';
     return [provider.displayName, service, city].filter(Boolean).join(' • ');
   }
 
   function buildSearchResultQuery(provider = {}) {
-    const preferred = String(provider.specialty || provider.title || provider.primaryCategory || '').trim();
+    const preferred = String(getProviderServiceList(provider)[0]?.service || provider.specialty || provider.title || provider.primaryCategory || '').trim();
     if (preferred) return preferred;
     return String(provider.displayName || '').trim();
   }
@@ -2081,7 +2269,8 @@
       ]);
       if (!freshProvider) return;
 
-      const workLabel = [freshProvider.title || freshProvider.specialty, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
+      const serviceLabel = getServiceListLabel(freshProvider) || freshProvider.specialty || freshProvider.primaryCategory || 'Specialist';
+      const workLabel = [freshProvider.title || serviceLabel, freshProvider.primaryCategory].filter(Boolean).join(' • ') || 'Specialist';
       const locationLabel = freshProvider.address || [freshProvider.city, freshProvider.province].filter(Boolean).join(', ') || 'Location not shared';
       const phoneNumber = String(freshProvider.whatsappNumber || '').trim();
       const bannerSrc = resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.avif');
@@ -2392,6 +2581,7 @@
       bannerImageData: existingProvider.bannerImageData || '',
       professionalDocuments: Array.isArray(existingProvider.professionalDocuments) ? existingProvider.professionalDocuments.slice() : []
     };
+    const existingServices = getProviderServiceList(existingProvider, userDoc?.specialty || '');
 
     page.innerHTML = `
       <section class="edit-profile-shell">
@@ -2439,14 +2629,12 @@
                   <span>Address or service area</span>
                   <input type="text" name="address" required value="${escapeHtml(existingProvider.address || '')}" />
                 </label>
-                <label class="account-setup-field">
-                  <span>Main category</span>
-                  <select name="primaryCategory" required>${buildSelectOptions(SPECIALIST_CATEGORIES.map((category) => category.label), existingProvider.primaryCategory || '', 'Choose a category')}</select>
-                </label>
-                <label class="account-setup-field">
-                  <span>Specialty</span>
-                  <select name="specialty" data-account-specialty-select required>${buildSubserviceOptionsMarkup(existingProvider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', existingProvider.specialty || '', 'Choose a service')}</select>
-                  <small>Choose the exact service you offer from this category.</small>
+                <label class="account-setup-field account-typeahead-field account-setup-field-span">
+                  <span>Services</span>
+                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                  <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                  <div class="account-service-chip-list" data-provider-service-chips></div>
+                  <small>Add all services clients can hire you for. The first service is used as your main search category.</small>
                 </label>
                 <label class="account-setup-field">
                   <span>Experience</span>
@@ -2560,6 +2748,9 @@
             </section>
           </div>
 
+          <input type="hidden" name="primaryCategory" value="${escapeHtml(existingProvider.primaryCategory || '')}" data-provider-service-category />
+          <input type="hidden" name="specialty" value="${escapeHtml(existingProvider.specialty || '')}" data-provider-service-name />
+
           <div class="account-provider-form-actions edit-profile-form-actions">
             <button type="button" class="provider-profile-action secondary" data-edit-profile-cancel>Cancel</button>
             <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
@@ -2578,8 +2769,9 @@
     const profileInput = page.querySelector('[data-account-profile-file]');
     const bannerInput = page.querySelector('[data-account-banner-file]');
     const documentInput = page.querySelector('[data-account-document-files]');
-    const providerCategorySelect = form.querySelector('select[name="primaryCategory"]');
-    const providerSpecialtySelect = form.querySelector('[data-account-specialty-select]');
+    const serviceInput = form.querySelector('[data-provider-service-input]');
+    const serviceList = form.querySelector('[data-provider-service-list]');
+    const serviceChips = form.querySelector('[data-provider-service-chips]');
     const backBtn = page.querySelector('[data-edit-profile-back]');
     const cancelBtn = page.querySelector('[data-edit-profile-cancel]');
     const profileCard = page.querySelector('[data-edit-upload-card="profile"]');
@@ -2602,9 +2794,13 @@
     updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
     updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
 
-    providerCategorySelect?.addEventListener('change', () => {
-      if (!(providerCategorySelect instanceof HTMLSelectElement) || !(providerSpecialtySelect instanceof HTMLSelectElement)) return;
-      providerSpecialtySelect.innerHTML = buildSubserviceOptionsMarkup(providerCategorySelect.value, '', 'Choose a service');
+    const servicePicker = bindServiceMultiPicker({
+      input: serviceInput,
+      list: serviceList,
+      chipHost: serviceChips,
+      initialServices: existingServices,
+      emptyText: 'No service found',
+      onChange: (services) => syncPrimaryServiceFields(form, services)
     });
 
     function renderDocumentList() {
@@ -2718,6 +2914,10 @@
         hasErrors = hasErrors || invalid;
       });
 
+      const selectedServices = servicePicker.getSelections();
+      servicePicker.setInvalid(!selectedServices.length);
+      hasErrors = hasErrors || !selectedServices.length;
+
       const languages = collectRows(form.querySelector('[data-language-list]'), '[data-repeater-row="language"]', (row) => {
         const name = String(row.querySelector('[data-language-name]')?.value || '').trim();
         const level = String(row.querySelector('[data-language-level]')?.value || '').trim();
@@ -2764,7 +2964,12 @@
 
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
+      const primaryService = selectedServices[0];
       payload.username = userDoc?.username || '';
+      payload.services = selectedServices;
+      payload.primaryCategory = primaryService.category;
+      payload.specialty = primaryService.service || primaryService.category;
+      payload.title = String(payload.title || '').trim() || getServiceListLabel(selectedServices) || payload.specialty;
       payload.languages = languages;
       payload.skills = skills;
       payload.workExperience = workExperience;
@@ -3996,7 +4201,7 @@
       if (whatsappEl) whatsappEl.textContent = userDoc?.whatsappNumber || providerProfile?.whatsappNumber || 'Not set';
       if (experienceEl) experienceEl.textContent = userDoc?.experience || providerProfile?.experience || 'Not set';
       if (categoryEl) categoryEl.textContent = userDoc?.primaryCategory || providerProfile?.primaryCategory || 'Not set';
-      if (specialtyEl) specialtyEl.textContent = userDoc?.specialty || providerProfile?.specialty || 'Not set';
+      if (specialtyEl) specialtyEl.textContent = getServiceListLabel(providerProfile || userDoc) || userDoc?.specialty || providerProfile?.specialty || 'Not set';
     }
 
     function getSetupStep() {
@@ -4296,7 +4501,16 @@
         professionalDocuments: Array.isArray(existingProvider.professionalDocuments) ? existingProvider.professionalDocuments.slice() : []
       };
       const existingLocationValue = existingProvider.address || existingProvider.city || existingProvider.province || '';
-      const existingServiceValue = existingProvider.specialty || providerInviteService || existingProvider.primaryCategory || '';
+      const existingServices = (() => {
+        const savedServices = normalizeProviderServiceList(providerProfile?.services || []);
+        if (savedServices.length) return savedServices;
+        const fallbackService = providerInviteService || providerProfile?.specialty || userDoc?.specialty || '';
+        if (!fallbackService) return [];
+        return getProviderServiceList({
+          primaryCategory: providerProfile?.primaryCategory || existingProvider.primaryCategory || '',
+          specialty: fallbackService
+        });
+      })();
 
       setupBody.innerHTML = `
         <section class="account-provider-setup-stage">
@@ -4328,10 +4542,11 @@
                     <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
                   </label>
                   <label class="account-setup-field account-typeahead-field">
-                    <span>Service you provide</span>
-                    <input type="search" name="serviceSearch" required value="${escapeHtml(existingServiceValue)}" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                    <span>Services you provide</span>
+                    <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
                     <div class="account-typeahead-list" data-provider-service-list hidden></div>
-                    <small>Choose the closest service. You can edit more profile details later.</small>
+                    <div class="account-service-chip-list" data-provider-service-chips></div>
+                    <small>Add every service clients can hire you for. You can remove any service before saving.</small>
                   </label>
                 </div>
               </section>
@@ -4364,14 +4579,12 @@
       const profileInput = setupBody.querySelector('[data-account-profile-file]');
       const bannerInput = setupBody.querySelector('[data-account-banner-file]');
       const documentInput = setupBody.querySelector('[data-account-document-files]');
-      const providerCategorySelect = form.querySelector('select[name="primaryCategory"]');
-      const providerSpecialtySelect = form.querySelector('[data-account-specialty-select]');
       const locationInput = form.querySelector('[data-provider-location-input]');
       const locationList = form.querySelector('[data-provider-location-list]');
       const serviceInput = form.querySelector('[data-provider-service-input]');
       const serviceList = form.querySelector('[data-provider-service-list]');
+      const serviceChips = form.querySelector('[data-provider-service-chips]');
       const locationAddressField = form.querySelector('[data-provider-location-address]');
-      const serviceTitleField = form.querySelector('[data-provider-service-title]');
 
       const locationPicker = bindSetupTypeahead({
         input: locationInput,
@@ -4389,30 +4602,17 @@
         }
       });
 
-      const servicePicker = bindSetupTypeahead({
+      const servicePicker = bindServiceMultiPicker({
         input: serviceInput,
         list: serviceList,
-        items: SERVICE_TYPEAHEAD_ITEMS,
+        chipHost: serviceChips,
+        initialServices: existingServices,
         emptyText: 'No service found',
-        hiddenFields: {
-          category: '[data-provider-service-category]',
-          service: '[data-provider-service-name]'
-        },
-        onSelect: (item) => {
-          const serviceName = item.service || item.category || item.label;
-          const specialtyField = form.querySelector('[data-provider-service-name]');
-          if (specialtyField instanceof HTMLInputElement) specialtyField.value = serviceName;
-          if (serviceTitleField instanceof HTMLInputElement) serviceTitleField.value = serviceName;
-        }
+        onChange: (services) => syncPrimaryServiceFields(form, services)
       });
 
       updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');
       updateUploadPreview(bannerPreview, providerMediaState.bannerImageData, 'banner');
-
-      providerCategorySelect?.addEventListener('change', () => {
-        if (!(providerCategorySelect instanceof HTMLSelectElement) || !(providerSpecialtySelect instanceof HTMLSelectElement)) return;
-        providerSpecialtySelect.innerHTML = buildSubserviceOptionsMarkup(providerCategorySelect.value, '', 'Choose a service');
-      });
 
       function renderDocumentList() {
         if (!(documentList instanceof HTMLElement)) return;
@@ -4530,10 +4730,10 @@
         });
 
         const selectedLocation = locationPicker.getSelection();
-        const selectedService = servicePicker.getSelection();
+        const selectedServices = servicePicker.getSelections();
         locationPicker.setInvalid(!selectedLocation);
-        servicePicker.setInvalid(!selectedService);
-        hasErrors = hasErrors || !selectedLocation || !selectedService;
+        servicePicker.setInvalid(!selectedServices.length);
+        hasErrors = hasErrors || !selectedLocation || !selectedServices.length;
 
         const languages = collectRows(form.querySelector('[data-language-list]'), '[data-repeater-row="language"]', (row) => {
           const name = String(row.querySelector('[data-language-name]')?.value || '').trim();
@@ -4577,15 +4777,17 @@
 
         const formData = new FormData(form);
         const payload = Object.fromEntries(formData.entries());
-        const selectedServiceName = selectedService.service || selectedService.category || selectedService.label;
+        const primaryService = selectedServices[0];
+        const selectedServiceName = primaryService.service || primaryService.category;
         payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'WorkLinkUp Provider';
         payload.username = userDoc?.username || '';
         payload.province = selectedLocation.province;
         payload.city = selectedLocation.city;
         payload.address = selectedLocation.area ? `${selectedLocation.area}, ${selectedLocation.city}` : selectedLocation.city;
-        payload.primaryCategory = selectedService.category;
+        payload.services = selectedServices;
+        payload.primaryCategory = primaryService.category;
         payload.specialty = selectedServiceName;
-        payload.title = selectedServiceName;
+        payload.title = getServiceListLabel(selectedServices) || selectedServiceName;
         payload.bio = String(payload.bio || existingProvider.bio || '').trim()
           || `I provide ${selectedServiceName} services in ${payload.address}.`;
         payload.languages = languages.length ? languages : existingProvider.languages;
@@ -4594,7 +4796,7 @@
         payload.education = education.length ? education : existingProvider.education;
         payload.certifications = certifications.length ? certifications : existingProvider.certifications;
         payload.portfolioLinks = portfolioLinks.length ? portfolioLinks : existingProvider.portfolioLinks;
-        payload.profileImageData = providerMediaState.profileImageData || getCategoryConfig(selectedService.category)?.image || '';
+        payload.profileImageData = providerMediaState.profileImageData || getCategoryConfig(primaryService.category)?.image || '';
         payload.bannerImageData = providerMediaState.bannerImageData || 'images/sections/findme.avif';
         payload.professionalDocuments = providerMediaState.professionalDocuments;
 
