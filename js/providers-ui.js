@@ -4966,10 +4966,14 @@
         if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, true);
         try {
           await authHelper.saveProviderProfile(payload);
+          showSuccessToast('Profile completed successfully!');
           await refreshState();
           window.history.replaceState({}, '', `${window.location.pathname}`);
-          await renderCurrentStep();
+          // redirect to provider profile page instead of rendering setup again
+          const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
+          window.location.href = `${getBase}pages/provider-profile.html`;
         } catch (error) {
+          console.error('Provider profile save error:', error);
           window.alert(error.message || 'Could not save your provider profile.');
         } finally {
           if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, false);
