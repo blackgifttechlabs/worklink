@@ -1755,6 +1755,16 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
           }, { merge: true }).catch(() => {});
         }
       }
+
+      // notify UI to refresh badges and message/job counts
+      try {
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+          window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
+        }
+      } catch (e) {
+        // ignore
+      }
     }
   }
 

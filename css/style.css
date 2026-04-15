@@ -519,6 +519,105 @@
   .job-dashboard-summary { padding: 10px; }
 }
 
+/* Messages: job action floating button and review modal */
+.messages-job-action-host {
+  position: relative;
+  margin: 8px 16px 0 16px;
+  display: flex;
+  justify-content: center;
+}
+.messages-job-action-btn {
+  background: linear-gradient(90deg,#111,#111);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  cursor: pointer;
+}
+.messages-job-action-btn:disabled { opacity: 0.6; cursor: default; }
+
+.job-review-modal-shell {
+  position: fixed;
+  inset: 0;
+  background: rgba(12,18,34,0.46);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+  padding: 18px;
+}
+.job-review-modal-panel {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 20px 40px rgba(15,23,42,0.12);
+}
+.job-review-head { display: flex; gap: 12px; align-items: center; }
+.job-review-provider-icon img, .job-review-provider-icon span { width: 52px; height: 52px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+.job-review-stars { display: flex; gap: 6px; margin: 12px 0; }
+.job-review-stars .star { background: transparent; border: 0; font-size: 22px; color: #d1d5db; cursor: pointer; }
+.job-review-stars .star.is-selected { color: #f59e0b; }
+.job-review-body textarea { width: 100%; min-height: 110px; padding: 10px; border: 1px solid rgba(17,17,17,0.06); border-radius: 8px; resize: vertical; }
+.job-review-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+@media (max-width: 640px) {
+  .messages-job-action-host { margin: 6px 8px 0 8px; }
+  .messages-job-action-btn { width: 100%; padding: 12px; border-radius: 10px; }
+  .job-review-modal-panel { width: 100%; height: auto; margin: 0; border-radius: 8px; }
+}
+
+/* Messages: floating job action and review modal */
+.messages-job-action-host {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 6px 0;
+}
+.messages-job-action-btn {
+  background: linear-gradient(90deg,#111,#111);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.12);
+  cursor: pointer;
+}
+.messages-job-action-btn:disabled { opacity: 0.6; cursor: default; }
+
+.job-review-modal-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11,14,20,0.5);
+  z-index: 2600;
+}
+.job-review-modal-panel {
+  width: min(560px, 96%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 18px 48px rgba(15,23,42,0.18);
+}
+.job-review-head { display:flex; gap:12px; align-items:center; }
+.job-review-provider-icon img, .job-review-provider-icon span { width:48px; height:48px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; background:#f4f4f4; }
+.job-review-stars { display:flex; gap:6px; margin:12px 0; }
+.job-review-stars .star { background:transparent; border:none; font-size:22px; color:#ddd; cursor:pointer; }
+.job-review-stars .star.is-selected { color:#f6b93b; }
+.job-review-body textarea { width:100%; min-height:100px; border-radius:8px; padding:10px; border:1px solid rgba(17,17,17,0.06); }
+.job-review-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+
+@media (max-width:640px) {
+  .messages-job-action-host { padding:6px; }
+  .messages-job-action-btn { width:92%; padding:12px; border-radius:10px; }
+  .job-review-modal-panel { width: 96%; padding:12px; }
+}
+
 .account-page {
   max-width: none;
   margin: 0;
@@ -3139,6 +3238,47 @@ nav {
     width: 100%;
   }
 
+
+/* Previous jobs reveal animation */
+.previous-job-details {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 360ms ease, opacity 260ms ease, transform 260ms ease;
+}
+.previous-job-card.is-expanded .previous-job-details {
+  max-height: 800px; /* allow enough room for details */
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 420ms ease, opacity 320ms ease, transform 320ms ease;
+}
+.previous-job-details h4 {
+  margin: 0.4rem 0 0.2rem 0;
+}
+.previous-provider {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.previous-provider .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 48px;
+}
+.previous-provider .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.previous-review {
+  margin-top: 0.5rem;
+  padding: 0.6rem;
+  border-left: 3px solid #D4AF37;
+  background: rgba(0,0,0,0.03);
+}
   .admin-refresh-btn,
   .admin-lock-btn {
     flex: 1 1 0;

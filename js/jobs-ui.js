@@ -1601,8 +1601,9 @@
       ...bid,
       job: await authHelper.getJobPost(bid.jobId).catch(() => null)
     })));
-    let activeTab = new URLSearchParams(window.location.search).get('tab') === 'bids'
-      ? 'bids'
+    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    let activeTab = (requestedTab === 'bids' || requestedTab === 'previous')
+      ? requestedTab
       : (!jobsWithApplications.length && placedBidsWithJobs.length ? 'bids' : 'jobs');
 
     function renderDashboard(currentProfile, currentJobs, currentPlacedBids) {
@@ -1635,6 +1636,151 @@
           : 0
       ), 0);
       const placedBidCount = currentPlacedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length;
+      const completedJobs = currentJobs.filter((job) => Boolean(job.completedAtMs || (Array.isArray(job.applications) && job.applications.some((a) => Boolean(a.completedAtMs)))));
+      const previousCount = completedJobs.length;
+
+      // build tab content for the active tab so we can keep template readable
+      function buildPreviousJobsContent() {
+        if (!completedJobs.length) return `
+          <div class="specialists-empty">
+            <div>
+              <h2>No previous jobs</h2>
+              <p>Completed jobs will show here when you or a provider finish work.</p>
+            </div>
+          </div>
+        `;
+
+        return completedJobs.map((job) => {
+          const acceptedApp = Array.isArray(job.applications) ? job.applications.find((a) => a.status === 'accepted' || Boolean(a.completedAtMs)) : null;
+          const completedAt = Number(job.completedAtMs || acceptedApp?.completedAtMs || 0);
+          const inProgressAt = Number(acceptedApp?.inProgressAtMs || job.inProgressAtMs || 0);
+          const durationMs = completedAt && inProgressAt ? Math.max(0, completedAt - inProgressAt) : 0;
+          const rating = acceptedApp?.review?.rating || acceptedApp?.rating || null;
+          const comment = acceptedApp?.review?.comment || '';
+
+          return `
+            <article class="job-owner-card previous-job-card" data-previous-job-id="${escapeHtml(job.id)}">
+              <div class="job-owner-card-head">
+                <div>
+                  <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                  ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                  <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+                </div>
+                <div>
+                  <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+                </div>
+              </div>
+              <p>${escapeHtml(job.description)}</p>
+              <div class="job-card-meta">
+                <span><i class="fa-regular fa-clock"></i>${completedAt ? escapeHtml(formatShortDate(completedAt)) : 'Completed'}</span>
+                ${durationMs ? `<span><i class="fa-regular fa-hourglass-half"></i>${Math.round(durationMs/60000)} min</span>` : ''}
+                ${rating ? `<span><i class="fa-solid fa-star"></i> ${escapeHtml(String(rating))}</span>` : ''}
+              </div>
+              <div class="previous-job-summary">
+                <div class="previous-job-actions">
+                  <button type="button" class="btn-secondary" data-previous-toggle="${escapeHtml(job.id)}">View details</button>
+                </div>
+              </div>
+              <div class="previous-job-details" hidden>
+                <h4>Accepted Provider</h4>
+                ${acceptedApp ? `
+                  <div class="previous-provider">
+                    <div class="avatar">${acceptedApp.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(acceptedApp.bidderProfileImageData))}" alt="${escapeHtml(acceptedApp.bidderName)}" />` : `<span>${escapeHtml((acceptedApp.bidderName || 'WL').slice(0,2).toUpperCase())}</span>`}</div>
+                    <div>
+                      <strong>${escapeHtml(acceptedApp.bidderName || 'Provider')}</strong>
+                      <p>${escapeHtml(acceptedApp.bidderMessage || '')}</p>
+                    </div>
+                  </div>
+                  <h4>Review</h4>
+                  ${rating ? `<div class="previous-review"><strong>Rating:</strong> ${escapeHtml(String(rating))}${comment ? `<p>${escapeHtml(comment)}</p>` : ''}</div>` : `<div class="previous-review"><em>No review recorded</em></div>`}
+                ` : `<div><em>No accepted application found for this job.</em></div>`}
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      const tabContent = activeTab === 'jobs'
+        ? (currentJobs.length ? currentJobs.map((job) => `
+              <article class="job-owner-card">
+                <div class="job-owner-card-head">
+                  <div>
+                    <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                    ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                    <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+                  </div>
+                  <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+                </div>
+                <p>${escapeHtml(job.description)}</p>
+                <div class="job-card-meta">
+                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+                  <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+                  <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+                </div>
+                <div class="job-owner-applications">
+                  ${job.applications.length ? job.applications.map((application) => `
+                    <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+                      <div class="job-bidder-main">
+                        <div class="job-bidder-avatar">
+                          ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+                        </div>
+                        <div>
+                          <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+                          <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+                          <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+                        </div>
+                      </div>
+                      <div class="job-bidder-side">
+                        <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+                        <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+                        <div class="job-bidder-actions">
+                          ${application.status === 'accepted' ? `
+                            <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+                          ` : `
+                            <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+                          `}
+                          ${application.status !== 'rejected' ? `
+                            <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+                          ` : ''}
+                        </div>
+                      </div>
+                    </article>
+                  `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+                </div>
+              </article>
+            `).join('') : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+              <article class="job-owner-card job-placed-bid-card">
+                <div class="job-owner-card-head">
+                  <div>
+                    <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+                    ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+                    <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+                  </div>
+                  <div class="job-placed-bid-side">
+                    <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+                    <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+                  </div>
+                </div>
+                <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+                <div class="job-card-meta">
+                  <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+                  <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+                  <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+                </div>
+                <div class="job-card-actions">
+                  ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+                  <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+                </div>
+              </article>
+            `).join('') : `
+              <div class="specialists-empty">
+                <div>
+                  <h2>No bids placed yet</h2>
+                  <p>When you bid on a job, it will show here with its current status.</p>
+                </div>
+              </div>
+            `));
+
       page.innerHTML = `
         <section class="job-page-shell">
           <section class="job-giver-dashboard">
@@ -1691,11 +1837,16 @@
                 <span>Jobs I Posted</span>
                 ${receivedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${receivedBidCount}</span>` : ''}
               </button>
+              <button type="button" class="${activeTab === 'previous' ? 'is-active' : ''}" data-job-dashboard-tab="previous">
+                <span>Previous Jobs</span>
+                ${previousCount > 0 ? `<span class="job-dashboard-tab-badge">${previousCount}</span>` : ''}
+              </button>
               <button type="button" class="${activeTab === 'bids' ? 'is-active' : ''}" data-job-dashboard-tab="bids">
                 <span>Bids I Placed</span>
                 ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
               </button>
             </div>
+
             ${activeTab === 'jobs' ? (currentJobs.length ? currentJobs.map((job) => `
               <article class="job-owner-card">
                 <div class="job-owner-card-head">
@@ -1788,7 +1939,8 @@
 
       page.querySelectorAll('[data-job-dashboard-tab]').forEach((button) => {
         button.addEventListener('click', () => {
-          activeTab = button.getAttribute('data-job-dashboard-tab') === 'bids' ? 'bids' : 'jobs';
+          const tab = button.getAttribute('data-job-dashboard-tab') || 'jobs';
+          activeTab = tab;
           const nextUrl = new URL(window.location.href);
           nextUrl.searchParams.set('tab', activeTab);
           window.history.replaceState({}, '', nextUrl.toString());
@@ -1823,6 +1975,38 @@
           }
         });
       });
+
+      // previous job expand/collapse toggles
+      page.querySelectorAll('[data-previous-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const card = btn.closest('.previous-job-card');
+          if (!card) return;
+          const details = card.querySelector('.previous-job-details');
+          if (!details) return;
+          const isHidden = details.hasAttribute('hidden');
+          if (isHidden) {
+            details.removeAttribute('hidden');
+            btn.textContent = 'Hide details';
+            card.classList.add('is-expanded');
+          } else {
+            details.setAttribute('hidden', '');
+            btn.textContent = 'View details';
+            card.classList.remove('is-expanded');
+          }
+        });
+      });
+
+      // if user selected the Previous tab, replace listing with previous jobs content
+      if (activeTab === 'previous') {
+        const dashboard = page.querySelector('.job-giver-dashboard');
+        if (dashboard) {
+          dashboard.querySelectorAll('.job-owner-card, .specialists-empty, .job-placed-bid-card').forEach((n) => n.remove());
+          const host = document.createElement('div');
+          host.className = 'previous-jobs-host';
+          host.innerHTML = buildPreviousJobsContent();
+          dashboard.appendChild(host);
+        }
+      }
     }
 
     function openEditModal(modal, currentProfile) {

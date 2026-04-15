@@ -3891,6 +3891,8 @@
       if (typeof authHelper.subscribeMessagesWithUser === 'function') {
         unsubscribeMessages = await authHelper.subscribeMessagesWithUser(state.activePeerUid, (messages) => {
           renderThreadMessages(messages);
+          // update job action button when thread changes
+          updateJobActionButton().catch(() => {});
           const hasUnreadIncoming = messages.some((message) => (
             message.toUid === account.uid && !Number(message.viewedAtMs || 0)
           ));
@@ -3904,9 +3906,140 @@
         window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
         const messages = await authHelper.listMessagesWithUser(state.activePeerUid);
         renderThreadMessages(messages);
+        updateJobActionButton().catch(() => {});
       }
 
       scrollThreadToBottom(true);
+    }
+
+    async function ensureJobActionHost() {
+      const hostSelector = '.messages-job-action-host';
+      let host = page.querySelector(hostSelector);
+      if (!host) {
+        host = document.createElement('div');
+        host.className = 'messages-job-action-host';
+        // insert host above composer
+        const composeEl = page.querySelector('.messages-thread-compose');
+        if (composeEl && composeEl.parentNode) composeEl.parentNode.insertBefore(host, composeEl);
+        else page.appendChild(host);
+      }
+      return host;
+    }
+
+    async function updateJobActionButton() {
+      try {
+        const host = await ensureJobActionHost();
+        host.innerHTML = '';
+        if (!state.activePeerUid) return;
+        const activeJob = await authHelper.findActiveJobBetweenUsers(account.uid, state.activePeerUid).catch(() => null);
+        if (!activeJob) return;
+        const jobId = activeJob.jobId;
+        const applicationId = activeJob.applicationId;
+        const application = activeJob.application || {};
+        const inProgress = Boolean(application.inProgressAtMs || (activeJob.job && activeJob.job.inProgressAtMs));
+        const completed = Boolean(application.completedAtMs || (activeJob.job && activeJob.job.completedAtMs));
+
+        if (completed) return; // nothing to show
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'messages-job-action-btn';
+        btn.textContent = inProgress ? 'Mark job as finished' : 'Mark job as started';
+        host.appendChild(btn);
+
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            if (!inProgress) {
+              await authHelper.markJobStarted(jobId, applicationId);
+              showSuccessToast('Job started');
+            } else {
+              // open review modal to finish and rate
+              openJobReviewModal(activeJob.job, activeJob.application);
+            }
+            // refresh messages & dashboard
+            await refreshMessages();
+            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+            window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+          } catch (error) {
+            window.alert(error.message || 'Could not update job state.');
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function openJobReviewModal(job, application) {
+      try {
+        const existing = document.querySelector('.job-review-modal-shell');
+        if (existing) existing.remove();
+        const shell = document.createElement('div');
+        shell.className = 'job-review-modal-shell';
+        shell.innerHTML = `
+          <div class="job-review-modal-panel" role="dialog" aria-modal="true">
+            <button type="button" class="job-modal-close" data-job-review-close><i class="fa-solid fa-xmark"></i></button>
+            <div class="job-review-head">
+              <div class="job-review-provider-icon">${getProfileImageMarkup(application.bidderProfile || {}, application.bidderName || '')}</div>
+              <div>
+                <strong>${escapeHtml(application.bidderName || application.bidderUid || 'Provider')}</strong>
+                <div class="job-review-meta"><span>${escapeHtml(job.subcategory || job.category || '')}</span></div>
+              </div>
+            </div>
+            <div class="job-review-body">
+              <div class="job-review-stars" data-job-review-stars>
+                ${[1,2,3,4,5].map((s)=>`<button type="button" class="star" data-star="${s}">&#9733;</button>`).join('')}
+              </div>
+              <textarea placeholder="Write a short review" data-job-review-comment></textarea>
+              <div class="job-review-footer">
+                <button type="button" class="btn-secondary fleece-secondary" data-job-review-close>Cancel</button>
+                <button type="button" class="btn-primary" data-job-review-submit>Complete</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(shell);
+        document.body.classList.add('job-modal-open');
+
+        const closeButtons = shell.querySelectorAll('[data-job-review-close]');
+        closeButtons.forEach((b) => b.addEventListener('click', () => {
+          shell.remove();
+          document.body.classList.remove('job-modal-open');
+        }));
+
+        let selectedRating = 0;
+        shell.querySelectorAll('[data-star]').forEach((starBtn) => {
+          starBtn.addEventListener('click', () => {
+            selectedRating = Number(starBtn.getAttribute('data-star') || 0);
+            shell.querySelectorAll('[data-star]').forEach((s)=> s.classList.toggle('is-selected', Number(s.getAttribute('data-star')) <= selectedRating));
+          });
+        });
+
+        shell.querySelector('[data-job-review-submit]').addEventListener('click', async () => {
+          const comment = (shell.querySelector('[data-job-review-comment]')?.value || '').trim();
+          if (!selectedRating) {
+            window.alert('Please choose a rating.');
+            return;
+          }
+          try {
+            await authHelper.markJobCompleted(job.id || job.jobId || '', application.id || application.applicationId || '');
+            // attach review separately if supported
+            await authHelper.markJobCompleted(job.id || job.jobId || '', application.id || application.applicationId || '', { rating: selectedRating, comment });
+            showSuccessToast('Thanks — review saved');
+            shell.remove();
+            document.body.classList.remove('job-modal-open');
+            await refreshMessages();
+            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+            window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+          } catch (err) {
+            window.alert(err.message || 'Could not save review.');
+          }
+        });
+      } catch (err) {
+        // ignore
+      }
     }
 
     async function refreshInboxAfterAuthSync() {
