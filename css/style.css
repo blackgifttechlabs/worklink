@@ -4365,7 +4365,9 @@ body.home-page-body {
   color: #111111;
   font-size: 15px;
   font-weight: 900;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 
 .home-all-categories-link:hover,
@@ -15830,8 +15832,9 @@ body.home-page-body {
 
 .home-stream-category-panel .category-circles {
   display: block;
-  width: 100%;
-  min-width: 0;
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
   animation: none;
   will-change: auto;
 }
@@ -16090,13 +16093,24 @@ body.home-page-body {
     padding: 0;
   }
 
+  .home-all-categories-link {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.2;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+  }
+
   .home-stream-category-panel .homepage-categories-track-wrap {
     overflow-x: hidden;
+    touch-action: pan-y;
   }
 
   .home-stream-category-panel .category-circles,
   .home-trending-jobs-track {
     justify-content: flex-start;
+    width: 100%;
+    min-width: 0;
     padding-right: 0;
     padding-left: 0;
   }
@@ -16118,7 +16132,7 @@ body.home-page-body {
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    touch-action: pan-x;
+    touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -16148,6 +16162,14 @@ body.home-page-body {
 
   .home-trending-jobs-track {
     animation-name: home-marquee-left;
+  }
+
+  .homepage-categories-track-wrap:hover .home-category-desktop-row,
+  .homepage-categories-track-wrap:focus-within .home-category-desktop-row,
+  .homepage-categories-track-wrap:hover .home-mobile-category-row,
+  .homepage-categories-track-wrap:focus-within .home-mobile-category-row,
+  .home-mobile-category-row-shell:active .home-mobile-category-row {
+    animation-play-state: running;
   }
 
   .home-trending-job-copy {
@@ -16264,7 +16286,8 @@ body.home-page-body {
   width: max-content;
 }
 
-.home-market-booked-track .home-market-search-card {
+.home-market-booked-track .home-market-search-card,
+.home-market-booked-track .home-market-available-card {
   flex: 0 0 calc((min(100vw - 40px, 1440px) - 230px - 260px - 60px) / 3);
   min-width: 0;
 }
@@ -16322,6 +16345,163 @@ body.home-page-body {
   margin-top: 14px;
   object-fit: cover;
   border-radius: 8px;
+}
+
+.home-market-available-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: 126px 1fr auto;
+  min-height: 250px;
+  padding: 0;
+  color: #202124;
+  background: #ffffff;
+}
+
+.home-available-image-link {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.home-available-category-image {
+  width: 100%;
+  height: 126px;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.home-available-avatar {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  z-index: 2;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  box-shadow: 0 12px 22px rgba(17, 17, 17, 0.18);
+  transform: translateX(-50%);
+}
+
+.home-available-avatar,
+.home-available-avatar span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-available-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-available-avatar span {
+  width: 100%;
+  height: 100%;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.home-guide-step {
+  background: #c9972e;
+  color: #111111;
+}
+
+.home-available-job-copy {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 36px 14px 10px;
+}
+
+.home-available-job-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-available-job-meta span,
+.home-available-job-meta strong {
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.home-available-job-meta span {
+  min-width: 0;
+  overflow: hidden;
+  color: #5f5f5f;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-available-job-meta strong {
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.home-available-job-copy h3 {
+  margin: 0;
+  color: #111111;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.home-available-job-copy p {
+  margin: 0;
+  color: #5f5f5f;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.home-available-job-copy small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.home-available-job-copy small i {
+  flex: 0 0 auto;
+  color: #c9972e;
+}
+
+.home-available-job-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  margin: 0 12px 12px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.home-available-job-cta:hover,
+.home-available-job-cta:focus-visible {
+  background: #c9972e;
+  color: #111111;
+}
+
+.home-job-guide-card .home-available-job-meta strong {
+  color: #c9972e;
 }
 
 .home-market-hot-picks {
@@ -16611,11 +16791,16 @@ body.home-page-body {
   .home-mobile-arrivals {
     display: flex;
     gap: 4px;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
+    padding-bottom: 10px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
+    background-image: linear-gradient(rgba(17, 17, 17, 0.14), rgba(17, 17, 17, 0.14));
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: 80% 1px;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -16653,6 +16838,47 @@ body.home-page-body {
     color: #6b7280;
     font-size: 11px;
     line-height: 1.2;
+  }
+
+  .home-mobile-arrivals .home-market-available-card {
+    flex: 0 0 min(70vw, 238px);
+    min-width: 210px;
+    min-height: 0;
+    scroll-snap-align: center;
+  }
+
+  .home-mobile-arrivals .home-available-category-image {
+    height: 106px;
+  }
+
+  .home-mobile-arrivals .home-market-available-card {
+    grid-template-rows: 106px 1fr auto;
+  }
+
+  .home-mobile-arrivals .home-available-avatar {
+    top: 78px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .home-mobile-arrivals .home-available-job-copy {
+    padding: 32px 12px 9px;
+    gap: 6px;
+  }
+
+  .home-mobile-arrivals .home-available-job-copy h3 {
+    font-size: 16px;
+  }
+
+  .home-mobile-arrivals .home-available-job-copy p {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .home-mobile-arrivals .home-available-job-cta {
+    min-height: 36px;
+    margin: 0 10px 10px;
+    font-size: 12px;
   }
 
   .home-mobile-card-grid {
@@ -17842,6 +18068,33 @@ body.account-embed-mode {
   width: min(100%, 520px);
   max-width: 520px;
   margin-top: 0;
+}
+
+.account-embed-mode .account-provider-setup-stage {
+  min-height: 100dvh;
+  align-content: center;
+  padding: 24px;
+}
+
+.account-embed-mode .account-provider-form {
+  width: min(100%, 680px);
+  margin: 0 auto;
+}
+
+.account-embed-mode .account-provider-section-minimal {
+  max-width: none;
+}
+
+.account-embed-mode .account-provider-form-actions {
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.account-embed-mode .account-provider-form-actions .account-submit-btn {
+  width: auto;
+  min-width: min(100%, 320px);
+  padding: 0 28px;
+  border-radius: 8px;
 }
 
 @media (max-width: 768px) {

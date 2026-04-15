@@ -481,6 +481,228 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const HOME_JOB_GUIDE_CARDS = [
+    {
+      step: '1',
+      title: 'Post what you need',
+      text: 'Share the service, address, budget, and timing.',
+      image: 'images/categories/business.avif',
+      cta: 'Post Job',
+      href: 'pages/post-job.html'
+    },
+    {
+      step: '2',
+      title: 'Providers see it',
+      text: 'Available providers can open the details and send a bid.',
+      image: 'images/categories/graphics.avif',
+      cta: 'Browse Jobs',
+      href: 'pages/job-posts.html'
+    },
+    {
+      step: '3',
+      title: 'Compare bids',
+      text: 'Review budget, message, and profile before you choose.',
+      image: 'images/categories/furniture.avif',
+      cta: 'View Jobs',
+      href: 'pages/job-posts.html'
+    },
+    {
+      step: '4',
+      title: 'Accept the best fit',
+      text: 'Pick the provider that matches your job and budget.',
+      image: 'images/categories/wedding.avif',
+      cta: 'Learn More',
+      href: 'pages/job-posts.html'
+    },
+    {
+      step: '5',
+      title: 'Chat directly',
+      text: 'Use messages to agree on timing and final details.',
+      image: 'images/categories/events.avif',
+      cta: 'Open Jobs',
+      href: 'pages/job-posts.html'
+    },
+    {
+      step: '6',
+      title: 'Get it done',
+      text: 'Your job dashboard keeps the work and bids together.',
+      image: 'images/categories/building_and_construction.avif',
+      cta: 'Post Job',
+      href: 'pages/post-job.html'
+    }
+  ];
+
+  function formatHomeJobCurrency(value) {
+    const amount = Number(value || 0);
+    return `US$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+
+  function formatHomeJobDate(timestamp) {
+    const date = new Date(Number(timestamp || 0));
+    if (Number.isNaN(date.getTime())) return 'Recently';
+    return new Intl.DateTimeFormat('en-ZW', {
+      day: 'numeric',
+      month: 'short'
+    }).format(date);
+  }
+
+  function resolveHomeMediaSrc(value, fallback = '') {
+    const source = String(value || '').trim();
+    if (!source) return fallback;
+    if (/^(data:|https?:|blob:|\/)/.test(source)) return source;
+    return `${getSiteBasePath()}${source}`;
+  }
+
+  function getHomeJobCategoryConfig(job = {}) {
+    const categoryLabel = String(job.category || '').trim();
+    const subcategoryLabel = String(job.subcategory || '').trim();
+    return getServiceCatalog().find((category) => category.label === categoryLabel)
+      || (typeof findCategoryByServiceLabel === 'function' ? findCategoryByServiceLabel(subcategoryLabel) : null)
+      || getServiceCatalog()[0]
+      || {};
+  }
+
+  function getHomeJobInitials(name = '') {
+    const parts = String(name || 'WorkLinkUp client')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2);
+    return parts.map((part) => part[0]).join('').toUpperCase() || 'WL';
+  }
+
+  function buildHomeJobDetailHref(jobId = '') {
+    const base = getSiteBasePath();
+    const params = new URLSearchParams();
+    if (jobId) params.set('detailJob', jobId);
+    return `${base}pages/job-posts.html${params.toString() ? `?${params.toString()}` : ''}`;
+  }
+
+  function buildHomeAvailableJobCard(job = {}) {
+    const categoryConfig = getHomeJobCategoryConfig(job);
+    const categoryImage = resolveHomeMediaSrc(categoryConfig.image || 'images/categories/business.avif');
+    const ownerName = String(job.ownerName || job.ownerProfile?.displayName || 'WorkLinkUp client').trim();
+    const ownerImage = resolveHomeMediaSrc(job.ownerProfileImageData || job.ownerProfile?.profileImageData || '');
+    const title = String(job.subcategory || job.category || 'Open job').trim();
+    const href = buildHomeJobDetailHref(job.id);
+
+    return `
+      <article class="home-market-card home-market-available-card">
+        <a class="home-available-image-link" href="${escapeHtml(href)}" aria-label="Open ${escapeHtml(title)} job details">
+          <img class="home-available-category-image" src="${escapeHtml(categoryImage)}" alt="${escapeHtml(job.category || 'Job category')}" loading="lazy" decoding="async" />
+        </a>
+        <div class="home-available-avatar" aria-label="${escapeHtml(ownerName)}">
+          ${ownerImage
+            ? `<img src="${escapeHtml(ownerImage)}" alt="${escapeHtml(ownerName)}" loading="lazy" decoding="async" />`
+            : `<span>${escapeHtml(getHomeJobInitials(ownerName))}</span>`}
+        </div>
+        <div class="home-available-job-copy">
+          <div class="home-available-job-meta">
+            <span>${escapeHtml(job.category || 'Available job')}</span>
+            <strong>${escapeHtml(formatHomeJobCurrency(job.budget))}</strong>
+          </div>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(String(job.description || 'Open job ready for bids.').slice(0, 74))}${String(job.description || '').length > 74 ? '...' : ''}</p>
+          <small><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address || job.city || 'Address shared in details')}</small>
+          <small><i class="fa-regular fa-clock"></i>${escapeHtml(formatHomeJobDate(job.createdAtMs))}</small>
+        </div>
+        <a class="home-available-job-cta" href="${escapeHtml(href)}">
+          <span>Accept Job</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </article>
+    `;
+  }
+
+  function buildHomeJobGuideCard(card = {}) {
+    const href = `${getSiteBasePath()}${card.href || 'pages/job-posts.html'}`;
+    const image = resolveHomeMediaSrc(card.image || 'images/categories/business.avif');
+    return `
+      <article class="home-market-card home-market-available-card home-job-guide-card">
+        <a class="home-available-image-link" href="${escapeHtml(href)}">
+          <img class="home-available-category-image" src="${escapeHtml(image)}" alt="${escapeHtml(card.title || 'How WorkLinkUp jobs work')}" loading="lazy" decoding="async" />
+        </a>
+        <div class="home-available-avatar home-guide-step" aria-hidden="true"><span>${escapeHtml(card.step || '')}</span></div>
+        <div class="home-available-job-copy">
+          <div class="home-available-job-meta">
+            <span>How it works</span>
+            <strong>Step ${escapeHtml(card.step || '')}</strong>
+          </div>
+          <h3>${escapeHtml(card.title || 'Open jobs')}</h3>
+          <p>${escapeHtml(card.text || 'Find posted work, open the details, and place your bid.')}</p>
+        </div>
+        <a class="home-available-job-cta" href="${escapeHtml(href)}">
+          <span>${escapeHtml(card.cta || 'View Jobs')}</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </article>
+    `;
+  }
+
+  function renderHomeAvailableJobCards(hosts, jobs = []) {
+    const latestJobs = jobs
+      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open')
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
+      .slice(0, 6);
+    const neededGuideCards = Math.max(0, 6 - latestJobs.length);
+    const markup = `${latestJobs.map((job) => buildHomeAvailableJobCard(job)).join('')}${HOME_JOB_GUIDE_CARDS
+      .slice(0, neededGuideCards)
+      .map((card) => buildHomeJobGuideCard(card))
+      .join('')}`;
+
+    hosts.forEach((host) => {
+      host.innerHTML = markup;
+      host.closest('[data-home-market-scroll-window]')?.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  async function enrichHomeJobsWithOwnerProfiles(authHelper, jobs = []) {
+    const profileCache = new Map();
+    return Promise.all(jobs.map(async (job) => {
+      const ownerUid = String(job.ownerUid || '').trim();
+      if (!ownerUid || !authHelper) return job;
+      if (!profileCache.has(ownerUid)) {
+        profileCache.set(ownerUid, Promise.all([
+          typeof authHelper.getClientProfileByUid === 'function'
+            ? authHelper.getClientProfileByUid(ownerUid).catch(() => null)
+            : Promise.resolve(null),
+          typeof authHelper.getUserDocument === 'function'
+            ? authHelper.getUserDocument(ownerUid).catch(() => null)
+            : Promise.resolve(null)
+        ]).then(([clientProfile, userDoc]) => ({
+          ownerProfile: clientProfile || userDoc || null,
+          ownerProfileImageData: clientProfile?.profileImageData || userDoc?.profileImageData || ''
+        })));
+      }
+      const ownerProfileData = await profileCache.get(ownerUid).catch(() => ({}));
+      return {
+        ...job,
+        ...ownerProfileData
+      };
+    }));
+  }
+
+  async function renderHomeAvailableJobs() {
+    const hosts = Array.from(document.querySelectorAll('[data-home-available-jobs], [data-home-available-jobs-mobile]'))
+      .filter((host) => host instanceof HTMLElement);
+    if (!hosts.length) return;
+
+    renderHomeAvailableJobCards(hosts, []);
+
+    const authHelper = typeof window.ensureWorkLinkAuth === 'function'
+      ? await window.ensureWorkLinkAuth().catch(() => null)
+      : window.softGigglesAuth || null;
+    if (!authHelper || typeof authHelper.listJobPosts !== 'function') return;
+
+    const jobs = await authHelper.listJobPosts().catch(() => []);
+    const latestJobs = jobs
+      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open')
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
+      .slice(0, 6);
+    const enrichedJobs = await enrichHomeJobsWithOwnerProfiles(authHelper, latestJobs);
+    renderHomeAvailableJobCards(hosts, enrichedJobs);
+  }
+
   function initHomeMarketScrollers() {
     document.querySelectorAll('.home-market-booked-shell').forEach((shell) => {
       if (!(shell instanceof HTMLElement) || shell.dataset.marketScrollBound === '1') return;
@@ -776,8 +998,62 @@ document.addEventListener('DOMContentLoaded', () => {
       let autoScrollPhase = 'moving';
       let phaseStartedAt = 0;
       let autoScrollPrimed = false;
+      let loopNormalizeTimer = 0;
       const autoScrollMoveDuration = Math.max(1000, Number.parseInt(rail.getAttribute('data-auto-scroll-move-duration') || '5000', 10) || 5000);
       const autoScrollRestDuration = Math.max(0, Number.parseInt(rail.getAttribute('data-auto-scroll-rest-duration') || '3000', 10) || 3000);
+
+      function isRendered(element) {
+        return Boolean(element?.offsetWidth || element?.offsetHeight || element?.getClientRects().length);
+      }
+
+      function getLoopScrollWidth() {
+        if (window.matchMedia('(max-width: 768px)').matches) return 0;
+        const firstClone = Array.from(rail.querySelectorAll('[data-loop-clone]')).find((clone) => (
+          clone instanceof HTMLElement && isRendered(clone)
+        ));
+        const loopParent = firstClone?.parentElement;
+        if (!(firstClone instanceof HTMLElement) || !(loopParent instanceof HTMLElement)) return 0;
+        const firstOriginal = Array.from(loopParent.children).find((item) => (
+          item instanceof HTMLElement && !item.hasAttribute('data-loop-clone') && isRendered(item)
+        ));
+        if (!(firstOriginal instanceof HTMLElement)) return 0;
+
+        const loopWidth = Math.round(firstClone.getBoundingClientRect().left - firstOriginal.getBoundingClientRect().left);
+        const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        if (loopWidth <= rail.clientWidth || loopWidth >= rail.scrollWidth || maxScrollLeft <= 6) return 0;
+        return loopWidth;
+      }
+
+      function normalizeLoopScroll(options = {}) {
+        const loopWidth = getLoopScrollWidth();
+        if (!loopWidth) return;
+        const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        let nextLeft = rail.scrollLeft;
+
+        if (options.preferEnd && nextLeft <= 4 && loopWidth <= maxScrollLeft) {
+          nextLeft += loopWidth;
+        } else {
+          while (nextLeft >= loopWidth && nextLeft - loopWidth <= maxScrollLeft) {
+            nextLeft -= loopWidth;
+          }
+        }
+
+        if (Math.abs(nextLeft - rail.scrollLeft) > 1) {
+          const previousScrollBehavior = rail.style.scrollBehavior;
+          rail.style.scrollBehavior = 'auto';
+          rail.scrollLeft = nextLeft;
+          rail.style.scrollBehavior = previousScrollBehavior;
+        }
+      }
+
+      function scheduleLoopNormalization() {
+        if (!getLoopScrollWidth()) return;
+        if (loopNormalizeTimer) window.clearTimeout(loopNormalizeTimer);
+        loopNormalizeTimer = window.setTimeout(() => {
+          normalizeLoopScroll();
+          syncButtons();
+        }, 180);
+      }
 
       function resetAutoScrollCycle(nextPhase = 'moving', timestamp = performance.now()) {
         autoScrollPhase = nextPhase;
@@ -795,6 +1071,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = false;
           return;
         }
+        if (getLoopScrollWidth()) {
+          if (prevBtn instanceof HTMLButtonElement) prevBtn.disabled = false;
+          if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = false;
+          return;
+        }
         const maxScrollLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
         if (prevBtn instanceof HTMLButtonElement) prevBtn.disabled = rail.scrollLeft <= 4;
         if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = rail.scrollLeft >= maxScrollLeft - 4;
@@ -802,13 +1083,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       prevBtn?.addEventListener('click', () => {
         pauseAutoScroll();
+        normalizeLoopScroll({ preferEnd: true });
         rail.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
+        scheduleLoopNormalization();
       });
       nextBtn?.addEventListener('click', () => {
         pauseAutoScroll();
+        normalizeLoopScroll();
         rail.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
+        scheduleLoopNormalization();
       });
-      rail.addEventListener('scroll', syncButtons, { passive: true });
+      rail.addEventListener('scroll', () => {
+        syncButtons();
+        scheduleLoopNormalization();
+      }, { passive: true });
       rail.addEventListener('pointerdown', () => pauseAutoScroll(4000), { passive: true });
       rail.addEventListener('touchstart', () => pauseAutoScroll(4000), { passive: true });
       rail.addEventListener('wheel', () => pauseAutoScroll(4000), { passive: true });
@@ -928,6 +1216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderHomepageCategories();
   renderHomepageTrendingJobs();
+  renderHomeAvailableJobs();
   initHomeMarketScrollers();
   initHomeCardCarousels();
   initScrollableRails(document);

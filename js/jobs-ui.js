@@ -1071,6 +1071,35 @@
       }, { once: true });
     }
 
+    function openJobDetail(job) {
+      if (!job) return;
+      const hasPlacedBid = getPlacedBidJobIds().has(String(job.id || '').trim());
+      openModal(detailModal, `
+        <div class="job-modal-panel">
+          <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
+          <span class="job-card-tag">${escapeHtml(job.category)}</span>
+          <h2>${escapeHtml(job.subcategory || job.category)}</h2>
+          <p class="job-modal-description">${escapeHtml(job.description)}</p>
+          <div class="job-modal-stats">
+            <div><strong>${escapeHtml(formatCurrency(job.budget))}</strong><span>Budget</span></div>
+            <div><strong>${escapeHtml(job.ownerName || 'WorkLinkUp client')}</strong><span>Posted by</span></div>
+            <div><strong>${escapeHtml(formatDateLabel(job.createdAtMs))}</strong><span>Posted</span></div>
+          </div>
+          <div class="job-modal-address"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(job.address)}</span></div>
+          <div class="job-modal-actions">
+            <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
+            ${hasPlacedBid
+              ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already put a bid</button>`
+              : `<button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
+          </div>
+        </div>
+      `);
+      detailModal.querySelector('[data-job-detail-bid]')?.addEventListener('click', () => {
+        closeModal(detailModal);
+        openBidFlow(job);
+      });
+    }
+
     function getFilteredJobs() {
       return jobs.filter((job) => {
         if (!isInFilterWindow(activeFilter, job.createdAtMs)) return false;
@@ -1146,32 +1175,7 @@
       groupsHost.querySelectorAll('[data-job-view-more]').forEach((button) => {
         button.addEventListener('click', () => {
           const job = jobs.find((item) => item.id === button.getAttribute('data-job-view-more'));
-          if (!job) return;
-          const hasPlacedBid = getPlacedBidJobIds().has(String(job.id || '').trim());
-          openModal(detailModal, `
-            <div class="job-modal-panel">
-              <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
-              <span class="job-card-tag">${escapeHtml(job.category)}</span>
-              <h2>${escapeHtml(job.subcategory || job.category)}</h2>
-              <p class="job-modal-description">${escapeHtml(job.description)}</p>
-              <div class="job-modal-stats">
-                <div><strong>${escapeHtml(formatCurrency(job.budget))}</strong><span>Budget</span></div>
-                <div><strong>${escapeHtml(job.ownerName || 'WorkLinkUp client')}</strong><span>Posted by</span></div>
-                <div><strong>${escapeHtml(formatDateLabel(job.createdAtMs))}</strong><span>Posted</span></div>
-              </div>
-              <div class="job-modal-address"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(job.address)}</span></div>
-              <div class="job-modal-actions">
-                <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
-                ${hasPlacedBid
-                  ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already put a bid</button>`
-                  : `<button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
-              </div>
-            </div>
-          `);
-          detailModal.querySelector('[data-job-detail-bid]')?.addEventListener('click', () => {
-            closeModal(detailModal);
-            openBidFlow(job);
-          });
+          openJobDetail(job);
         });
       });
 
@@ -1283,6 +1287,14 @@
     });
 
     renderJobs();
+
+    const detailJobId = params.get('detailJob') || params.get('openJob') || '';
+    if (detailJobId) {
+      const job = jobs.find((item) => item.id === detailJobId);
+      if (job) {
+        window.setTimeout(() => openJobDetail(job), 220);
+      }
+    }
 
     const resumeJobId = params.get('resumeJob') || params.get('job') || readPendingJobBid()?.jobId || '';
     if (resumeJobId) {

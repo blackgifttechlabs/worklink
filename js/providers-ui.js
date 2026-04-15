@@ -4206,7 +4206,7 @@
 
     function getSetupStep() {
       const providerComplete = Boolean(userDoc?.providerProfileComplete || providerProfile?.uid);
-      if (forcedSetup === 'provider') return 'provider';
+      if (forcedSetup === 'provider' && !providerComplete) return 'provider';
       if (forcedSetup === '1' && !userDoc?.username) return 'username';
       if (!userDoc?.username) return 'username';
       if (!userDoc?.userRole) return 'role';

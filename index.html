@@ -75,45 +75,14 @@
         <a href="pages/search-results.html?category=Transport%20%26%20Logistics"><i class="fa-solid fa-truck-fast"></i><span>Transport</span><i class="fa-solid fa-chevron-right"></i></a>
       </aside>
 
-      <div class="home-market-booked-shell">
-        <button type="button" class="home-market-scroll-btn is-prev" data-home-market-scroll="prev" aria-label="Scroll Frequently Booked left">
+      <div class="home-market-booked-shell" data-home-available-jobs-shell>
+        <button type="button" class="home-market-scroll-btn is-prev" data-home-market-scroll="prev" aria-label="Scroll Available Jobs left">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <div class="home-market-booked-window" data-home-market-scroll-window>
-          <div class="home-market-booked-track">
-            <a href="pages/search-results.html?category=Plumbing&query=Leak%20Repairs" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Plumber</strong>
-              <img src="images/categories/plumbing.avif" alt="Plumbing service" loading="lazy" decoding="async" />
-            </a>
-            <a href="pages/search-results.html?category=Digital%20%26%20Business&query=Graphic%20Designer" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Designer</strong>
-              <img src="images/categories/graphics.avif" alt="Graphic design service" loading="lazy" decoding="async" />
-            </a>
-            <a href="pages/search-results.html?category=Construction%20%26%20Building&query=Bricklayer" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Bricklayer</strong>
-              <img src="images/categories/bricklayer.avif" alt="Bricklayer service" loading="lazy" decoding="async" />
-            </a>
-            <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Cleaner</strong>
-              <img src="images/categories/cleaning.avif" alt="Cleaning service" loading="lazy" decoding="async" />
-            </a>
-            <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Caterer</strong>
-              <img src="images/categories/Catering.avif" alt="Catering service" loading="lazy" decoding="async" />
-            </a>
-            <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-market-card home-market-search-card">
-              <span>Frequently Booked</span>
-              <strong>Stylist</strong>
-              <img src="images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif" alt="Hairdresser service" loading="lazy" decoding="async" />
-            </a>
-          </div>
+          <div class="home-market-booked-track" data-home-available-jobs></div>
         </div>
-        <button type="button" class="home-market-scroll-btn is-next" data-home-market-scroll="next" aria-label="Scroll Frequently Booked right">
+        <button type="button" class="home-market-scroll-btn is-next" data-home-market-scroll="next" aria-label="Scroll Available Jobs right">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>
@@ -184,40 +153,9 @@
     </div>
 
     <div class="home-market-mobile">
-      <h2>Most Listed Services</h2>
-      <p class="home-market-mobile-subtitle">Find the providers most people trust.</p>
-      <div class="home-mobile-arrivals">
-        <a href="pages/search-results.html?category=Plumbing&query=Leak%20Repairs" class="home-mobile-mini-card">
-          <img src="images/categories/plumbing.avif" alt="Plumbing service" loading="lazy" decoding="async" />
-          <strong>Plumber</strong>
-          <span>Harare</span>
-        </a>
-        <a href="pages/search-results.html?category=Electrical&query=Solar%20System%20Installation" class="home-mobile-mini-card">
-          <img src="images/categories/Solar-power-in-Africa-.avif" alt="Solar installation" loading="lazy" decoding="async" />
-          <strong>Solar</strong>
-          <span>Bulawayo</span>
-        </a>
-        <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-mobile-mini-card">
-          <img src="images/categories/cleaning.avif" alt="Cleaning service" loading="lazy" decoding="async" />
-          <strong>Cleaner</strong>
-          <span>Mutare</span>
-        </a>
-        <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-mobile-mini-card">
-          <img src="images/categories/Catering.avif" alt="Catering service" loading="lazy" decoding="async" />
-          <strong>Caterer</strong>
-          <span>Gweru</span>
-        </a>
-        <a href="pages/search-results.html?category=Transport%20%26%20Logistics&query=Moving%20%26%20Relocation%20Services" class="home-mobile-mini-card">
-          <img src="images/categories/moving out.avif" alt="Moving service" loading="lazy" decoding="async" />
-          <strong>Mover</strong>
-          <span>Masvingo</span>
-        </a>
-        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-mobile-mini-card">
-          <img src="images/categories/confident-african-american-hairdresser-braiding-600nw-2390918867.avif" alt="Hairdresser service" loading="lazy" decoding="async" />
-          <strong>Stylist</strong>
-          <span>Kwekwe</span>
-        </a>
-      </div>
+      <h2>Available Jobs</h2>
+      <p class="home-market-mobile-subtitle">Latest posted work ready for bids.</p>
+      <div class="home-mobile-arrivals" data-home-available-jobs-mobile></div>
 
       <div class="home-mobile-card-grid">
         <article class="home-mobile-supplier-card" data-home-card-carousel>
