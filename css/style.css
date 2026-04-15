@@ -443,6 +443,82 @@
   opacity: 1;
 }
 
+/* Job-giver page summary (black & gold, light theme) */
+.job-giver-page .job-page-shell {
+  background: #fff;
+  color: #111;
+  padding: 0 0 40px 0;
+}
+
+.job-dashboard-summary {
+  display: flex;
+  gap: 12px;
+  padding: 18px 16px;
+  max-width: 1200px;
+  margin: 0 auto 12px auto;
+  align-items: stretch;
+}
+
+.summary-card {
+  flex: 1 1 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  background: #ffffff;
+  border: 1px solid rgba(26,50,99,0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, #111111 0%, #222222 100%);
+  color: #fff;
+}
+
+.summary-head h3 { margin: 0; font-size: 15px; font-weight: 900; }
+.summary-badge {
+  background: #c9972e;
+  color: #111;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.summary-body { padding: 12px; overflow: auto; }
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th, .summary-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(17,17,17,0.04); }
+.summary-table thead th { font-weight: 800; color: #111; }
+
+/* Distinct black & gold variants */
+.jobs-summary .summary-head { background: linear-gradient(90deg,#111,#111); }
+.bids-summary .summary-head { background: linear-gradient(90deg,#c9972e,#b57f22); }
+.bids-summary .summary-head h3 { color: #111; }
+
+/* Make content edge-to-edge where requested */
+.job-page-shell { width: 100%; }
+.job-giver-dashboard { max-width: none; padding: 0; margin: 0; }
+.job-giver-dashboard .job-owner-card,
+.job-giver-dashboard .job-placed-bid-card { margin: 12px 0; border-radius: 0; box-shadow: none; border-left: none; border-right: none; padding: 12px 16px; }
+
+/* Modal full-bleed on small screens */
+@media (max-width: 640px) {
+  .job-dashboard-summary { flex-direction: column; gap: 12px; padding: 12px; }
+  .summary-body { padding: 8px; }
+  .summary-table th, .summary-table td { padding: 8px 4px; }
+  .job-modal-panel { width: 100% !important; margin: 0 !important; border-radius: 0 !important; padding: 12px !important; }
+  .job-modal-shell { padding: 0 !important; }
+  .job-owner-card, .job-placed-bid-card { padding: 10px 12px; }
+}
+
+@media (max-width: 960px) {
+  .job-dashboard-summary { padding: 10px; }
+}
+
 .account-page {
   max-width: none;
   margin: 0;

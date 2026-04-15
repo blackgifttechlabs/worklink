@@ -1647,6 +1647,120 @@ async function updateJobApplicationStatus(jobId = '', applicationId = '', status
   };
 }
 
+// Find an accepted application (active job) involving two users (owner and bidder)
+async function findActiveJobBetweenUsers(userA = '', userB = '') {
+  if (!userA || !userB) return null;
+  // search jobs where either is owner and there is an acceptedApplicationUid
+  const jobsSnapshot = await getDocs(collection(db, JOBS_COLLECTION));
+  for (const docSnap of jobsSnapshot.docs) {
+    const job = docSnap.data() || {};
+    const jobId = docSnap.id;
+    if (!job.acceptedApplicationUid) continue;
+    // owner and bidder must match userA/userB
+    if (job.ownerUid !== userA && job.ownerUid !== userB) continue;
+    const appRef = doc(db, JOBS_COLLECTION, jobId, 'applications', job.acceptedApplicationUid);
+    const appSnap = await getDoc(appRef);
+    if (!appSnap.exists()) continue;
+    const application = appSnap.data() || {};
+    const bidderUid = application.bidderUid || '';
+    const ownerUid = job.ownerUid || '';
+    if ((ownerUid === userA && bidderUid === userB) || (ownerUid === userB && bidderUid === userA)) {
+      return {
+        jobId,
+        applicationId: job.acceptedApplicationUid,
+        job: { id: jobId, ...job },
+        application: { id: appSnap.id, ...application }
+      };
+    }
+  }
+  return null;
+}
+
+async function markJobStarted(jobId = '', applicationId = '') {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  if (!jobId || !applicationId) throw new Error('Invalid job selection.');
+  const jobRef = doc(db, JOBS_COLLECTION, jobId);
+  const jobSnap = await getDoc(jobRef);
+  if (!jobSnap.exists()) throw new Error('Job not found.');
+  const appRef = doc(db, JOBS_COLLECTION, jobId, 'applications', applicationId);
+  const appSnap = await getDoc(appRef);
+  if (!appSnap.exists()) throw new Error('Application not found.');
+  const now = Date.now();
+  await updateDoc(appRef, {
+    inProgressAtMs: now,
+    inProgressByUid: auth.currentUser.uid,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  });
+  await updateDoc(jobRef, {
+    inProgressAtMs: now,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  });
+  return { jobId, applicationId, inProgressAtMs: now };
+}
+
+async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  if (!jobId || !applicationId) throw new Error('Invalid job selection.');
+  const jobRef = doc(db, JOBS_COLLECTION, jobId);
+  const jobSnap = await getDoc(jobRef);
+  if (!jobSnap.exists()) throw new Error('Job not found.');
+  const appRef = doc(db, JOBS_COLLECTION, jobId, 'applications', applicationId);
+  const appSnap = await getDoc(appRef);
+  if (!appSnap.exists()) throw new Error('Application not found.');
+  const application = appSnap.data() || {};
+  const now = Date.now();
+
+  // mark application and job as completed
+  await updateDoc(appRef, {
+    completedAtMs: now,
+    completedByUid: auth.currentUser.uid,
+    statusChangedAtMs: now,
+    status: 'completed',
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  });
+  await updateDoc(jobRef, {
+    completedAtMs: now,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  });
+
+  // store review under provider profile if review contains rating and providerUid
+  const providerUid = application.bidderUid || '';
+  if (providerUid && Number(review.rating || 0) > 0) {
+    const providerProfile = await getProviderProfileByUid(providerUid).catch(() => null);
+    if (providerProfile) {
+      const reviewsRef = collection(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid, 'reviews');
+      const created = await addDoc(reviewsRef, {
+        reviewerUid: auth.currentUser.uid,
+        reviewerName: (await getUserDocument(auth.currentUser.uid)).name || '',
+        rating: Number(review.rating || 0),
+        comment: String(review.comment || '').trim(),
+        jobId,
+        createdAtMs: now,
+        createdAt: serverTimestamp()
+      }).catch(() => null);
+
+      // recompute provider rating
+      if (created) {
+        const allReviewsSnap = await getDocs(reviewsRef).catch(() => null);
+        if (allReviewsSnap) {
+          const reviews = allReviewsSnap.docs.map((d) => d.data() || {});
+          const avg = reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / Math.max(1, reviews.length);
+          await setDoc(doc(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid), {
+            averageRating: Number(avg.toFixed(2)),
+            reviewsCount: reviews.length
+          }, { merge: true }).catch(() => {});
+        }
+      }
+    }
+  }
+
+  return { jobId, applicationId, completedAtMs: now };
+}
+
 async function listProviders() {
   const snapshot = await getDocs(collectionGroup(db, 'profiles'));
   return snapshot.docs

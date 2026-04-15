@@ -1638,6 +1638,54 @@
       page.innerHTML = `
         <section class="job-page-shell">
           <section class="job-giver-dashboard">
+            <div class="job-dashboard-summary">
+              <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary">
+                <div class="summary-head">
+                  <h3>Jobs I Posted</h3>
+                  <span class="summary-badge">${receivedBidCount}</span>
+                </div>
+                <div class="summary-body">
+                  <table class="summary-table">
+                    <thead>
+                      <tr><th>Job</th><th>Bids</th><th>Budget</th></tr>
+                    </thead>
+                    <tbody>
+                      ${currentJobs.slice(0,6).map((job) => `
+                        <tr>
+                          <td>${escapeHtml(job.subcategory || job.category || 'Job')}</td>
+                          <td>${(Array.isArray(job.applications) ? job.applications.length : 0)}</td>
+                          <td>${escapeHtml(formatCurrency(job.budget))}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary">
+                <div class="summary-head">
+                  <h3>Bids I Placed</h3>
+                  <span class="summary-badge">${placedBidCount}</span>
+                </div>
+                <div class="summary-body">
+                  <table class="summary-table">
+                    <thead>
+                      <tr><th>Job</th><th>Status</th><th>Offer</th></tr>
+                    </thead>
+                    <tbody>
+                      ${currentPlacedBids.slice(0,6).map((bid) => `
+                        <tr>
+                          <td>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job')}</td>
+                          <td>${escapeHtml(bid.status || 'pending')}</td>
+                          <td>${escapeHtml(formatCurrency(bid.proposedBudget))}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             <div class="job-dashboard-tabs">
               <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
                 <span>Jobs I Posted</span>
