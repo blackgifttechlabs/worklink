@@ -1814,8 +1814,12 @@
               </aside>
 
               <div class="job-giver-main">
+                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''}">
+                  ${tabContent}
+                </div>
+
                 <div class="job-dashboard-summary">
-                  <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary">
+                  <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary" ${activeTab !== 'jobs' ? 'hidden' : ''}>
                     <div class="summary-head">
                       <h3>Jobs I Posted</h3>
                       <span class="summary-badge">${receivedBidCount}</span>
@@ -1838,7 +1842,7 @@
                     </div>
                   </div>
 
-                  <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary">
+                  <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary" ${activeTab !== 'bids' ? 'hidden' : ''}>
                     <div class="summary-head">
                       <h3>Bids I Placed</h3>
                       <span class="summary-badge">${placedBidCount}</span>
@@ -1860,10 +1864,28 @@
                       </table>
                     </div>
                   </div>
-                </div>
 
-                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''}">
-                  ${tabContent}
+                  <div class="summary-card previous-summary" role="region" aria-label="Previous Jobs summary" ${activeTab !== 'previous' ? 'hidden' : ''}>
+                    <div class="summary-head">
+                      <h3>Previous Jobs</h3>
+                      <span class="summary-badge">${previousCount}</span>
+                    </div>
+                    <div class="summary-body">
+                      <table class="summary-table">
+                        <thead>
+                          <tr><th>Job</th><th>Budget</th></tr>
+                        </thead>
+                        <tbody>
+                          ${completedJobs.slice(0, 6).map((job) => `
+                            <tr>
+                              <td>${escapeHtml(job.subcategory || job.category || 'Job')}</td>
+                              <td>${escapeHtml(formatCurrency(job.budget))}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

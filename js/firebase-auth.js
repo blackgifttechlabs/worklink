@@ -1650,29 +1650,36 @@ async function updateJobApplicationStatus(jobId = '', applicationId = '', status
 // Find an accepted application (active job) involving two users (owner and bidder)
 async function findActiveJobBetweenUsers(userA = '', userB = '') {
   if (!userA || !userB) return null;
-  // search jobs where either is owner and there is an acceptedApplicationUid
-  const jobsSnapshot = await getDocs(collection(db, JOBS_COLLECTION));
-  for (const docSnap of jobsSnapshot.docs) {
-    const job = docSnap.data() || {};
-    const jobId = docSnap.id;
-    if (!job.acceptedApplicationUid) continue;
-    // owner and bidder must match userA/userB
-    if (job.ownerUid !== userA && job.ownerUid !== userB) continue;
-    const appRef = doc(db, JOBS_COLLECTION, jobId, 'applications', job.acceptedApplicationUid);
-    const appSnap = await getDoc(appRef);
-    if (!appSnap.exists()) continue;
-    const application = appSnap.data() || {};
-    const bidderUid = application.bidderUid || '';
-    const ownerUid = job.ownerUid || '';
-    if ((ownerUid === userA && bidderUid === userB) || (ownerUid === userB && bidderUid === userA)) {
+
+  // Search for accepted applications where either user is the bidder and the other is the owner
+  const q = query(
+    collectionGroup(db, 'applications'),
+    where('status', '==', 'accepted')
+  );
+
+  const snapshot = await getDocs(q);
+  for (const docSnap of snapshot.docs) {
+    const application = docSnap.data();
+    const bidderUid = application.bidderUid;
+    const ownerUid = application.jobOwnerUid;
+
+    if (
+      (bidderUid === userA && ownerUid === userB) ||
+      (bidderUid === userB && ownerUid === userA)
+    ) {
+      const jobId = docSnap.ref.parent.parent.id;
+      const jobSnap = await getDoc(doc(db, JOBS_COLLECTION, jobId));
+      const job = jobSnap.exists() ? { id: jobSnap.id, ...jobSnap.data() } : null;
+
       return {
         jobId,
-        applicationId: job.acceptedApplicationUid,
-        job: { id: jobId, ...job },
-        application: { id: appSnap.id, ...application }
+        applicationId: docSnap.id,
+        job,
+        application: { id: docSnap.id, ...application }
       };
     }
   }
+
   return null;
 }
 
