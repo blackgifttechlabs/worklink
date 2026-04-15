@@ -552,6 +552,23 @@
     ].join(' ').toLowerCase();
   }
 
+  function getLocationSearchText(job = {}) {
+    return [
+      job.address,
+      job.city,
+      job.province
+    ].join(' ').toLowerCase();
+  }
+
+  function getJobLocationOptions(jobs = []) {
+    return Array.from(new Set(jobs.flatMap((job) => [
+      job.city,
+      job.address,
+      String(job.address || '').split(',').map((part) => part.trim()).filter(Boolean)
+    ]).flat().map((value) => String(value || '').trim()).filter(Boolean)))
+      .sort((first, second) => first.localeCompare(second));
+  }
+
   function groupJobsByDate(jobs = []) {
     const groups = new Map();
     jobs.forEach((job) => {
@@ -594,6 +611,32 @@
     }
   }
 
+  function savePendingJobDetail(jobId = '') {
+    if (!jobId) return;
+    try {
+      sessionStorage.setItem('worklinkup_pending_job_detail', JSON.stringify({ jobId }));
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function readPendingJobDetail() {
+    try {
+      const raw = sessionStorage.getItem('worklinkup_pending_job_detail');
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function clearPendingJobDetail() {
+    try {
+      sessionStorage.removeItem('worklinkup_pending_job_detail');
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
   async function ensureBidderReady(authHelper) {
     const account = getStoredAccount();
     if (!account?.loggedIn || !authHelper) {
@@ -603,6 +646,19 @@
     const clientProfile = await authHelper.getClientProfileByUid(account.uid).catch(() => null);
     const providerProfile = await authHelper.getProviderProfileByUid(account.uid, account.providerProvinceSlug || userDoc?.providerProvinceSlug || '').catch(() => null);
     return { ready: true, userDoc, clientProfile, providerProfile };
+  }
+
+  function getGoogleIconMarkup() {
+    return `
+      <span class="google-mark" aria-hidden="true">
+        <svg class="google-g" viewBox="0 0 18 18" focusable="false">
+          <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z" />
+          <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.94v2.33A9 9 0 0 0 9 18Z" />
+          <path fill="#FBBC05" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
+          <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A8.63 8.63 0 0 0 9 0 9 9 0 0 0 .94 4.96l3.01 2.33C4.66 5.16 6.65 3.58 9 3.58Z" />
+        </svg>
+      </span>
+    `;
   }
 
   function buildJobAuthCardMarkup(scope = 'post') {
@@ -637,12 +693,21 @@
           </label>
         </div>
         <p class="job-auth-note" data-job-auth-note>${scope === 'bid' ? 'Use your provider account so you can place a bid and continue chatting if chosen.' : 'Use email or phone plus a password so your job dashboard is saved to your account.'}</p>
-        <button type="button" class="btn-primary job-auth-submit" data-job-auth-submit>${scope === 'bid' ? 'Continue' : 'Create account and post job'}</button>
+        ${scope === 'bid' ? `
+          <div class="job-auth-actions">
+            <button type="button" class="account-auth-btn account-google-btn job-auth-google-btn" data-job-google-auth>
+              ${getGoogleIconMarkup()}
+              <span class="account-btn-label">Continue with Google</span>
+            </button>
+            <div class="job-auth-divider"><span>Or continue with email or phone</span></div>
+          </div>
+        ` : ''}
+        <button type="button" class="btn-primary job-auth-submit${scope === 'bid' ? ' account-submit-btn account-submit-signin' : ''}" data-job-auth-submit>${scope === 'bid' ? 'Continue' : 'Create account and post job'}</button>
       </section>
     `;
   }
 
-  function bindJobAuthCard(scope, onComplete) {
+  function bindJobAuthCard(scope, onComplete, options = {}) {
     const host = document.querySelector(`[data-job-auth-card][data-auth-scope="${scope}"]`);
     if (!(host instanceof HTMLElement)) return;
 
@@ -655,6 +720,7 @@
     const passwordInput = host.querySelector('[data-job-auth-password]');
     const note = host.querySelector('[data-job-auth-note]');
     const submitBtn = host.querySelector('[data-job-auth-submit]');
+    const googleBtn = host.querySelector('[data-job-google-auth]');
     let authMode = 'signup';
     let idMode = 'email';
 
@@ -691,6 +757,33 @@
         idMode = button.getAttribute('data-job-auth-id-mode') || 'email';
         sync();
       });
+    });
+
+    googleBtn?.addEventListener('click', async () => {
+      const authHelper = await waitForAuthHelper();
+      if (!authHelper || typeof authHelper.signInWithGoogle !== 'function') return;
+      if (options.jobId) savePendingJobDetail(options.jobId);
+      setButtonLoading(googleBtn, true);
+      try {
+        const result = await authHelper.signInWithGoogle();
+        if (result?.redirected) return;
+        if (typeof authHelper.waitForAuthSession === 'function') {
+          const account = getStoredAccount();
+          await authHelper.waitForAuthSession(result?.user?.uid || account?.uid || '', 12000).catch(() => null);
+        }
+        if (typeof onComplete === 'function') {
+          await onComplete({
+            authMode: 'google',
+            idMode: 'google',
+            identifier: '',
+            name: ''
+          });
+        }
+      } catch (error) {
+        window.alert(error.message || 'Could not complete Google sign in.');
+      } finally {
+        setButtonLoading(googleBtn, false);
+      }
     });
 
     submitBtn?.addEventListener('click', async () => {
@@ -968,20 +1061,37 @@
     const authHelper = await waitForAuthHelper();
 
     page.innerHTML = `
-      <section class="job-page-shell">
-        <div class="job-page-hero">
+      <section class="job-page-hero job-posts-hero">
+        <div class="job-page-hero-inner">
           <span class="job-page-kicker job-page-kicker-jobs-count">Available jobs: <strong data-job-available-count>0</strong></span>
           <h1>Browse open jobs and place your bid.</h1>
-          <p>Jobs are grouped by date, and you can quickly filter down to today, this week, or this month.</p>
+          <p>Search by service and location, then open any job to review the details before bidding.</p>
           <div class="job-page-hero-actions">
             <a href="${getBase()}pages/post-job.html" class="btn-primary">Post Job</a>
           </div>
         </div>
+      </section>
 
-        <section class="job-board-toolbar">
+      <section class="job-page-shell job-posts-shell">
+        <aside class="job-board-toolbar" aria-label="Find available jobs">
+          <div class="job-board-toolbar-head">
+            <strong>Find Jobs</strong>
+            <span>All locations and services by default.</span>
+          </div>
           <label class="job-board-search">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" placeholder="Search by category, subcategory, address, or job detail" data-job-search />
+            <span>Service</span>
+            <div class="job-board-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" placeholder="Category, service, or detail" data-job-search />
+            </div>
+          </label>
+          <label class="job-board-search">
+            <span>Location</span>
+            <div class="job-board-search-box">
+              <i class="fa-solid fa-location-dot"></i>
+              <input type="search" placeholder="Any location" list="job-location-options" data-job-location-search />
+            </div>
+            <datalist id="job-location-options" data-job-location-options></datalist>
           </label>
           <div class="job-board-toolbar-actions">
             <div class="job-board-filters" data-job-filters>
@@ -1001,18 +1111,22 @@
               </button>
             </div>
           </div>
-        </section>
+        </aside>
 
-        <section class="job-board-groups" data-job-groups></section>
+        <section class="job-board-content">
+          <section class="job-board-groups" data-job-groups></section>
+        </section>
       </section>
 
-      <div class="job-modal-shell" data-job-detail-modal hidden></div>
-      <div class="job-modal-shell" data-job-bid-modal hidden></div>
-      <div class="job-modal-shell" data-job-auth-modal hidden></div>
+      <div class="job-modal-shell job-detail-modal-shell" data-job-detail-modal hidden></div>
+      <div class="job-modal-shell job-bid-modal-shell" data-job-bid-modal hidden></div>
+      <div class="job-modal-shell job-auth-modal-shell" data-job-auth-modal hidden></div>
     `;
 
     const groupsHost = page.querySelector('[data-job-groups]');
     const searchInput = page.querySelector('[data-job-search]');
+    const locationSearchInput = page.querySelector('[data-job-location-search]');
+    const locationOptionsHost = page.querySelector('[data-job-location-options]');
     const detailModal = page.querySelector('[data-job-detail-modal]');
     const bidModal = page.querySelector('[data-job-bid-modal]');
     const authModal = page.querySelector('[data-job-auth-modal]');
@@ -1041,10 +1155,19 @@
     }
     let activeFilter = 'all';
     let query = String(params.get('query') || params.get('category') || params.get('service') || '').trim();
+    let locationQuery = String(params.get('location') || '').trim();
     let viewMode = 'grid';
 
     if (searchInput && query) {
       searchInput.value = query;
+    }
+    if (locationSearchInput && locationQuery) {
+      locationSearchInput.value = locationQuery;
+    }
+    if (locationOptionsHost) {
+      locationOptionsHost.innerHTML = getJobLocationOptions(jobs)
+        .map((location) => `<option value="${escapeHtml(location)}"></option>`)
+        .join('');
     }
 
     function getPlacedBidJobIds() {
@@ -1053,9 +1176,15 @@
 
     function closeModal(modal) {
       if (!(modal instanceof HTMLElement)) return;
-      modal.hidden = true;
-      modal.innerHTML = '';
-      document.body.classList.remove('job-modal-open');
+      modal.classList.remove('is-visible');
+      window.setTimeout(() => {
+        modal.hidden = true;
+        modal.innerHTML = '';
+        const hasOpenModal = Array.from(document.querySelectorAll('.job-modal-shell')).some((item) => (
+          item instanceof HTMLElement && !item.hidden && item.classList.contains('is-visible')
+        ));
+        if (!hasOpenModal) document.body.classList.remove('job-modal-open');
+      }, 240);
     }
 
     function openModal(modal, markup) {
@@ -1063,12 +1192,15 @@
       modal.hidden = false;
       modal.innerHTML = markup;
       document.body.classList.add('job-modal-open');
+      window.requestAnimationFrame(() => {
+        modal.classList.add('is-visible');
+      });
       modal.querySelectorAll('[data-job-modal-close]').forEach((button) => {
         button.addEventListener('click', () => closeModal(modal));
       });
-      modal.addEventListener('click', (event) => {
+      modal.onclick = (event) => {
         if (event.target === modal) closeModal(modal);
-      }, { once: true });
+      };
     }
 
     function openJobDetail(job) {
@@ -1103,8 +1235,9 @@
     function getFilteredJobs() {
       return jobs.filter((job) => {
         if (!isInFilterWindow(activeFilter, job.createdAtMs)) return false;
-        if (!query) return true;
-        return getSearchText(job).includes(query.toLowerCase());
+        const matchesQuery = !query || getSearchText(job).includes(query.toLowerCase());
+        const matchesLocation = !locationQuery || getLocationSearchText(job).includes(locationQuery.toLowerCase());
+        return matchesQuery && matchesLocation;
       });
     }
 
@@ -1125,7 +1258,7 @@
           </div>
           <div class="job-card-grid ${viewMode === 'list' ? 'is-list' : 'is-grid'}">
             ${items.map((job) => `
-              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${placedBidJobIds.has(String(job.id || '').trim()) ? 'is-bid-placed' : ''}">
+              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${placedBidJobIds.has(String(job.id || '').trim()) ? 'is-bid-placed' : ''}" data-job-card-open="${escapeHtml(job.id)}" tabindex="0">
                 <div class="job-card-top">
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -1179,6 +1312,20 @@
         });
       });
 
+      groupsHost.querySelectorAll('[data-job-card-open]').forEach((card) => {
+        card.addEventListener('click', (event) => {
+          if (event.target instanceof HTMLElement && event.target.closest('button, a')) return;
+          const job = jobs.find((item) => item.id === card.getAttribute('data-job-card-open'));
+          openJobDetail(job);
+        });
+        card.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          const job = jobs.find((item) => item.id === card.getAttribute('data-job-card-open'));
+          openJobDetail(job);
+        });
+      });
+
       groupsHost.querySelectorAll('[data-job-bid]').forEach((button) => {
         button.addEventListener('click', () => {
           const job = jobs.find((item) => item.id === button.getAttribute('data-job-bid'));
@@ -1190,13 +1337,21 @@
     async function openBidFlow(job) {
       const account = getStoredAccount();
       if (!account?.loggedIn) {
+        savePendingJobDetail(job.id);
         openModal(authModal, `<div class="job-modal-panel job-modal-auth-panel">${buildJobAuthCardMarkup('bid')}<button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button></div>`);
+        authModal.querySelectorAll('[data-job-modal-close]').forEach((button) => {
+          button.addEventListener('click', clearPendingJobDetail);
+        });
+        authModal.addEventListener('click', (event) => {
+          if (event.target === authModal) clearPendingJobDetail();
+        });
         bindJobAuthCard('bid', async () => {
           const readiness = await ensureBidderReady(authHelper);
           if (!readiness.ready) return;
           closeModal(authModal);
-          openBidFlow(job);
-        });
+          clearPendingJobDetail();
+          window.setTimeout(() => openJobDetail(job), 260);
+        }, { jobId: job.id });
         return;
       }
 
@@ -1286,17 +1441,26 @@
       renderJobs();
     });
 
+    locationSearchInput?.addEventListener('input', () => {
+      locationQuery = String(locationSearchInput.value || '').trim();
+      renderJobs();
+    });
+
     renderJobs();
 
-    const detailJobId = params.get('detailJob') || params.get('openJob') || '';
+    const pendingDetail = readPendingJobDetail();
+    const detailJobId = params.get('detailJob') || params.get('openJob') || pendingDetail?.jobId || '';
+    let openedPendingDetail = false;
     if (detailJobId) {
       const job = jobs.find((item) => item.id === detailJobId);
       if (job) {
+        openedPendingDetail = Boolean(pendingDetail?.jobId && pendingDetail.jobId === detailJobId);
+        clearPendingJobDetail();
         window.setTimeout(() => openJobDetail(job), 220);
       }
     }
 
-    const resumeJobId = params.get('resumeJob') || params.get('job') || readPendingJobBid()?.jobId || '';
+    const resumeJobId = openedPendingDetail ? '' : (params.get('resumeJob') || params.get('job') || readPendingJobBid()?.jobId || '');
     if (resumeJobId) {
       const readiness = await ensureBidderReady(authHelper);
       const job = jobs.find((item) => item.id === resumeJobId);
