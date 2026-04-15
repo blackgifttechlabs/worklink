@@ -12610,6 +12610,19 @@ header {
   overflow-y: auto;
 }
 
+/* Ensure hidden modal shells do not block pointer events or remain in layout */
+.job-modal-shell[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.job-modal-shell {
+  pointer-events: none;
+}
+.job-modal-shell.is-visible {
+  pointer-events: auto;
+}
+
 .job-modal-open {
   overflow: hidden;
 }

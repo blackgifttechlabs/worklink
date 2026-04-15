@@ -180,6 +180,37 @@
     }
   }
 
+  function showSuccessToast(message = 'Profile completed', delay = 900) {
+    try {
+      const existing = document.querySelector('.wl-success-toast');
+      if (existing) existing.remove();
+      const el = document.createElement('div');
+      el.className = 'wl-success-toast';
+      el.textContent = message;
+      Object.assign(el.style, {
+        position: 'fixed',
+        left: '50%',
+        top: '20px',
+        transform: 'translateX(-50%)',
+        background: '#ffffff',
+        color: '#0b0b0b',
+        padding: '10px 14px',
+        borderRadius: '10px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+        zIndex: 2300,
+        fontWeight: 700,
+        transition: 'opacity 0.24s ease'
+      });
+      document.body.appendChild(el);
+      window.setTimeout(() => {
+        el.style.opacity = '0';
+        window.setTimeout(() => el.remove(), 240);
+      }, Number(delay) || 900);
+    } catch (e) {
+      // ignore
+    }
+  }
+
   function readSessionFlag(key) {
     try {
       return sessionStorage.getItem(key) || '';
@@ -1498,26 +1529,27 @@
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!validateActiveStep()) return;
-      if (!uploadState.profileImageData || !uploadState.bannerImageData) {
-        window.alert('Add both your profile image and banner image before saving.');
-        return;
-      }
       const authHelper = await waitForAuthHelper();
       if (!authHelper || typeof authHelper.saveProviderProfile !== 'function') return;
 
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
-      payload.profileImageData = uploadState.profileImageData;
-      payload.bannerImageData = uploadState.bannerImageData;
+      // attach images only if available (make images optional)
+      if (uploadState.profileImageData) payload.profileImageData = uploadState.profileImageData;
+      if (uploadState.bannerImageData) payload.bannerImageData = uploadState.bannerImageData;
 
       if (submitBtn instanceof HTMLButtonElement) {
         submitBtn.disabled = true;
         submitBtn.classList.add('is-loading');
       }
       try {
-        await authHelper.saveProviderProfile(payload);
+        const saved = await authHelper.saveProviderProfile(payload);
+        // show success message, close onboarding, then redirect to provider profile
+        showSuccessToast('Profile completed — redirecting…', 1000);
         closeOnboarding();
-        window.location.reload();
+        const base = getBase();
+        const redirectUrl = saved && saved.uid ? `${base}pages/provider-profile.html?uid=${encodeURIComponent(saved.uid)}&province=${encodeURIComponent(saved.provinceSlug || '')}` : `${base}pages/provider-profile.html`;
+        window.setTimeout(() => window.location.href = redirectUrl, 1000);
       } catch (error) {
         window.alert(error.message || 'Could not save your provider profile.');
       } finally {
