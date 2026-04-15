@@ -1,0 +1,10 @@
+      if (activeTab === 'previous') {
+        const main = page.querySelector('.job-giver-main');
+        if (main) {
+          main.querySelectorAll('.job-owner-card, .specialists-empty, .job-placed-bid-card').forEach((n) => n.remove());
+          const host = document.createElement('div');
+          host.className = 'previous-jobs-host';
+          host.innerHTML = buildPreviousJobsContent();
+          main.appendChild(host);
+        }
+      }

@@ -1,0 +1,348 @@
+54:      const tabContent = activeTab === 'jobs'
+55-        ? (currentJobs.length ? currentJobs.map((job) => `
+56-          <article class="job-owner-card">
+57-            <div class="job-owner-card-head">
+58-              <div>
+59-                <span class="job-card-tag">${escapeHtml(job.category)}</span>
+60-                ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+61-                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+62-              </div>
+63-              <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+64-            </div>
+65-            <p>${escapeHtml(job.description)}</p>
+66-            <div class="job-card-meta">
+67-              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+68-              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+69-              <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+70-            </div>
+71-            <div class="job-owner-applications">
+72-              ${job.applications.length ? job.applications.map((application) => `
+73-                <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+74-                  <div class="job-bidder-main">
+75-                    <div class="job-bidder-avatar">
+76-                      ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+77-                    </div>
+78-                    <div>
+79-                      <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+80-                      <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+81-                      <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+82-                    </div>
+83-                  </div>
+84-                  <div class="job-bidder-side">
+85-                    <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+86-                    <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+87-                    <div class="job-bidder-actions">
+88-                      ${application.status === 'accepted' ? `
+89-                        <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+90-                      ` : `
+91-                        <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+92-                      `}
+93-                      ${application.status !== 'rejected' ? `
+94-                        <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+95-                      ` : ''}
+96-                    </div>
+97-                  </div>
+98-                </article>
+99-              `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+100-            </div>
+101-          </article>
+102-        `).join('') : `
+103-          <div class="specialists-empty">
+104-            <div>
+105-              <h2>No jobs posted yet</h2>
+106-              <p>Post your first job and providers will start bidding here.</p>
+107-            </div>
+108-          </div>
+109-        `)
+110-      : activeTab === 'previous'
+111-        ? buildPreviousJobsContent()
+112-        : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+113-          <article class="job-owner-card job-placed-bid-card">
+114-            <div class="job-owner-card-head">
+115-              <div>
+116-                <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+117-                ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+118-                <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+119-              </div>
+120-              <div class="job-placed-bid-side">
+121-                <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+122-                <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+123-              </div>
+124-            </div>
+125-            <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+126-            <div class="job-card-meta">
+127-              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+128-              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+129-              <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+130-            </div>
+131-            <div class="job-card-actions">
+132-              ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+133-              <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+134-            </div>
+135-          </article>
+136-        `).join('') : `
+137-          <div class="specialists-empty">
+138-            <div>
+139-              <h2>No bids placed yet</h2>
+140-              <p>When you bid on a job, it will show here with its current status.</p>
+141-            </div>
+142-          </div>
+143-        `);
+144-
+145-      page.innerHTML = `
+146-        <section class="job-page-shell">
+147-          <section class="job-giver-dashboard">
+148-            <div class="job-giver-layout">
+149-              <aside class="job-dashboard-tabs">
+150-                <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
+151-                  <i class="fa-solid fa-briefcase"></i>
+152-                  <span>Jobs I Posted</span>
+153-                  ${receivedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${receivedBidCount}</span>` : ''}
+154-                </button>
+155-                <button type="button" class="${activeTab === 'previous' ? 'is-active' : ''}" data-job-dashboard-tab="previous">
+156-                  <i class="fa-solid fa-clock-rotate-left"></i>
+157-                  <span>Previous Jobs</span>
+158-                  ${previousCount > 0 ? `<span class="job-dashboard-tab-badge">${previousCount}</span>` : ''}
+159-                </button>
+160-                <button type="button" class="${activeTab === 'bids' ? 'is-active' : ''}" data-job-dashboard-tab="bids">
+161-                  <i class="fa-solid fa-handshake"></i>
+162-                  <span>Bids I Placed</span>
+163-                  ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
+164-                </button>
+165-              </aside>
+166-
+167-              <div class="job-giver-main">
+168-                <div class="job-dashboard-summary">
+169-                  <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary">
+170-                    <div class="summary-head">
+171-                      <h3>Jobs I Posted</h3>
+172-                      <span class="summary-badge">${receivedBidCount}</span>
+173-                    </div>
+174-                    <div class="summary-body">
+175-                      <table class="summary-table">
+176-                        <thead>
+177-                          <tr><th>Job</th><th>Bids</th><th>Budget</th></tr>
+178-                        </thead>
+179-                        <tbody>
+180-                          ${currentJobs.slice(0, 6).map((job) => `
+181-                            <tr>
+182-                              <td>${escapeHtml(job.subcategory || job.category || 'Job')}</td>
+183-                              <td>${(Array.isArray(job.applications) ? job.applications.length : 0)}</td>
+184-                              <td>${escapeHtml(formatCurrency(job.budget))}</td>
+185-                            </tr>
+186-                          `).join('')}
+187-                        </tbody>
+188-                      </table>
+189-                    </div>
+190-                  </div>
+191-
+192-                  <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary">
+193-                    <div class="summary-head">
+194-                      <h3>Bids I Placed</h3>
+195-                      <span class="summary-badge">${placedBidCount}</span>
+196-                    </div>
+197-                    <div class="summary-body">
+198-                      <table class="summary-table">
+199-                        <thead>
+200-                          <tr><th>Job</th><th>Status</th><th>Offer</th></tr>
+201-                        </thead>
+202-                        <tbody>
+203-                          ${currentPlacedBids.slice(0, 6).map((bid) => `
+204-                            <tr>
+205-                              <td>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job')}</td>
+206-                              <td>${escapeHtml(bid.status || 'pending')}</td>
+207-                              <td>${escapeHtml(formatCurrency(bid.proposedBudget))}</td>
+208-                            </tr>
+209-                          `).join('')}
+210-                        </tbody>
+211-                      </table>
+212-                    </div>
+213-                  </div>
+214-                </div>
+215-
+216-                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''}">
+217-                  ${tabContent}
+218-                </div>
+219-                  <article class="job-owner-card">
+220-                    <div class="job-owner-card-head">
+221-                      <div>
+222-                        <span class="job-card-tag">${escapeHtml(job.category)}</span>
+223-                        ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+224-                        <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+225-                      </div>
+226-                      <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+227-                    </div>
+228-                    <p>${escapeHtml(job.description)}</p>
+229-                    <div class="job-card-meta">
+230-                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+231-                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+232-                      <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+233-                    </div>
+234-                    <div class="job-owner-applications">
+235-                      ${job.applications.length ? job.applications.map((application) => `
+236-                        <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+237-                          <div class="job-bidder-main">
+238-                            <div class="job-bidder-avatar">
+239-                              ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+240-                            </div>
+241-                            <div>
+242-                              <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+243-                              <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+244-                              <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+245-                            </div>
+246-                          </div>
+247-                          <div class="job-bidder-side">
+248-                            <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+249-                            <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+250-                            <div class="job-bidder-actions">
+251-                              ${application.status === 'accepted' ? `
+252-                                <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+253-                              ` : `
+254-                                <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+255-                              `}
+256-                              ${application.status !== 'rejected' ? `
+257-                                <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+258-                              ` : ''}
+259-                            </div>
+260-                          </div>
+261-                        </article>
+262-                      `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+263-                    </div>
+264-                  </article>
+265-                `).join('') : `
+266-                  <div class="specialists-empty">
+267-                    <div>
+268-                      <h2>No jobs posted yet</h2>
+269-                      <p>Post your first job and providers will start bidding here.</p>
+270-                    </div>
+271-                  </div>
+272-                `) : activeTab === 'previous' ? '' : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+273-                  <article class="job-owner-card job-placed-bid-card">
+274-                    <div class="job-owner-card-head">
+275-                      <div>
+276-                        <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+277-                        ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+278-                        <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+279-                      </div>
+280-                      <div class="job-placed-bid-side">
+281-                        <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+282-                        <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+283-                      </div>
+284-                    </div>
+285-                    <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+286-                    <div class="job-card-meta">
+287-                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+288-                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+289-                      <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+290-                    </div>
+291-                    <div class="job-card-actions">
+292-                      ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+293-                      <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+294-                    </div>
+295-                  </article>
+296-                `).join('') : `
+297-                  <div class="specialists-empty">
+298-                    <div>
+299-                      <h2>No bids placed yet</h2>
+300-                      <p>When you bid on a job, it will show here with its current status.</p>
+301-                    </div>
+302-                  </div>
+303-                `)}
+304-              </div>
+305-            </div>
+306-          </section>
+307-        </section>
+308-      `;
+309-
+310-      page.querySelectorAll('[data-job-dashboard-tab]').forEach((button) => {
+311-        button.addEventListener('click', () => {
+312-          const tab = button.getAttribute('data-job-dashboard-tab') || 'jobs';
+313-          activeTab = tab;
+314-          const nextUrl = new URL(window.location.href);
+315-          nextUrl.searchParams.set('tab', activeTab);
+316-          window.history.replaceState({}, '', nextUrl.toString());
+317-          renderDashboard(currentProfile, currentJobs, currentPlacedBids);
+318-        });
+319-      });
+320-
+321-      page.querySelectorAll('[data-job-application-action]').forEach((button) => {
+322-        button.addEventListener('click', async () => {
+323-          const status = button.getAttribute('data-job-application-action') || '';
+324-          const jobId = button.getAttribute('data-job-id') || '';
+325-          const applicationId = button.getAttribute('data-application-id') || '';
+326-          setButtonLoading(button, true);
+327-          try {
+328-            await authHelper.updateJobApplicationStatus(jobId, applicationId, status);
+329-            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+330-            const selectedJob = currentJobs.find((job) => job.id === jobId);
+331-            const selectedApplication = selectedJob?.applications?.find((application) => application.id === applicationId) || null;
+332-            if (status === 'accepted' && selectedApplication?.bidderUid) {
+333-              window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
+334-              return;
+335-            }
+336-            const refreshedJobs = await Promise.all((await authHelper.listJobsForUser(account.uid).catch(() => currentJobs)).map(async (job) => ({
+337-              ...job,
+338-              applications: await authHelper.listJobApplications(job.id).catch(() => [])
+339-            })));
+340-            renderDashboard(currentProfile, refreshedJobs, currentPlacedBids);
+341-          } catch (error) {
+342-            window.alert(error.message || 'Could not update that bid.');
+343-          } finally {
+344-            setButtonLoading(button, false);
+345-          }
+346-        });
+347-      });
+348-
+349-      // previous job expand/collapse toggles
+350-      page.querySelectorAll('[data-previous-toggle]').forEach((btn) => {
+351-        btn.addEventListener('click', () => {
+352-          const card = btn.closest('.previous-job-card');
+353-          if (!card) return;
+354-          const details = card.querySelector('.previous-job-details');
+355-          if (!details) return;
+356-          const isHidden = details.hasAttribute('hidden');
+357-          if (isHidden) {
+358-            details.removeAttribute('hidden');
+359-            btn.textContent = 'Hide details';
+360-            card.classList.add('is-expanded');
+361-          } else {
+362-            details.setAttribute('hidden', '');
+363-            btn.textContent = 'View details';
+364-            card.classList.remove('is-expanded');
+365-          }
+366-        });
+367-      });
+368-
+369-      // if user selected the Previous tab, replace listing with previous jobs content
+370-      if (activeTab === 'previous') {
+371-        const main = page.querySelector('.job-giver-main');
+372-        if (main) {
+373-          main.querySelectorAll('.job-owner-card, .specialists-empty, .job-placed-bid-card').forEach((n) => n.remove());
+374-          const host = document.createElement('div');
+375-          host.className = 'previous-jobs-host';
+376-          host.innerHTML = buildPreviousJobsContent();
+377-          main.appendChild(host);
+378-        }
+379-      }
+380-    }
+381-
+382-    function openEditModal(modal, currentProfile) {
+383-      if (!(modal instanceof HTMLElement)) return;
+384-      modal.hidden = false;
+385-      document.body.classList.add('job-modal-open');
+386-      modal.innerHTML = `
+387-        <div class="job-modal-panel job-giver-edit-panel">
+388-          <button type="button" class="job-modal-close" data-job-giver-close><i class="fa-solid fa-xmark"></i></button>
+389-          <span class="job-page-kicker">Edit hiring profile</span>
+390-          <h2>Update the details people see when you post work</h2>
+391-          <form class="job-giver-edit-form" data-job-giver-edit-form>
+392-            <div class="job-form-grid">
+393-              <label class="job-form-field">
+394-                <span>Display name</span>
+395-                <input type="text" name="displayName" value="${escapeHtml(currentProfile.displayName || '')}" required />
+396-              </label>
+397-              <label class="job-form-field">
+398-                <span>Phone number</span>
+399-                <input type="tel" name="phone" value="${escapeHtml(currentProfile.phone || '')}" required />
+400-              </label>
+401-              <label class="job-form-field is-wide">

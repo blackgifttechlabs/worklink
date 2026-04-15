@@ -1,0 +1,401 @@
+1703:      const tabContent = activeTab === 'jobs'
+1704-        ? (currentJobs.length ? currentJobs.map((job) => `
+1705-          <article class="job-owner-card">
+1706-            <div class="job-owner-card-head">
+1707-              <div>
+1708-                <span class="job-card-tag">${escapeHtml(job.category)}</span>
+1709-                ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+1710-                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+1711-              </div>
+1712-              <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+1713-            </div>
+1714-            <p>${escapeHtml(job.description)}</p>
+1715-            <div class="job-card-meta">
+1716-              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+1717-              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+1718-              <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+1719-            </div>
+1720-            <div class="job-owner-applications">
+1721-              ${job.applications.length ? job.applications.map((application) => `
+1722-                <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+1723-                  <div class="job-bidder-main">
+1724-                    <div class="job-bidder-avatar">
+1725-                      ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+1726-                    </div>
+1727-                    <div>
+1728-                      <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+1729-                      <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+1730-                      <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+1731-                    </div>
+1732-                  </div>
+1733-                  <div class="job-bidder-side">
+1734-                    <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+1735-                    <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+1736-                    <div class="job-bidder-actions">
+1737-                      ${application.status === 'accepted' ? `
+1738-                        <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+1739-                      ` : `
+1740-                        <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+1741-                      `}
+1742-                      ${application.status !== 'rejected' ? `
+1743-                        <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+1744-                      ` : ''}
+1745-                    </div>
+1746-                  </div>
+1747-                </article>
+1748-              `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+1749-            </div>
+1750-          </article>
+1751-        `).join('') : `
+1752-          <div class="specialists-empty">
+1753-            <div>
+1754-              <h2>No jobs posted yet</h2>
+1755-              <p>Post your first job and providers will start bidding here.</p>
+1756-            </div>
+1757-          </div>
+1758-        `)
+1759-      : activeTab === 'previous'
+1760-        ? buildPreviousJobsContent()
+1761-        : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+1762-          <article class="job-owner-card job-placed-bid-card">
+1763-            <div class="job-owner-card-head">
+1764-              <div>
+1765-                <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+1766-                ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+1767-                <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+1768-              </div>
+1769-              <div class="job-placed-bid-side">
+1770-                <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+1771-                <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+1772-              </div>
+1773-            </div>
+1774-            <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+1775-            <div class="job-card-meta">
+1776-              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+1777-              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+1778-              <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+1779-            </div>
+1780-            <div class="job-card-actions">
+1781-              ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+1782-              <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+1783-            </div>
+1784-          </article>
+1785-        `).join('') : `
+1786-          <div class="specialists-empty">
+1787-            <div>
+1788-              <h2>No bids placed yet</h2>
+1789-              <p>When you bid on a job, it will show here with its current status.</p>
+1790-            </div>
+1791-          </div>
+1792-        `);
+1793-
+1794-      page.innerHTML = `
+1795-        <section class="job-page-shell">
+1796-          <section class="job-giver-dashboard">
+1797-            <div class="job-giver-layout">
+1798-              <aside class="job-dashboard-tabs">
+1799-                <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
+1800-                  <i class="fa-solid fa-briefcase"></i>
+1801-                  <span>Jobs I Posted</span>
+1802-                  ${receivedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${receivedBidCount}</span>` : ''}
+1803-                </button>
+1804-                <button type="button" class="${activeTab === 'previous' ? 'is-active' : ''}" data-job-dashboard-tab="previous">
+1805-                  <i class="fa-solid fa-clock-rotate-left"></i>
+1806-                  <span>Previous Jobs</span>
+1807-                  ${previousCount > 0 ? `<span class="job-dashboard-tab-badge">${previousCount}</span>` : ''}
+1808-                </button>
+1809-                <button type="button" class="${activeTab === 'bids' ? 'is-active' : ''}" data-job-dashboard-tab="bids">
+1810-                  <i class="fa-solid fa-handshake"></i>
+1811-                  <span>Bids I Placed</span>
+1812-                  ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
+1813-                </button>
+1814-              </aside>
+1815-
+1816-              <div class="job-giver-main">
+1817-                <div class="job-dashboard-summary">
+1818-                  <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary">
+1819-                    <div class="summary-head">
+1820-                      <h3>Jobs I Posted</h3>
+1821-                      <span class="summary-badge">${receivedBidCount}</span>
+1822-                    </div>
+1823-                    <div class="summary-body">
+1824-                      <table class="summary-table">
+1825-                        <thead>
+1826-                          <tr><th>Job</th><th>Bids</th><th>Budget</th></tr>
+1827-                        </thead>
+1828-                        <tbody>
+1829-                          ${currentJobs.slice(0, 6).map((job) => `
+1830-                            <tr>
+1831-                              <td>${escapeHtml(job.subcategory || job.category || 'Job')}</td>
+1832-                              <td>${(Array.isArray(job.applications) ? job.applications.length : 0)}</td>
+1833-                              <td>${escapeHtml(formatCurrency(job.budget))}</td>
+1834-                            </tr>
+1835-                          `).join('')}
+1836-                        </tbody>
+1837-                      </table>
+1838-                    </div>
+1839-                  </div>
+1840-
+1841-                  <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary">
+1842-                    <div class="summary-head">
+1843-                      <h3>Bids I Placed</h3>
+1844-                      <span class="summary-badge">${placedBidCount}</span>
+1845-                    </div>
+1846-                    <div class="summary-body">
+1847-                      <table class="summary-table">
+1848-                        <thead>
+1849-                          <tr><th>Job</th><th>Status</th><th>Offer</th></tr>
+1850-                        </thead>
+1851-                        <tbody>
+1852-                          ${currentPlacedBids.slice(0, 6).map((bid) => `
+1853-                            <tr>
+1854-                              <td>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job')}</td>
+1855-                              <td>${escapeHtml(bid.status || 'pending')}</td>
+1856-                              <td>${escapeHtml(formatCurrency(bid.proposedBudget))}</td>
+1857-                            </tr>
+1858-                          `).join('')}
+1859-                        </tbody>
+1860-                      </table>
+1861-                    </div>
+1862-                  </div>
+1863-                </div>
+1864-
+1865-                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''}">
+1866-                  ${tabContent}
+1867-                </div>
+1868-                  <article class="job-owner-card">
+1869-                    <div class="job-owner-card-head">
+1870-                      <div>
+1871-                        <span class="job-card-tag">${escapeHtml(job.category)}</span>
+1872-                        ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+1873-                        <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+1874-                      </div>
+1875-                      <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+1876-                    </div>
+1877-                    <p>${escapeHtml(job.description)}</p>
+1878-                    <div class="job-card-meta">
+1879-                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+1880-                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+1881-                      <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+1882-                    </div>
+1883-                    <div class="job-owner-applications">
+1884-                      ${job.applications.length ? job.applications.map((application) => `
+1885-                        <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+1886-                          <div class="job-bidder-main">
+1887-                            <div class="job-bidder-avatar">
+1888-                              ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+1889-                            </div>
+1890-                            <div>
+1891-                              <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+1892-                              <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+1893-                              <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+1894-                            </div>
+1895-                          </div>
+1896-                          <div class="job-bidder-side">
+1897-                            <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+1898-                            <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+1899-                            <div class="job-bidder-actions">
+1900-                              ${application.status === 'accepted' ? `
+1901-                                <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+1902-                              ` : `
+1903-                                <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+1904-                              `}
+1905-                              ${application.status !== 'rejected' ? `
+1906-                                <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+1907-                              ` : ''}
+1908-                            </div>
+1909-                          </div>
+1910-                        </article>
+1911-                      `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+1912-                    </div>
+1913-                  </article>
+1914-                `).join('') : `
+1915-                  <div class="specialists-empty">
+1916-                    <div>
+1917-                      <h2>No jobs posted yet</h2>
+1918-                      <p>Post your first job and providers will start bidding here.</p>
+1919-                    </div>
+1920-                  </div>
+1921-                `) : activeTab === 'previous' ? '' : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+1922-                  <article class="job-owner-card job-placed-bid-card">
+1923-                    <div class="job-owner-card-head">
+1924-                      <div>
+1925-                        <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+1926-                        ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+1927-                        <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+1928-                      </div>
+1929-                      <div class="job-placed-bid-side">
+1930-                        <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+1931-                        <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+1932-                      </div>
+1933-                    </div>
+1934-                    <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+1935-                    <div class="job-card-meta">
+1936-                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+1937-                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+1938-                      <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+1939-                    </div>
+1940-                    <div class="job-card-actions">
+1941-                      ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+1942-                      <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+1943-                    </div>
+1944-                  </article>
+1945-                `).join('') : `
+1946-                  <div class="specialists-empty">
+1947-                    <div>
+1948-                      <h2>No bids placed yet</h2>
+1949-                      <p>When you bid on a job, it will show here with its current status.</p>
+1950-                    </div>
+1951-                  </div>
+1952-                `)}
+1953-              </div>
+1954-            </div>
+1955-          </section>
+1956-        </section>
+1957-      `;
+1958-
+1959-      page.querySelectorAll('[data-job-dashboard-tab]').forEach((button) => {
+1960-        button.addEventListener('click', () => {
+1961-          const tab = button.getAttribute('data-job-dashboard-tab') || 'jobs';
+1962-          activeTab = tab;
+1963-          const nextUrl = new URL(window.location.href);
+1964-          nextUrl.searchParams.set('tab', activeTab);
+1965-          window.history.replaceState({}, '', nextUrl.toString());
+1966-          renderDashboard(currentProfile, currentJobs, currentPlacedBids);
+1967-        });
+1968-      });
+1969-
+1970-      page.querySelectorAll('[data-job-application-action]').forEach((button) => {
+1971-        button.addEventListener('click', async () => {
+1972-          const status = button.getAttribute('data-job-application-action') || '';
+1973-          const jobId = button.getAttribute('data-job-id') || '';
+1974-          const applicationId = button.getAttribute('data-application-id') || '';
+1975-          setButtonLoading(button, true);
+1976-          try {
+1977-            await authHelper.updateJobApplicationStatus(jobId, applicationId, status);
+1978-            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+1979-            const selectedJob = currentJobs.find((job) => job.id === jobId);
+1980-            const selectedApplication = selectedJob?.applications?.find((application) => application.id === applicationId) || null;
+1981-            if (status === 'accepted' && selectedApplication?.bidderUid) {
+1982-              window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
+1983-              return;
+1984-            }
+1985-            const refreshedJobs = await Promise.all((await authHelper.listJobsForUser(account.uid).catch(() => currentJobs)).map(async (job) => ({
+1986-              ...job,
+1987-              applications: await authHelper.listJobApplications(job.id).catch(() => [])
+1988-            })));
+1989-            renderDashboard(currentProfile, refreshedJobs, currentPlacedBids);
+1990-          } catch (error) {
+1991-            window.alert(error.message || 'Could not update that bid.');
+1992-          } finally {
+1993-            setButtonLoading(button, false);
+1994-          }
+1995-        });
+1996-      });
+1997-
+1998-      // previous job expand/collapse toggles
+1999-      page.querySelectorAll('[data-previous-toggle]').forEach((btn) => {
+2000-        btn.addEventListener('click', () => {
+2001-          const card = btn.closest('.previous-job-card');
+2002-          if (!card) return;
+2003-          const details = card.querySelector('.previous-job-details');
+2004-          if (!details) return;
+2005-          const isHidden = details.hasAttribute('hidden');
+2006-          if (isHidden) {
+2007-            details.removeAttribute('hidden');
+2008-            btn.textContent = 'Hide details';
+2009-            card.classList.add('is-expanded');
+2010-          } else {
+2011-            details.setAttribute('hidden', '');
+2012-            btn.textContent = 'View details';
+2013-            card.classList.remove('is-expanded');
+2014-          }
+2015-        });
+2016-      });
+2017-
+2018-      // if user selected the Previous tab, replace listing with previous jobs content
+2019-      if (activeTab === 'previous') {
+2020-        const main = page.querySelector('.job-giver-main');
+2021-        if (main) {
+2022-          main.querySelectorAll('.job-owner-card, .specialists-empty, .job-placed-bid-card').forEach((n) => n.remove());
+2023-          const host = document.createElement('div');
+2024-          host.className = 'previous-jobs-host';
+2025-          host.innerHTML = buildPreviousJobsContent();
+2026-          main.appendChild(host);
+2027-        }
+2028-      }
+2029-    }
+2030-
+2031-    function openEditModal(modal, currentProfile) {
+2032-      if (!(modal instanceof HTMLElement)) return;
+2033-      modal.hidden = false;
+2034-      document.body.classList.add('job-modal-open');
+2035-      modal.innerHTML = `
+2036-        <div class="job-modal-panel job-giver-edit-panel">
+2037-          <button type="button" class="job-modal-close" data-job-giver-close><i class="fa-solid fa-xmark"></i></button>
+2038-          <span class="job-page-kicker">Edit hiring profile</span>
+2039-          <h2>Update the details people see when you post work</h2>
+2040-          <form class="job-giver-edit-form" data-job-giver-edit-form>
+2041-            <div class="job-form-grid">
+2042-              <label class="job-form-field">
+2043-                <span>Display name</span>
+2044-                <input type="text" name="displayName" value="${escapeHtml(currentProfile.displayName || '')}" required />
+2045-              </label>
+2046-              <label class="job-form-field">
+2047-                <span>Phone number</span>
+2048-                <input type="tel" name="phone" value="${escapeHtml(currentProfile.phone || '')}" required />
+2049-              </label>
+2050-              <label class="job-form-field is-wide">
+2051-                <span>Address</span>
+2052-                <textarea name="address" required>${escapeHtml(currentProfile.address || '')}</textarea>
+2053-              </label>
+2054-              <label class="job-form-field is-wide">
+2055-                <span>Short bio</span>
+2056-                <textarea name="bio" placeholder="I use WorkLinkUp to find trusted people for the jobs I post.">${escapeHtml(currentProfile.bio || '')}</textarea>
+2057-              </label>
+2058-            </div>
+2059-
+2060-            <div class="job-giver-media-grid">
+2061-              <label class="job-media-dropzone" data-job-profile-dropzone>
+2062-                <input type="file" accept="image/*" data-job-profile-file />
+2063-                <div class="job-media-preview" data-job-profile-preview></div>
+2064-                <strong>Profile image</strong>
+2065-                <span>Drag and drop or upload from device.</span>
+2066-              </label>
+2067-              <label class="job-media-dropzone is-banner" data-job-banner-dropzone>
+2068-                <input type="file" accept="image/*" data-job-banner-file />
+2069-                <div class="job-media-preview" data-job-banner-preview></div>
+2070-                <strong>Banner image</strong>
+2071-                <span>Drag and drop or upload from device.</span>
+2072-              </label>
+2073-            </div>
+2074-
+2075-            <div class="job-modal-actions">
+2076-              <button type="button" class="btn-secondary fleece-secondary" data-job-giver-close>Cancel</button>
+2077-              <button type="submit" class="btn-primary" data-job-giver-save>Save changes</button>
+2078-            </div>
+2079-          </form>
+2080-        </div>
+2081-      `;
+2082-
+2083-      const form = modal.querySelector('[data-job-giver-edit-form]');
+2084-      const closeButtons = modal.querySelectorAll('[data-job-giver-close]');
+2085-      const profileFile = modal.querySelector('[data-job-profile-file]');
+2086-      const bannerFile = modal.querySelector('[data-job-banner-file]');
+2087-      const profilePreview = modal.querySelector('[data-job-profile-preview]');
+2088-      const bannerPreview = modal.querySelector('[data-job-banner-preview]');
+2089-      const nextMedia = {
+2090-        profileImageData: currentProfile.profileImageData || '',
+2091-        bannerImageData: currentProfile.bannerImageData || ''
+2092-      };
+2093-
+2094-      function setPreview(host, source, fallbackLabel) {
+2095-        if (!(host instanceof HTMLElement)) return;
+2096-        host.innerHTML = source
+2097-          ? `<img src="${escapeHtml(resolveMediaSrc(source))}" alt="${escapeHtml(fallbackLabel)}" />`
+2098-          : `<span>${escapeHtml(fallbackLabel)}</span>`;
+2099-      }
+2100-
+2101-      setPreview(profilePreview, nextMedia.profileImageData, 'Profile');
+2102-      setPreview(bannerPreview, nextMedia.bannerImageData, 'Banner');
+2103-
