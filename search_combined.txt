@@ -1,0 +1,252 @@
+      const tabContent = activeTab === 'jobs'
+      ? (currentJobs.length ? currentJobs.map((job) => `
+          <article class="job-owner-card">
+            <div class="job-owner-card-head">
+              <div>
+                <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+              </div>
+              <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+            </div>
+            <p>${escapeHtml(job.description)}</p>
+            <div class="job-card-meta">
+              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+              <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+            </div>
+            <div class="job-owner-applications">
+              ${job.applications.length ? job.applications.map((application) => `
+                <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+                  <div class="job-bidder-main">
+                    <div class="job-bidder-avatar">
+                      ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+                    </div>
+                    <div>
+                      <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+                      <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+                      <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+                    </div>
+                  </div>
+                  <div class="job-bidder-side">
+                    <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+                    <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+                    <div class="job-bidder-actions">
+                      ${application.status === 'accepted' ? `
+                        <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+                      ` : `
+                        <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+                      `}
+                      ${application.status !== 'rejected' ? `
+                        <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </article>
+              `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+            </div>
+          </article>
+        `).join('') : `
+          <div class="specialists-empty">
+            <div>
+              <h2>No jobs posted yet</h2>
+              <p>Post your first job and providers will start bidding here.</p>
+            </div>
+          </div>
+        `)
+      : activeTab === 'previous'
+        ? buildPreviousJobsContent()
+        : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+          <article class="job-owner-card job-placed-bid-card">
+            <div class="job-owner-card-head">
+              <div>
+                <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+                ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+                <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+              </div>
+              <div class="job-placed-bid-side">
+                <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+                <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+              </div>
+            </div>
+            <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+            <div class="job-card-meta">
+              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+              <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+            </div>
+            <div class="job-card-actions">
+              ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+              <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+            </div>
+          </article>
+        `).join('') : `
+          <div class="specialists-empty">
+            <div>
+              <h2>No bids placed yet</h2>
+              <p>When you bid on a job, it will show here with its current status.</p>
+            </div>
+          </div>
+        `);
+      page.innerHTML = `
+        <section class="job-page-shell">
+          <section class="job-giver-dashboard">
+            <div class="job-giver-layout">
+              <aside class="job-dashboard-tabs">
+                <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
+                  <i class="fa-solid fa-briefcase"></i>
+                  <span>Jobs I Posted</span>
+                  ${receivedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${receivedBidCount}</span>` : ''}
+                </button>
+                <button type="button" class="${activeTab === 'previous' ? 'is-active' : ''}" data-job-dashboard-tab="previous">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  <span>Previous Jobs</span>
+                  ${previousCount > 0 ? `<span class="job-dashboard-tab-badge">${previousCount}</span>` : ''}
+                </button>
+                <button type="button" class="${activeTab === 'bids' ? 'is-active' : ''}" data-job-dashboard-tab="bids">
+                  <i class="fa-solid fa-handshake"></i>
+                  <span>Bids I Placed</span>
+                  ${placedBidCount > 0 ? `<span class="job-dashboard-tab-badge">${placedBidCount}</span>` : ''}
+                </button>
+              </aside>
+
+              <div class="job-giver-main">
+                <div class="job-dashboard-summary">
+                  <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary">
+                    <div class="summary-head">
+                      <h3>Jobs I Posted</h3>
+                      <span class="summary-badge">${receivedBidCount}</span>
+                    </div>
+                    <div class="summary-body">
+                      <table class="summary-table">
+                        <thead>
+                          <tr><th>Job</th><th>Bids</th><th>Budget</th></tr>
+                        </thead>
+                        <tbody>
+                          ${currentJobs.slice(0,6).map((job) => `
+                            <tr>
+                              <td>${escapeHtml(job.subcategory || job.category || 'Job')}</td>
+                              <td>${(Array.isArray(job.applications) ? job.applications.length : 0)}</td>
+                              <td>${escapeHtml(formatCurrency(job.budget))}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="summary-card bids-summary" role="region" aria-label="Bids I Placed summary">
+                    <div class="summary-head">
+                      <h3>Bids I Placed</h3>
+                      <span class="summary-badge">${placedBidCount}</span>
+                    </div>
+                    <div class="summary-body">
+                      <table class="summary-table">
+                        <thead>
+                          <tr><th>Job</th><th>Status</th><th>Offer</th></tr>
+                        </thead>
+                        <tbody>
+                          ${currentPlacedBids.slice(0,6).map((bid) => `
+                            <tr>
+                              <td>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job')}</td>
+                              <td>${escapeHtml(bid.status || 'pending')}</td>
+                              <td>${escapeHtml(formatCurrency(bid.proposedBudget))}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                ${activeTab === 'previous' ? buildPreviousJobsContent() : (activeTab === 'jobs' ? (currentJobs.length ? currentJobs.map((job) => `
+                  <article class="job-owner-card">
+                    <div class="job-owner-card-head">
+                      <div>
+                        <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                        ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                        <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+                      </div>
+                      <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+                    </div>
+                    <p>${escapeHtml(job.description)}</p>
+                    <div class="job-card-meta">
+                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+                      <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="job-owner-applications">
+                      ${job.applications.length ? job.applications.map((application) => `
+                        <article class="job-bidder-card ${application.status === 'accepted' ? 'is-accepted' : application.status === 'rejected' ? 'is-rejected' : ''}">
+                          <div class="job-bidder-main">
+                            <div class="job-bidder-avatar">
+                              ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+                            </div>
+                            <div>
+                              <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+                              <span>${escapeHtml(application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member')}</span>
+                              <small>${escapeHtml(application.bidderMessage || 'No note added with this bid.')}</small>
+                            </div>
+                          </div>
+                          <div class="job-bidder-side">
+                            <strong>${escapeHtml(formatCurrency(application.proposedBudget))}</strong>
+                            <span class="job-bidder-status is-${escapeHtml(application.status || 'pending')}">${escapeHtml(application.status || 'pending')}</span>
+                            <div class="job-bidder-actions">
+                              ${application.status === 'accepted' ? `
+                                <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+                              ` : `
+                                <button type="button" class="btn-primary" data-job-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+                              `}
+                              ${application.status !== 'rejected' ? `
+                                <button type="button" class="btn-secondary fleece-secondary" data-job-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+                              ` : ''}
+                            </div>
+                          </div>
+                        </article>
+                      `).join('') : `<div class="job-owner-empty-bids">No bids on this job yet.</div>`}
+                    </div>
+                  </article>
+                `).join('') : `
+                  <div class="specialists-empty">
+                    <div>
+                      <h2>No jobs posted yet</h2>
+                      <p>Post your first job and providers will start bidding here.</p>
+                    </div>
+                  </div>
+                `) : activeTab === 'previous' ? '' : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+                  <article class="job-owner-card job-placed-bid-card">
+                    <div class="job-owner-card-head">
+                      <div>
+                        <span class="job-card-tag">${escapeHtml(bid.job?.category || 'Job')}</span>
+                        ${bid.job?.subcategory ? `<span class="job-card-subtag">${escapeHtml(bid.job.subcategory)}</span>` : ''}
+                        <h3>${escapeHtml(bid.job?.subcategory || bid.job?.category || 'Job post')}</h3>
+                      </div>
+                      <div class="job-placed-bid-side">
+                        <strong>${escapeHtml(formatCurrency(bid.proposedBudget))}</strong>
+                        <span class="job-bidder-status is-${escapeHtml(bid.status || 'pending')}">${escapeHtml(bid.status || 'pending')}</span>
+                      </div>
+                    </div>
+                    <p>${escapeHtml(bid.job?.description || bid.bidderMessage || 'Your bid has been sent for this job.')}</p>
+                    <div class="job-card-meta">
+                      <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(bid.job?.address || 'Address not shared')}</span>
+                      <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(bid.job?.createdAtMs || bid.createdAtMs))}</span>
+                      <span><i class="fa-regular fa-user"></i>${escapeHtml(bid.job?.ownerName || 'WorkLinkUp client')}</span>
+                    </div>
+                    <div class="job-card-actions">
+                      ${bid.job?.id ? `<a href="${buildJobHref(bid.job.id)}" class="btn-secondary fleece-secondary">View Job</a>` : ''}
+                      <a href="${getBase()}pages/job-posts.html" class="btn-primary">Browse Jobs</a>
+                    </div>
+                  </article>
+                `).join('') : `
+                  <div class="specialists-empty">
+                    <div>
+                      <h2>No bids placed yet</h2>
+                      <p>When you bid on a job, it will show here with its current status.</p>
+                    </div>
+                  </div>
+                `)}
+              </div>
+            </div>
+          </section>
+        </section>
+      `;

@@ -447,7 +447,10 @@
 .job-giver-page .job-page-shell {
   background: #fff;
   color: #111;
-  padding: 0 0 40px 0;
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  margin: 0;
 }
 
 .job-dashboard-summary {
@@ -12950,35 +12953,68 @@ header {
 }
 
 .job-giver-dashboard {
-  margin-top: 26px;
-  padding: 26px;
+  margin: 0;
+  padding: 0;
+}
+
+.job-giver-layout {
+  display: flex;
+  min-height: calc(100vh - 72px);
 }
 
 .job-dashboard-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  width: 280px;
+  background: #f8fafc;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 72px;
+  height: calc(100vh - 72px);
+  flex-shrink: 0;
 }
 
 .job-dashboard-tabs button {
-  border: 1px solid rgba(23, 50, 108, 0.12);
-  background: #f5f7fb;
-  color: #17326c;
-  border-radius: 999px;
-  min-height: 44px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  border-radius: 12px;
+  min-height: 48px;
   padding: 0 16px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-weight: 700;
+  justify-content: flex-start;
+  gap: 12px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.job-dashboard-tabs button i {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.job-dashboard-tabs button:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: #1e293b;
 }
 
 .job-dashboard-tabs button.is-active {
-  background: #17326c;
-  color: #fff;
-  border-color: #17326c;
+  background: #fff;
+  color: #076fe5;
+  border-color: rgba(7, 111, 229, 0.12);
+  box-shadow: 0 4px 12px rgba(7, 111, 229, 0.08);
+}
+
+.job-giver-main {
+  flex: 1;
+  padding: 32px 40px;
+  background: #fff;
 }
 
 .job-dashboard-tab-badge {
@@ -14138,10 +14174,53 @@ header {
 }
 
 @media (max-width: 768px) {
+  .job-giver-page .job-page-shell {
+    margin: 0;
+    width: 100%;
+  }
+
   .job-page-shell,
   .job-giver-shell {
     width: min(100%, calc(100% - 20px));
     margin: 18px auto 48px;
+  }
+
+  .job-giver-layout {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .job-dashboard-tabs {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 60px;
+    z-index: 10;
+    flex-direction: row;
+    padding: 12px;
+    background: #fff;
+    border-right: none;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    overflow-x: auto;
+    gap: 8px;
+    scrollbar-width: none;
+  }
+
+  .job-dashboard-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .job-dashboard-tabs button {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    padding: 0 14px;
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  .job-giver-main {
+    padding: 20px 16px;
   }
 
   .home-job-cta {
