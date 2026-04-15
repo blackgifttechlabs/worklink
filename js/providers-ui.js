@@ -4688,33 +4688,31 @@
           `}
 
           <form class="account-provider-form" data-account-provider-form novalidate>
-            <div class="account-provider-grid">
-              <section class="account-provider-section account-provider-section-minimal">
-                <div class="account-provider-section-head">
-                  <strong>Provider details</strong>
-                  <span>Only these details are required now.</span>
-                </div>
-                <div class="account-provider-fields account-provider-minimal-fields">
-                  <label class="account-setup-field">
-                    <span>Username</span>
-                    <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
-                    <small>Your username was already reserved for this account.</small>
-                  </label>
-                  <label class="account-setup-field account-typeahead-field">
-                    <span>Location</span>
-                    <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
-                    <div class="account-typeahead-list" data-provider-location-list hidden></div>
-                    <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
-                  </label>
-                  <label class="account-setup-field account-typeahead-field">
-                    <span>Services you provide</span>
-                    <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
-                    <div class="account-typeahead-list" data-provider-service-list hidden></div>
-                    <div class="account-service-chip-list" data-provider-service-chips></div>
-                    <small>Add every service clients can hire you for. You can remove any service before saving.</small>
-                  </label>
-                </div>
-              </section>
+            <div class="account-provider-grid provider-main-layout">
+              <div class="account-provider-section-head">
+                <strong>Provider details</strong>
+                <span>Only these details are required now.</span>
+              </div>
+              <div class="account-provider-fields account-provider-minimal-fields">
+                <label class="account-setup-field">
+                  <span>Username</span>
+                  <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                  <small>Your username was already reserved for this account.</small>
+                </label>
+                <label class="account-setup-field account-typeahead-field">
+                  <span>Location</span>
+                  <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
+                  <div class="account-typeahead-list" data-provider-location-list hidden></div>
+                  <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
+                </label>
+                <label class="account-setup-field account-typeahead-field">
+                  <span>Services you provide</span>
+                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                  <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                  <div class="account-service-chip-list" data-provider-service-chips></div>
+                  <small>Add every service clients can hire you for. You can remove any service before saving.</small>
+                </label>
+              </div>
             </div>
             <input type="hidden" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || userDoc?.username || 'WorkLinkUp Provider')}" />
             <input type="hidden" name="whatsappNumber" value="${escapeHtml(existingProvider.whatsappNumber || account.phone || '')}" />

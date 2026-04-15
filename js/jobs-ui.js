@@ -1901,7 +1901,7 @@
                   <p>Post your first job and providers will start bidding here.</p>
                 </div>
               </div>
-            `) : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
+            `) : activeTab === 'previous' ? '' : (currentPlacedBids.length ? currentPlacedBids.map((bid) => `
               <article class="job-owner-card job-placed-bid-card">
                 <div class="job-owner-card-head">
                   <div>
