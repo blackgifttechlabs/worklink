@@ -14,10 +14,16 @@
 <body>
   <div id="site-header"></div>
 
-  <main class="provider-post-shell" data-provider-posts-page>
-    <span class="section-eyebrow">My Posts</span>
-    <h1 style="margin:14px 0 24px;">Share your work like a portfolio feed</h1>
-    <div class="provider-post-layout">
+  <main class="provider-post-shell provider-posts-page" data-provider-posts-page>
+    <section class="provider-posts-hero">
+      <div class="provider-posts-hero-inner">
+        <span class="section-eyebrow provider-posts-kicker">My Posts</span>
+        <h1>Share your work like a portfolio feed</h1>
+        <p>Upload your best work and keep your provider profile active for clients.</p>
+      </div>
+    </section>
+
+    <section class="provider-post-layout provider-posts-board">
       <aside class="provider-post-composer">
         <h2>Create a post</h2>
         <p>Post an image of your previous work and write a short caption so clients can trust what you do.</p>
@@ -29,7 +35,7 @@
         </form>
       </aside>
       <section class="provider-post-feed" data-provider-post-feed></section>
-    </div>
+    </section>
   </main>
 
   <div id="site-footer"></div>

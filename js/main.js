@@ -438,7 +438,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!categories.length) return;
     const base = getSiteBasePath();
     categoryRow.innerHTML = buildHomepageCategoryRailsMarkup(base, categories);
+    initHomeMobileCategoryRailTouch();
     initScrollableRails(document);
+  }
+
+  function initHomeMobileCategoryRailTouch(root = document) {
+    root.querySelectorAll('.home-mobile-category-row-shell').forEach((shell) => {
+      if (!(shell instanceof HTMLElement) || shell.dataset.mobileRailTouchBound === '1') return;
+      let releaseTimer = 0;
+
+      function setTouching(isTouching) {
+        if (releaseTimer) window.clearTimeout(releaseTimer);
+        if (isTouching) {
+          shell.classList.add('is-touching');
+          return;
+        }
+        releaseTimer = window.setTimeout(() => {
+          shell.classList.remove('is-touching');
+        }, 160);
+      }
+
+      shell.addEventListener('pointerdown', () => setTouching(true), { passive: true });
+      shell.addEventListener('pointerup', () => setTouching(false), { passive: true });
+      shell.addEventListener('pointercancel', () => setTouching(false), { passive: true });
+      shell.addEventListener('touchstart', () => setTouching(true), { passive: true });
+      shell.addEventListener('touchend', () => setTouching(false), { passive: true });
+      shell.addEventListener('touchcancel', () => setTouching(false), { passive: true });
+      shell.dataset.mobileRailTouchBound = '1';
+    });
   }
 
   function renderHomepageTrendingJobs() {

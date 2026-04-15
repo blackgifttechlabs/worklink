@@ -100,8 +100,8 @@
 
   function buildPostJobSkeleton() {
     return `
-      <section class="job-page-shell">
-        <div class="job-page-hero job-skeleton-hero">
+      <section class="job-page-hero job-posts-hero job-post-create-hero job-skeleton-hero">
+        <div class="job-page-hero-inner">
           <span class="job-page-kicker job-skeleton-block job-skeleton-pill"></span>
           <div class="job-skeleton-block job-skeleton-title"></div>
           <div class="job-skeleton-block job-skeleton-copy"></div>
@@ -110,6 +110,14 @@
             <span class="job-skeleton-block job-skeleton-button"></span>
           </div>
         </div>
+      </section>
+      <section class="job-page-shell job-post-create-shell">
+        <aside class="job-post-guide job-skeleton-form" aria-hidden="true">
+          <span class="job-skeleton-block job-skeleton-heading"></span>
+          <span class="job-skeleton-block job-skeleton-copy"></span>
+          <span class="job-skeleton-block job-skeleton-copy short"></span>
+          <span class="job-skeleton-block job-skeleton-chip"></span>
+        </aside>
         <section class="job-post-form job-skeleton-form">
           <div class="job-form-grid">
             <div class="job-form-field">
@@ -845,8 +853,8 @@
     const defaultCategory = '';
 
     page.innerHTML = `
-      <section class="job-page-shell">
-        <div class="job-page-hero">
+      <section class="job-page-hero job-posts-hero job-post-create-hero">
+        <div class="job-page-hero-inner">
           <span class="job-page-kicker">Post a Job</span>
           <h1>Tell people what you need done.</h1>
           <p>Create a short job post, share your budget, and let providers bid for the work.</p>
@@ -854,6 +862,21 @@
             <a href="${getBase()}pages/job-posts.html" class="btn-secondary fleece-secondary">View Available Jobs</a>
           </div>
         </div>
+      </section>
+
+      <section class="job-page-shell job-post-create-shell">
+        <aside class="job-post-guide" aria-label="Post job steps">
+          <div class="job-post-guide-head">
+            <strong>Post details</strong>
+            <span>All providers see the same clear brief.</span>
+          </div>
+          <ol class="job-post-guide-list">
+            <li><strong>1</strong><span>Pick a category and service.</span></li>
+            <li><strong>2</strong><span>Add the work, budget, and location.</span></li>
+            <li><strong>3</strong><span>Post it and review bids from your dashboard.</span></li>
+          </ol>
+          <a href="${getBase()}pages/job-giver-profile.html" class="job-post-guide-link">Open Jobs and Bids</a>
+        </aside>
 
         <form class="job-post-form" data-job-post-form>
           <div class="job-form-grid">
@@ -1085,12 +1108,16 @@
               <input type="search" placeholder="Category, service, or detail" data-job-search />
             </div>
           </label>
-          <label class="job-board-search">
+          <button type="button" class="job-board-filter-toggle" data-job-mobile-filter-toggle aria-expanded="false" aria-label="Show filters">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+          <label class="job-board-search job-board-location-search" data-job-location-field>
             <span>Location</span>
             <div class="job-board-search-box">
               <i class="fa-solid fa-location-dot"></i>
-              <input type="search" placeholder="Any location" list="job-location-options" data-job-location-search />
+              <input type="search" placeholder="Any location" data-job-location-search aria-autocomplete="list" aria-controls="job-location-suggestions" autocomplete="off" />
             </div>
+            <div class="job-location-dropdown" id="job-location-suggestions" data-job-location-suggestions hidden></div>
             <datalist id="job-location-options" data-job-location-options></datalist>
           </label>
           <div class="job-board-toolbar-actions">
@@ -1124,9 +1151,12 @@
     `;
 
     const groupsHost = page.querySelector('[data-job-groups]');
+    const toolbar = page.querySelector('.job-board-toolbar');
     const searchInput = page.querySelector('[data-job-search]');
     const locationSearchInput = page.querySelector('[data-job-location-search]');
     const locationOptionsHost = page.querySelector('[data-job-location-options]');
+    const locationSuggestionsHost = page.querySelector('[data-job-location-suggestions]');
+    const mobileFilterToggle = page.querySelector('[data-job-mobile-filter-toggle]');
     const detailModal = page.querySelector('[data-job-detail-modal]');
     const bidModal = page.querySelector('[data-job-bid-modal]');
     const authModal = page.querySelector('[data-job-auth-modal]');
@@ -1156,6 +1186,7 @@
     let activeFilter = 'all';
     let query = String(params.get('query') || params.get('category') || params.get('service') || '').trim();
     let locationQuery = String(params.get('location') || '').trim();
+    const locationOptions = getJobLocationOptions(jobs);
     let viewMode = 'grid';
 
     if (searchInput && query) {
@@ -1165,9 +1196,45 @@
       locationSearchInput.value = locationQuery;
     }
     if (locationOptionsHost) {
-      locationOptionsHost.innerHTML = getJobLocationOptions(jobs)
+      locationOptionsHost.innerHTML = locationOptions
         .map((location) => `<option value="${escapeHtml(location)}"></option>`)
         .join('');
+    }
+
+    function hideLocationSuggestions() {
+      if (locationSuggestionsHost instanceof HTMLElement) {
+        locationSuggestionsHost.hidden = true;
+        locationSuggestionsHost.innerHTML = '';
+      }
+    }
+
+    function showLocationSuggestions() {
+      if (!(locationSuggestionsHost instanceof HTMLElement)) return;
+      const normalizedLocation = String(locationSearchInput?.value || '').trim().toLowerCase();
+      const matches = locationOptions
+        .filter((location) => !normalizedLocation || location.toLowerCase().includes(normalizedLocation))
+        .slice(0, 8);
+      locationSuggestionsHost.innerHTML = matches.length
+        ? matches.map((location) => `
+          <button type="button" data-job-location-option="${escapeHtml(location)}">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>${escapeHtml(location)}</span>
+          </button>
+        `).join('')
+        : `<div class="job-location-empty">No matching locations yet.</div>`;
+      locationSuggestionsHost.hidden = false;
+      locationSuggestionsHost.querySelectorAll('[data-job-location-option]').forEach((button) => {
+        button.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          const value = button.getAttribute('data-job-location-option') || '';
+          if (locationSearchInput instanceof HTMLInputElement) {
+            locationSearchInput.value = value;
+          }
+          locationQuery = value.trim();
+          hideLocationSuggestions();
+          renderJobs();
+        });
+      });
     }
 
     function getPlacedBidJobIds() {
@@ -1443,7 +1510,29 @@
 
     locationSearchInput?.addEventListener('input', () => {
       locationQuery = String(locationSearchInput.value || '').trim();
+      showLocationSuggestions();
       renderJobs();
+    });
+
+    locationSearchInput?.addEventListener('focus', showLocationSuggestions);
+    locationSearchInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        hideLocationSuggestions();
+      }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!(locationSuggestionsHost instanceof HTMLElement)) return;
+      const locationField = page.querySelector('[data-job-location-field]');
+      if (locationField instanceof HTMLElement && event.target instanceof Node && locationField.contains(event.target)) return;
+      hideLocationSuggestions();
+    });
+
+    mobileFilterToggle?.addEventListener('click', () => {
+      if (!(toolbar instanceof HTMLElement)) return;
+      const isOpen = !toolbar.classList.contains('is-filter-open');
+      toolbar.classList.toggle('is-filter-open', isOpen);
+      mobileFilterToggle.setAttribute('aria-expanded', String(isOpen));
     });
 
     renderJobs();
