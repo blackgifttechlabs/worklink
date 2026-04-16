@@ -524,20 +524,28 @@
 
 /* Messages: job action floating button and review modal */
 .messages-job-action-host {
-  position: relative;
-  margin: 8px 16px 0 16px;
+  padding: 12px;
   display: flex;
   justify-content: center;
+  background: #fff;
+  border-top: 1px solid rgba(15,23,42,0.06);
 }
 .messages-job-action-btn {
-  background: linear-gradient(90deg,#111,#111);
+  background: #111;
   color: #fff;
   border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
   font-weight: 800;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.messages-job-action-btn:hover {
+  transform: translateY(-1px);
+}
+.messages-job-action-btn:active {
+  transform: translateY(0);
 }
 .messages-job-action-btn:disabled { opacity: 0.6; cursor: default; }
 
@@ -567,59 +575,11 @@
 .job-review-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 @media (max-width: 640px) {
-  .messages-job-action-host { margin: 6px 8px 0 8px; }
-  .messages-job-action-btn { width: 100%; padding: 12px; border-radius: 10px; }
+  .messages-job-action-host { padding: 8px; }
+  .messages-job-action-btn { width: 100%; }
   .job-review-modal-panel { width: 100%; height: auto; margin: 0; border-radius: 8px; }
 }
 
-/* Messages: floating job action and review modal */
-.messages-job-action-host {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 6px 0;
-}
-.messages-job-action-btn {
-  background: linear-gradient(90deg,#111,#111);
-  color: #fff;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 999px;
-  font-weight: 800;
-  box-shadow: 0 8px 20px rgba(15,23,42,0.12);
-  cursor: pointer;
-}
-.messages-job-action-btn:disabled { opacity: 0.6; cursor: default; }
-
-.job-review-modal-shell {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(11,14,20,0.5);
-  z-index: 2600;
-}
-.job-review-modal-panel {
-  width: min(560px, 96%);
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 18px 48px rgba(15,23,42,0.18);
-}
-.job-review-head { display:flex; gap:12px; align-items:center; }
-.job-review-provider-icon img, .job-review-provider-icon span { width:48px; height:48px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; background:#f4f4f4; }
-.job-review-stars { display:flex; gap:6px; margin:12px 0; }
-.job-review-stars .star { background:transparent; border:none; font-size:22px; color:#ddd; cursor:pointer; }
-.job-review-stars .star.is-selected { color:#f6b93b; }
-.job-review-body textarea { width:100%; min-height:100px; border-radius:8px; padding:10px; border:1px solid rgba(17,17,17,0.06); }
-.job-review-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
-
-@media (max-width:640px) {
-  .messages-job-action-host { padding:6px; }
-  .messages-job-action-btn { width:92%; padding:12px; border-radius:10px; }
-  .job-review-modal-panel { width: 96%; padding:12px; }
-}
 
 .account-page {
   max-width: none;
@@ -13015,6 +12975,29 @@ header {
   flex: 1;
   padding: 32px 40px;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .job-giver-main {
+    flex-direction: row;
+    gap: 32px;
+    align-items: flex-start;
+  }
+  .job-dashboard-listing {
+    flex: 1;
+    min-width: 0;
+  }
+  .job-dashboard-summary {
+    width: 380px;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    position: sticky;
+    top: 96px;
+    flex-shrink: 0;
+  }
 }
 
 .job-dashboard-tab-badge {

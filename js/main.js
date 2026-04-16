@@ -1625,7 +1625,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const needsSetup = !userDoc?.username
         || !userDoc?.userRole
-        || (userDoc?.userRole === 'provider' && !Boolean(userDoc?.providerProfileComplete || providerProfile?.uid));
+        || !(userDoc?.city || userDoc?.address)
+        || (userDoc?.userRole === 'provider' && !userDoc?.specialty);
 
       if (needsSetup) {
         try {

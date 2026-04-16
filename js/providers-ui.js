@@ -4370,13 +4370,13 @@
     }
 
     function getSetupStep() {
-      const providerComplete = Boolean(userDoc?.providerProfileComplete || providerProfile?.uid);
-      if (forcedSetup === 'provider' && !providerComplete) return 'provider';
+      const hasLocation = userDoc?.city || userDoc?.address;
+      const hasVitalFields = userDoc?.username && (userDoc?.userRole === 'provider' ? userDoc?.specialty : true) && hasLocation;
+      if (forcedSetup === 'provider' && !hasVitalFields) return 'provider';
       if (forcedSetup === '1' && !userDoc?.username) return 'username';
       if (!userDoc?.username) return 'username';
       if (!userDoc?.userRole) return 'role';
-      if (userDoc.userRole === 'provider' && !providerComplete) return 'provider';
-      if (forcedSetup === '1' && userDoc.userRole === 'provider') return 'provider';
+      if (!hasVitalFields) return 'provider';
       return 'dashboard';
     }
 
@@ -4444,22 +4444,23 @@
       dashboard.hidden = step !== 'dashboard';
 
       if (step === 'dashboard') {
+        const getProfileUrl = () => {
+          if (String(userDoc?.userRole || '').trim() === 'provider') {
+            const url = new URL(`${getBase()}pages/provider-profile.html`, window.location.origin);
+            url.searchParams.set('uid', account.uid);
+            url.searchParams.set('province', providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || '');
+            return url.toString();
+          }
+          return `${getBase()}pages/job-giver-profile.html`;
+        };
+
         if (!isEmbedded && isGetFoundPage) {
-          const redirectUrl = String(userDoc?.userRole || '').trim() === 'provider'
-            ? `${getBase()}pages/my-posts.html`
-            : `${getBase()}pages/specialists.html`;
-          window.location.replace(redirectUrl);
+          window.location.replace(getProfileUrl());
           return;
         }
 
         if (isEmbedded) {
-          const redirectTarget = (() => {
-            if (String(userDoc?.userRole || '').trim() === 'provider') {
-              return `${getBase()}pages/my-posts.html`;
-            }
-            const specialistsUrl = new URL(`${getBase()}pages/specialists.html`, window.location.href);
-            return `${specialistsUrl.pathname}${specialistsUrl.search}`;
-          })();
+          const redirectTarget = getProfileUrl();
           try {
             localStorage.removeItem('worklinkup_pending_setup');
           } catch (error) {

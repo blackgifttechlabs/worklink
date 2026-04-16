@@ -606,36 +606,78 @@ async function recordAdminConsoleAction(input = {}) {
 async function syncUserDocument(account, extra = {}) {
   if (!account.uid) return;
   const userRef = doc(db, 'users', account.uid);
-  const existingSnapshot = await getDoc(userRef).catch(() => null);
-  const existingUser = existingSnapshot?.exists() ? existingSnapshot.data() : null;
+  let existingUser = null;
+  try {
+    const existingSnapshot = await getDoc(userRef);
+    if (existingSnapshot.exists()) {
+      existingUser = existingSnapshot.data();
+    }
+  } catch (error) {
+    // If we fail to fetch existing state, do not risk overwriting vital fields with empty values.
+    return;
+  }
+
   const createdAtMs = Number(extra.createdAtMs ?? (existingUser?.createdAtMs || Date.now()));
   const updatedAtMs = Number(extra.updatedAtMs ?? Date.now());
   const lastSeenAtMs = Number(extra.lastSeenAtMs ?? existingUser?.lastSeenAtMs ?? 0);
-  await setDoc(userRef, {
+
+  // Construct the payload by carefully merging data, ensuring we don't overwrite non-empty fields with empty ones.
+  const payload = {
     uid: account.uid,
-    name: account.name,
-    email: extra.email ?? account.email ?? existingUser?.email ?? '',
-    authEmail: extra.authEmail ?? account.authEmail ?? existingUser?.authEmail ?? '',
-    phone: extra.phone ?? account.phone ?? existingUser?.phone ?? '',
-    phoneNormalized: extra.phoneNormalized ?? normalizePhoneDigits(extra.phone ?? account.phone ?? existingUser?.phone ?? ''),
-    provider: account.provider,
-    username: extra.username ?? account.username ?? existingUser?.username ?? '',
-    usernameLower: extra.usernameLower ?? sanitizeUsername(extra.username ?? account.username ?? existingUser?.username ?? ''),
-    userRole: extra.userRole ?? account.userRole ?? existingUser?.userRole ?? '',
-    clientProfileComplete: extra.clientProfileComplete ?? existingUser?.clientProfileComplete ?? false,
-    cartCount: extra.cartCount ?? existingUser?.cartCount ?? 0,
-    wishlistCount: extra.wishlistCount ?? existingUser?.wishlistCount ?? 0,
-    providerProfileComplete: extra.providerProfileComplete ?? account.providerProfileComplete ?? false,
-    providerProvince: extra.providerProvince ?? account.providerProvince ?? '',
-    providerProvinceSlug: extra.providerProvinceSlug ?? account.providerProvinceSlug ?? '',
-    providerPublicId: extra.providerPublicId ?? account.providerPublicId ?? '',
-    whatsappNumber: extra.whatsappNumber ?? account.whatsappNumber ?? '',
     createdAtMs,
     updatedAtMs,
     lastSeenAtMs,
-    createdAt: existingUser?.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp()
-  }, { merge: true });
+  };
+
+  if (!existingUser) {
+    payload.createdAt = serverTimestamp();
+  }
+
+  const merge = (key, value, fallback) => {
+    const nextValue = value || fallback || (existingUser ? existingUser[key] : '');
+    if (nextValue !== undefined && nextValue !== null) {
+      payload[key] = nextValue;
+    }
+  };
+
+  merge('name', extra.name, account.name);
+  merge('email', extra.email, account.email);
+  merge('authEmail', extra.authEmail, account.authEmail);
+  merge('phone', extra.phone, account.phone);
+  merge('phoneNormalized', extra.phoneNormalized, normalizePhoneDigits(extra.phone || account.phone));
+  merge('provider', account.provider);
+  merge('username', extra.username, account.username);
+  merge('userRole', extra.userRole, account.userRole);
+  merge('providerProvince', extra.providerProvince, account.providerProvince);
+  merge('providerProvinceSlug', extra.providerProvinceSlug, account.providerProvinceSlug);
+  merge('providerPublicId', extra.providerPublicId, account.providerPublicId);
+  merge('whatsappNumber', extra.whatsappNumber, account.whatsappNumber);
+  merge('address', extra.address, account.address);
+  merge('city', extra.city, account.city);
+  merge('specialty', extra.specialty, account.specialty);
+
+  if (payload.username) {
+    payload.usernameLower = sanitizeUsername(payload.username);
+  }
+
+  const mergeBool = (key, value, fallback) => {
+    const nextValue = value ?? fallback ?? (existingUser ? existingUser[key] : false);
+    payload[key] = Boolean(nextValue);
+  };
+
+  mergeBool('clientProfileComplete', extra.clientProfileComplete);
+  mergeBool('providerProfileComplete', extra.providerProfileComplete, account.providerProfileComplete);
+
+  const mergeNum = (key, value) => {
+    const nextValue = value ?? (existingUser ? existingUser[key] : 0);
+    payload[key] = Number(nextValue || 0);
+  };
+
+  mergeNum('cartCount', extra.cartCount);
+  mergeNum('wishlistCount', extra.wishlistCount);
+
+  await setDoc(userRef, payload, { merge: true });
 
   if (!existingUser) {
     await recordAdminActivity('user_registered', {
@@ -1650,29 +1692,36 @@ async function updateJobApplicationStatus(jobId = '', applicationId = '', status
 // Find an accepted application (active job) involving two users (owner and bidder)
 async function findActiveJobBetweenUsers(userA = '', userB = '') {
   if (!userA || !userB) return null;
-  // search jobs where either is owner and there is an acceptedApplicationUid
-  const jobsSnapshot = await getDocs(collection(db, JOBS_COLLECTION));
-  for (const docSnap of jobsSnapshot.docs) {
-    const job = docSnap.data() || {};
-    const jobId = docSnap.id;
-    if (!job.acceptedApplicationUid) continue;
-    // owner and bidder must match userA/userB
-    if (job.ownerUid !== userA && job.ownerUid !== userB) continue;
-    const appRef = doc(db, JOBS_COLLECTION, jobId, 'applications', job.acceptedApplicationUid);
-    const appSnap = await getDoc(appRef);
-    if (!appSnap.exists()) continue;
-    const application = appSnap.data() || {};
-    const bidderUid = application.bidderUid || '';
-    const ownerUid = job.ownerUid || '';
-    if ((ownerUid === userA && bidderUid === userB) || (ownerUid === userB && bidderUid === userA)) {
+
+  // Search for accepted applications where either user is the bidder and the other is the owner
+  const q = query(
+    collectionGroup(db, 'applications'),
+    where('status', '==', 'accepted')
+  );
+
+  const snapshot = await getDocs(q);
+  for (const docSnap of snapshot.docs) {
+    const application = docSnap.data();
+    const bidderUid = application.bidderUid;
+    const ownerUid = application.jobOwnerUid;
+
+    if (
+      (bidderUid === userA && ownerUid === userB) ||
+      (bidderUid === userB && ownerUid === userA)
+    ) {
+      const jobId = docSnap.ref.parent.parent.id;
+      const jobSnap = await getDoc(doc(db, JOBS_COLLECTION, jobId));
+      const job = jobSnap.exists() ? { id: jobSnap.id, ...jobSnap.data() } : null;
+
       return {
         jobId,
-        applicationId: job.acceptedApplicationUid,
-        job: { id: jobId, ...job },
-        application: { id: appSnap.id, ...application }
+        applicationId: docSnap.id,
+        job,
+        application: { id: docSnap.id, ...application }
       };
     }
   }
+
   return null;
 }
 
@@ -2288,8 +2337,8 @@ onAuthStateChanged(auth, (user) => {
           email: userDoc.email || '',
           authEmail: userDoc.authEmail || account.authEmail || user.email || '',
           phone: userDoc.phone || account.phone,
-          username: userDoc.username || '',
-          userRole: userDoc.userRole || '',
+          username: userDoc.username || account.username || '',
+          userRole: userDoc.userRole || account.userRole || '',
           clientProfileComplete: Boolean(userDoc.clientProfileComplete),
           providerProfileComplete: Boolean(userDoc.providerProfileComplete),
           providerProvince: userDoc.providerProvince || '',
@@ -2311,7 +2360,10 @@ onAuthStateChanged(auth, (user) => {
           providerProvince: providerProfile.province || userDoc.providerProvince || '',
           providerProvinceSlug: providerProfile.provinceSlug || userDoc.providerProvinceSlug || '',
           providerPublicId: providerProfile.providerPublicId || userDoc.providerPublicId || '',
-          whatsappNumber: providerProfile.whatsappNumber || userDoc.whatsappNumber || ''
+          whatsappNumber: providerProfile.whatsappNumber || userDoc.whatsappNumber || '',
+          address: providerProfile.address || userDoc.address || '',
+          city: providerProfile.city || userDoc.city || '',
+          specialty: providerProfile.specialty || userDoc.specialty || ''
         };
 
         await setDoc(doc(db, 'users', user.uid), healedProfileState, { merge: true });
