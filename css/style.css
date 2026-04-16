@@ -20217,3 +20217,221 @@ body.specialists-page-body {
   }
 }
 /* EOF anchor */
+
+/* Messages Page Gold & Black Redesign */
+.messages-page-body .messages-sidebar {
+  background: #0b0b0b !important;
+  border-right: 1px solid rgba(201, 151, 46, 0.2);
+}
+
+.messages-page-body .messages-sidebar h1 {
+  color: #c9972e !important;
+}
+
+.messages-page-body .messages-chat-item.is-active {
+  background: rgba(201, 151, 46, 0.12) !important;
+  border-left: 3px solid #c9972e !important;
+}
+
+.messages-page-body .messages-chat-title strong {
+  color: #fff !important;
+}
+
+.messages-page-body .messages-chat-item:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.messages-page-body .messages-filter-chip.is-active {
+  background: #c9972e !important;
+  border-color: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+.messages-page-body .messages-filter-chip.is-active strong {
+  color: #0b0b0b !important;
+}
+
+.messages-page-body .messages-thread {
+  background: #111111 !important;
+}
+
+.messages-page-body .messages-thread-head {
+  background: #0b0b0b !important;
+  border-bottom: 1px solid rgba(201, 151, 46, 0.2) !important;
+  color: #fff !important;
+}
+
+.messages-page-body .messages-thread-title {
+  color: #c9972e !important;
+}
+
+.messages-page-body .message-bubble.is-mine {
+  background: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+.messages-page-body .message-bubble.is-theirs {
+  background: #222 !important;
+  color: #fff !important;
+  border-color: rgba(201, 151, 46, 0.1) !important;
+}
+
+.messages-page-body .messages-thread-compose {
+  background: #0b0b0b !important;
+  border-top: 1px solid rgba(201, 151, 46, 0.2) !important;
+}
+
+.messages-page-body .messages-compose-input {
+  background: #1a1a1a !important;
+  border-color: rgba(201, 151, 46, 0.2) !important;
+  color: #fff !important;
+}
+
+.messages-page-body .messages-send-btn {
+  background: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+/* Skeletons */
+.messages-chat-item-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+}
+
+.messages-chat-avatar-skeleton {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.messages-chat-copy-skeleton {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.messages-chat-line-skeleton {
+  height: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  width: 70%;
+  position: relative;
+  overflow: hidden;
+}
+
+.messages-chat-line-skeleton.short {
+  width: 40%;
+}
+
+.messages-chat-avatar-skeleton::after,
+.messages-chat-line-skeleton::after,
+.messages-thread-bubble-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: provider-work-wave 1.5s infinite;
+}
+
+/* Redesign Job Action Button to Gold & Black */
+.messages-page-body .messages-job-action-btn {
+  background: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+.messages-page-body .messages-job-action-btn:hover {
+  background: #b57f22 !important;
+}
+
+/* Thread Skeletons */
+.messages-thread-skeleton {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.messages-thread-bubble-skeleton {
+  height: 44px;
+  width: min(60%, 300px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.messages-thread-bubble-skeleton.is-mine {
+  justify-self: end;
+  background: rgba(201, 151, 46, 0.1);
+}
+
+/* Footer Gold & Black Theme */
+footer {
+  background: #0b0b0b !important;
+  color: #efefef !important;
+  border-top: 1px solid rgba(201, 151, 46, 0.2);
+}
+
+.footer-inner {
+  border-bottom-color: rgba(201, 151, 46, 0.15) !important;
+}
+
+.footer-col h4,
+.newsletter-col h4 {
+  color: #c9972e !important;
+}
+
+.footer-col ul li a,
+.footer-links a,
+.newsletter-col p {
+  color: #ccc !important;
+}
+
+.footer-col ul li a:hover,
+.footer-links a:hover {
+  color: #c9972e !important;
+}
+
+.email-form {
+  border-color: rgba(201, 151, 46, 0.3) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.email-form input {
+  color: #fff !important;
+}
+
+.email-form button {
+  background: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+.work-footer-highlight {
+  background: rgba(201, 151, 46, 0.1) !important;
+  color: #fff !important;
+  border: 1px solid rgba(201, 151, 46, 0.1);
+}
+
+.work-footer-highlight i {
+  color: #c9972e;
+}
+
+.social-links a {
+  background: rgba(201, 151, 46, 0.15) !important;
+  color: #c9972e !important;
+}
+
+.social-links a:hover {
+  background: #c9972e !important;
+  color: #0b0b0b !important;
+}
+
+.footer-admin-link {
+  border-color: rgba(201, 151, 46, 0.3) !important;
+  background: rgba(201, 151, 46, 0.1) !important;
+  color: #c9972e !important;
+}

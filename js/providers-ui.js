@@ -4043,6 +4043,31 @@
     }
 
     async function refreshInboxAfterAuthSync() {
+      const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+      const sidebar = page.querySelector(".messages-sidebar");
+      const thread = page.querySelector(".messages-thread");
+
+      if (chatList) {
+        chatList.innerHTML = Array.from({ length: 5 }).map(() => `
+          <div class="messages-chat-item-skeleton">
+            <div class="messages-chat-avatar-skeleton"></div>
+            <div class="messages-chat-copy-skeleton">
+              <div class="messages-chat-line-skeleton"></div>
+              <div class="messages-chat-line-skeleton short"></div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      if (threadBody && !state.activePeerUid) {
+        threadBody.innerHTML = `
+          <div class="messages-thread-skeleton">
+            <div class="messages-thread-bubble-skeleton is-theirs"></div>
+            <div class="messages-thread-bubble-skeleton is-mine"></div>
+            <div class="messages-thread-bubble-skeleton is-theirs"></div>
+          </div>
+        `;
+      }
       if (authSyncQueued) return;
       authSyncQueued = true;
 
@@ -4970,6 +4995,14 @@
           showSuccessToast('Profile completed successfully!');
           await refreshState();
           window.history.replaceState({}, '', `${window.location.pathname}`);
+          const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+          if (isEmbedded) {
+            window.parent?.postMessage({
+              type: "worklinkup-setup-complete",
+              redirectUrl: `${getBase}pages/provider-profile.html`
+            }, window.location.origin);
+            return;
+          }
           // redirect to provider profile page instead of rendering setup again
           const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
           window.location.href = `${getBase}pages/provider-profile.html`;
