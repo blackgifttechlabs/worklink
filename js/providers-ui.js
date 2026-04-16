@@ -4434,9 +4434,9 @@
 
       // Otherwise, route them to the missing step
       if (!hasUsername) return 'username';
-      if (!userDoc?.userRole) return 'role';
       
-      return 'provider'; // Missing address or service goes here
+      // Role step is removed. Users proceed directly to complete provider details if missing.
+      return 'provider';
     }
 
     async function refreshState() {
@@ -4481,21 +4481,15 @@
           // Ignore storage issues.
         }
 
-        if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
+        if (isGetFoundPage) {
+          // We stay on this page to show the focused setup UI instead of a modal.
           if (guestStage) guestStage.hidden = true;
-          setupStage.hidden = true;
+          setupStage.hidden = false;
           if (dashboard) dashboard.hidden = true;
-          if (!document.body.dataset.accountSetupModalOpen) {
-            document.body.dataset.accountSetupModalOpen = '1';
-            window.openWorkLinkUpSetupModal(`?${nextParams.toString()}`, {
-              delayMs: 160
-            });
-          }
+        } else {
+          window.location.href = `${getBase()}index.html`;
           return;
         }
-
-        window.location.href = `${getBase()}index.html`;
-        return;
       }
 
       if (guestStage) guestStage.hidden = true;
@@ -4543,23 +4537,8 @@
 
       if (step === 'username') {
         setupBody.innerHTML = `
-          <section class="account-setup-split">
-            <div class="account-setup-split-visual">
-              <div class="account-auth-stage-badges" aria-hidden="true">
-                <div class="account-auth-stage-badge">
-                  <img src="../images/sections/addie.avif" alt="" />
-                  <span>Addie</span>
-                  <i class="fa-solid fa-check"></i>
-                </div>
-                <div class="account-auth-stage-badge is-offset">
-                  <img src="../images/sections/ethel.avif" alt="" />
-                  <span>Ethel_Hair_Salon</span>
-                  <i class="fa-solid fa-check"></i>
-                </div>
-              </div>
-              <img src="../images/sections/login-side.avif" alt="Account setup" class="account-setup-split-image" />
-            </div>
-            <div class="account-setup-split-panel">
+          <section class="account-setup-focused-shell">
+            <div class="account-setup-focused-card">
               <button type="button" class="account-setup-back-link" data-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
               <div class="account-setup-content-block">
                 <h2>Get your profile started</h2>
@@ -4630,7 +4609,8 @@
           try {
             await authHelper.saveAccountSetup({
               username: usernameInput.value.trim(),
-              displayName: userDoc?.name || account.name
+              displayName: userDoc?.name || account.name,
+              userRole: 'provider'
             });
             await refreshState();
             await renderCurrentStep();
@@ -4648,66 +4628,7 @@
         return;
       }
 
-      if (step === 'role') {
-        setupBody.innerHTML = `
-          <section class="account-setup-role-stage">
-            <div class="account-setup-role-copy">
-              <h2>${escapeHtml(userDoc?.username || account.name || 'WorkLinkUp user')}, your account has been created. What brings you to WorkLinkUp?</h2>
-              <p>We'll tailor your experience to fit your needs.</p>
-            </div>
-            <div class="account-setup-role-grid">
-              <button type="button" class="account-setup-role-card" data-role-card="client">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <strong>I am a client</strong>
-                <span>I want to find providers and browse specialists.</span>
-              </button>
-              <button type="button" class="account-setup-role-card" data-role-card="provider">
-                <i class="fa-solid fa-user-gear"></i>
-                <strong>Service Provider</strong>
-                <span>I want to list my services and get found by clients.</span>
-              </button>
-            </div>
-            <div class="account-setup-role-actions">
-              <button type="button" class="account-submit-btn account-submit-signup" data-role-next disabled><span class="account-btn-label">Next</span></button>
-            </div>
-          </section>
-        `;
-
-        let selectedRole = '';
-        setupBody.querySelectorAll('[data-role-card]').forEach((card) => {
-          card.addEventListener('click', () => {
-            selectedRole = card.getAttribute('data-role-card') || '';
-            setupBody.querySelectorAll('[data-role-card]').forEach((item) => item.classList.toggle('is-selected', item === card));
-            const nextBtn = setupBody.querySelector('[data-role-next]');
-            if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = !selectedRole;
-          });
-        });
-
-        setupBody.querySelector('[data-role-next]')?.addEventListener('click', async (event) => {
-          const nextBtn = event.currentTarget;
-          if (!(nextBtn instanceof HTMLButtonElement) || !selectedRole) return;
-          setButtonLoading(nextBtn, true);
-          try {
-            await authHelper.saveAccountSetup({
-              username: userDoc?.username,
-              userRole: selectedRole,
-              displayName: userDoc?.name || account.name
-            });
-            await refreshState();
-            if (selectedRole === 'client' && !isEmbedded) {
-              window.location.href = `${getBase()}pages/specialists.html`;
-              return;
-            }
-            await renderCurrentStep();
-          } catch (error) {
-            window.alert(error.message || 'Could not save your account type.');
-          } finally {
-            setButtonLoading(nextBtn, false);
-          }
-        });
-
-        return;
-      }
+      // Role step is removed.
 
       const existingProvider = normalizeProvider(providerProfile || {
         displayName: userDoc?.name || account.name || '',
@@ -4733,63 +4654,110 @@
       })();
 
       setupBody.innerHTML = `
-        <section class="account-provider-setup-stage">
-          ${isEmbedded ? '' : `
+        <section class="account-setup-focused-shell">
+          <div class="account-setup-focused-card">
             <div class="account-provider-setup-head">
               <span class="account-auth-stage-kicker">Service provider profile</span>
               <h2>Complete your provider account</h2>
               <p>Choose your location and the service clients should find you for. Start typing, then choose the best match.</p>
             </div>
-          `}
 
-          <form class="account-provider-form" data-account-provider-form novalidate>
-            <div class="account-provider-grid provider-main-layout">
-              <div class="account-provider-section-head">
-                <strong>Provider details</strong>
-                <span>Only these details are required now.</span>
-              </div>
-              <div class="account-provider-fields account-provider-minimal-fields">
-                <label class="account-setup-field">
-                  <span>Username</span>
-                  <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
-                  <small>Your username was already reserved for this account.</small>
-                </label>
-                <label class="account-setup-field account-typeahead-field">
-                  <span>Location</span>
-                  <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
-                  <div class="account-typeahead-list" data-provider-location-list hidden></div>
-                  <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
-                </label>
-                <label class="account-setup-field account-typeahead-field">
-                  <span>Services you provide</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
-                  <div class="account-typeahead-list" data-provider-service-list hidden></div>
-                  <div class="account-service-chip-list" data-provider-service-chips></div>
-                  <small>Add every service clients can hire you for. You can remove any service before saving.</small>
-                </label>
-              </div>
-            </div>
-            <input type="hidden" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || userDoc?.username || 'WorkLinkUp Provider')}" />
-            <input type="hidden" name="whatsappNumber" value="${escapeHtml(existingProvider.whatsappNumber || account.phone || '')}" />
-            <input type="hidden" name="province" value="${escapeHtml(existingProvider.province || '')}" data-provider-location-province />
-            <input type="hidden" name="city" value="${escapeHtml(existingProvider.city || '')}" data-provider-location-city />
-            <input type="hidden" name="address" value="${escapeHtml(existingProvider.address || '')}" data-provider-location-address />
-            <input type="hidden" name="primaryCategory" value="${escapeHtml(existingProvider.primaryCategory || '')}" data-provider-service-category />
-            <input type="hidden" name="specialty" value="${escapeHtml(existingProvider.specialty || providerInviteService || '')}" data-provider-service-name />
-            <input type="hidden" name="title" value="${escapeHtml(existingProvider.title || existingProvider.specialty || providerInviteService || '')}" data-provider-service-title />
-            <input type="hidden" name="experience" value="${escapeHtml(existingProvider.experience || '')}" />
-            <input type="hidden" name="bio" value="${escapeHtml(existingProvider.bio || '')}" />
+            <form class="account-provider-form" data-account-provider-form novalidate>
+              <div class="account-provider-grid">
+                <div class="account-provider-section">
+                  <div class="account-provider-section-head">
+                    <strong>Required details</strong>
+                    <span>Complete these to start getting found.</span>
+                  </div>
+                  <div class="account-provider-fields account-provider-minimal-fields">
+                    <label class="account-setup-field">
+                      <span>Username</span>
+                      <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                    </label>
+                    <label class="account-setup-field account-typeahead-field">
+                      <span>Location</span>
+                      <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
+                      <div class="account-typeahead-list" data-provider-location-list hidden></div>
+                    </label>
+                    <label class="account-setup-field account-typeahead-field">
+                      <span>Services you provide</span>
+                      <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                      <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                      <div class="account-service-chip-list" data-provider-service-chips></div>
+                    </label>
+                  </div>
+                </div>
 
-            <div class="account-provider-form-actions">
-              <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
-                <span class="account-btn-label">Complete provider account</span>
-              </button>
-            </div>
-          </form>
+                <div class="become-professional-section">
+                  <button type="button" class="become-professional-toggle" aria-expanded="true">
+                    <span>Become Professional (Optional)</span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                  </button>
+                  <div class="become-professional-drawer">
+                    <div class="account-provider-fields two-col">
+                      <label class="account-setup-field">
+                        <span>Full name</span>
+                        <input type="text" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || '')}" placeholder="Tinashe Moyo" />
+                      </label>
+                      <label class="account-setup-field">
+                        <span>WhatsApp number</span>
+                        <input type="tel" name="whatsappNumber" value="${escapeHtml(existingProvider.whatsappNumber || account.phone || '')}" placeholder="+263 77 123 4567" />
+                      </label>
+                      <label class="account-setup-field">
+                        <span>Experience</span>
+                        <input type="text" name="experience" value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
+                      </label>
+                      <label class="account-setup-field account-setup-field-span">
+                        <span>Short bio</span>
+                        <textarea name="bio" placeholder="What kind of work do you do best?">${escapeHtml(existingProvider.bio || '')}</textarea>
+                      </label>
+                    </div>
+
+                    <div class="account-provider-media-grid">
+                      <label class="account-provider-upload-card">
+                        <span class="account-provider-upload-preview account-provider-upload-preview-avatar" data-account-profile-preview></span>
+                        <strong>Profile image</strong>
+                        <span>Square image for your avatar</span>
+                        <input type="file" accept="image/*" data-account-profile-file hidden />
+                      </label>
+                      <label class="account-provider-upload-card">
+                        <span class="account-provider-upload-preview account-provider-upload-preview-banner" data-account-banner-preview></span>
+                        <strong>Banner image</strong>
+                        <span>Wide image for your profile</span>
+                        <input type="file" accept="image/*" data-account-banner-file hidden />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <input type="hidden" name="province" value="${escapeHtml(existingProvider.province || '')}" data-provider-location-province />
+              <input type="hidden" name="city" value="${escapeHtml(existingProvider.city || '')}" data-provider-location-city />
+              <input type="hidden" name="address" value="${escapeHtml(existingProvider.address || '')}" data-provider-location-address />
+              <input type="hidden" name="primaryCategory" value="${escapeHtml(existingProvider.primaryCategory || '')}" data-provider-service-category />
+              <input type="hidden" name="specialty" value="${escapeHtml(existingProvider.specialty || providerInviteService || '')}" data-provider-service-name />
+              <input type="hidden" name="title" value="${escapeHtml(existingProvider.title || existingProvider.specialty || providerInviteService || '')}" data-provider-service-title />
+
+              <div class="account-provider-form-actions">
+                <button type="submit" class="account-submit-btn account-submit-signup" data-account-provider-submit>
+                  <span class="account-btn-label">Complete provider account</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </section>
       `;
 
       const form = setupBody.querySelector('[data-account-provider-form]');
+
+      setupBody.querySelector('.become-professional-toggle')?.addEventListener('click', () => {
+        const drawer = setupBody.querySelector('.become-professional-drawer');
+        const icon = setupBody.querySelector('.become-professional-toggle i');
+        const isExpanded = drawer.style.display !== 'none';
+        drawer.style.display = isExpanded ? 'none' : 'block';
+        icon.classList.toggle('fa-chevron-down', isExpanded);
+        icon.classList.toggle('fa-chevron-up', !isExpanded);
+      });
       if (!(form instanceof HTMLFormElement)) return;
       const profilePreview = setupBody.querySelector('[data-account-profile-preview]');
       const bannerPreview = setupBody.querySelector('[data-account-banner-preview]');

@@ -1623,46 +1623,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    try {
-      const userDoc = await authHelper.getUserDocument(account.uid);
-      const providerProfile = await authHelper.getProviderProfileByUid(
-        account.uid,
-        userDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
-      ).catch(() => null);
-
-      const needsSetup = !userDoc?.username
-        || !userDoc?.userRole
-        || !(userDoc?.city || userDoc?.address)
-        || (userDoc?.userRole === 'provider' && !userDoc?.specialty);
-
-      if (needsSetup) {
-        try {
-          localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
-          setSessionFlag('worklinkup_show_setup_modal_once');
-        } catch (error) {
-          // Ignore storage issues and fall back to home redirect.
-        }
-        if (isEmbedded) {
-          window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-        } else {
-          window.location.replace(`${base}index.html`);
-        }
-        return;
-      }
-    } catch (error) {
-      try {
-        localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
-        setSessionFlag('worklinkup_show_setup_modal_once');
-      } catch (storageError) {
-        // Ignore storage issues and fall back to home redirect.
-      }
-      if (isEmbedded) {
-        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-      } else {
-        window.location.replace(`${base}index.html`);
-      }
-      return;
-    }
+    // Logic for forced setup is removed. Users are now clients by default.
 
     if (window.location.pathname.endsWith('/account.html')) {
       if (isEmbedded) {
@@ -1967,21 +1928,21 @@ document.addEventListener('DOMContentLoaded', () => {
         account.uid,
         userDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
       ).catch(() => null);
-      const isProvider = String(userDoc?.userRole || account.userRole || '').trim().toLowerCase() === 'provider';
-      const providerComplete = Boolean(userDoc?.providerProfileComplete || providerProfile?.uid);
 
-      if (isProvider && providerComplete) {
+      const hasUsername = Boolean(userDoc?.username);
+      const hasLocation = Boolean(userDoc?.city || userDoc?.address || providerProfile?.city || providerProfile?.address);
+      const hasService = Boolean(userDoc?.specialty || (providerProfile?.services && providerProfile.services.length > 0) || providerProfile?.specialty);
+      const isProvider = String(userDoc?.userRole || account.userRole || '').trim().toLowerCase() === 'provider';
+
+      if (hasUsername && hasLocation && hasService && isProvider) {
         window.location.href = `${base}pages/my-posts.html`;
         return;
       }
 
-      openWorkLinkUpSetupModal('?setup=provider', {
-        clearPendingOnClose: true
-      });
+      // If missing details or not a provider, go to the focused setup page
+      window.location.href = `${base}pages/account.html?setup=provider`;
     } catch (error) {
-      openWorkLinkUpSetupModal('?setup=provider', {
-        clearPendingOnClose: true
-      });
+      window.location.href = `${base}pages/account.html?setup=provider`;
     }
   }
 
@@ -2787,7 +2748,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setMethodVisibility('all');
   applyAccountToPage();
   maybeHandleRedirectedGoogleAuth();
-  initPendingSetupModal();
+  // initPendingSetupModal() is removed to prevent automatic modal popups.
 
   // Filter group collapse
   document.querySelectorAll('.filter-group-header').forEach(header => {
