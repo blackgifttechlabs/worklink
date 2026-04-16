@@ -109,6 +109,30 @@
   </div>
 </div>
 
+<!-- Profile Setup Modal -->
+<div class="account-setup-modal" id="account-setup-modal" hidden>
+  <div class="account-setup-modal-overlay"></div>
+  <div class="account-setup-modal-shell">
+    <button type="button" class="account-setup-modal-close" aria-label="Close setup modal">×</button>
+    <div class="account-setup-modal-content">
+      <button type="button" class="account-setup-back-link" data-modal-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+      <h2>Get your profile started</h2>
+      <p>Add a username that is unique to you. This is how you'll appear to others on WorkLinkUp.</p>
+      <form class="account-setup-compact-form" data-account-username-form-modal>
+        <label class="account-setup-field">
+          <span>Choose a username</span>
+          <input type="text" data-account-username-input-modal placeholder="john_smith" />
+          <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
+          <strong class="account-setup-field-message" data-account-username-message-modal></strong>
+        </label>
+        <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit-modal disabled>
+          <span class="account-btn-label">Create my account</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div id="site-footer"></div>
 
 <script src="../js/shared-header.js"></script>

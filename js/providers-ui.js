@@ -198,6 +198,26 @@
     });
   }
 
+  function showSetupModal() {
+    const modal = document.getElementById('account-setup-modal');
+    if (modal instanceof HTMLElement) {
+      modal.hidden = false;
+      requestAnimationFrame(() => {
+        modal.classList.add('is-visible');
+      });
+    }
+  }
+
+  function hideSetupModal() {
+    const modal = document.getElementById('account-setup-modal');
+    if (modal instanceof HTMLElement) {
+      modal.classList.remove('is-visible');
+      window.setTimeout(() => {
+        modal.hidden = true;
+      }, 300);
+    }
+  }
+
   function showSuccessToast(message = 'Profile completed', delay = 900) {
     try {
       const existing = document.querySelector('.wl-success-toast');
@@ -4505,16 +4525,13 @@
           // Ignore storage issues.
         }
 
-        if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
+        // Show the hardcoded modal for account setup
+        if (isGetFoundPage) {
           if (guestStage) guestStage.hidden = true;
           setupStage.hidden = true;
           if (dashboard) dashboard.hidden = true;
-          if (!document.body.dataset.accountSetupModalOpen) {
-            document.body.dataset.accountSetupModalOpen = '1';
-            window.openWorkLinkUpSetupModal(`?${nextParams.toString()}`, {
-              delayMs: 160
-            });
-          }
+          // Show the hardcoded modal
+          showSetupModal();
           return;
         }
 
@@ -5077,6 +5094,84 @@
           window.alert(error.message || 'Could not save your provider profile.');
         } finally {
           if (submitBtn instanceof HTMLButtonElement) setButtonLoading(submitBtn, false);
+        }
+      });
+    }
+
+    // Initialize hardcoded setup modal
+    const setupModal = document.getElementById('account-setup-modal');
+    if (setupModal instanceof HTMLElement) {
+      const modalClose = setupModal.querySelector('.account-setup-modal-close');
+      const modalBackBtn = setupModal.querySelector('[data-modal-back-home]');
+      const usernameFormModal = setupModal.querySelector('[data-account-username-form-modal]');
+      const usernameInputModal = setupModal.querySelector('[data-account-username-input-modal]');
+      const usernameMessageModal = setupModal.querySelector('[data-account-username-message-modal]');
+      const usernameSubmitModal = setupModal.querySelector('[data-account-username-submit-modal]');
+      
+      modalClose?.addEventListener('click', () => hideSetupModal());
+      
+      modalBackBtn?.addEventListener('click', () => {
+        window.location.href = `${getBase()}index.html`;
+      });
+
+      let usernameSetupTimer = 0;
+      const validateUsernameModal = async () => {
+        if (!(usernameInputModal instanceof HTMLInputElement)) return false;
+        const value = usernameInputModal.value.trim();
+        if (!value) {
+          usernameInputModal.classList.remove('is-valid');
+          usernameInputModal.classList.add('is-invalid');
+          if (usernameMessageModal) {
+            usernameMessageModal.textContent = 'Choose a username before you continue.';
+            usernameMessageModal.classList.add('is-error');
+          }
+          if (usernameSubmitModal instanceof HTMLButtonElement) usernameSubmitModal.disabled = true;
+          return false;
+        }
+
+        const result = await authHelper.checkUsernameAvailability(value, account.uid);
+        usernameInputModal.classList.toggle('is-invalid', !result.available);
+        usernameInputModal.classList.toggle('is-valid', result.available);
+        if (usernameMessageModal) {
+          usernameMessageModal.textContent = result.available ? `@${result.normalized} is available` : (result.reason || 'That username is already taken.');
+          usernameMessageModal.classList.toggle('is-error', !result.available);
+          usernameMessageModal.classList.toggle('is-success', result.available);
+        }
+        if (usernameSubmitModal instanceof HTMLButtonElement) usernameSubmitModal.disabled = !result.available;
+        return result.available;
+      };
+
+      usernameInputModal?.addEventListener('input', () => {
+        window.clearTimeout(usernameSetupTimer);
+        usernameSetupTimer = window.setTimeout(() => {
+          validateUsernameModal();
+        }, 240);
+      });
+
+      usernameFormModal?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!await validateUsernameModal()) return;
+        if (!(usernameInputModal instanceof HTMLInputElement) || !(usernameSubmitModal instanceof HTMLButtonElement)) return;
+        setButtonLoading(usernameSubmitModal, true);
+        try {
+          // Save username and set userRole as 'client' automatically
+          await authHelper.saveAccountSetup({
+            username: usernameInputModal.value.trim(),
+            displayName: userDoc?.name || account.name,
+            userRole: 'client'
+          });
+          await refreshState();
+          hideSetupModal();
+          // Redirect to job-giver profile for new client
+          window.location.href = `${getBase()}pages/job-giver-profile.html`;
+        } catch (error) {
+          if (usernameMessageModal) {
+            usernameMessageModal.textContent = error.message || 'Could not save that username.';
+            usernameMessageModal.classList.add('is-error');
+          }
+          usernameInputModal.classList.add('is-invalid');
+        } finally {
+          setButtonLoading(usernameSubmitModal, false);
         }
       });
     }
