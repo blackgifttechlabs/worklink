@@ -1611,8 +1611,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const account = readAccount();
 
+    // Check if we're in an iframe (embed mode)
+    const isEmbedded = window !== window.parent && new URLSearchParams(window.location.search).get('embed') === '1';
+
     if (!authHelper || !account?.uid) {
-      window.location.reload();
+      if (isEmbedded) {
+        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
+      } else {
+        window.location.reload();
+      }
       return;
     }
 
@@ -1635,7 +1642,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
           // Ignore storage issues and fall back to home redirect.
         }
-        window.location.replace(`${base}index.html`);
+        if (isEmbedded) {
+          window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
+        } else {
+          window.location.replace(`${base}index.html`);
+        }
         return;
       }
     } catch (error) {
@@ -1645,16 +1656,28 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (storageError) {
         // Ignore storage issues and fall back to home redirect.
       }
-      window.location.replace(`${base}index.html`);
+      if (isEmbedded) {
+        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
+      } else {
+        window.location.replace(`${base}index.html`);
+      }
       return;
     }
 
     if (window.location.pathname.endsWith('/account.html')) {
-      window.location.reload();
+      if (isEmbedded) {
+        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
+      } else {
+        window.location.reload();
+      }
       return;
     }
 
-    window.location.reload();
+    if (isEmbedded) {
+      window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
+    } else {
+      window.location.reload();
+    }
   }
 
   function finalizeAuthSuccess(message) {
