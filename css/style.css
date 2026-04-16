@@ -821,12 +821,91 @@
 
 .account-setup-stage {
   min-height: calc(100vh - 86px);
-  padding: 30px 24px 72px;
+  padding: 48px 0 72px;
+  width: 100%;
 }
 
 .account-setup-shell {
-  width: min(100%, 1380px);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full-width layout for setup sections */
+.account-setup-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  padding: 0 48px;
+  margin-bottom: 40px;
+}
+
+.account-setup-section-item {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.account-setup-section-item h2 {
+  color: #111827;
+  font-size: clamp(28px, 2.5vw, 42px);
+  line-height: 1.15;
+  font-weight: 900;
+  margin: 0;
+}
+
+.account-setup-section-item p {
+  color: #6b7280;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Collapsible optional section */
+.account-setup-optional {
+  border-top: 1px solid rgba(17, 24, 39, 0.12);
+  padding-top: 32px;
+  margin-top: 32px;
+}
+
+.account-setup-optional-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.account-setup-optional-toggle i {
+  transition: transform 0.3s ease;
+}
+
+.account-setup-optional-toggle.is-expanded i {
+  transform: rotate(180deg);
+}
+
+.account-setup-optional-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.account-setup-optional-content.is-expanded {
+  max-height: 2000px;
+  opacity: 1;
+  margin-top: 24px;
 }
 
 .account-setup-split {
@@ -1669,6 +1748,17 @@
   .account-setup-split-image {
     width: 100%;
     max-width: 420px;
+  }
+
+  .account-setup-section {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 0 24px;
+  }
+
+  .account-setup-optional-content {
+    grid-template-columns: 1fr;
+    gap: 28px;
   }
 }
 

@@ -1,4 +1,9 @@
 (function providerUiBootstrap() {
+  const getIsEmbedded = (searchParams) => {
+    if (searchParams instanceof URLSearchParams) return searchParams.get('embed') === '1';
+    return new URLSearchParams(window.location.search).get('embed') === '1';
+  };
+
   const SPECIALIST_CATEGORIES = Array.isArray(window.WorkLinkUpServiceCatalog) && window.WorkLinkUpServiceCatalog.length
     ? window.WorkLinkUpServiceCatalog
     : [];
@@ -178,6 +183,19 @@
     if (button instanceof HTMLButtonElement) {
       button.disabled = Boolean(isLoading);
     }
+  }
+
+  function initializeOptionalSections(container = document) {
+    const toggles = container.querySelectorAll('.account-setup-optional-toggle');
+    toggles.forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        const content = toggle.nextElementSibling;
+        if (!(content instanceof HTMLElement)) return;
+        const isExpanded = content.classList.contains('is-expanded');
+        content.classList.toggle('is-expanded', !isExpanded);
+        toggle.classList.toggle('is-expanded', !isExpanded);
+      });
+    });
   }
 
   function showSuccessToast(message = 'Profile completed', delay = 900) {
@@ -3027,13 +3045,17 @@
           }
         })();
         
-        // Check if we're inside an iframe (embed mode)
-        const isEmbedded = window !== window.parent && new URLSearchParams(window.location.search).get('embed') === '1';
+        // Check if we're in embed mode (iframe or modal)
+        const isEmbedded = getIsEmbedded();
         
         if (isEmbedded) {
           // Notify parent to close and redirect
           const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(nextProvince)}`;
-          window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+          if (window !== window.parent) {
+            window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+          } else {
+            window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+          }
           return;
         } else {
           // Navigate normally in standalone mode
@@ -4055,7 +4077,7 @@
     }
 
     async function refreshInboxAfterAuthSync() {
-      const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+      const isEmbedded = getIsEmbedded();
       const sidebar = page.querySelector(".messages-sidebar");
       const thread = page.querySelector(".messages-thread");
 
@@ -4309,16 +4331,18 @@
       .filter(Boolean);
   }
 
-  async function initializeAccountPageExperience() {
+  async function initializeAccountPageExperience(searchParams) {
     const guestStage = document.getElementById('account-guest-card');
     const setupStage = document.getElementById('account-setup-stage');
     const setupBody = document.querySelector('[data-account-setup-body]');
     const dashboard = document.getElementById('account-dashboard');
-    if (!guestStage || !setupStage || !setupBody || !dashboard) return;
+    
+    // We strictly require setupStage and setupBody, but guestStage and dashboard can be safely null.
+    if (!setupStage || !setupBody) return;
 
     const account = getStoredAccount();
-    const params = new URLSearchParams(window.location.search);
-    const isEmbedded = params.get('embed') === '1';
+    const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams(window.location.search);
+    const isEmbedded = getIsEmbedded(params);
     const isGoogleAuthFlow = Boolean(
       readSessionFlag('worklinkup_google_auth_flow')
       || readSessionFlag('worklinkup_google_redirect_pending')
@@ -4328,25 +4352,25 @@
       readSessionFlag('worklinkup_google_redirect_pending')
       || readSessionFlag('worklinkup_google_redirect_success')
     );
+    
     if (isEmbedded) {
       document.body.classList.add('account-embed-mode');
       if (guestStage) guestStage.hidden = true;
       if (dashboard) dashboard.hidden = true;
-      if (setupStage) setupStage.hidden = false;
-      if (setupBody) {
-        setupBody.innerHTML = `
-          <section class="account-setup-loading">
-            <div class="account-setup-loading-spinner"></div>
-            <h2>Preparing your setup</h2>
-            <p>Loading the next step for your account.</p>
-          </section>
-        `;
-      }
-    }
-    if (!isEmbedded && isGoogleRedirectReturn) {
-      guestStage.hidden = true;
       setupStage.hidden = false;
-      dashboard.hidden = true;
+      // Show a minimal loader while we check if they already have all their details
+      setupBody.innerHTML = `
+        <section class="account-setup-loading">
+          <div class="account-setup-loading-spinner"></div>
+          <h2>Checking profile...</h2>
+        </section>
+      `;
+    }
+    
+    if (!isEmbedded && isGoogleRedirectReturn) {
+      if (guestStage) guestStage.hidden = true;
+      setupStage.hidden = false;
+      if (dashboard) dashboard.hidden = true;
       setupBody.innerHTML = `
         <section class="account-setup-loading">
           <div class="account-setup-loading-spinner"></div>
@@ -4359,11 +4383,12 @@
       }, { once: true });
       return;
     }
+    
     if (!account?.loggedIn) {
       if (!isEmbedded) {
-        guestStage.hidden = false;
+        if (guestStage) guestStage.hidden = false;
         setupStage.hidden = true;
-        dashboard.hidden = true;
+        if (dashboard) dashboard.hidden = true;
         return;
       }
       window.addEventListener('softgiggles-auth-changed', () => {
@@ -4372,15 +4397,14 @@
       return;
     }
 
-    guestStage.hidden = true;
+    if (guestStage) guestStage.hidden = true;
     setupStage.hidden = true;
-    dashboard.hidden = true;
+    if (dashboard) dashboard.hidden = true;
 
     const authHelper = await waitForAuthHelper();
     if (!authHelper) return;
 
     const providerInviteService = params.get('service') || '';
-    const forcedSetup = params.get('setup') || '';
     let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
     let providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => null);
 
@@ -4407,14 +4431,25 @@
     }
 
     function getSetupStep() {
-      const hasLocation = userDoc?.city || userDoc?.address;
-      const hasVitalFields = userDoc?.username && (userDoc?.userRole === 'provider' ? userDoc?.specialty : true) && hasLocation;
-      if (forcedSetup === 'provider' && !hasVitalFields) return 'provider';
-      if (forcedSetup === '1' && !userDoc?.username) return 'username';
-      if (!userDoc?.username) return 'username';
+      // 1. Check for Username
+      const hasUsername = Boolean(userDoc?.username);
+      
+      // 2. Check for Address / City (in userDoc or providerProfile)
+      const hasAddress = Boolean(userDoc?.address || userDoc?.city || providerProfile?.address || providerProfile?.city);
+      
+      // 3. Check for Service / Specialty (in userDoc or providerProfile)
+      const hasService = Boolean(userDoc?.specialty || providerProfile?.specialty || (providerProfile?.services && providerProfile.services.length > 0));
+
+      // If they have all 3, the popup shouldn't even show (we skip straight to the dashboard/close)
+      if (hasUsername && hasAddress && hasService) {
+        return 'dashboard';
+      }
+
+      // Otherwise, route them to the missing step
+      if (!hasUsername) return 'username';
       if (!userDoc?.userRole) return 'role';
-      if (!hasVitalFields) return 'provider';
-      return 'dashboard';
+      
+      return 'provider'; // Missing address or service goes here
     }
 
     async function refreshState() {
@@ -4439,7 +4474,7 @@
             localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
             setSessionFlag('worklinkup_show_setup_modal_once');
           } catch (error) {
-            // Ignore storage issues and continue redirect.
+            // Ignore storage issues.
           }
           window.location.replace(`${getBase()}index.html`);
           return;
@@ -4456,13 +4491,13 @@
         try {
           localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
         } catch (error) {
-          // Ignore storage issues and continue redirect.
+          // Ignore storage issues.
         }
 
         if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
-          guestStage.hidden = true;
+          if (guestStage) guestStage.hidden = true;
           setupStage.hidden = true;
-          dashboard.hidden = true;
+          if (dashboard) dashboard.hidden = true;
           if (!document.body.dataset.accountSetupModalOpen) {
             document.body.dataset.accountSetupModalOpen = '1';
             window.openWorkLinkUpSetupModal(`?${nextParams.toString()}`, {
@@ -4476,9 +4511,9 @@
         return;
       }
 
-      guestStage.hidden = true;
+      if (guestStage) guestStage.hidden = true;
       setupStage.hidden = step === 'dashboard';
-      dashboard.hidden = step !== 'dashboard';
+      if (dashboard) dashboard.hidden = step !== 'dashboard';
 
       if (step === 'dashboard') {
         const getProfileUrl = () => {
@@ -4503,21 +4538,16 @@
           } catch (error) {
             // Ignore storage issues.
           }
-          setupStage.hidden = false;
-          dashboard.hidden = true;
-          setupBody.innerHTML = `
-            <section class="account-setup-embed-success">
-              <div class="account-setup-embed-success-icon"><i class="fa-solid fa-check"></i></div>
-              <h2>Profile completed</h2>
-              <p>Your WorkLinkUp profile is ready. Redirecting you now.</p>
-            </section>
-          `;
-          window.setTimeout(() => {
+          
+          // INSTANTLY close the modal if they are already fully set up
+          if (window !== window.parent) {
             window.parent?.postMessage({
               type: 'worklinkup-setup-complete',
               redirectUrl: redirectTarget
-            }, window.location.origin);
-          }, 1800);
+            }, '*');
+          } else {
+            window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+          }
           return;
         }
         fillDashboard();
@@ -4526,41 +4556,26 @@
 
       if (step === 'username') {
         setupBody.innerHTML = `
-          <section class="account-setup-split">
-            <div class="account-setup-split-visual">
-              <div class="account-auth-stage-badges" aria-hidden="true">
-                <div class="account-auth-stage-badge">
-                  <img src="../images/sections/addie.avif" alt="" />
-                  <span>Addie</span>
-                  <i class="fa-solid fa-check"></i>
-                </div>
-                <div class="account-auth-stage-badge is-offset">
-                  <img src="../images/sections/ethel.avif" alt="" />
-                  <span>Ethel_Hair_Salon</span>
-                  <i class="fa-solid fa-check"></i>
-                </div>
-              </div>
-              <img src="../images/sections/login-side.avif" alt="Account setup" class="account-setup-split-image" />
-            </div>
-            <div class="account-setup-split-panel">
+          <div class="account-setup-section">
+            <div class="account-setup-section-item">
               <button type="button" class="account-setup-back-link" data-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
-              <div class="account-setup-content-block">
-                <h2>Get your profile started</h2>
-                <p>Add a username that is unique to you. This is how you'll appear to others on WorkLinkUp.</p>
-                <form class="account-setup-compact-form" data-account-username-form>
-                  <label class="account-setup-field">
-                    <span>Choose a username</span>
-                    <input type="text" data-account-username-input value="${escapeHtml(userDoc?.username || '')}" placeholder="john_smith" />
-                    <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
-                    <strong class="account-setup-field-message" data-account-username-message></strong>
-                  </label>
-                  <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit disabled>
-                    <span class="account-btn-label">Create my account</span>
-                  </button>
-                </form>
-              </div>
+              <h2>Get your profile started</h2>
+              <p>Add a username that is unique to you. This is how you'll appear to others on WorkLinkUp.</p>
             </div>
-          </section>
+            <div class="account-setup-section-item">
+              <form class="account-setup-compact-form" data-account-username-form>
+                <label class="account-setup-field">
+                  <span>Choose a username</span>
+                  <input type="text" data-account-username-input value="${escapeHtml(userDoc?.username || '')}" placeholder="john_smith" />
+                  <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
+                  <strong class="account-setup-field-message" data-account-username-message></strong>
+                </label>
+                <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit disabled>
+                  <span class="account-btn-label">Create my account</span>
+                </button>
+              </form>
+            </div>
+          </div>
         `;
 
         setupBody.querySelector('[data-back-home]')?.addEventListener('click', () => {
@@ -4627,6 +4642,9 @@
             setButtonLoading(usernameSubmit, false);
           }
         });
+
+        // Initialize optional collapsible sections
+        initializeOptionalSections(setupBody);
 
         return;
       }
@@ -4980,6 +4998,11 @@
         const payload = Object.fromEntries(formData.entries());
         const primaryService = selectedServices[0];
         const selectedServiceName = primaryService.service || primaryService.category;
+        
+        const getSafeConfig = (label) => {
+          return SPECIALIST_CATEGORIES.find((cat) => cat.label === label) || SPECIALIST_CATEGORIES[0] || { label: 'Specialist', image: '' };
+        };
+
         payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'WorkLinkUp Provider';
         payload.username = userDoc?.username || '';
         payload.province = selectedLocation.province;
@@ -4997,7 +5020,7 @@
         payload.education = education.length ? education : existingProvider.education;
         payload.certifications = certifications.length ? certifications : existingProvider.certifications;
         payload.portfolioLinks = portfolioLinks.length ? portfolioLinks : existingProvider.portfolioLinks;
-        payload.profileImageData = providerMediaState.profileImageData || getCategoryConfig(primaryService.category)?.image || '';
+        payload.profileImageData = providerMediaState.profileImageData || getSafeConfig(primaryService.category)?.image || '';
         payload.bannerImageData = providerMediaState.bannerImageData || 'images/sections/findme.avif';
         payload.professionalDocuments = providerMediaState.professionalDocuments;
 
@@ -5008,18 +5031,22 @@
           await refreshState();
           window.history.replaceState({}, '', `${window.location.pathname}`);
           
-          const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
-          const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+          const isEmbedded = getIsEmbedded(params);
           
           if (isEmbedded) {
             const savedUid = account.uid;
             const savedProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '';
             const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(savedUid)}&province=${encodeURIComponent(savedProvince)}`;
-            window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+            if (window !== window.parent) {
+              window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+            } else {
+              window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+            }
             return;
           }
-          // redirect to provider profile page instead of rendering setup again
-          window.location.href = `${getBase}pages/provider-profile.html`;
+          
+          const getBaseFn = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
+          window.location.href = `${getBaseFn}pages/provider-profile.html`;
         } catch (error) {
           console.error('Provider profile save error:', error);
           window.alert(error.message || 'Could not save your provider profile.');
@@ -5048,4 +5075,8 @@
   } else {
     initialize();
   }
+
+  window.WorkLinkUpProviders = {
+    initializeAccountPageExperience
+  };
 })();
