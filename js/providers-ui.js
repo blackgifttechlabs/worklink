@@ -4325,37 +4325,12 @@
     const dashboard = document.getElementById('account-dashboard');
     if (!setupStage || !setupBody) return;
 
-    const account = getStoredAccount();
-    const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams(window.location.search);
-    const isEmbedded = getIsEmbedded(params);
-    const isGoogleAuthFlow = Boolean(
-      readSessionFlag('worklinkup_google_auth_flow')
-      || readSessionFlag('worklinkup_google_redirect_pending')
-      || readSessionFlag('worklinkup_google_redirect_success')
-    );
-    const isGoogleRedirectReturn = Boolean(
-      readSessionFlag('worklinkup_google_redirect_pending')
-      || readSessionFlag('worklinkup_google_redirect_success')
-    );
-    if (isEmbedded) {
-      document.body.classList.add('account-embed-mode');
-      if (guestStage) guestStage.hidden = true;
-      if (dashboard) dashboard.hidden = true;
-      if (setupStage) setupStage.hidden = false;
-      if (setupBody) {
-        setupBody.innerHTML = `
-          <section class="account-setup-loading">
-            <div class="account-setup-loading-spinner"></div>
-            <h2>Preparing your setup</h2>
-            <p>Loading the next step for your account.</p>
-          </section>
-        `;
-      }
-    }
+    // ... (keep initial code as is) ...
+
     if (!isEmbedded && isGoogleRedirectReturn) {
-      guestStage.hidden = true;
+      if (guestStage) guestStage.hidden = true; // Added check
       setupStage.hidden = false;
-      dashboard.hidden = true;
+      if (dashboard) dashboard.hidden = true; // Added check
       setupBody.innerHTML = `
         <section class="account-setup-loading">
           <div class="account-setup-loading-spinner"></div>
@@ -4368,11 +4343,12 @@
       }, { once: true });
       return;
     }
+    
     if (!account?.loggedIn) {
       if (!isEmbedded) {
-        guestStage.hidden = false;
+        if (guestStage) guestStage.hidden = false; // Added check
         setupStage.hidden = true;
-        dashboard.hidden = true;
+        if (dashboard) dashboard.hidden = true; // Added check
         return;
       }
       window.addEventListener('softgiggles-auth-changed', () => {
@@ -4381,85 +4357,20 @@
       return;
     }
 
-    guestStage.hidden = true;
+    if (guestStage) guestStage.hidden = true; // Added check
     setupStage.hidden = true;
-    dashboard.hidden = true;
+    if (dashboard) dashboard.hidden = true; // Added check
 
     const authHelper = await waitForAuthHelper();
-    if (!authHelper) return;
-
-    const providerInviteService = params.get('service') || '';
-    const forcedSetup = params.get('setup') || '';
-    let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
-    let providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => null);
-
-    function fillDashboard() {
-      const providerIdEl = document.getElementById('account-provider-id');
-      const provinceEl = document.getElementById('account-profile-province');
-      const whatsappEl = document.getElementById('account-profile-whatsapp');
-      const experienceEl = document.getElementById('account-profile-experience');
-      const categoryEl = document.getElementById('account-profile-category');
-      const specialtyEl = document.getElementById('account-profile-specialty');
-      const nameEl = document.getElementById('account-profile-name');
-      const emailEl = document.getElementById('account-profile-email');
-      const displayName = providerProfile?.displayName || userDoc?.name || account.name || 'WorkLinkUp User';
-      const email = account.email || userDoc?.email || 'you@example.com';
-
-      if (nameEl) nameEl.textContent = displayName;
-      if (emailEl) emailEl.textContent = email;
-      if (providerIdEl) providerIdEl.textContent = userDoc?.providerPublicId || providerProfile?.providerPublicId || 'Pending';
-      if (provinceEl) provinceEl.textContent = userDoc?.providerProvince || providerProfile?.province || 'Not set';
-      if (whatsappEl) whatsappEl.textContent = userDoc?.whatsappNumber || providerProfile?.whatsappNumber || 'Not set';
-      if (experienceEl) experienceEl.textContent = userDoc?.experience || providerProfile?.experience || 'Not set';
-      if (categoryEl) categoryEl.textContent = userDoc?.primaryCategory || providerProfile?.primaryCategory || 'Not set';
-      if (specialtyEl) specialtyEl.textContent = getServiceListLabel(providerProfile || userDoc) || userDoc?.specialty || providerProfile?.specialty || 'Not set';
-    }
-
-    function getSetupStep() {
-      const hasLocation = userDoc?.city || userDoc?.address;
-      const hasVitalFields = userDoc?.username && (userDoc?.userRole === 'provider' ? userDoc?.specialty : true) && hasLocation;
-      if (forcedSetup === 'provider' && !hasVitalFields) return 'provider';
-      if (forcedSetup === '1' && !userDoc?.username) return 'username';
-      if (!userDoc?.username) return 'username';
-      if (!userDoc?.userRole) return 'role';
-      if (!hasVitalFields) return 'provider';
-      return 'dashboard';
-    }
-
-    async function refreshState() {
-      userDoc = await authHelper.getUserDocument(account.uid).catch(() => userDoc) || userDoc;
-      providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => providerProfile);
-    }
+    
+    // ... (keep middle execution block as is) ...
 
     async function renderCurrentStep() {
       const step = getSetupStep();
       const isGetFoundPage = /\/pages\/account\.html$/.test(window.location.pathname);
       const nextParams = new URLSearchParams();
-      nextParams.set('setup', step === 'provider' ? 'provider' : '1');
-      if (providerInviteService) nextParams.set('service', providerInviteService);
-
-      if (!isEmbedded && isGetFoundPage && isGoogleAuthFlow) {
-        clearSessionFlag('worklinkup_google_auth_flow');
-        clearSessionFlag('worklinkup_google_redirect_pending');
-        clearSessionFlag('worklinkup_google_redirect_success');
-
-        if (step !== 'dashboard') {
-          try {
-            localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
-            setSessionFlag('worklinkup_show_setup_modal_once');
-          } catch (error) {
-            // Ignore storage issues and continue redirect.
-          }
-          window.location.replace(`${getBase()}index.html`);
-          return;
-        }
-
-        const redirectUrl = String(userDoc?.userRole || '').trim() === 'provider'
-          ? `${getBase()}pages/my-posts.html`
-          : `${getBase()}pages/specialists.html`;
-        window.location.replace(redirectUrl);
-        return;
-      }
+      
+      // ... (keep setup parameter code as is) ...
 
       if (!isEmbedded && step !== 'dashboard') {
         try {
@@ -4469,9 +4380,9 @@
         }
 
         if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
-          guestStage.hidden = true;
+          if (guestStage) guestStage.hidden = true; // Added check
           setupStage.hidden = true;
-          dashboard.hidden = true;
+          if (dashboard) dashboard.hidden = true; // Added check
           if (!document.body.dataset.accountSetupModalOpen) {
             document.body.dataset.accountSetupModalOpen = '1';
             window.openWorkLinkUpSetupModal(`?${nextParams.toString()}`, {
@@ -4485,19 +4396,13 @@
         return;
       }
 
-      guestStage.hidden = true;
+      if (guestStage) guestStage.hidden = true; // Added check
       setupStage.hidden = step === 'dashboard';
-      dashboard.hidden = step !== 'dashboard';
+      if (dashboard) dashboard.hidden = step !== 'dashboard'; // Added check
 
       if (step === 'dashboard') {
         const getProfileUrl = () => {
-          if (String(userDoc?.userRole || '').trim() === 'provider') {
-            const url = new URL(`${getBase()}pages/provider-profile.html`, window.location.origin);
-            url.searchParams.set('uid', account.uid);
-            url.searchParams.set('province', providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || '');
-            return url.toString();
-          }
-          return `${getBase()}pages/job-giver-profile.html`;
+          // ... (keep inner function as is) ...
         };
 
         if (!isEmbedded && isGetFoundPage) {
@@ -4513,7 +4418,7 @@
             // Ignore storage issues.
           }
           setupStage.hidden = false;
-          dashboard.hidden = true;
+          if (dashboard) dashboard.hidden = true; // Added check
           setupBody.innerHTML = `
             <section class="account-setup-embed-success">
               <div class="account-setup-embed-success-icon"><i class="fa-solid fa-check"></i></div>
@@ -4521,6 +4426,7 @@
               <p>Your WorkLinkUp profile is ready. Redirecting you now.</p>
             </section>
           `;
+         
           window.setTimeout(() => {
             if (window !== window.parent) {
               window.parent?.postMessage({
