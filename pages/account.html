@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account – WorkLinkUp</title>
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
+  <script>
+    if (new URLSearchParams(window.location.search).get('embed') === '1') {
+      document.documentElement.classList.add('account-embed-preload');
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="account-page">
+  <section class="account-auth-stage" id="account-guest-card" hidden>
+    <div class="account-auth-stage-visual">
+      <div class="account-auth-stage-copy">
+        <span class="account-auth-stage-kicker">WorkLinkUp account</span>
+        <h1>Sign in to view your profile</h1>
+        <p>Your WorkLinkUp profile, contact details, and future hiring activity will appear here once you log in.</p>
+        <ul class="account-auth-stage-points">
+          <li>Find specialists faster</li>
+          <li>Save your details and profile progress</li>
+          <li>Start getting found for the work you do</li>
+        </ul>
+      </div>
+      <div class="account-auth-stage-badges" aria-hidden="true">
+        <div class="account-auth-stage-badge">
+          <img src="../images/sections/addie.avif" alt="" />
+          <span>Addie</span>
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="account-auth-stage-badge is-offset">
+          <img src="../images/sections/ethel.avif" alt="" />
+          <span>Ethel_Hair_Salon</span>
+          <i class="fa-solid fa-check"></i>
+        </div>
+      </div>
+      <img src="../images/sections/login-side.avif" alt="WorkLinkUp sign in illustration" class="account-auth-stage-image" />
+    </div>
+
+    <div class="account-auth-stage-panel">
+      <div class="account-auth-stage-panel-inner">
+        <h2 class="account-auth-page-heading">Create a new account</h2>
+        <p class="account-auth-page-subtext"><span class="account-auth-page-subtext-label">Already have an account?</span> <button type="button" class="account-page-mode-switch inline-link">Sign in</button></p>
+
+        <div class="account-auth-page-actions">
+          <button type="button" class="account-auth-btn account-google-btn account-page-google-btn">
+            <span class="google-mark" aria-hidden="true">
+              <svg class="google-g" viewBox="0 0 18 18" focusable="false">
+                <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z" />
+                <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.94v2.33A9 9 0 0 0 9 18Z" />
+                <path fill="#FBBC05" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
+                <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A8.63 8.63 0 0 0 9 0 9 9 0 0 0 .94 4.96l3.01 2.33C4.66 5.16 6.65 3.58 9 3.58Z" />
+              </svg>
+            </span>
+            <span class="account-btn-label">Continue with Google</span>
+          </button>
+        </div>
+        <div class="account-form-error" data-account-page-form-error hidden></div>
+
+        <div class="account-auth-page-divider">
+          <span>Or sign up using email</span>
+        </div>
+
+        <form class="account-auth-page-form" id="account-page-email-form">
+          <div class="account-form-row account-page-name-row">
+            <label for="account-page-name">Full name</label>
+            <input id="account-page-name" name="name" type="text" placeholder="Tinashe Moyo" />
+          </div>
+          <div class="account-auth-identifier-switch" data-account-page-identifier-switch hidden>
+            <button type="button" class="account-identifier-option is-active" data-account-page-identifier-option="email">Email</button>
+            <button type="button" class="account-identifier-option" data-account-page-identifier-option="username">Username</button>
+          </div>
+          <div class="account-form-row">
+            <label for="account-page-email" data-account-page-identifier-label>Email address</label>
+            <input id="account-page-email" name="identifier" type="email" placeholder="you@example.com" required />
+          </div>
+          <div class="account-form-row">
+            <label for="account-page-password">Password</label>
+            <input id="account-page-password" name="password" type="password" placeholder="Enter password" required />
+          </div>
+          <button type="button" class="account-forgot-password account-page-forgot-password inline-link">Forgot password?</button>
+          <button type="submit" class="account-submit-btn account-submit-signup account-page-submit-btn">
+            <span class="account-btn-label">Create Account</span>
+          </button>
+        </form>
+
+        <p class="account-auth-page-note">Additional verification may be required at a later stage.</p>
+        <p class="account-auth-note">By joining, you agree to WorkLinkUp Terms of Service and Privacy Policy.</p>
+        <input type="hidden" id="account-page-mode" value="signup" />
+        <input type="hidden" id="account-page-identifier-mode" value="email" />
+      </div>
+    </div>
+  </section>
+
+  <section class="account-setup-stage" id="account-setup-stage" hidden>
+    <div class="account-setup-shell" data-account-setup-body></div>
+  </section>
+
+  <section class="account-dashboard" id="account-dashboard" hidden>
+    <div class="account-hero-banner work-account-hero" id="account-profile">
+      <div class="work-account-hero-copy">
+        <span class="work-account-kicker">WorkLinkUp Profile</span>
+        <div class="account-hero-chip">Hi, <span id="account-display-name">WorkLinkUp User</span></div>
+        <p>Manage how clients find you and how you present the work you do.</p>
+      </div>
+    </div>
+
+    <div class="account-dashboard-layout">
+      <aside class="account-side-nav">
+        <a href="#account-profile" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>My Profile</span></a>
+        <a href="job-giver-profile.html" class="account-side-link" data-account-jobs-bids-link><i class="fa-solid fa-briefcase"></i><span>Jobs and Bids</span></a>
+        <a href="my-posts.html" class="account-side-link" data-account-provider-only hidden><i class="fa-regular fa-images"></i><span>My Posts</span></a>
+        <a href="messages.html" class="account-side-link"><i class="fa-regular fa-message"></i><span>Messages</span></a>
+        <a href="#account-settings" class="account-side-link"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
+        <button type="button" class="account-side-logout">Log Out</button>
+      </aside>
+
+      <section class="account-profile-card" id="account-settings">
+        <h2>Profile Details</h2>
+        <div class="account-detail-box">
+          <span>Name</span>
+          <strong id="account-profile-name">WorkLinkUp User</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Email Address</span>
+          <strong id="account-profile-email">you@example.com</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Provider ID</span>
+          <strong id="account-provider-id">Pending</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Province</span>
+          <strong id="account-profile-province">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>WhatsApp Number</span>
+          <strong id="account-profile-whatsapp">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Experience</span>
+          <strong id="account-profile-experience">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Main Category</span>
+          <strong id="account-profile-category">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Specialty</span>
+          <strong id="account-profile-specialty">Not set</strong>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+          <a href="my-posts.html" class="provider-profile-action">Go to My Posts</a>
+          <a href="messages.html" class="provider-profile-action secondary">Open Messages</a>
+        </div>
+        <label class="account-marketing-row">
+          <input type="checkbox" />
+          <span>Keep me updated on WorkLinkUp launch news and new features</span>
+        </label>
+        <button type="button" class="account-delete-link">Delete WorkLinkUp Profile</button>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div class="account-delete-overlay" id="account-delete-overlay" hidden>
+  <div class="account-delete-modal">
+    <button type="button" class="account-delete-close" aria-label="Close delete modal">×</button>
+    <h3>Delete WorkLinkUp Profile</h3>
+    <p class="account-delete-copy">Type your account identifier exactly to confirm permanent deletion.</p>
+    <div class="account-delete-target" id="account-delete-target-label"></div>
+    <div class="account-form-row">
+      <label for="account-delete-confirmation" id="account-delete-label">Email address</label>
+      <input id="account-delete-confirmation" type="text" autocomplete="off" placeholder="Type it exactly as shown" />
+    </div>
+    <div class="account-delete-actions">
+      <button type="button" class="account-delete-cancel">Cancel</button>
+      <button type="button" class="account-delete-confirm" disabled>Delete Profile</button>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="../js/shared-header.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>
