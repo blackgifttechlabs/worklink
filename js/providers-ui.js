@@ -4324,7 +4324,7 @@
     const setupBody = document.querySelector('[data-account-setup-body]');
     const dashboard = document.getElementById('account-dashboard');
     
-    // We strictly require setupStage and setupBody, but guestStage and dashboard can be safely null
+    // We strictly require setupStage and setupBody, but guestStage and dashboard can be safely null.
     if (!setupStage || !setupBody) return;
 
     const account = getStoredAccount();
@@ -4345,11 +4345,11 @@
       if (guestStage) guestStage.hidden = true;
       if (dashboard) dashboard.hidden = true;
       setupStage.hidden = false;
+      // Show a minimal loader while we check if they already have all their details
       setupBody.innerHTML = `
         <section class="account-setup-loading">
           <div class="account-setup-loading-spinner"></div>
-          <h2>Preparing your setup</h2>
-          <p>Loading the next step for your account.</p>
+          <h2>Checking profile...</h2>
         </section>
       `;
     }
@@ -4392,7 +4392,6 @@
     if (!authHelper) return;
 
     const providerInviteService = params.get('service') || '';
-    const forcedSetup = params.get('setup') || '';
     let userDoc = await authHelper.getUserDocument(account.uid).catch(() => null) || {};
     let providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => null);
 
@@ -4419,14 +4418,25 @@
     }
 
     function getSetupStep() {
-      const hasLocation = userDoc?.city || userDoc?.address;
-      const hasVitalFields = userDoc?.username && (userDoc?.userRole === 'provider' ? userDoc?.specialty : true) && hasLocation;
-      if (forcedSetup === 'provider' && !hasVitalFields) return 'provider';
-      if (forcedSetup === '1' && !userDoc?.username) return 'username';
-      if (!userDoc?.username) return 'username';
+      // 1. Check for Username
+      const hasUsername = Boolean(userDoc?.username);
+      
+      // 2. Check for Address / City (in userDoc or providerProfile)
+      const hasAddress = Boolean(userDoc?.address || userDoc?.city || providerProfile?.address || providerProfile?.city);
+      
+      // 3. Check for Service / Specialty (in userDoc or providerProfile)
+      const hasService = Boolean(userDoc?.specialty || providerProfile?.specialty || (providerProfile?.services && providerProfile.services.length > 0));
+
+      // If they have all 3, the popup shouldn't even show (we skip straight to the dashboard/close)
+      if (hasUsername && hasAddress && hasService) {
+        return 'dashboard';
+      }
+
+      // Otherwise, route them to the missing step
+      if (!hasUsername) return 'username';
       if (!userDoc?.userRole) return 'role';
-      if (!hasVitalFields) return 'provider';
-      return 'dashboard';
+      
+      return 'provider'; // Missing address or service goes here
     }
 
     async function refreshState() {
@@ -4451,7 +4461,7 @@
             localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
             setSessionFlag('worklinkup_show_setup_modal_once');
           } catch (error) {
-            // Ignore storage issues and continue redirect.
+            // Ignore storage issues.
           }
           window.location.replace(`${getBase()}index.html`);
           return;
@@ -4468,7 +4478,7 @@
         try {
           localStorage.setItem('worklinkup_pending_setup', `?${nextParams.toString()}`);
         } catch (error) {
-          // Ignore storage issues and continue redirect.
+          // Ignore storage issues.
         }
 
         if (isGetFoundPage && typeof window.openWorkLinkUpSetupModal === 'function') {
@@ -4515,25 +4525,16 @@
           } catch (error) {
             // Ignore storage issues.
           }
-          setupStage.hidden = false;
-          if (dashboard) dashboard.hidden = true;
-          setupBody.innerHTML = `
-            <section class="account-setup-embed-success">
-              <div class="account-setup-embed-success-icon"><i class="fa-solid fa-check"></i></div>
-              <h2>Profile completed</h2>
-              <p>Your WorkLinkUp profile is ready. Redirecting you now.</p>
-            </section>
-          `;
-          window.setTimeout(() => {
-            if (window !== window.parent) {
-              window.parent?.postMessage({
-                type: 'worklinkup-setup-complete',
-                redirectUrl: redirectTarget
-              }, window.location.origin);
-            } else {
-              window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
-            }
-          }, 1800);
+          
+          // INSTANTLY close the modal if they are already fully set up
+          if (window !== window.parent) {
+            window.parent?.postMessage({
+              type: 'worklinkup-setup-complete',
+              redirectUrl: redirectTarget
+            }, '*');
+          } else {
+            window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+          }
           return;
         }
         fillDashboard();
@@ -4996,6 +4997,11 @@
         const payload = Object.fromEntries(formData.entries());
         const primaryService = selectedServices[0];
         const selectedServiceName = primaryService.service || primaryService.category;
+        
+        const getSafeConfig = (label) => {
+          return SPECIALIST_CATEGORIES.find((cat) => cat.label === label) || SPECIALIST_CATEGORIES[0] || { label: 'Specialist', image: '' };
+        };
+
         payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'WorkLinkUp Provider';
         payload.username = userDoc?.username || '';
         payload.province = selectedLocation.province;
@@ -5013,7 +5019,7 @@
         payload.education = education.length ? education : existingProvider.education;
         payload.certifications = certifications.length ? certifications : existingProvider.certifications;
         payload.portfolioLinks = portfolioLinks.length ? portfolioLinks : existingProvider.portfolioLinks;
-        payload.profileImageData = providerMediaState.profileImageData || getCategoryConfig(primaryService.category)?.image || '';
+        payload.profileImageData = providerMediaState.profileImageData || getSafeConfig(primaryService.category)?.image || '';
         payload.bannerImageData = providerMediaState.bannerImageData || 'images/sections/findme.avif';
         payload.professionalDocuments = providerMediaState.professionalDocuments;
 
@@ -5024,8 +5030,7 @@
           await refreshState();
           window.history.replaceState({}, '', `${window.location.pathname}`);
           
-          const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
-          const isEmbedded = getIsEmbedded();
+          const isEmbedded = getIsEmbedded(params);
           
           if (isEmbedded) {
             const savedUid = account.uid;
@@ -5038,7 +5043,9 @@
             }
             return;
           }
-          window.location.href = `${getBase}pages/provider-profile.html`;
+          
+          const getBaseFn = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
+          window.location.href = `${getBaseFn}pages/provider-profile.html`;
         } catch (error) {
           console.error('Provider profile save error:', error);
           window.alert(error.message || 'Could not save your provider profile.');
