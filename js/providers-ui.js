@@ -5007,16 +5007,17 @@
           showSuccessToast('Profile completed successfully!');
           await refreshState();
           window.history.replaceState({}, '', `${window.location.pathname}`);
+          
+          const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
           const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+          
           if (isEmbedded) {
             window.parent?.postMessage({
-              type: "worklinkup-setup-complete",
-              redirectUrl: `${getBase}pages/provider-profile.html`
-            }, window.location.origin);
+              type: "worklinkup-setup-complete"
+            }, '*');
             return;
           }
           // redirect to provider profile page instead of rendering setup again
-          const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
           window.location.href = `${getBase}pages/provider-profile.html`;
         } catch (error) {
           console.error('Provider profile save error:', error);

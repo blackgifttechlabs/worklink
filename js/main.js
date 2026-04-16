@@ -1882,15 +1882,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const messageHandler = (event) => {
-      if (event.origin !== window.location.origin) return;
+      const eventOrigin = String(event.origin || '').trim();
+      const currentOrigin = String(window.location.origin || '').trim();
+      
+      // Only check origin if both are defined and same-origin is expected
+      if (eventOrigin && currentOrigin && eventOrigin !== currentOrigin) {
+        return;
+      }
+      
       if (event.data?.type === 'worklinkup-setup-complete') {
         closeModal(true);
         if (openTimer) window.clearTimeout(openTimer);
         if (event.data?.redirectUrl) {
-          window.location.href = event.data.redirectUrl;
+          window.setTimeout(() => {
+            window.location.href = event.data.redirectUrl;
+          }, 300);
           return;
         }
-        window.location.reload();
+        window.setTimeout(() => {
+          window.location.reload();
+        }, 300);
+        return;
       }
       if (event.data?.type === 'worklinkup:profile-saved') {
         closeModal(false);
