@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout – SoftGiggles</title>
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="checkout-page">
+  <div class="checkout-layout">
+    <section class="checkout-main">
+      <div class="checkout-account-bar">
+        <div class="checkout-account-user">
+          <span class="checkout-account-avatar">B</span>
+          <span>blackgifttechlabs@gmail.com</span>
+        </div>
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+      </div>
+
+      <input type="hidden" value="delivery" data-checkout-shipping />
+
+      <div class="checkout-delivery-toggle">
+        <button type="button" class="checkout-toggle-btn is-active" data-delivery-mode="delivery">
+          <i class="fa-solid fa-box"></i><br />
+          Home Delivery
+        </button>
+        <button type="button" class="checkout-toggle-btn" data-delivery-mode="pickup">
+          <i class="fa-solid fa-location-dot"></i><br />
+          Click and Collect (Standard or Express)
+        </button>
+      </div>
+
+      <section class="checkout-section" data-pickup-panel hidden>
+        <h2>Pickup point</h2>
+        <button type="button" class="checkout-location-btn"><i class="fa-regular fa-paper-plane"></i> Use my location</button>
+        <p style="text-align:center;margin-bottom:14px;">or</p>
+        <div class="checkout-form-grid">
+          <select>
+            <option>South Africa</option>
+            <option>Zimbabwe</option>
+            <option>Botswana</option>
+          </select>
+          <div class="checkout-search-row">
+            <input type="text" placeholder="Address" />
+            <button type="button">Search</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="checkout-section" data-home-delivery-panel>
+        <div class="checkout-form-grid">
+          <select>
+            <option>South Africa</option>
+            <option>Zimbabwe</option>
+            <option>Botswana</option>
+          </select>
+          <div class="checkout-form-grid two-col">
+            <input type="text" placeholder="First name" />
+            <input type="text" placeholder="Last name" />
+          </div>
+          <input type="text" placeholder="Company (optional)" />
+          <input type="text" placeholder="Address" />
+          <input type="text" placeholder="Suburb" />
+          <div class="checkout-city-row">
+            <input type="text" placeholder="City" />
+            <select>
+              <option>Gauteng</option>
+              <option>Western Cape</option>
+              <option>KwaZulu-Natal</option>
+            </select>
+            <input type="text" placeholder="Postal code" />
+          </div>
+          <input type="text" placeholder="Phone" />
+        </div>
+      </section>
+
+      <section class="checkout-section">
+        <h2>Shipping method</h2>
+        <div class="checkout-help-box">Enter your shipping address to view available shipping methods.</div>
+      </section>
+
+      <section class="checkout-section">
+        <h2>Payment</h2>
+        <p>All transactions are secure and encrypted.</p>
+        <div class="checkout-payment-options">
+          <div class="checkout-option is-selected">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>Peach Payments</span>
+            </div>
+            <strong>VISA · MC</strong>
+          </div>
+          <div class="checkout-payment-copy">You'll be redirected to Peach Payments to complete your purchase.</div>
+          <div class="checkout-option">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>PayJustNow</span>
+            </div>
+            <strong>PJN</strong>
+          </div>
+          <div class="checkout-option">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>Payflex</span>
+            </div>
+            <strong>PFX</strong>
+          </div>
+          <div class="checkout-option">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>Happy Pay</span>
+            </div>
+            <strong>HP</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="checkout-section">
+        <h2>Billing address</h2>
+        <div class="checkout-billing-options">
+          <div class="checkout-option is-selected">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>Same as shipping address</span>
+            </div>
+          </div>
+          <div class="checkout-option">
+            <div class="checkout-option-main">
+              <span class="checkout-option-radio"></span>
+              <span>Use a different billing address</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <label class="checkout-note-row">
+        <input type="checkbox" />
+        <span>Email me with news and offers</span>
+      </label>
+
+      <button type="button" class="checkout-pay-btn" data-pay-now>Pay now</button>
+    </section>
+
+    <aside class="checkout-sidebar">
+      <div class="checkout-order-list" data-checkout-items></div>
+
+      <div class="checkout-discount-row">
+        <input type="text" placeholder="Discount code or gift card" />
+        <button type="button">Apply</button>
+      </div>
+
+      <div class="checkout-summary-row">
+        <span>Subtotal</span>
+        <strong data-checkout-subtotal>R 0.00 · 0 items</strong>
+      </div>
+      <div class="checkout-summary-row">
+        <span>Shipping</span>
+        <span data-checkout-shipping-copy>Enter shipping address</span>
+      </div>
+      <div class="checkout-total-row">
+        <div>
+          <span>Total</span>
+          <div class="checkout-summary-note">Including taxes</div>
+        </div>
+        <strong data-checkout-total>R 0.00</strong>
+      </div>
+    </aside>
+  </div>
+
+  <div class="checkout-footer-links">
+    <a href="#">Refund policy</a>
+    <a href="#">Shipping</a>
+    <a href="#">Privacy policy</a>
+    <a href="#">Terms of service</a>
+    <a href="#">Contact</a>
+    <a href="#">Cookies</a>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="../js/shared-header.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

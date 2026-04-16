@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Users – WorkLinkUp</title>
+  <link rel="icon" type="image/jpeg" href="../../images/logo/logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body class="admin-page-body" data-admin-view="users">
+  <div class="admin-gate" id="admin-gate">
+    <div class="admin-gate-card">
+      <div class="admin-gate-badge"><i class="fa-solid fa-key"></i> Admin Access</div>
+      <h1>WorkLinkUp Admin</h1>
+      <p>Enter the admin PIN to unlock live users, activity, and platform metrics.</p>
+      <form class="admin-gate-form" id="admin-gate-form">
+        <label for="admin-pin">PIN</label>
+        <input id="admin-pin" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter admin PIN" maxlength="4" />
+        <button type="submit" class="admin-gate-submit">Unlock Console</button>
+        <div class="admin-gate-error" id="admin-gate-error" hidden>Incorrect PIN. Try again.</div>
+      </form>
+      <a href="../../index.html" class="admin-gate-back">Back to WorkLinkUp</a>
+    </div>
+  </div>
+
+  <div class="admin-mobile-backdrop" id="admin-mobile-backdrop" hidden></div>
+
+  <div class="admin-app" id="admin-app" hidden>
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <a href="../../index.html" class="admin-brand-link" aria-label="WorkLinkUp home">
+          <img src="../../images/logo/logo.jpg" alt="WorkLinkUp" />
+          <span>
+            <strong>WorkLinkUp</strong>
+            <small>Admin Console</small>
+          </span>
+        </a>
+      </div>
+
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="./dashboard.html" class="admin-nav-link" data-admin-view="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+        <a href="./users.html" class="admin-nav-link" data-admin-view="users"><i class="fa-solid fa-user-group"></i><span>Users</span></a>
+        <a href="./providers.html" class="admin-nav-link" data-admin-view="providers"><i class="fa-solid fa-id-badge"></i><span>Providers</span></a>
+        <a href="./engagement.html" class="admin-nav-link" data-admin-view="engagement"><i class="fa-solid fa-chart-column"></i><span>Engagement</span></a>
+        <a href="./messages.html" class="admin-nav-link" data-admin-view="messages"><i class="fa-solid fa-envelope"></i><span>Messages</span></a>
+        <a href="./admin-activity.html" class="admin-nav-link" data-admin-view="admin-activity"><i class="fa-solid fa-user-shield"></i><span>Admin Activity</span></a>
+      </nav>
+
+      <div class="admin-sidebar-meta">
+        <div class="admin-sidebar-card">
+          <span>Signed in as</span>
+          <strong id="admin-sidebar-current-admin">Awaiting PIN</strong>
+        </div>
+        <div class="admin-sidebar-card">
+          <span>Live users</span>
+          <strong id="admin-sidebar-total-users">0</strong>
+        </div>
+        <div class="admin-sidebar-card">
+          <span>Last sync</span>
+          <strong id="admin-sidebar-last-sync">Waiting...</strong>
+        </div>
+      </div>
+    </aside>
+
+    <div class="admin-main-shell">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="Open admin menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <p class="admin-topbar-kicker">WorkLinkUp Admin</p>
+            <h1 id="admin-view-title">Users</h1>
+          </div>
+        </div>
+        <div class="admin-topbar-right">
+          <button type="button" class="admin-refresh-btn" id="admin-refresh-btn">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Refresh</span>
+          </button>
+          <button type="button" class="admin-lock-btn" id="admin-lock-btn">
+            <i class="fa-solid fa-lock"></i>
+            <span>Lock</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <section class="admin-panel" data-admin-panel="users">
+          <div class="admin-panel-head">
+            <div>
+              <p class="admin-panel-kicker">Member records</p>
+              <h2>Registered users</h2>
+            </div>
+            <div class="admin-inline-total" id="admin-users-total">0 users</div>
+          </div>
+
+          <div class="admin-toolbar">
+            <label class="admin-search-field">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="admin-users-search" placeholder="Search member by name, email, phone, or location" />
+            </label>
+          </div>
+
+          <div class="admin-table-shell">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Contact</th>
+                  <th>Location</th>
+                  <th>Registered</th>
+                  <th>Last seen</th>
+                  <th>Commercial intent</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-body">
+                <tr><td colspan="6" class="admin-empty-cell">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../../js/firebase-auth.js"></script>
+  <script src="../../js/admin.js"></script>
+</body>
+</html>
