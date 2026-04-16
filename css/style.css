@@ -1836,10 +1836,62 @@
 
   .account-embed-mode .account-setup-stage {
     padding: 0;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .account-embed-mode .account-setup-shell {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .account-embed-mode .account-setup-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 32px 24px 32px;
+    margin-bottom: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  .account-embed-mode .account-setup-section-item {
+    gap: 14px;
+  }
+
+  .account-embed-mode .account-setup-section-item h2 {
+    font-size: 26px;
+    line-height: 1.12;
+  }
+
+  .account-embed-mode .account-setup-section-item p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .account-embed-mode .account-setup-back-link {
+    margin-bottom: 12px;
+  }
+
+  .account-embed-mode .account-setup-compact-form {
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  .account-embed-mode .account-setup-field {
+    gap: 8px;
+  }
+
+  .account-embed-mode .account-setup-field span {
+    font-size: 13px;
+  }
+
+  .account-embed-mode .account-setup-field small {
+    font-size: 12px;
   }
 
   .account-embed-mode .account-setup-split {

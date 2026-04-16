@@ -4434,22 +4434,33 @@
       // 1. Check for Username
       const hasUsername = Boolean(userDoc?.username);
       
-      // 2. Check for Address / City (in userDoc or providerProfile)
-      const hasAddress = Boolean(userDoc?.address || userDoc?.city || providerProfile?.address || providerProfile?.city);
+      // 2. Check for UserRole
+      const hasUserRole = Boolean(userDoc?.userRole);
       
-      // 3. Check for Service / Specialty (in userDoc or providerProfile)
-      const hasService = Boolean(userDoc?.specialty || providerProfile?.specialty || (providerProfile?.services && providerProfile.services.length > 0));
+      // 3. Check for DisplayName
+      const hasDisplayName = Boolean(userDoc?.name || userDoc?.displayName || account.name);
 
-      // If they have all 3, the popup shouldn't even show (we skip straight to the dashboard/close)
-      if (hasUsername && hasAddress && hasService) {
+      // If client user has all 3 required fields, skip to dashboard
+      if (userDoc?.userRole === 'client' && hasUsername && hasUserRole && hasDisplayName) {
         return 'dashboard';
       }
 
-      // Otherwise, route them to the missing step
+      // If provider user has username, address, and service
+      if (userDoc?.userRole === 'provider') {
+        const hasAddress = Boolean(userDoc?.address || userDoc?.city || providerProfile?.address || providerProfile?.city);
+        const hasService = Boolean(userDoc?.specialty || providerProfile?.specialty || (providerProfile?.services && providerProfile.services.length > 0));
+        if (hasUsername && hasAddress && hasService) {
+          return 'dashboard';
+        }
+        // Missing address or service for provider
+        return 'provider';
+      }
+
+      // Route to first missing step
       if (!hasUsername) return 'username';
-      if (!userDoc?.userRole) return 'role';
+      if (!hasUserRole) return 'role';
       
-      return 'provider'; // Missing address or service goes here
+      return 'provider'; // Missing details for provider
     }
 
     async function refreshState() {
@@ -4626,12 +4637,26 @@
           if (!(usernameInput instanceof HTMLInputElement) || !(usernameSubmit instanceof HTMLButtonElement)) return;
           setButtonLoading(usernameSubmit, true);
           try {
+            // Save username and set userRole as 'client' automatically
             await authHelper.saveAccountSetup({
               username: usernameInput.value.trim(),
-              displayName: userDoc?.name || account.name
+              displayName: userDoc?.name || account.name,
+              userRole: 'client'
             });
             await refreshState();
-            await renderCurrentStep();
+            
+            // If embedded, navigate back to calling page
+            if (isEmbedded) {
+              const returnUrl = params.get('return') || params.get('returnUrl');
+              if (returnUrl) {
+                window.location.href = returnUrl;
+              } else {
+                window.parent.postMessage({ type: 'account-setup-complete', role: 'client' }, '*');
+              }
+            } else {
+              // Otherwise go to specialists/client dashboard
+              window.location.href = `${getBase()}pages/specialists.html`;
+            }
           } catch (error) {
             if (usernameMessage) {
               usernameMessage.textContent = error.message || 'Could not save that username.';
