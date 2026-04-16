@@ -5586,6 +5586,9 @@ body.home-page-body {
   z-index: 2200;
   opacity: 0;
   transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pending-setup-overlay.is-visible {
@@ -5603,7 +5606,7 @@ body.home-page-body {
   position: relative;
   width: min(1100px, calc(100vw - 28px));
   height: min(88vh, 920px);
-  margin: 5vh auto 0;
+  margin: auto;
   border-radius: 30px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.97);
@@ -19870,9 +19873,9 @@ body.specialists-page-body {
 @media (max-width: 768px) {
   .pending-setup-panel {
     width: calc(100vw - 18px);
-    height: min(86dvh, 680px);
-    max-height: calc(100dvh - 18px);
-    margin: max(9px, 5dvh) auto 0;
+    height: auto;
+    max-height: min(86dvh, 680px);
+    margin: auto;
     border-radius: 18px;
   }
 
