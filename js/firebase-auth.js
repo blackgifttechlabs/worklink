@@ -1798,9 +1798,16 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
         if (allReviewsSnap) {
           const reviews = allReviewsSnap.docs.map((d) => d.data() || {});
           const avg = reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / Math.max(1, reviews.length);
+          const avgRating = Number(avg.toFixed(2));
+          const reviewCount = reviews.length;
           await setDoc(doc(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid), {
-            averageRating: Number(avg.toFixed(2)),
-            reviewsCount: reviews.length
+            averageRating: avgRating,
+            reviewCount: reviewCount
+          }, { merge: true }).catch(() => {});
+
+          await setDoc(doc(db, 'users', providerUid), {
+            averageRating: avgRating,
+            reviewCount: reviewCount
           }, { merge: true }).catch(() => {});
         }
       }
@@ -2639,6 +2646,9 @@ window.softGigglesAuth = {
   listPlacedJobBids,
   applyToJob,
   updateJobApplicationStatus,
+  findActiveJobBetweenUsers,
+  markJobStarted,
+  markJobCompleted,
   resolveAdminByPin,
   listAdmins,
   createAdmin,

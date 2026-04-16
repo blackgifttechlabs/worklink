@@ -1313,6 +1313,7 @@
       const currentAccount = getStoredAccount();
       const currentUid = String(currentAccount?.uid || '').trim();
       const placedBidJobIds = getPlacedBidJobIds();
+
       if (availableCountLabel) {
         availableCountLabel.textContent = String(filteredJobs.length);
       }
@@ -1324,8 +1325,32 @@
             <span>${items.length} job${items.length === 1 ? '' : 's'}</span>
           </div>
           <div class="job-card-grid ${viewMode === 'list' ? 'is-list' : 'is-grid'}">
-            ${items.map((job) => `
-              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${placedBidJobIds.has(String(job.id || '').trim()) ? 'is-bid-placed' : ''}" data-job-card-open="${escapeHtml(job.id)}" tabindex="0">
+            ${items.map((job) => {
+              const jobId = String(job.id || '').trim();
+              const isAcceptedBySomeone = Boolean(job.acceptedApplicationUid);
+              const isAcceptedByMe = isAcceptedBySomeone && job.acceptedApplicationUid === currentUid;
+              const hasPlacedBid = placedBidJobIds.has(jobId);
+
+              let statusLabel = '';
+              let bidDisabled = false;
+              let bidText = 'Accept & Bid';
+
+              if (isAcceptedByMe) {
+                statusLabel = 'You already accepted the job';
+                bidDisabled = true;
+                bidText = 'Accepted';
+              } else if (isAcceptedBySomeone) {
+                statusLabel = 'Job already Accepted by Someone';
+                bidDisabled = true;
+                bidText = 'Accepted';
+              } else if (hasPlacedBid) {
+                statusLabel = 'You already put a bid';
+                bidDisabled = true;
+                bidText = 'Bid Sent';
+              }
+
+              return `
+              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${hasPlacedBid ? 'is-bid-placed' : ''} ${isAcceptedBySomeone ? 'is-job-accepted' : ''}" data-job-card-open="${escapeHtml(jobId)}" tabindex="0">
                 <div class="job-card-top">
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -1353,14 +1378,13 @@
                     </span>
                   ` : ''}
                 </div>
+                ${statusLabel ? `<div class="job-card-status-notice">${escapeHtml(statusLabel)}</div>` : ''}
                 <div class="job-card-actions">
-                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(job.id)}">View More</button>
-                  ${placedBidJobIds.has(String(job.id || '').trim())
-                    ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already put a bid</button>`
-                    : `<button type="button" class="btn-primary" data-job-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
+                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View More</button>
+                  <button type="button" class="${bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''}>${escapeHtml(bidText)}</button>
                 </div>
               </article>
-            `).join('')}
+            `;}).join('')}
           </div>
         </section>
       `).join('') : `
@@ -1602,9 +1626,9 @@
       job: await authHelper.getJobPost(bid.jobId).catch(() => null)
     })));
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
-    let activeTab = (requestedTab === 'bids' || requestedTab === 'previous')
+    let activeTab = (requestedTab === 'bids' || requestedTab === 'previous' || requestedTab === 'current')
       ? requestedTab
-      : (!jobsWithApplications.length && placedBidsWithJobs.length ? 'bids' : 'jobs');
+      : 'current';
 
     function renderDashboard(currentProfile, currentJobs, currentPlacedBids) {
       const notificationState = readJobNotificationState(account.uid);
@@ -1636,10 +1660,66 @@
           : 0
       ), 0);
       const placedBidCount = currentPlacedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length;
-      const completedJobs = currentJobs.filter((job) => Boolean(job.completedAtMs || (Array.isArray(job.applications) && job.applications.some((a) => Boolean(a.completedAtMs)))));
+
+      const currentJobsList = [
+        ...currentJobs.filter(job => job.acceptedApplicationUid && !job.completedAtMs),
+        ...currentPlacedBids.filter(bid => bid.status === 'accepted' && !bid.completedAtMs)
+      ];
+      const currentCount = currentJobsList.length;
+
+      const completedJobs = [
+        ...currentJobs.filter((job) => Boolean(job.completedAtMs || (Array.isArray(job.applications) && job.applications.some((a) => Boolean(a.completedAtMs))))),
+        ...currentPlacedBids.filter(bid => bid.status === 'completed' || bid.completedAtMs)
+      ];
       const previousCount = completedJobs.length;
 
       // build tab content for the active tab so we can keep template readable
+      function buildCurrentJobsContent() {
+        if (!currentJobsList.length) return `
+          <div class="specialists-empty">
+            <div>
+              <h2>No active jobs</h2>
+              <p>When you accept a bid or your bid is accepted, it will show here.</p>
+            </div>
+          </div>
+        `;
+
+        return currentJobsList.map((item) => {
+          const isOwner = item.ownerUid === account.uid;
+          const job = isOwner ? item : item.job;
+          if (!job) return '';
+          const acceptedApp = isOwner
+            ? item.applications.find(a => a.id === item.acceptedApplicationUid)
+            : item;
+
+          const inProgress = Boolean(acceptedApp?.inProgressAtMs || job.inProgressAtMs);
+
+          return `
+            <article class="job-owner-card active-job-card">
+              <div class="job-owner-card-head">
+                <div>
+                  <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                  <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+                </div>
+                <strong>${escapeHtml(formatCurrency(isOwner ? job.budget : item.proposedBudget))}</strong>
+              </div>
+              <p>${escapeHtml(job.description)}</p>
+              <div class="job-card-meta">
+                <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+                <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+                <span><i class="fa-regular fa-user"></i>${isOwner ? 'Worker: ' + escapeHtml(acceptedApp?.bidderName) : 'Posted by: ' + escapeHtml(job.ownerName)}</span>
+              </div>
+              ${inProgress ? `<div class="job-status-notice">Job started</div>` : ''}
+              <div class="job-card-actions">
+                <button type="button" class="btn-primary" data-job-lifecycle-start="${escapeHtml(job.id)}" data-app-id="${escapeHtml(acceptedApp?.id || acceptedApp?.bidderUid)}" ${inProgress ? 'disabled' : ''}>Start Job</button>
+                <button type="button" class="btn-primary" data-job-lifecycle-finish="${escapeHtml(job.id)}" data-app-id="${escapeHtml(acceptedApp?.id || acceptedApp?.bidderUid)}" ${!inProgress ? 'disabled' : ''}>Finish Job</button>
+                <a href="${getBase()}pages/messages.html?peer=${encodeURIComponent(isOwner ? acceptedApp?.bidderUid : job.ownerUid)}" class="btn-secondary fleece-secondary">Message</a>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
       function buildPreviousJobsContent() {
         if (!completedJobs.length) return `
           <div class="specialists-empty">
@@ -1700,7 +1780,9 @@
         }).join('');
       }
 
-      const tabContent = activeTab === 'jobs'
+      const tabContent = activeTab === 'current'
+        ? buildCurrentJobsContent()
+        : activeTab === 'jobs'
         ? (currentJobs.length ? currentJobs.map((job) => `
           <article class="job-owner-card">
             <div class="job-owner-card-head">
@@ -1796,6 +1878,11 @@
           <section class="job-giver-dashboard">
             <div class="job-giver-layout">
               <aside class="job-dashboard-tabs">
+                <button type="button" class="${activeTab === 'current' ? 'is-active' : ''}" data-job-dashboard-tab="current">
+                  <i class="fa-solid fa-play"></i>
+                  <span>Current Jobs</span>
+                  ${currentCount > 0 ? `<span class="job-dashboard-tab-badge">${currentCount}</span>` : ''}
+                </button>
                 <button type="button" class="${activeTab === 'jobs' ? 'is-active' : ''}" data-job-dashboard-tab="jobs">
                   <i class="fa-solid fa-briefcase"></i>
                   <span>Jobs I Posted</span>
@@ -1819,6 +1906,34 @@
                 </div>
 
                 <div class="job-dashboard-summary">
+                  <div class="summary-card current-summary" role="region" aria-label="Current Jobs summary" ${activeTab !== 'current' ? 'hidden' : ''}>
+                    <div class="summary-head">
+                      <h3>Current Jobs</h3>
+                      <span class="summary-badge">${currentCount}</span>
+                    </div>
+                    <div class="summary-body">
+                      <table class="summary-table">
+                        <thead>
+                          <tr><th>Job</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                          ${currentJobsList.slice(0, 6).map((item) => {
+                            const isOwner = item.ownerUid === account.uid;
+                            const job = isOwner ? item : item.job;
+                            const acceptedApp = isOwner ? item.applications.find(a => a.id === item.acceptedApplicationUid) : item;
+                            const inProgress = Boolean(acceptedApp?.inProgressAtMs || job?.inProgressAtMs);
+                            return `
+                              <tr>
+                                <td>${escapeHtml(job?.subcategory || job?.category || 'Job')}</td>
+                                <td>${inProgress ? 'In Progress' : 'Accepted'}</td>
+                              </tr>
+                            `;
+                          }).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                   <div class="summary-card jobs-summary" role="region" aria-label="Jobs I Posted summary" ${activeTab !== 'jobs' ? 'hidden' : ''}>
                     <div class="summary-head">
                       <h3>Jobs I Posted</h3>
@@ -1901,6 +2016,33 @@
           nextUrl.searchParams.set('tab', activeTab);
           window.history.replaceState({}, '', nextUrl.toString());
           renderDashboard(currentProfile, currentJobs, currentPlacedBids);
+        });
+      });
+
+      page.querySelectorAll('[data-job-lifecycle-start]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const jobId = button.getAttribute('data-job-lifecycle-start') || '';
+          const applicationId = button.getAttribute('data-app-id') || '';
+          setButtonLoading(button, true);
+          try {
+            await authHelper.markJobStarted(jobId, applicationId);
+            showJobToast('Job started');
+            window.location.reload();
+          } catch (error) {
+            window.alert(error.message || 'Could not start job.');
+            setButtonLoading(button, false);
+          }
+        });
+      });
+
+      page.querySelectorAll('[data-job-lifecycle-finish]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const jobId = button.getAttribute('data-job-lifecycle-finish') || '';
+          const applicationId = button.getAttribute('data-app-id') || '';
+          const job = currentJobsList.find(item => (item.id === jobId || item.jobId === jobId));
+          const actualJob = job.ownerUid === account.uid ? job : job.job;
+          const acceptedApp = job.ownerUid === account.uid ? job.applications.find(a => a.id === applicationId) : job;
+          openJobReviewModal(actualJob, acceptedApp);
         });
       });
 
@@ -2099,6 +2241,73 @@
     }
 
     renderDashboard(profile, jobsWithApplications, placedBidsWithJobs);
+
+    function openJobReviewModal(job, application) {
+      try {
+        const existing = document.querySelector('.job-review-modal-shell');
+        if (existing) existing.remove();
+        const shell = document.createElement('div');
+        shell.className = 'job-review-modal-shell';
+        shell.innerHTML = `
+          <div class="job-review-modal-panel" role="dialog" aria-modal="true">
+            <button type="button" class="job-modal-close" data-job-review-close><i class="fa-solid fa-xmark"></i></button>
+            <div class="job-review-head">
+              <div class="job-review-provider-icon"><span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span></div>
+              <div>
+                <strong>${escapeHtml(application.bidderName || application.bidderUid || 'Provider')}</strong>
+                <div class="job-review-meta"><span>${escapeHtml(job.subcategory || job.category || '')}</span></div>
+              </div>
+            </div>
+            <div class="job-review-body">
+              <div class="job-review-stars" data-job-review-stars>
+                ${[1, 2, 3, 4, 5].map((s) => `<button type="button" class="star" data-star="${s}">&#9733;</button>`).join('')}
+              </div>
+              <textarea placeholder="Write a short review" data-job-review-comment></textarea>
+              <div class="job-review-footer">
+                <button type="button" class="btn-secondary fleece-secondary" data-job-review-close>Cancel</button>
+                <button type="button" class="btn-primary" data-job-review-submit>Complete</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(shell);
+        document.body.classList.add('job-modal-open');
+
+        const closeButtons = shell.querySelectorAll('[data-job-review-close]');
+        closeButtons.forEach((b) => b.addEventListener('click', () => {
+          shell.remove();
+          document.body.classList.remove('job-modal-open');
+        }));
+
+        let selectedRating = 0;
+        shell.querySelectorAll('[data-star]').forEach((starBtn) => {
+          starBtn.addEventListener('click', () => {
+            selectedRating = Number(starBtn.getAttribute('data-star') || 0);
+            shell.querySelectorAll('[data-star]').forEach((s) => s.classList.toggle('is-selected', Number(s.getAttribute('data-star')) <= selectedRating));
+          });
+        });
+
+        shell.querySelector('[data-job-review-submit]').addEventListener('click', async () => {
+          const comment = (shell.querySelector('[data-job-review-comment]')?.value || '').trim();
+          if (!selectedRating) {
+            window.alert('Please choose a rating.');
+            return;
+          }
+          try {
+            // Mark as completed and save review
+            await authHelper.markJobCompleted(job.id || job.jobId || '', application.id || application.applicationId || '', { rating: selectedRating, comment });
+            showJobToast('Thanks — review saved');
+            shell.remove();
+            document.body.classList.remove('job-modal-open');
+            window.location.reload();
+          } catch (err) {
+            window.alert(err.message || 'Could not save review.');
+          }
+        });
+      } catch (err) {
+        // ignore
+      }
+    }
   }
 
   function initialize() {

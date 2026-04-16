@@ -3070,7 +3070,7 @@
         
         if (isEmbedded) {
           // Notify parent to close and redirect
-          const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(nextProvince)}`;
+          const redirectTarget = 'pages/my-posts.html';
           if (window !== window.parent) {
             window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
           } else {
@@ -4451,6 +4451,8 @@
     }
 
     function getSetupStep() {
+      const forceProvider = params.get('setup') === 'provider';
+
       // 1. Check for Username
       const hasUsername = Boolean(userDoc?.username);
       
@@ -4460,8 +4462,8 @@
       // 3. Check for DisplayName
       const hasDisplayName = Boolean(userDoc?.name || userDoc?.displayName || account.name);
 
-      // If client user has all 3 required fields, skip to dashboard
-      if (userDoc?.userRole === 'client' && hasUsername && hasUserRole && hasDisplayName) {
+      // If client user has all 3 required fields, skip to dashboard (unless provider setup is forced)
+      if (!forceProvider && userDoc?.userRole === 'client' && hasUsername && hasUserRole && hasDisplayName) {
         return 'dashboard';
       }
 
@@ -4560,7 +4562,7 @@
         }
 
         if (isEmbedded) {
-          const redirectTarget = getProfileUrl();
+          const redirectTarget = String(userDoc?.userRole || '').trim() === 'provider' ? 'pages/my-posts.html' : getProfileUrl();
           try {
             localStorage.removeItem('worklinkup_pending_setup');
           } catch (error) {
@@ -5076,9 +5078,7 @@
           const isEmbedded = getIsEmbedded(params);
           
           if (isEmbedded) {
-            const savedUid = account.uid;
-            const savedProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '';
-            const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(savedUid)}&province=${encodeURIComponent(savedProvince)}`;
+            const redirectTarget = 'pages/my-posts.html';
             if (window !== window.parent) {
               window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
             } else {

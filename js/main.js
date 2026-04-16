@@ -1600,84 +1600,21 @@ document.addEventListener('DOMContentLoaded', () => {
   async function routeAfterAuthSuccess() {
     const authHelper = await getAuthHelperReady();
     const base = getSiteBasePath();
-    const currentUrl = new URL(window.location.href);
-    const accountPageUrl = new URL(`${base}pages/account.html`, window.location.origin);
-    accountPageUrl.searchParams.set('setup', currentUrl.searchParams.get('setup') === 'provider' ? 'provider' : '1');
-    if (currentUrl.searchParams.get('service')) {
-      accountPageUrl.searchParams.set('service', currentUrl.searchParams.get('service'));
-    }
+
     if (authHelper && typeof authHelper.waitForAuthSession === 'function') {
       await authHelper.waitForAuthSession('', 12000).catch(() => null);
     }
-    const account = readAccount();
 
     // Check if we're in an iframe (embed mode)
     const isEmbedded = window !== window.parent && new URLSearchParams(window.location.search).get('embed') === '1';
 
-    if (!authHelper || !account?.uid) {
-      if (isEmbedded) {
-        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-      } else {
-        window.location.reload();
-      }
-      return;
-    }
-
-    try {
-      const userDoc = await authHelper.getUserDocument(account.uid);
-      const providerProfile = await authHelper.getProviderProfileByUid(
-        account.uid,
-        userDoc?.providerProvinceSlug || account.providerProvinceSlug || ''
-      ).catch(() => null);
-
-      const needsSetup = !userDoc?.username
-        || !userDoc?.userRole
-        || !(userDoc?.city || userDoc?.address)
-        || (userDoc?.userRole === 'provider' && !userDoc?.specialty);
-
-      if (needsSetup) {
-        try {
-          localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
-          setSessionFlag('worklinkup_show_setup_modal_once');
-        } catch (error) {
-          // Ignore storage issues and fall back to home redirect.
-        }
-        if (isEmbedded) {
-          window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-        } else {
-          window.location.replace(`${base}index.html`);
-        }
-        return;
-      }
-    } catch (error) {
-      try {
-        localStorage.setItem('worklinkup_pending_setup', accountPageUrl.search || '?setup=1');
-        setSessionFlag('worklinkup_show_setup_modal_once');
-      } catch (storageError) {
-        // Ignore storage issues and fall back to home redirect.
-      }
-      if (isEmbedded) {
-        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-      } else {
-        window.location.replace(`${base}index.html`);
-      }
-      return;
-    }
-
-    if (window.location.pathname.endsWith('/account.html')) {
-      if (isEmbedded) {
-        window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-      } else {
-        window.location.reload();
-      }
-      return;
-    }
-
     if (isEmbedded) {
       window.parent?.postMessage({ type: 'worklinkup-setup-complete' }, '*');
-    } else {
-      window.location.reload();
+      return;
     }
+
+    // Always take them home after login/signup as requested
+    window.location.replace(`${base}index.html`);
   }
 
   function finalizeAuthSuccess(message) {
@@ -1957,7 +1894,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const base = getSiteBasePath();
     const account = readAccount();
     if (!account?.loggedIn || !account?.uid) {
-      window.location.href = `${base}pages/account.html?mode=signin`;
+      openAccountPanel();
       return;
     }
 
