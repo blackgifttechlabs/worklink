@@ -3031,8 +3031,9 @@
         const isEmbedded = window !== window.parent && new URLSearchParams(window.location.search).get('embed') === '1';
         
         if (isEmbedded) {
-          // Notify parent to close the modal
-          window.parent.postMessage({ type: 'worklinkup:profile-saved' }, '*');
+          // Notify parent to close and redirect
+          const redirectTarget = `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(nextProvince)}`;
+          window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
           // Show success message
           showSuccessToast('Profile saved successfully!', 1500);
         } else {
@@ -5012,9 +5013,10 @@
           const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
           
           if (isEmbedded) {
-            window.parent?.postMessage({
-              type: "worklinkup-setup-complete"
-            }, '*');
+            const savedUid = account.uid;
+            const savedProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '';
+            const redirectTarget = `${getBase}pages/provider-profile.html?uid=${encodeURIComponent(savedUid)}&province=${encodeURIComponent(savedProvince)}`;
+            window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
             return;
           }
           // redirect to provider profile page instead of rendering setup again
