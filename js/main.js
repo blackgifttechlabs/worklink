@@ -1914,17 +1914,32 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (event.data?.type === 'worklinkup-setup-complete') {
-        closeModal(true);
         if (openTimer) window.clearTimeout(openTimer);
-        if (event.data?.redirectUrl) {
-          window.setTimeout(() => {
-            window.location.href = event.data.redirectUrl;
-          }, 300);
-          return;
-        }
+        closeModal(true);
+
+        const redirectUrl = event.data?.redirectUrl
+          ? `${getSiteBasePath()}${event.data.redirectUrl}`
+          : null;
+
+        // Show success toast on parent before redirecting
+        const toast = document.createElement('div');
+        toast.textContent = 'Profile completed — redirecting…';
+        Object.assign(toast.style, {
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+          background: '#ffffff', color: '#0b0b0b', padding: '10px 20px',
+          borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+          zIndex: '9999', fontWeight: '700', fontSize: '15px'
+        });
+        document.body.appendChild(toast);
+
         window.setTimeout(() => {
-          window.location.reload();
-        }, 300);
+          toast.remove();
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
+          } else {
+            window.location.reload();
+          }
+        }, 1200);
         return;
       }
       if (event.data?.type === 'worklinkup:profile-saved') {
