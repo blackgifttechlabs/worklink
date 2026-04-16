@@ -1837,15 +1837,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function openWorkLinkUpSetupModal(pendingSearch = '', options = {}) {
+  async function openWorkLinkUpSetupModal(pendingSearch = '', options = {}) {
     const normalizedSearch = String(pendingSearch || '').trim()
       ? (String(pendingSearch).startsWith('?') ? String(pendingSearch) : `?${String(pendingSearch)}`)
       : '?setup=1';
     const delayMs = Number(options.delayMs ?? 0);
     const clearPendingOnClose = Boolean(options.clearPendingOnClose);
     const consumeOnceFlag = Boolean(options.consumeOnceFlag);
-    const base = getSiteBasePath();
-    const frameSrc = `${base}pages/account.html${normalizedSearch}${normalizedSearch.includes('embed=1') ? '' : `${normalizedSearch ? '&' : '?'}embed=1`}`;
+    const searchParams = new URLSearchParams(normalizedSearch);
+    if (!searchParams.has('embed')) searchParams.set('embed', '1');
 
     document.getElementById('pending-setup-overlay')?.remove();
 
@@ -1854,7 +1854,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="pending-setup-backdrop"></div>
         <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-label="Complete your account setup">
           <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
-          <iframe class="pending-setup-frame" src="${frameSrc}" title="WorkLinkUp account setup"></iframe>
+          <div class="pending-setup-content">
+            <section class="account-setup-stage" id="account-setup-stage">
+              <div class="account-setup-shell" data-account-setup-body></div>
+            </section>
+          </div>
         </div>
       </div>
     `);
@@ -1879,19 +1883,55 @@ document.addEventListener('DOMContentLoaded', () => {
           // Ignore storage issues.
         }
       }
-      if (messageHandler) {
-        window.removeEventListener('message', messageHandler);
-      }
+      window.removeEventListener('worklinkup:setup-complete', setupCompleteHandler);
     }
 
+    const setupCompleteHandler = (event) => {
+      if (openTimer) window.clearTimeout(openTimer);
+      closeModal(true);
+
+      const redirectUrl = event.detail?.redirectUrl
+        ? `${getSiteBasePath()}${event.detail.redirectUrl}`
+        : null;
+
+      // Show success toast on parent before redirecting
+      const toast = document.createElement('div');
+      toast.textContent = 'Profile completed — redirecting…';
+      Object.assign(toast.style, {
+        position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+        background: '#ffffff', color: '#0b0b0b', padding: '10px 20px',
+        borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+        zIndex: '9999', fontWeight: '700', fontSize: '15px'
+      });
+      document.body.appendChild(toast);
+
+      window.setTimeout(() => {
+        toast.remove();
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else {
+          window.location.reload();
+        }
+      }, 1200);
+    };
+
+    window.addEventListener('worklinkup:setup-complete', setupCompleteHandler);
+
     if (overlay instanceof HTMLElement) {
-      openTimer = window.setTimeout(() => {
+      openTimer = window.setTimeout(async () => {
         overlay.hidden = false;
         requestAnimationFrame(() => {
           overlay.classList.add('is-visible');
           document.body.classList.add('pending-setup-open');
         });
         if (consumeOnceFlag) clearSessionFlag('worklinkup_show_setup_modal_once');
+
+        if (typeof window.ensureProvidersUiScript === 'function') {
+          await window.ensureProvidersUiScript();
+          if (window.WorkLinkUpProviders && typeof window.WorkLinkUpProviders.initializeAccountPageExperience === 'function') {
+            window.WorkLinkUpProviders.initializeAccountPageExperience(searchParams);
+          }
+        }
       }, Math.max(0, delayMs));
     }
 
@@ -1903,52 +1943,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal(false);
       }
     });
-
-    const messageHandler = (event) => {
-      const eventOrigin = String(event.origin || '').trim();
-      const currentOrigin = String(window.location.origin || '').trim();
-      
-      // Only check origin if both are defined and same-origin is expected
-      if (eventOrigin && currentOrigin && eventOrigin !== currentOrigin) {
-        return;
-      }
-      
-      if (event.data?.type === 'worklinkup-setup-complete') {
-        if (openTimer) window.clearTimeout(openTimer);
-        closeModal(true);
-
-        const redirectUrl = event.data?.redirectUrl
-          ? `${getSiteBasePath()}${event.data.redirectUrl}`
-          : null;
-
-        // Show success toast on parent before redirecting
-        const toast = document.createElement('div');
-        toast.textContent = 'Profile completed — redirecting…';
-        Object.assign(toast.style, {
-          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
-          background: '#ffffff', color: '#0b0b0b', padding: '10px 20px',
-          borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
-          zIndex: '9999', fontWeight: '700', fontSize: '15px'
-        });
-        document.body.appendChild(toast);
-
-        window.setTimeout(() => {
-          toast.remove();
-          if (redirectUrl) {
-            window.location.href = redirectUrl;
-          } else {
-            window.location.reload();
-          }
-        }, 1200);
-        return;
-      }
-      if (event.data?.type === 'worklinkup:profile-saved') {
-        closeModal(false);
-        if (openTimer) window.clearTimeout(openTimer);
-      }
-    };
-
-    window.addEventListener('message', messageHandler);
   }
 
   window.openWorkLinkUpSetupModal = openWorkLinkUpSetupModal;

@@ -1,4 +1,9 @@
 (function providerUiBootstrap() {
+  const getIsEmbedded = (searchParams) => {
+    if (searchParams instanceof URLSearchParams) return searchParams.get('embed') === '1';
+    return new URLSearchParams(window.location.search).get('embed') === '1';
+  };
+
   const SPECIALIST_CATEGORIES = Array.isArray(window.WorkLinkUpServiceCatalog) && window.WorkLinkUpServiceCatalog.length
     ? window.WorkLinkUpServiceCatalog
     : [];
@@ -3027,13 +3032,17 @@
           }
         })();
         
-        // Check if we're inside an iframe (embed mode)
-        const isEmbedded = window !== window.parent && new URLSearchParams(window.location.search).get('embed') === '1';
+        // Check if we're in embed mode (iframe or modal)
+        const isEmbedded = getIsEmbedded();
         
         if (isEmbedded) {
           // Notify parent to close and redirect
           const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(account.uid)}&province=${encodeURIComponent(nextProvince)}`;
-          window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+          if (window !== window.parent) {
+            window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+          } else {
+            window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+          }
           return;
         } else {
           // Navigate normally in standalone mode
@@ -4055,7 +4064,7 @@
     }
 
     async function refreshInboxAfterAuthSync() {
-      const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+      const isEmbedded = getIsEmbedded();
       const sidebar = page.querySelector(".messages-sidebar");
       const thread = page.querySelector(".messages-thread");
 
@@ -4309,16 +4318,16 @@
       .filter(Boolean);
   }
 
-  async function initializeAccountPageExperience() {
+  async function initializeAccountPageExperience(searchParams) {
     const guestStage = document.getElementById('account-guest-card');
     const setupStage = document.getElementById('account-setup-stage');
     const setupBody = document.querySelector('[data-account-setup-body]');
     const dashboard = document.getElementById('account-dashboard');
-    if (!guestStage || !setupStage || !setupBody || !dashboard) return;
+    if (!setupStage || !setupBody) return;
 
     const account = getStoredAccount();
-    const params = new URLSearchParams(window.location.search);
-    const isEmbedded = params.get('embed') === '1';
+    const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams(window.location.search);
+    const isEmbedded = getIsEmbedded(params);
     const isGoogleAuthFlow = Boolean(
       readSessionFlag('worklinkup_google_auth_flow')
       || readSessionFlag('worklinkup_google_redirect_pending')
@@ -4513,10 +4522,14 @@
             </section>
           `;
           window.setTimeout(() => {
-            window.parent?.postMessage({
-              type: 'worklinkup-setup-complete',
-              redirectUrl: redirectTarget
-            }, window.location.origin);
+            if (window !== window.parent) {
+              window.parent?.postMessage({
+                type: 'worklinkup-setup-complete',
+                redirectUrl: redirectTarget
+              }, window.location.origin);
+            } else {
+              window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+            }
           }, 1800);
           return;
         }
@@ -5009,13 +5022,17 @@
           window.history.replaceState({}, '', `${window.location.pathname}`);
           
           const getBase = typeof window.getSiteBasePath === 'function' ? window.getSiteBasePath() : '/';
-          const isEmbedded = new URLSearchParams(window.location.search).get("embed") === "1";
+          const isEmbedded = getIsEmbedded();
           
           if (isEmbedded) {
             const savedUid = account.uid;
             const savedProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || '';
             const redirectTarget = `pages/provider-profile.html?uid=${encodeURIComponent(savedUid)}&province=${encodeURIComponent(savedProvince)}`;
-            window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+            if (window !== window.parent) {
+              window.parent?.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+            } else {
+              window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+            }
             return;
           }
           // redirect to provider profile page instead of rendering setup again
@@ -5048,4 +5065,8 @@
   } else {
     initialize();
   }
+
+  window.WorkLinkUpProviders = {
+    initializeAccountPageExperience
+  };
 })();
