@@ -847,8 +847,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const desktopQuery = window.matchMedia('(min-width: 769px)');
   let lastScrollY = window.scrollY;
   let accountJobsBadgeCount = 0;
+  let accountPlacedJobsBadgeCount = 0;
   let accountMessagesBadgeCount = 0;
   let accountConversationBadgeUnsubscribe = null;
+  let accountJobBadgeUnsubscribe = null;
+  let accountJobBadgeSubscriptionUid = '';
 
   function setBadgeCount(badge, count = 0) {
     if (!(badge instanceof HTMLElement)) return;
@@ -868,6 +871,23 @@ document.addEventListener('DOMContentLoaded', () => {
       accountConversationBadgeUnsubscribe();
     }
     accountConversationBadgeUnsubscribe = null;
+  }
+
+  function stopAccountJobBadgeSubscription() {
+    if (typeof accountJobBadgeUnsubscribe === 'function') {
+      accountJobBadgeUnsubscribe();
+    }
+    accountJobBadgeUnsubscribe = null;
+    accountJobBadgeSubscriptionUid = '';
+  }
+
+  function updateReceivedJobBadgeCount(applications = [], uid = '') {
+    const notificationState = readJobNotificationState(uid);
+    const receivedBidCount = Array.isArray(applications)
+      ? applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
+      : 0;
+    accountJobsBadgeCount = receivedBidCount + accountPlacedJobsBadgeCount;
+    renderAccountBadgeState();
   }
 
   function updateMessageBadgeCount(conversations = []) {
@@ -919,9 +939,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentAccount = getStoredAccount();
     if (!currentAccount?.loggedIn || !currentAccount?.uid) {
       accountJobsBadgeCount = 0;
+      accountPlacedJobsBadgeCount = 0;
       accountMessagesBadgeCount = 0;
       renderAccountBadgeState();
       stopAccountConversationBadgeSubscription();
+      stopAccountJobBadgeSubscription();
       return;
     }
 
@@ -929,6 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const authHelper = await ensureFirebaseAuthScript().catch(() => window.softGigglesAuth || null);
       if (!authHelper) {
         accountJobsBadgeCount = 0;
+        accountPlacedJobsBadgeCount = 0;
         accountMessagesBadgeCount = 0;
         renderAccountBadgeState();
         return;
@@ -954,11 +977,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const placedBidCount = Array.isArray(placedBids)
         ? placedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length
         : 0;
+      accountPlacedJobsBadgeCount = placedBidCount;
       accountJobsBadgeCount = receivedBidCount + placedBidCount;
       renderAccountBadgeState();
+      if (
+        typeof authHelper.subscribeReceivedJobBids === 'function'
+        && accountJobBadgeSubscriptionUid !== currentAccount.uid
+      ) {
+        stopAccountJobBadgeSubscription();
+        accountJobBadgeSubscriptionUid = currentAccount.uid;
+        accountJobBadgeUnsubscribe = authHelper.subscribeReceivedJobBids(currentAccount.uid, (applications = []) => {
+          updateReceivedJobBadgeCount(applications, currentAccount.uid);
+        });
+      }
       await syncAccountMessageBadges(authHelper, currentAccount);
     } catch (error) {
       accountJobsBadgeCount = 0;
+      accountPlacedJobsBadgeCount = 0;
       renderAccountBadgeState();
     }
   }
@@ -1188,5 +1223,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('beforeunload', () => {
     stopAccountConversationBadgeSubscription();
+    stopAccountJobBadgeSubscription();
   }, { once: true });
 });

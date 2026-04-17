@@ -542,6 +542,12 @@
     }).format(date);
   }
 
+  function isNewJobPost(timestamp) {
+    const createdAtMs = Number(timestamp || 0);
+    if (!Number.isFinite(createdAtMs) || createdAtMs <= 0) return false;
+    return Date.now() - createdAtMs < 8 * 60 * 60 * 1000;
+  }
+
   function isInFilterWindow(filterKey, timestamp) {
     const days = FILTER_WINDOWS[filterKey] ?? Number.POSITIVE_INFINITY;
     if (!Number.isFinite(days)) return true;
@@ -1299,12 +1305,16 @@
       const currentAccount = getStoredAccount();
       const currentUid = String(currentAccount?.uid || '').trim();
       const hasPlacedBid = getPlacedBidJobIds().has(String(job.id || '').trim());
+      const isOwnJob = currentUid && currentUid === String(job.ownerUid || '').trim();
       const isAcceptedBySomeone = Boolean(job.acceptedApplicationUid);
       const isAcceptedByMe = isAcceptedBySomeone && String(job.acceptedApplicationUid || '').trim() === currentUid;
       openModal(detailModal, `
         <div class="job-modal-panel">
           <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
-          <span class="job-card-tag">${escapeHtml(job.category)}</span>
+          <div class="job-card-tag-row">
+            <span class="job-card-tag">${escapeHtml(job.category)}</span>
+            ${isNewJobPost(job.createdAtMs) ? '<span class="job-card-newtag">New</span>' : ''}
+          </div>
           <h2>${escapeHtml(job.subcategory || job.category)}</h2>
           <p class="job-modal-description">${escapeHtml(job.description)}</p>
           <div class="job-modal-stats">
@@ -1317,6 +1327,8 @@
             <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
             ${isAcceptedByMe
               ? `<button type="button" class="btn-primary job-accepted-action" data-job-accepted-warning="${escapeHtml(job.id)}">Already Accepted</button>`
+              : isOwnJob
+                ? `<button type="button" class="btn-primary" data-job-own-bid="${escapeHtml(job.id)}">Accept & Bid</button>`
               : isAcceptedBySomeone
                 ? `<button type="button" class="btn-secondary fleece-secondary" disabled>Unavailable</button>`
                 : hasPlacedBid
@@ -1331,6 +1343,9 @@
       });
       detailModal.querySelector('[data-job-accepted-warning]')?.addEventListener('click', () => {
         openAcceptedJobWarning(job);
+      });
+      detailModal.querySelector('[data-job-own-bid]')?.addEventListener('click', () => {
+        showJobToast('You cannot accept your own job.');
       });
     }
 
@@ -1364,12 +1379,14 @@
               const jobId = String(job.id || '').trim();
               const isAcceptedBySomeone = Boolean(job.acceptedApplicationUid);
               const isAcceptedByMe = isAcceptedBySomeone && String(job.acceptedApplicationUid || '').trim() === currentUid;
+              const isOwnJob = currentUid && currentUid === String(job.ownerUid || '').trim();
               const hasPlacedBid = placedBidJobIds.has(jobId);
 
               let statusLabel = '';
               let statusClass = '';
               let bidDisabled = false;
               let bidWarning = false;
+              let ownBidWarning = false;
               let bidText = 'Accept & Bid';
 
               if (isAcceptedByMe) {
@@ -1377,6 +1394,8 @@
                 statusClass = 'is-accepted-by-me';
                 bidWarning = true;
                 bidText = 'Accepted';
+              } else if (isOwnJob) {
+                ownBidWarning = true;
               } else if (isAcceptedBySomeone) {
                 bidDisabled = true;
                 bidText = 'Unavailable';
@@ -1393,6 +1412,7 @@
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
                     ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                    ${isNewJobPost(job.createdAtMs) ? '<span class="job-card-newtag">New</span>' : ''}
                   </div>
                   <strong class="job-card-price">${escapeHtml(formatCurrency(job.budget))}</strong>
                 </div>
@@ -1419,7 +1439,7 @@
                 ${statusLabel ? `<div class="job-card-status-notice ${escapeHtml(statusClass)}">${escapeHtml(statusLabel)}</div>` : ''}
                 <div class="job-card-actions">
                   <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View More</button>
-                  <button type="button" class="${bidWarning ? 'btn-primary job-accepted-action' : bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''} ${bidWarning ? 'data-job-accepted-bid="1"' : ''}>${escapeHtml(bidText)}</button>
+                  <button type="button" class="${bidWarning ? 'btn-primary job-accepted-action' : bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''} ${bidWarning ? 'data-job-accepted-bid="1"' : ''} ${ownBidWarning ? 'data-job-own-bid="1"' : ''}>${escapeHtml(bidText)}</button>
                 </div>
               </article>
             `;}).join('')}
@@ -1463,6 +1483,10 @@
             openAcceptedJobWarning(job);
             return;
           }
+          if (button.getAttribute('data-job-own-bid') === '1') {
+            showJobToast('You cannot accept your own job.');
+            return;
+          }
           openBidFlow(job);
         });
       });
@@ -1471,6 +1495,10 @@
     async function openBidFlow(job) {
       const account = getStoredAccount();
       const currentUid = String(account?.uid || '').trim();
+      if (currentUid && currentUid === String(job?.ownerUid || '').trim()) {
+        showJobToast('You cannot accept your own job.');
+        return;
+      }
       const acceptedApplicationUid = String(job?.acceptedApplicationUid || '').trim();
       if (acceptedApplicationUid) {
         if (currentUid && acceptedApplicationUid === currentUid) {
@@ -1667,10 +1695,15 @@
       profileImageData: userDoc?.profileImageData || '',
       bannerImageData: userDoc?.bannerImageData || ''
     };
-    const jobsWithApplications = await Promise.all(jobs.map(async (job) => ({
-      ...job,
-      applications: await authHelper.listJobApplications(job.id).catch(() => [])
-    })));
+    async function loadJobsWithApplications(fallbackJobs = []) {
+      const nextJobs = await authHelper.listJobsForUser(account.uid).catch(() => fallbackJobs);
+      return Promise.all(nextJobs.map(async (job) => ({
+        ...job,
+        applications: await authHelper.listJobApplications(job.id).catch(() => [])
+      })));
+    }
+
+    const jobsWithApplications = await loadJobsWithApplications(jobs);
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
     let activeTab = (requestedTab === 'jobs' || requestedTab === 'previous' || requestedTab === 'current')
       ? requestedTab
@@ -1832,6 +1865,9 @@
               <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
               <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
               <span><i class="fa-regular fa-user"></i>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</span>
+            </div>
+            <div class="job-card-actions">
+              <button type="button" class="btn-secondary fleece-secondary job-delete-btn" data-job-delete="${escapeHtml(job.id)}" ${job.acceptedApplicationUid || job.completedAtMs ? 'disabled' : ''}>Delete Job</button>
             </div>
             <div class="job-owner-applications">
               ${job.applications.length ? job.applications.map((application) => `
@@ -2034,14 +2070,40 @@
               window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
               return;
             }
-            const refreshedJobs = await Promise.all((await authHelper.listJobsForUser(account.uid).catch(() => currentJobs)).map(async (job) => ({
-              ...job,
-              applications: await authHelper.listJobApplications(job.id).catch(() => [])
-            })));
+            const refreshedJobs = await loadJobsWithApplications(currentJobs);
+            dashboardJobs = refreshedJobs;
             renderDashboard(currentProfile, refreshedJobs);
           } catch (error) {
             window.alert(error.message || 'Could not update that bid.');
           } finally {
+            setButtonLoading(button, false);
+          }
+        });
+      });
+
+      page.querySelectorAll('[data-job-delete]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const jobId = button.getAttribute('data-job-delete') || '';
+          const job = currentJobs.find((item) => item.id === jobId);
+          if (!job) return;
+          if (job.acceptedApplicationUid || job.completedAtMs) {
+            window.alert('You cannot delete a job after a bid has been accepted.');
+            return;
+          }
+          if (!window.confirm('Delete this job and all its bids? This cannot be undone.')) return;
+          setButtonLoading(button, true);
+          try {
+            if (typeof authHelper.deleteJobPost !== 'function') {
+              throw new Error('Job deletion is not available yet.');
+            }
+            await authHelper.deleteJobPost(jobId);
+            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+            const refreshedJobs = await loadJobsWithApplications(currentJobs);
+            dashboardJobs = refreshedJobs;
+            renderDashboard(currentProfile, refreshedJobs);
+            showJobToast('Job deleted.');
+          } catch (error) {
+            window.alert(error.message || 'Could not delete that job.');
             setButtonLoading(button, false);
           }
         });
@@ -2213,7 +2275,25 @@
       });
     }
 
-    renderDashboard(profile, jobsWithApplications);
+    let dashboardJobs = jobsWithApplications;
+    renderDashboard(profile, dashboardJobs);
+
+    if (typeof authHelper.subscribeReceivedJobBids === 'function') {
+      authHelper.subscribeReceivedJobBids(account.uid, (applications = []) => {
+        const applicationsByJobId = applications.reduce((map, application) => {
+          const jobId = String(application.jobId || '').trim();
+          if (!jobId) return map;
+          if (!map.has(jobId)) map.set(jobId, []);
+          map.get(jobId).push(application);
+          return map;
+        }, new Map());
+        dashboardJobs = dashboardJobs.map((job) => ({
+          ...job,
+          applications: applicationsByJobId.get(String(job.id || '').trim()) || []
+        }));
+        renderDashboard(profile, dashboardJobs);
+      });
+    }
 
     function openJobReviewModal(job, application) {
       try {

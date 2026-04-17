@@ -1551,6 +1551,48 @@ async function getJobPost(jobId = '') {
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
+async function deleteJobPost(jobId = '') {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in first.');
+  }
+  if (!jobId) {
+    throw new Error('That job could not be found.');
+  }
+
+  const jobRef = doc(db, JOBS_COLLECTION, jobId);
+  const jobSnapshot = await getDoc(jobRef);
+  if (!jobSnapshot.exists()) {
+    throw new Error('That job could not be found.');
+  }
+  const job = jobSnapshot.data() || {};
+  if (job.ownerUid !== auth.currentUser.uid) {
+    throw new Error('Only the job owner can delete this job.');
+  }
+  if (job.acceptedApplicationUid || job.inProgressAtMs || job.completedAtMs) {
+    throw new Error('You cannot delete a job after a bid has been accepted.');
+  }
+
+  const applicationsSnapshot = await getDocs(collection(db, JOBS_COLLECTION, jobId, 'applications')).catch(() => null);
+  if (applicationsSnapshot) {
+    await Promise.all(applicationsSnapshot.docs.map((applicationDoc) => deleteDoc(applicationDoc.ref)));
+  }
+  await deleteDoc(jobRef);
+
+  await recordAdminActivity('job_post_deleted', {
+    actorUid: auth.currentUser.uid,
+    actorName: job.ownerName || auth.currentUser.displayName || 'WorkLinkUp user',
+    actorEmail: auth.currentUser.email || '',
+    subjectUid: job.ownerUid || auth.currentUser.uid,
+    subjectName: job.ownerName || '',
+    title: 'Job deleted',
+    description: `${job.ownerName || 'A client'} deleted a job in ${job.category || 'WorkLinkUp'}.`,
+    sourceRef: `${JOBS_COLLECTION}/${jobId}`,
+    createdAtMs: Date.now()
+  }).catch(() => {});
+
+  return { id: jobId };
+}
+
 async function listJobApplications(jobId = '') {
   if (!jobId) return [];
   const snapshot = await getDocs(collection(db, JOBS_COLLECTION, jobId, 'applications'));
@@ -1559,41 +1601,193 @@ async function listJobApplications(jobId = '') {
     .sort((first, second) => Number(first.createdAtMs || 0) - Number(second.createdAtMs || 0));
 }
 
+function isCollectionGroupIndexError(error) {
+  const code = String(error?.code || '').toLowerCase();
+  const message = String(error?.message || error || '').toLowerCase();
+  return code.includes('failed-precondition')
+    || message.includes('failed_precondition')
+    || (message.includes('collection') && message.includes('index'));
+}
+
+function mapJobApplicationSnapshot(docSnapshot) {
+  const parentJobRef = docSnapshot.ref.parent?.parent;
+  return {
+    id: docSnapshot.id,
+    jobId: parentJobRef?.id || '',
+    ...docSnapshot.data()
+  };
+}
+
+async function listJobApplicationRecordsByField(fieldName = '', uid = '') {
+  const normalizedField = String(fieldName || '').trim();
+  const normalizedUid = String(uid || '').trim();
+  if (!normalizedField || !normalizedUid) return [];
+
+  const jobsSnapshot = await getDocs(collection(db, JOBS_COLLECTION));
+  const applicationGroups = await Promise.all(jobsSnapshot.docs.map(async (jobSnapshot) => {
+    const applicationsSnapshot = await getDocs(collection(db, JOBS_COLLECTION, jobSnapshot.id, 'applications')).catch(() => null);
+    if (!applicationsSnapshot) return [];
+    const job = { id: jobSnapshot.id, ...jobSnapshot.data() };
+    return applicationsSnapshot.docs
+      .map((applicationSnapshot) => ({
+        ...mapJobApplicationSnapshot(applicationSnapshot),
+        job
+      }))
+      .filter((application) => String(application[normalizedField] || '').trim() === normalizedUid);
+  }));
+
+  return applicationGroups
+    .flat()
+    .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+}
+
+function subscribeJobApplicationRecordsByField(fieldName = '', uid = '', callback = () => {}) {
+  if (!uid || typeof callback !== 'function') return () => {};
+  let stopped = false;
+  let loadSeq = 0;
+  let loadTimer = 0;
+
+  const loadRecords = async () => {
+    const seq = ++loadSeq;
+    const records = await listJobApplicationRecordsByField(fieldName, uid).catch(() => []);
+    if (!stopped && seq === loadSeq) {
+      callback(records);
+    }
+  };
+
+  const scheduleLoad = () => {
+    if (loadTimer) window.clearTimeout(loadTimer);
+    loadTimer = window.setTimeout(loadRecords, 80);
+  };
+
+  loadRecords();
+  const unsubscribeJobs = onSnapshot(collection(db, JOBS_COLLECTION), scheduleLoad, loadRecords);
+
+  return () => {
+    stopped = true;
+    if (loadTimer) window.clearTimeout(loadTimer);
+    if (typeof unsubscribeJobs === 'function') unsubscribeJobs();
+  };
+}
+
 async function listPlacedJobBids(uid = auth.currentUser?.uid) {
   if (!uid) return [];
-  const snapshot = await getDocs(query(collectionGroup(db, 'applications'), where('bidderUid', '==', uid)));
-  return snapshot.docs
-    .map((docSnapshot) => {
-      const parentJobRef = docSnapshot.ref.parent?.parent;
-      return {
-        id: docSnapshot.id,
-        jobId: parentJobRef?.id || '',
-        ...docSnapshot.data()
-      };
-    })
-    .filter((application) => application.jobId)
-    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  try {
+    const snapshot = await getDocs(query(collectionGroup(db, 'applications'), where('bidderUid', '==', uid)));
+    return snapshot.docs
+      .map(mapJobApplicationSnapshot)
+      .filter((application) => application.jobId)
+      .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+  } catch (error) {
+    if (isCollectionGroupIndexError(error)) {
+      return listJobApplicationRecordsByField('bidderUid', uid);
+    }
+    throw error;
+  }
 }
 
 function subscribePlacedJobBids(uid = auth.currentUser?.uid, callback = () => {}) {
   if (!uid || typeof callback !== 'function') return () => {};
   const applicationsQuery = query(collectionGroup(db, 'applications'), where('bidderUid', '==', uid));
-  return onSnapshot(applicationsQuery, (snapshot) => {
-    const applications = snapshot.docs
-      .map((docSnapshot) => {
-        const parentJobRef = docSnapshot.ref.parent?.parent;
-        return {
-          id: docSnapshot.id,
-          jobId: parentJobRef?.id || '',
-          ...docSnapshot.data()
-        };
-      })
+  let fallbackUnsubscribe = null;
+  let collectionGroupUnsubscribe = null;
+
+  const startFallback = () => {
+    if (typeof fallbackUnsubscribe === 'function') return;
+    if (typeof collectionGroupUnsubscribe === 'function') {
+      collectionGroupUnsubscribe();
+      collectionGroupUnsubscribe = null;
+    }
+    fallbackUnsubscribe = subscribeJobApplicationRecordsByField('bidderUid', uid, callback);
+  };
+
+  try {
+    collectionGroupUnsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+      if (typeof fallbackUnsubscribe === 'function') return;
+      const applications = snapshot.docs
+        .map(mapJobApplicationSnapshot)
+        .filter((application) => application.jobId)
+        .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+      callback(applications);
+    }, (error) => {
+      if (isCollectionGroupIndexError(error)) {
+        startFallback();
+        return;
+      }
+      callback([]);
+    });
+  } catch (error) {
+    if (isCollectionGroupIndexError(error)) {
+      startFallback();
+    } else {
+      callback([]);
+    }
+  }
+
+  return () => {
+    if (typeof collectionGroupUnsubscribe === 'function') collectionGroupUnsubscribe();
+    if (typeof fallbackUnsubscribe === 'function') fallbackUnsubscribe();
+  };
+}
+
+async function listReceivedJobBids(uid = auth.currentUser?.uid) {
+  if (!uid) return [];
+  try {
+    const snapshot = await getDocs(query(collectionGroup(db, 'applications'), where('jobOwnerUid', '==', uid)));
+    return snapshot.docs
+      .map(mapJobApplicationSnapshot)
       .filter((application) => application.jobId)
       .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
-    callback(applications);
-  }, () => {
-    callback([]);
-  });
+  } catch (error) {
+    if (isCollectionGroupIndexError(error)) {
+      return listJobApplicationRecordsByField('jobOwnerUid', uid);
+    }
+    throw error;
+  }
+}
+
+function subscribeReceivedJobBids(uid = auth.currentUser?.uid, callback = () => {}) {
+  if (!uid || typeof callback !== 'function') return () => {};
+  const applicationsQuery = query(collectionGroup(db, 'applications'), where('jobOwnerUid', '==', uid));
+  let fallbackUnsubscribe = null;
+  let collectionGroupUnsubscribe = null;
+
+  const startFallback = () => {
+    if (typeof fallbackUnsubscribe === 'function') return;
+    if (typeof collectionGroupUnsubscribe === 'function') {
+      collectionGroupUnsubscribe();
+      collectionGroupUnsubscribe = null;
+    }
+    fallbackUnsubscribe = subscribeJobApplicationRecordsByField('jobOwnerUid', uid, callback);
+  };
+
+  try {
+    collectionGroupUnsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+      if (typeof fallbackUnsubscribe === 'function') return;
+      const applications = snapshot.docs
+        .map(mapJobApplicationSnapshot)
+        .filter((application) => application.jobId)
+        .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+      callback(applications);
+    }, (error) => {
+      if (isCollectionGroupIndexError(error)) {
+        startFallback();
+        return;
+      }
+      callback([]);
+    });
+  } catch (error) {
+    if (isCollectionGroupIndexError(error)) {
+      startFallback();
+    } else {
+      callback([]);
+    }
+  }
+
+  return () => {
+    if (typeof collectionGroupUnsubscribe === 'function') collectionGroupUnsubscribe();
+    if (typeof fallbackUnsubscribe === 'function') fallbackUnsubscribe();
+  };
 }
 
 async function applyToJob(jobId = '', payload = {}) {
@@ -1665,6 +1859,11 @@ async function applyToJob(jobId = '', payload = {}) {
   };
 
   await setDoc(doc(db, JOBS_COLLECTION, jobId, 'applications', auth.currentUser.uid), applicationPayload, { merge: true });
+  await setDoc(doc(db, JOBS_COLLECTION, jobId), {
+    lastApplicationAtMs: now,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  }, { merge: true }).catch(() => {});
 
   await recordAdminActivity('job_bid_created', {
     actorUid: auth.currentUser.uid,
@@ -1809,24 +2008,22 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
   if (!appSnap.exists()) throw new Error('Application not found.');
   const application = appSnap.data() || {};
   const now = Date.now();
-  const reviewRating = Number(review.rating || 0);
+  const rawReviewRating = Number(review.rating || 0);
+  const reviewRating = Number.isFinite(rawReviewRating) ? Math.max(0, rawReviewRating) : 0;
   const reviewComment = String(review.comment || '').trim();
-  const reviewerDoc = reviewRating > 0
-    ? await getUserDocument(auth.currentUser.uid).catch(() => null)
-    : null;
+  const reviewerDoc = await getUserDocument(auth.currentUser.uid).catch(() => null);
   const reviewerName = reviewerDoc?.name || auth.currentUser.displayName || '';
-  const reviewPayload = reviewRating > 0
-    ? {
-      reviewerUid: auth.currentUser.uid,
-      reviewerName,
-      rating: reviewRating,
-      comment: reviewComment,
-      jobId,
-      jobTitle: jobSnap.data()?.subcategory || jobSnap.data()?.category || 'Job',
-      jobProviderName: jobSnap.data()?.ownerName || '',
-      createdAtMs: now
-    }
-    : null;
+  const reviewPayload = {
+    reviewerUid: auth.currentUser.uid,
+    reviewerName,
+    rating: reviewRating,
+    comment: reviewComment,
+    jobId,
+    jobTitle: jobSnap.data()?.subcategory || jobSnap.data()?.category || 'Job',
+    jobProviderName: jobSnap.data()?.ownerName || '',
+    completedAtMs: now,
+    createdAtMs: now
+  };
 
   // mark application and job as completed
   const applicationUpdates = {
@@ -1837,12 +2034,10 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
     updatedAtMs: now,
     updatedAt: serverTimestamp()
   };
-  if (reviewPayload) {
-    applicationUpdates.rating = reviewRating;
-    applicationUpdates.reviewComment = reviewComment;
-    applicationUpdates.reviewedAtMs = now;
-    applicationUpdates.review = reviewPayload;
-  }
+  applicationUpdates.rating = reviewRating;
+  applicationUpdates.reviewComment = reviewComment;
+  applicationUpdates.reviewedAtMs = now;
+  applicationUpdates.review = reviewPayload;
   await updateDoc(appRef, applicationUpdates);
   await updateDoc(jobRef, {
     completedAtMs: now,
@@ -1850,9 +2045,9 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
     updatedAt: serverTimestamp()
   });
 
-  // store review under provider profile if review contains rating and providerUid
+  // Store a provider work-history record for every completed job. Rating can be 0 when no review was left.
   const providerUid = application.bidderUid || '';
-  if (providerUid && reviewPayload) {
+  if (providerUid) {
     const providerProfile = await getProviderProfileByUid(providerUid).catch(() => null);
     if (providerProfile) {
       const reviewsRef = collection(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid, 'reviews');
@@ -1867,17 +2062,20 @@ async function markJobCompleted(jobId = '', applicationId = '', review = {}) {
         const allReviewsSnap = await getDocs(reviewsRef).catch(() => null);
         if (allReviewsSnap) {
           const reviews = allReviewsSnap.docs.map((d) => d.data() || {});
-          const avg = reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / Math.max(1, reviews.length);
+          const ratedReviews = reviews.filter((item) => Number(item.rating || 0) > 0);
+          const avg = ratedReviews.reduce((s, r) => s + Number(r.rating || 0), 0) / Math.max(1, ratedReviews.length);
           const avgRating = Number(avg.toFixed(2));
-          const reviewCount = reviews.length;
+          const reviewCount = ratedReviews.length;
           await setDoc(doc(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid), {
             averageRating: avgRating,
-            reviewCount: reviewCount
+            reviewCount: reviewCount,
+            completedJobs: reviews.length
           }, { merge: true }).catch(() => {});
 
           await setDoc(doc(db, 'users', providerUid), {
             averageRating: avgRating,
-            reviewCount: reviewCount
+            reviewCount: reviewCount,
+            completedJobs: reviews.length
           }, { merge: true }).catch(() => {});
         }
       }
@@ -2714,9 +2912,12 @@ window.softGigglesAuth = {
   listJobPosts,
   listJobsForUser,
   getJobPost,
+  deleteJobPost,
   listJobApplications,
   listPlacedJobBids,
+  listReceivedJobBids,
   subscribePlacedJobBids,
+  subscribeReceivedJobBids,
   applyToJob,
   updateJobApplicationStatus,
   findActiveJobBetweenUsers,

@@ -13620,7 +13620,8 @@ header {
 }
 
 .job-card-tag,
-.job-card-subtag {
+.job-card-subtag,
+.job-card-newtag {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
@@ -13637,6 +13638,11 @@ header {
 .job-card-subtag {
   background: #eef4ff;
   color: #17326c;
+}
+
+.job-card-newtag {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .job-owner-card .job-card-tag-row {
@@ -13780,6 +13786,27 @@ header {
   border-color: #d1d5db;
   color: #374151;
   box-shadow: none;
+}
+
+.job-delete-btn {
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
+  background: #fff7f7;
+}
+
+.job-delete-btn:hover,
+.job-delete-btn:focus-visible {
+  border-color: #dc2626;
+  color: #ffffff;
+  background: #dc2626;
+}
+
+.job-delete-btn[disabled],
+.job-delete-btn[disabled]:hover,
+.job-delete-btn[disabled]:focus-visible {
+  border-color: #d1d5db;
+  color: #6b7280;
+  background: #e5e7eb;
 }
 
 .job-card-status-notice {
@@ -14609,7 +14636,8 @@ header {
 }
 
 .job-posts-page .job-card-tag,
-.job-posts-page .job-card-subtag {
+.job-posts-page .job-card-subtag,
+.job-posts-page .job-card-newtag {
   border-radius: 6px;
 }
 
@@ -14620,6 +14648,11 @@ header {
 .job-posts-page .job-card-subtag {
   background: rgba(201, 151, 46, 0.16);
   color: #111111;
+}
+
+.job-posts-page .job-card-newtag {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .job-posts-page .job-card-price,
