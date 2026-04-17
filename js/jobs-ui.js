@@ -1270,9 +1270,37 @@
       };
     }
 
+    function buildJobApprovalStatusHref() {
+      const account = getStoredAccount();
+      const uid = String(account?.uid || '').trim();
+      if (!uid) return `${getBase()}pages/account.html#account-profile`;
+      const province = String(account?.providerProvinceSlug || '').trim();
+      return `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(uid)}&province=${encodeURIComponent(province)}&tab=bids&scroll=bids`;
+    }
+
+    function openAcceptedJobWarning(job = {}) {
+      openModal(detailModal, `
+        <div class="job-modal-panel job-accepted-warning-panel">
+          <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
+          <div class="job-warning-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <span class="job-card-tag is-warning">Already accepted</span>
+          <h2>You already accepted this job</h2>
+          <p class="job-modal-description">${escapeHtml(job.subcategory || job.category || 'This job')} is already in your approval list. Check the status from your provider profile.</p>
+          <div class="job-modal-actions">
+            <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
+            <a class="btn-primary job-warning-status-link" href="${escapeHtml(buildJobApprovalStatusHref())}">See Job Approval status</a>
+          </div>
+        </div>
+      `);
+    }
+
     function openJobDetail(job) {
       if (!job) return;
+      const currentAccount = getStoredAccount();
+      const currentUid = String(currentAccount?.uid || '').trim();
       const hasPlacedBid = getPlacedBidJobIds().has(String(job.id || '').trim());
+      const isAcceptedBySomeone = Boolean(job.acceptedApplicationUid);
+      const isAcceptedByMe = isAcceptedBySomeone && String(job.acceptedApplicationUid || '').trim() === currentUid;
       openModal(detailModal, `
         <div class="job-modal-panel">
           <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
@@ -1287,15 +1315,22 @@
           <div class="job-modal-address"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(job.address)}</span></div>
           <div class="job-modal-actions">
             <button type="button" class="btn-secondary fleece-secondary" data-job-modal-close>Close</button>
-            ${hasPlacedBid
-              ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already placed a bid</button>`
-              : `<button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
+            ${isAcceptedByMe
+              ? `<button type="button" class="btn-primary job-accepted-action" data-job-accepted-warning="${escapeHtml(job.id)}">Already Accepted</button>`
+              : isAcceptedBySomeone
+                ? `<button type="button" class="btn-secondary fleece-secondary" disabled>Unavailable</button>`
+                : hasPlacedBid
+                  ? `<button type="button" class="btn-secondary fleece-secondary" disabled>You already placed a bid</button>`
+                  : `<button type="button" class="btn-primary" data-job-detail-bid="${escapeHtml(job.id)}">Accept & Bid</button>`}
           </div>
         </div>
       `);
       detailModal.querySelector('[data-job-detail-bid]')?.addEventListener('click', () => {
         closeModal(detailModal);
         openBidFlow(job);
+      });
+      detailModal.querySelector('[data-job-accepted-warning]')?.addEventListener('click', () => {
+        openAcceptedJobWarning(job);
       });
     }
 
@@ -1328,29 +1363,32 @@
             ${items.map((job) => {
               const jobId = String(job.id || '').trim();
               const isAcceptedBySomeone = Boolean(job.acceptedApplicationUid);
-              const isAcceptedByMe = isAcceptedBySomeone && job.acceptedApplicationUid === currentUid;
+              const isAcceptedByMe = isAcceptedBySomeone && String(job.acceptedApplicationUid || '').trim() === currentUid;
               const hasPlacedBid = placedBidJobIds.has(jobId);
 
               let statusLabel = '';
+              let statusClass = '';
               let bidDisabled = false;
+              let bidWarning = false;
               let bidText = 'Accept & Bid';
 
               if (isAcceptedByMe) {
                 statusLabel = 'Already Accepted';
-                bidDisabled = true;
+                statusClass = 'is-accepted-by-me';
+                bidWarning = true;
                 bidText = 'Accepted';
               } else if (isAcceptedBySomeone) {
-                statusLabel = 'Already Accepted';
                 bidDisabled = true;
-                bidText = 'Accepted';
+                bidText = 'Unavailable';
               } else if (hasPlacedBid) {
                 statusLabel = 'You already placed a bid';
+                statusClass = 'is-bid-sent';
                 bidDisabled = true;
                 bidText = 'Bid Sent';
               }
 
               return `
-              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${hasPlacedBid ? 'is-bid-placed' : ''} ${isAcceptedBySomeone ? 'is-job-accepted' : ''}" data-job-card-open="${escapeHtml(jobId)}" tabindex="0">
+              <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${hasPlacedBid ? 'is-bid-placed' : ''} ${isAcceptedByMe ? 'is-accepted-by-me' : ''} ${isAcceptedBySomeone && !isAcceptedByMe ? 'is-job-unavailable' : ''}" data-job-card-open="${escapeHtml(jobId)}" tabindex="0">
                 <div class="job-card-top">
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -1378,10 +1416,10 @@
                     </span>
                   ` : ''}
                 </div>
-                ${statusLabel ? `<div class="job-card-status-notice">${escapeHtml(statusLabel)}</div>` : ''}
+                ${statusLabel ? `<div class="job-card-status-notice ${escapeHtml(statusClass)}">${escapeHtml(statusLabel)}</div>` : ''}
                 <div class="job-card-actions">
                   <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View More</button>
-                  <button type="button" class="${bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''}>${escapeHtml(bidText)}</button>
+                  <button type="button" class="${bidWarning ? 'btn-primary job-accepted-action' : bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''} ${bidWarning ? 'data-job-accepted-bid="1"' : ''}>${escapeHtml(bidText)}</button>
                 </div>
               </article>
             `;}).join('')}
@@ -1420,13 +1458,28 @@
       groupsHost.querySelectorAll('[data-job-bid]').forEach((button) => {
         button.addEventListener('click', () => {
           const job = jobs.find((item) => item.id === button.getAttribute('data-job-bid'));
-          if (job) openBidFlow(job);
+          if (!job) return;
+          if (button.getAttribute('data-job-accepted-bid') === '1') {
+            openAcceptedJobWarning(job);
+            return;
+          }
+          openBidFlow(job);
         });
       });
     }
 
     async function openBidFlow(job) {
       const account = getStoredAccount();
+      const currentUid = String(account?.uid || '').trim();
+      const acceptedApplicationUid = String(job?.acceptedApplicationUid || '').trim();
+      if (acceptedApplicationUid) {
+        if (currentUid && acceptedApplicationUid === currentUid) {
+          openAcceptedJobWarning(job);
+        } else {
+          window.alert('This job is no longer available for new bids.');
+        }
+        return;
+      }
       if (!account?.loggedIn) {
         savePendingJobDetail(job.id);
         openModal(authModal, `<div class="job-modal-panel job-modal-auth-panel">${buildJobAuthCardMarkup('bid')}<button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button></div>`);

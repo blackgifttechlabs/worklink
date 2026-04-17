@@ -2371,6 +2371,12 @@
     }
 
     const isOwner = Boolean(account?.loggedIn && account.uid === provider.uid);
+    const requestedGalleryTab = String(params.get('tab') || '').trim();
+    const requestedGalleryScroll = String(params.get('scroll') || '').trim();
+    let didScrollToRequestedGallery = false;
+    let stopProviderJobSubscription = null;
+    let stopProviderReviewSubscription = null;
+    let providerJobRenderSeq = 0;
 
     const banner = page.querySelector('[data-provider-banner]');
     const avatar = page.querySelector('[data-provider-avatar]');
@@ -2658,11 +2664,12 @@
       const galleryTabs = page.querySelectorAll('[data-gallery-tab]');
       const galleryContents = page.querySelectorAll('[data-gallery-content]');
       const ownerOnlyTabs = new Set(['current', 'bids']);
-      let activeGalleryTab = 'previous';
+      let activeGalleryTab = requestedGalleryTab || 'previous';
 
       function setActiveGalleryTab(tabName = 'previous') {
         const requestedTab = String(tabName || 'previous').trim();
-        const nextTab = ownerOnlyTabs.has(requestedTab) && !isOwner ? 'previous' : requestedTab;
+        const hasRequestedTab = Array.from(galleryContents).some((content) => content.getAttribute('data-gallery-content') === requestedTab);
+        const nextTab = !hasRequestedTab || (ownerOnlyTabs.has(requestedTab) && !isOwner) ? 'previous' : requestedTab;
 
         galleryTabs.forEach((tab) => {
           const isActive = tab.getAttribute('data-gallery-tab') === nextTab;
@@ -2703,6 +2710,19 @@
       });
 
       setActiveGalleryTab(activeGalleryTab);
+
+      function scrollToRequestedGalleryTab() {
+        if (didScrollToRequestedGallery) return;
+        const shouldScroll = requestedGalleryScroll === 'bids' || requestedGalleryTab === 'bids';
+        if (!shouldScroll || !isOwner) return;
+        didScrollToRequestedGallery = true;
+        const target = placedBidsGrid || page.querySelector('[data-provider-bids-grid]') || page.querySelector('.provider-profile-gallery-head');
+        window.requestAnimationFrame(() => {
+          if (target instanceof HTMLElement) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
 
       // Setup ratings modal trigger
       const ratingButton = page.querySelector('[data-provider-rating-modal]');
@@ -2818,96 +2838,124 @@
         const authHelper = await waitForAuthHelper();
         if (authHelper) {
           try {
-            const providerReviews = typeof authHelper.listProviderReviews === 'function'
+            if (typeof stopProviderJobSubscription === 'function') {
+              stopProviderJobSubscription();
+              stopProviderJobSubscription = null;
+            }
+            if (typeof stopProviderReviewSubscription === 'function') {
+              stopProviderReviewSubscription();
+              stopProviderReviewSubscription = null;
+            }
+
+            let liveProviderReviews = typeof authHelper.listProviderReviews === 'function'
               ? await authHelper.listProviderReviews(freshProvider.uid, freshProvider.provinceSlug).catch(() => [])
               : [];
-            let placedBidJobs = [];
+            let livePlacedBids = isOwner && typeof authHelper.listPlacedJobBids === 'function'
+              ? await authHelper.listPlacedJobBids(freshProvider.uid).catch(() => [])
+              : [];
 
-            if (
-              (isOwner || !providerReviews.length)
-              && typeof authHelper.listPlacedJobBids === 'function'
-              && typeof authHelper.getJobPost === 'function'
-            ) {
-              const placedBids = await authHelper.listPlacedJobBids(freshProvider.uid).catch(() => []);
-              placedBidJobs = await Promise.all(placedBids.map(async (bid) => ({
-                ...bid,
-                job: await authHelper.getJobPost(bid.jobId).catch(() => null)
-              })));
+            async function renderProviderJobTabs() {
+              const renderSeq = ++providerJobRenderSeq;
+              let placedBidJobs = [];
+
+              if (typeof authHelper.getJobPost === 'function' && (isOwner || !liveProviderReviews.length)) {
+                placedBidJobs = await Promise.all(livePlacedBids.map(async (bid) => ({
+                  ...bid,
+                  job: await authHelper.getJobPost(bid.jobId).catch(() => null)
+                })));
+              }
+              if (renderSeq !== providerJobRenderSeq) return;
+
+              if (placedBidJobs.length && liveProviderReviews.length) {
+                const reviewsByJobId = new Map(liveProviderReviews.map((review) => [String(review.jobId || review.id || ''), review]));
+                placedBidJobs = placedBidJobs.map((record) => {
+                  const matchingReview = reviewsByJobId.get(String(record.jobId || ''));
+                  if (!matchingReview) return record;
+                  return {
+                    ...record,
+                    completedAtMs: record.completedAtMs || matchingReview.completedAtMs || matchingReview.createdAtMs || 0,
+                    rating: record.rating || matchingReview.rating || 0,
+                    review: record.review || matchingReview
+                  };
+                });
+              }
+
+              const reviewedJobs = liveProviderReviews.map((review) => ({
+                ...review,
+                status: 'completed',
+                completedAtMs: Number(review.completedAtMs || review.createdAtMs || 0),
+                job: {
+                  subcategory: review.jobTitle || 'Job'
+                }
+              }));
+
+              const currentJobs = placedBidJobs.filter((record) => (
+                String(record.status || '').toLowerCase() === 'accepted'
+                && !getProviderJobCompletedAt(record)
+                && getProviderJobStartedAt(record)
+              ));
+              const workedJobs = isOwner
+                ? placedBidJobs.filter((record) => getProviderJobStatus(record) === 'completed')
+                : (reviewedJobs.length ? reviewedJobs : placedBidJobs.filter((record) => getProviderJobStatus(record) === 'completed'));
+
+              if (jobs instanceof HTMLElement) jobs.textContent = String(workedJobs.length);
+
+              if (currentCountBadge instanceof HTMLElement) {
+                currentCountBadge.textContent = String(currentJobs.length);
+                currentCountBadge.hidden = currentJobs.length === 0;
+              }
+              
+              if (currentJobsGrid) {
+                currentJobsGrid.innerHTML = currentJobs.length
+                  ? currentJobs.map((record) => buildProviderJobCard(record, {
+                    cssClass: 'provider-current-job-card',
+                    showPrice: true,
+                    showClient: true,
+                    date: getProviderJobStartedAt(record)
+                  })).join('')
+                  : buildProviderWorkEmptyState('No current jobs yet.', 'fa-regular fa-briefcase');
+              }
+              
+              if (workedJobsGrid) {
+                workedJobsGrid.innerHTML = workedJobs.length
+                  ? workedJobs.map((record) => buildProviderJobCard(record, {
+                    cssClass: 'provider-worked-job-card',
+                    showPrice: isOwner,
+                    showClient: isOwner,
+                    showDescription: isOwner,
+                    date: getProviderJobCompletedAt(record)
+                  })).join('')
+                  : buildProviderWorkEmptyState('No completed jobs yet.', 'fa-regular fa-circle-check');
+              }
+
+              if (placedBidsGrid) {
+                placedBidsGrid.innerHTML = placedBidJobs.length
+                  ? placedBidJobs.map((record) => buildProviderJobCard(record, {
+                    cssClass: 'provider-bid-job-card',
+                    showPrice: true,
+                    showClient: true,
+                    date: record.createdAtMs || record.job?.createdAtMs
+                  })).join('')
+                  : buildProviderWorkEmptyState('No bids placed yet.', 'fa-regular fa-handshake');
+              }
+              setActiveGalleryTab(activeGalleryTab);
+              scrollToRequestedGalleryTab();
             }
 
-            if (placedBidJobs.length && providerReviews.length) {
-              const reviewsByJobId = new Map(providerReviews.map((review) => [String(review.jobId || review.id || ''), review]));
-              placedBidJobs = placedBidJobs.map((record) => {
-                const matchingReview = reviewsByJobId.get(String(record.jobId || ''));
-                if (!matchingReview) return record;
-                return {
-                  ...record,
-                  completedAtMs: record.completedAtMs || matchingReview.completedAtMs || matchingReview.createdAtMs || 0,
-                  rating: record.rating || matchingReview.rating || 0,
-                  review: record.review || matchingReview
-                };
+            await renderProviderJobTabs();
+
+            if (isOwner && typeof authHelper.subscribePlacedJobBids === 'function') {
+              stopProviderJobSubscription = authHelper.subscribePlacedJobBids(freshProvider.uid, (placedBids = []) => {
+                livePlacedBids = placedBids;
+                renderProviderJobTabs().catch((error) => console.error('Error rendering provider jobs:', error));
               });
             }
-
-            const reviewedJobs = providerReviews.map((review) => ({
-              ...review,
-              status: 'completed',
-              completedAtMs: Number(review.completedAtMs || review.createdAtMs || 0),
-              job: {
-                subcategory: review.jobTitle || 'Job'
-              }
-            }));
-
-            const currentJobs = placedBidJobs.filter((record) => (
-              String(record.status || '').toLowerCase() === 'accepted'
-              && !getProviderJobCompletedAt(record)
-              && getProviderJobStartedAt(record)
-            ));
-            const workedJobs = isOwner
-              ? placedBidJobs.filter((record) => getProviderJobStatus(record) === 'completed')
-              : (reviewedJobs.length ? reviewedJobs : placedBidJobs.filter((record) => getProviderJobStatus(record) === 'completed'));
-
-            if (jobs instanceof HTMLElement) jobs.textContent = String(workedJobs.length);
-
-            if (currentCountBadge instanceof HTMLElement) {
-              currentCountBadge.textContent = String(currentJobs.length);
-              currentCountBadge.hidden = currentJobs.length === 0;
+            if (typeof authHelper.subscribeProviderReviews === 'function') {
+              stopProviderReviewSubscription = await authHelper.subscribeProviderReviews(freshProvider.uid, freshProvider.provinceSlug, (reviews = []) => {
+                liveProviderReviews = reviews;
+                renderProviderJobTabs().catch((error) => console.error('Error rendering provider reviews:', error));
+              });
             }
-            
-            if (currentJobsGrid) {
-              currentJobsGrid.innerHTML = currentJobs.length
-                ? currentJobs.map((record) => buildProviderJobCard(record, {
-                  cssClass: 'provider-current-job-card',
-                  showPrice: true,
-                  showClient: true,
-                  date: getProviderJobStartedAt(record)
-                })).join('')
-                : buildProviderWorkEmptyState('No current jobs yet.', 'fa-regular fa-briefcase');
-            }
-            
-            if (workedJobsGrid) {
-              workedJobsGrid.innerHTML = workedJobs.length
-                ? workedJobs.map((record) => buildProviderJobCard(record, {
-                  cssClass: 'provider-worked-job-card',
-                  showPrice: isOwner,
-                  showClient: isOwner,
-                  showDescription: isOwner,
-                  date: getProviderJobCompletedAt(record)
-                })).join('')
-                : buildProviderWorkEmptyState('No completed jobs yet.', 'fa-regular fa-circle-check');
-            }
-
-            if (placedBidsGrid) {
-              placedBidsGrid.innerHTML = placedBidJobs.length
-                ? placedBidJobs.map((record) => buildProviderJobCard(record, {
-                  cssClass: 'provider-bid-job-card',
-                  showPrice: true,
-                  showClient: true,
-                  date: record.createdAtMs || record.job?.createdAtMs
-                })).join('')
-                : buildProviderWorkEmptyState('No bids placed yet.', 'fa-regular fa-handshake');
-            }
-            setActiveGalleryTab(activeGalleryTab);
           } catch (error) {
             console.error('Error loading jobs for provider:', error);
           }

@@ -13592,6 +13592,17 @@ header {
   opacity: 0.9;
 }
 
+.job-card.is-accepted-by-me {
+  background: linear-gradient(180deg, #fff7f7 0%, #fee2e2 100%);
+  border-color: rgba(220, 38, 38, 0.35);
+  opacity: 1;
+}
+
+.job-card.is-job-unavailable {
+  background: linear-gradient(180deg, #f8fafc 0%, #e5e7eb 100%);
+  border-color: rgba(107, 114, 128, 0.22);
+}
+
 .job-card.is-list-item {
   gap: 16px;
 }
@@ -13769,6 +13780,70 @@ header {
   border-color: #d1d5db;
   color: #374151;
   box-shadow: none;
+}
+
+.job-card-status-notice {
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.job-card-status-notice.is-accepted-by-me {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.job-card-status-notice.is-bid-sent {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.job-accepted-action,
+.job-posts-page .job-card .job-accepted-action,
+.job-posts-page .job-modal-panel .job-accepted-action,
+.job-posts-page .job-modal-panel .job-warning-status-link {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.job-accepted-action:hover,
+.job-accepted-action:focus-visible,
+.job-posts-page .job-card .job-accepted-action:hover,
+.job-posts-page .job-card .job-accepted-action:focus-visible,
+.job-posts-page .job-modal-panel .job-accepted-action:hover,
+.job-posts-page .job-modal-panel .job-accepted-action:focus-visible,
+.job-posts-page .job-modal-panel .job-warning-status-link:hover,
+.job-posts-page .job-modal-panel .job-warning-status-link:focus-visible {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+
+.job-accepted-warning-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.job-warning-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 26px;
+}
+
+.job-card-tag.is-warning {
+  background: #dc2626;
 }
 
 .job-posts-page .job-card [data-job-bid],
@@ -14451,6 +14526,23 @@ header {
   color: #111111;
 }
 
+.job-posts-page .job-card [data-job-bid].job-accepted-action,
+.job-posts-page .job-card [data-job-bid].job-accepted-action:hover,
+.job-posts-page .job-card [data-job-bid].job-accepted-action:focus-visible {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.job-posts-page .job-card [data-job-bid][disabled],
+.job-posts-page .job-card [data-job-bid][disabled]:hover,
+.job-posts-page .job-card [data-job-bid][disabled]:focus-visible {
+  background: #d1d5db;
+  border-color: #d1d5db;
+  color: #374151;
+  cursor: default;
+}
+
 .job-posts-page .job-board-view-toggle button i,
 .job-posts-page .job-board-view-toggle button.is-active i {
   color: currentColor;
@@ -14499,6 +14591,16 @@ header {
   background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
   box-shadow: none;
   cursor: pointer;
+}
+
+.job-posts-page .job-card.is-accepted-by-me {
+  background: linear-gradient(180deg, #fff7f7 0%, #fee2e2 100%);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.job-posts-page .job-card.is-job-unavailable {
+  background: linear-gradient(180deg, #f8fafc 0%, #e5e7eb 100%);
+  border-color: rgba(107, 114, 128, 0.22);
 }
 
 .job-posts-page .job-card:focus-visible {
@@ -14559,6 +14661,23 @@ header {
   background: #c9972e;
   border-color: #c9972e;
   color: #111111;
+}
+
+.job-posts-page .job-card [data-job-bid].job-accepted-action,
+.job-posts-page .job-card [data-job-bid].job-accepted-action:hover,
+.job-posts-page .job-card [data-job-bid].job-accepted-action:focus-visible {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.job-posts-page .job-card [data-job-bid][disabled],
+.job-posts-page .job-card [data-job-bid][disabled]:hover,
+.job-posts-page .job-card [data-job-bid][disabled]:focus-visible {
+  background: #d1d5db;
+  border-color: #d1d5db;
+  color: #374151;
+  cursor: default;
 }
 
 .job-posts-page .job-card [data-job-view-more],

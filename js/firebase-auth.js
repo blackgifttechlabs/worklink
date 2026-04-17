@@ -28,6 +28,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  onSnapshot,
   updateDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
@@ -1142,6 +1143,24 @@ async function listProviderReviews(uid, provinceSlug = '') {
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 }
 
+async function subscribeProviderReviews(uid, provinceSlug = '', callback = () => {}) {
+  if (!uid || typeof callback !== 'function') return () => {};
+  const providerProfile = await getProviderProfileByUid(uid, provinceSlug);
+  if (!providerProfile) {
+    callback([]);
+    return () => {};
+  }
+  const reviewsRef = collection(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'reviews');
+  return onSnapshot(reviewsRef, (snapshot) => {
+    const reviews = snapshot.docs
+      .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+    callback(reviews);
+  }, () => {
+    callback([]);
+  });
+}
+
 function getProviderPostRef(providerProfile, postId) {
   return doc(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'posts', postId);
 }
@@ -1554,6 +1573,27 @@ async function listPlacedJobBids(uid = auth.currentUser?.uid) {
     })
     .filter((application) => application.jobId)
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
+function subscribePlacedJobBids(uid = auth.currentUser?.uid, callback = () => {}) {
+  if (!uid || typeof callback !== 'function') return () => {};
+  const applicationsQuery = query(collectionGroup(db, 'applications'), where('bidderUid', '==', uid));
+  return onSnapshot(applicationsQuery, (snapshot) => {
+    const applications = snapshot.docs
+      .map((docSnapshot) => {
+        const parentJobRef = docSnapshot.ref.parent?.parent;
+        return {
+          id: docSnapshot.id,
+          jobId: parentJobRef?.id || '',
+          ...docSnapshot.data()
+        };
+      })
+      .filter((application) => application.jobId)
+      .sort((first, second) => Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0));
+    callback(applications);
+  }, () => {
+    callback([]);
+  });
 }
 
 async function applyToJob(jobId = '', payload = {}) {
@@ -2666,6 +2706,7 @@ window.softGigglesAuth = {
   listProviders,
   listProviderPosts,
   listProviderReviews,
+  subscribeProviderReviews,
   createProviderPost,
   updateProviderPost,
   deleteProviderPost,
@@ -2675,6 +2716,7 @@ window.softGigglesAuth = {
   getJobPost,
   listJobApplications,
   listPlacedJobBids,
+  subscribePlacedJobBids,
   applyToJob,
   updateJobApplicationStatus,
   findActiveJobBetweenUsers,
