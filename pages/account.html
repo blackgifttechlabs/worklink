@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account – WorkLinkUp</title>
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
+  <script>
+    if (new URLSearchParams(window.location.search).get('embed') === '1') {
+      document.documentElement.classList.add('account-embed-preload');
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<main class="account-page">
+  <section class="account-setup-stage" id="account-setup-stage" hidden>
+    <div class="account-setup-shell" data-account-setup-body></div>
+  </section>
+
+  <section class="account-dashboard" id="account-dashboard" hidden>
+    <div class="account-hero-banner work-account-hero" id="account-profile">
+      <div class="work-account-hero-copy">
+        <span class="work-account-kicker">WorkLinkUp Profile</span>
+        <div class="account-hero-chip">Hi, <span id="account-display-name">WorkLinkUp User</span></div>
+        <p>Manage how clients find you and how you present the work you do.</p>
+      </div>
+    </div>
+
+    <div class="account-dashboard-layout">
+      <aside class="account-side-nav">
+        <a href="#account-profile" class="account-side-link is-active"><i class="fa-regular fa-user"></i><span>My Profile</span></a>
+        <a href="job-giver-profile.html" class="account-side-link" data-account-jobs-bids-link><i class="fa-solid fa-briefcase"></i><span>Jobs and Bids</span></a>
+        <a href="my-posts.html" class="account-side-link" data-account-provider-only hidden><i class="fa-regular fa-images"></i><span>My Posts</span></a>
+        <a href="messages.html" class="account-side-link"><i class="fa-regular fa-message"></i><span>Messages</span></a>
+        <a href="#account-settings" class="account-side-link"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
+        <button type="button" class="account-side-logout">Log Out</button>
+      </aside>
+
+      <section class="account-profile-card" id="account-settings">
+        <h2>Profile Details</h2>
+        <div class="account-detail-box">
+          <span>Name</span>
+          <strong id="account-profile-name">WorkLinkUp User</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Email Address</span>
+          <strong id="account-profile-email">you@example.com</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Provider ID</span>
+          <strong id="account-provider-id">Pending</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Province</span>
+          <strong id="account-profile-province">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>WhatsApp Number</span>
+          <strong id="account-profile-whatsapp">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Experience</span>
+          <strong id="account-profile-experience">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Main Category</span>
+          <strong id="account-profile-category">Not set</strong>
+        </div>
+        <div class="account-detail-box">
+          <span>Specialty</span>
+          <strong id="account-profile-specialty">Not set</strong>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+          <a href="my-posts.html" class="provider-profile-action">Go to My Posts</a>
+          <a href="messages.html" class="provider-profile-action secondary">Open Messages</a>
+        </div>
+        <label class="account-marketing-row">
+          <input type="checkbox" />
+          <span>Keep me updated on WorkLinkUp launch news and new features</span>
+        </label>
+        <button type="button" class="account-delete-link">Delete WorkLinkUp Profile</button>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div class="account-delete-overlay" id="account-delete-overlay" hidden>
+  <div class="account-delete-modal">
+    <button type="button" class="account-delete-close" aria-label="Close delete modal">×</button>
+    <h3>Delete WorkLinkUp Profile</h3>
+    <p class="account-delete-copy">Type your account identifier exactly to confirm permanent deletion.</p>
+    <div class="account-delete-target" id="account-delete-target-label"></div>
+    <div class="account-form-row">
+      <label for="account-delete-confirmation" id="account-delete-label">Email address</label>
+      <input id="account-delete-confirmation" type="text" autocomplete="off" placeholder="Type it exactly as shown" />
+    </div>
+    <div class="account-delete-actions">
+      <button type="button" class="account-delete-cancel">Cancel</button>
+      <button type="button" class="account-delete-confirm" disabled>Delete Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Setup Modal -->
+<div class="account-setup-modal" id="account-setup-modal" hidden>
+  <div class="account-setup-modal-overlay"></div>
+  <div class="account-setup-modal-shell">
+    <button type="button" class="account-setup-modal-close" aria-label="Close setup modal">×</button>
+    <div class="account-setup-modal-content">
+      <button type="button" class="account-setup-back-link" data-modal-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+      <h2>Get your profile started</h2>
+      <p>Add a username that is unique to you.</p>
+      <form class="account-setup-compact-form" data-account-username-form-modal>
+        <label class="account-setup-field">
+          <span>Choose a username</span>
+          <input type="text" data-account-username-input-modal placeholder="john_smith" />
+          <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
+          <strong class="account-setup-field-message" data-account-username-message-modal></strong>
+        </label>
+        <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit-modal disabled>
+          <span class="account-btn-label">Create my account</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="../js/shared-header.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>
