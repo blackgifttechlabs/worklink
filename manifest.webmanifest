@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "MaWorks",
+  "short_name": "MaWorks",
+  "description": "Install MaWorks to find jobs, hire workers, and connect with local providers from your home screen.",
+  "lang": "en",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fcfaf7",
+  "theme_color": "#1A3263",
+  "icons": [
+    {
+      "src": "./images/pwa/maworks-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./images/pwa/maworks-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

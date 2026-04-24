@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Specialists – WorkLinkUp</title>
+  <link rel="icon" type="image/jpeg" href="../images/logo/logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="specialists-page-body">
+  <div id="site-header"></div>
+
+  <main class="specialists-page" data-specialists-page>
+    <section class="specialists-layout" data-specialists-layout>
+      <aside class="specialists-sidebar">
+        <div class="specialists-sidebar-head">
+          <div>
+            <p class="specialists-sidebar-label">Browse</p>
+            <h2>Service Categories</h2>
+          </div>
+          <button type="button" class="specialists-sidebar-toggle" data-specialists-sidebar-toggle aria-label="Collapse sidebar">
+            <i class="fa-solid fa-angles-left"></i>
+          </button>
+        </div>
+        <div data-specialist-sidebar></div>
+      </aside>
+
+      <div class="specialists-main">
+        <section class="specialists-topbar">
+          <div class="specialists-search-shell">
+            <div class="specialists-title-row">
+              <h2 class="specialists-page-title">Find Specialist</h2>
+              <div class="specialists-title-actions">
+                <button type="button" class="specialists-icon-btn specialists-search-toggle-btn" data-toggle-specialists-search aria-label="Open search" aria-expanded="false">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button type="button" class="specialists-icon-btn specialists-filter-btn" data-open-specialists-sheet aria-label="Open categories">
+                  <i class="fa-solid fa-filter"></i>
+                </button>
+                <button type="button" class="specialists-icon-btn specialists-rating-sheet-btn" data-open-specialists-rating-sheet aria-label="Filter by rating">
+                  <i class="fa-solid fa-handshake"></i>
+                </button>
+              </div>
+            </div>
+            <div class="specialists-search-line" data-specialists-search-panel>
+              <div class="search-bar">
+                <span class="search-icon" aria-hidden="true">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" placeholder="Search services, skills, providers, or cities" data-specialists-search data-search-context="specialists-page" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="specialists-categories-shell">
+          <div class="worklinkup-rail-shell specialists-categories-rail">
+            <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll categories left">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="specialists-categories-track-wrap" data-scroll-rail data-auto-scroll data-auto-scroll-speed="0.065" data-auto-scroll-move-duration="999999" data-auto-scroll-rest-duration="0">
+              <div class="category-circles specialists-categories-row" data-specialist-categories data-scroll-track></div>
+            </div>
+            <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll categories right">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+          <div class="specialists-categories-action">
+            <a href="categories.html" class="home-all-categories-link">View All Categories</a>
+          </div>
+        </section>
+
+        <section class="specialists-results">
+          <div class="specialists-results-head">
+            <div>
+              <h3 data-specialists-results-title>Available Specialists</h3>
+              <p data-specialists-total>0 specialists</p>
+            </div>
+            <div class="specialists-results-head-actions" data-specialists-results-actions></div>
+          </div>
+          <div class="specialists-results-grid" data-specialists-results></div>
+        </section>
+
+        <section class="specialists-related-shell" data-specialists-related-shell hidden>
+          <div class="specialists-related-head">
+            <div>
+              <span class="specialists-related-kicker">Suggested for you</span>
+              <h3>More specialists you can explore</h3>
+            </div>
+            <button type="button" class="specialists-suggested-all" data-specialists-suggested-all>See all</button>
+          </div>
+          <div class="worklinkup-rail-shell specialists-related-rail">
+            <button type="button" class="worklinkup-rail-arrow is-prev" data-scroll-prev aria-label="Scroll suggested specialists left">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="specialists-related-track-wrap" data-scroll-rail data-auto-scroll data-auto-scroll-speed="0.06">
+              <div class="specialists-related-track" data-specialists-related data-scroll-track></div>
+            </div>
+            <button type="button" class="worklinkup-rail-arrow is-next" data-scroll-next aria-label="Scroll suggested specialists right">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="providers-mobile-sheet" data-specialists-sheet hidden>
+    <div class="providers-mobile-sheet-backdrop"></div>
+    <div class="providers-mobile-sheet-panel">
+      <div class="providers-mobile-sheet-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+        <strong>Browse Categories</strong>
+      </div>
+      <div data-specialists-sheet-body></div>
+    </div>
+  </div>
+
+  <div class="providers-mobile-sheet" data-specialists-rating-sheet hidden>
+    <div class="providers-mobile-sheet-backdrop"></div>
+    <div class="providers-mobile-sheet-panel providers-mobile-sheet-panel-compact">
+      <div class="providers-mobile-sheet-handle"></div>
+      <div class="specialists-mobile-sheet-head">
+        <strong>Filter by Rating</strong>
+      </div>
+      <div class="specialists-rating-picker" data-specialists-rating-sheet-body>
+        <button type="button" class="specialists-rating-option" data-rating-filter="0">All ratings</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="5">5.0 and above</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="4.5">4.5 and above</button>
+        <button type="button" class="specialists-rating-option" data-rating-filter="4">4.0 and above</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="../js/shared-header.js"></script>
+  <script src="../js/main.js"></script>
+</body>
+</html>
