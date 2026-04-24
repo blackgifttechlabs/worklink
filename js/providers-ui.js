@@ -316,6 +316,34 @@
     return Array.isArray(category?.subservices) ? category.subservices : [];
   }
 
+  function normalizeProfileImageFallback(value = '') {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) return 'images/sections/profileimg.avif';
+
+    const normalized = rawValue
+      .replace(/^https?:\/\/[^/]+\//i, '')
+      .replace(/^\.?\//, '')
+      .replace(/^(\.\.\/)+/, '')
+      .split('?')[0]
+      .split('#')[0];
+
+    const categoryImages = SPECIALIST_CATEGORIES
+      .map((category) => String(category.image || '').trim())
+      .filter(Boolean)
+      .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
+
+    if (
+      normalized === 'images/logo/logo.jpg'
+      || normalized === 'images/sections/findme.avif'
+      || normalized.startsWith('images/categories/')
+      || categoryImages.includes(normalized)
+    ) {
+      return 'images/sections/profileimg.avif';
+    }
+
+    return rawValue;
+  }
+
   function buildSubserviceOptionsMarkup(categoryLabel = '', selectedValue = '', placeholder = 'Choose a service') {
     const subservices = getSubservicesForCategory(categoryLabel);
     return buildSelectOptions(subservices, selectedValue, placeholder);
@@ -936,7 +964,7 @@
       portfolioLinks: Array.isArray(provider.portfolioLinks) ? provider.portfolioLinks : [],
       professionalDocuments: Array.isArray(provider.professionalDocuments) ? provider.professionalDocuments : [],
       username: provider.username || '',
-      profileImageData: provider.profileImageData || getCategoryConfig(primaryCategory).image,
+      profileImageData: normalizeProfileImageFallback(provider.profileImageData),
       bannerImageData: provider.bannerImageData || 'images/sections/findme.avif',
       profileUrl: `${getBase()}pages/provider-profile.html?uid=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`,
       messageUrl: `${getBase()}pages/messages.html?provider=${encodeURIComponent(provider.uid)}&province=${encodeURIComponent(provinceSlug)}`
@@ -1081,7 +1109,7 @@
         : (isProvider ? 'Provider on WorkLinkUp' : 'WorkLinkUp member'),
       profileImageData: String(
         contact.profileImageData
-        || (isProvider ? getCategoryConfig(primaryCategory).image : '')
+        || (isProvider ? 'images/sections/profileimg.avif' : '')
       ).trim(),
       providerPublicId: String(contact.providerPublicId || '').trim()
     };
@@ -1219,7 +1247,7 @@
 
     host.innerHTML = providers.map((provider, index) => {
       const serviceLabel = getServiceListLabel(provider) || provider.specialty || provider.primaryCategory || 'Specialist';
-      const heroImage = resolveMediaSrc(provider.profileImageData || provider.bannerImageData, 'images/logo/logo.jpg');
+      const heroImage = resolveMediaSrc(normalizeProfileImageFallback(provider.profileImageData), 'images/sections/profileimg.avif');
       const locationLabel = provider.address || `${provider.city}, ${provider.province}`;
       const experienceLabel = provider.experience || 'Experienced';
       const bioText = String(provider.bio || 'WorkLinkUp specialist ready to help.').trim();
@@ -1385,7 +1413,7 @@
     const cards = items.map((provider) => `
       <article class="specialists-suggested-card">
         <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-card-link">
-          <img src="${escapeHtml(resolveMediaSrc(provider.profileImageData, 'images/logo/logo.jpg'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
+          <img src="${escapeHtml(resolveMediaSrc(normalizeProfileImageFallback(provider.profileImageData), 'images/sections/profileimg.avif'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
           <strong>${escapeHtml(provider.displayName)}</strong>
           <span class="specialists-suggested-meta">${escapeHtml(getServiceListLabel(provider, 2) || provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
           <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on WorkLinkUp')}</span>
@@ -1640,7 +1668,7 @@
 
   function updateUploadPreview(target, imageData, mode) {
     if (!target) return;
-    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/logo/logo.jpg' : 'images/sections/findme.avif');
+    const src = resolveMediaSrc(imageData, mode === 'avatar' ? 'images/sections/profileimg.avif' : 'images/sections/findme.avif');
     target.innerHTML = `<img src="${escapeHtml(src)}" alt="" />`;
   }
 
@@ -2664,7 +2692,7 @@
       const locationLabel = freshProvider.address || [freshProvider.city, freshProvider.province].filter(Boolean).join(', ') || 'Location not shared';
       const phoneNumber = String(freshProvider.whatsappNumber || '').trim();
       const bannerSrc = resolveMediaSrc(freshProvider.bannerImageData, 'images/sections/findme.avif');
-      const avatarSrc = resolveMediaSrc(freshProvider.profileImageData, 'images/logo/logo.jpg');
+      const avatarSrc = resolveMediaSrc(normalizeProfileImageFallback(freshProvider.profileImageData), 'images/sections/profileimg.avif');
 
       if (banner instanceof HTMLElement) {
         banner.style.backgroundImage = `linear-gradient(180deg, rgba(13, 28, 56, 0.10) 0%, rgba(13, 28, 56, 0.60) 100%), url('${bannerSrc}')`;
@@ -4545,7 +4573,7 @@
     }
 
     function getProfileImageMarkup(profile, fallbackName) {
-      const source = profile?.profileImageData ? resolveMediaSrc(profile.profileImageData, 'images/logo/logo.jpg') : '';
+      const source = profile?.profileImageData ? resolveMediaSrc(normalizeProfileImageFallback(profile.profileImageData), 'images/sections/profileimg.avif') : '';
       return source
         ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(fallbackName)} profile image" />`
         : `<span>${escapeHtml(buildInitials(fallbackName))}</span>`;
@@ -5514,7 +5542,7 @@
       profileImageData: clientProfile.profileImageData || userDoc.profileImageData || '',
       bannerImageData: clientProfile.bannerImageData || userDoc.bannerImageData || ''
     };
-    const avatarSrc = resolveMediaSrc(profile.profileImageData, 'images/logo/logo.jpg');
+    const avatarSrc = resolveMediaSrc(normalizeProfileImageFallback(profile.profileImageData), 'images/sections/profileimg.avif');
     const bannerSrc = resolveMediaSrc(profile.bannerImageData, 'images/sections/findme.avif');
 
     const handle = profile.username ? `@${profile.username}` : '@client';
@@ -6488,7 +6516,7 @@
         payload.education = education.length ? education : existingProvider.education;
         payload.certifications = certifications.length ? certifications : existingProvider.certifications;
         payload.portfolioLinks = portfolioLinks.length ? portfolioLinks : existingProvider.portfolioLinks;
-        payload.profileImageData = providerMediaState.profileImageData || getSafeConfig(primaryService.category)?.image || '';
+        payload.profileImageData = providerMediaState.profileImageData || 'images/sections/profileimg.avif';
         payload.bannerImageData = providerMediaState.bannerImageData || 'images/sections/findme.avif';
         payload.professionalDocuments = providerMediaState.professionalDocuments;
 

@@ -1,4 +1,4 @@
-const MAWORKS_CACHE = 'maworks-shell-v1';
+const MAWORKS_CACHE = 'maworks-shell-v2';
 const MAWORKS_ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,11 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+function isNetworkFirstAsset(request, url) {
+  if (request.mode === 'navigate') return true;
+  return /\.(?:html|css|js)$/i.test(url.pathname || '');
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -34,15 +39,19 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === 'navigate') {
+  if (isNetworkFirstAsset(request, url)) {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          if (!response || response.status !== 200 || response.type !== 'basic') return response;
           const responseClone = response.clone();
           caches.open(MAWORKS_CACHE).then((cache) => cache.put(request, responseClone));
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('./index.html')))
+        .catch(() => caches.match(request).then((cached) => {
+          if (cached) return cached;
+          return request.mode === 'navigate' ? caches.match('./index.html') : null;
+        }))
     );
     return;
   }

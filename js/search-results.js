@@ -46,6 +46,34 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
   }
 
+  function normalizeProfileImage(src = '') {
+    const rawValue = String(src || '').trim();
+    if (!rawValue) return 'images/sections/profileimg.avif';
+
+    const normalized = rawValue
+      .replace(/^https?:\/\/[^/]+\//i, '')
+      .replace(/^\.?\//, '')
+      .replace(/^(\.\.\/)+/, '')
+      .split('?')[0]
+      .split('#')[0];
+
+    const categoryImages = getCatalog()
+      .map((item) => String(item.image || '').trim())
+      .filter(Boolean)
+      .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
+
+    if (
+      normalized === 'images/logo/logo.jpg'
+      || normalized === 'images/sections/findme.avif'
+      || normalized.startsWith('images/categories/')
+      || categoryImages.includes(normalized)
+    ) {
+      return 'images/sections/profileimg.avif';
+    }
+
+    return rawValue;
+  }
+
   function flattenSearchValues(value) {
     if (Array.isArray(value)) {
       return value.map(flattenSearchValues).filter(Boolean).join(' ');
@@ -112,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const address = String(provider.address || '').trim();
     const location = address || [city, province].filter(Boolean).join(', ') || 'Zimbabwe';
     const rating = Number(provider.averageRating || 4.7);
-    const image = provider.profileImageData || provider.bannerImageData || getCatalog().find((item) => item.label === category)?.image || 'images/logo/logo.jpg';
+    const image = normalizeProfileImage(provider.profileImageData);
     const skillText = flattenSearchValues(provider.skills);
     const languageText = flattenSearchValues(provider.languages);
     const workText = flattenSearchValues(provider.workExperience);

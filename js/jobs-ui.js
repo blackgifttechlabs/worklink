@@ -604,7 +604,7 @@
   }
 
   function getJobOwnerAvatarSrc(job = {}) {
-    return resolveMediaSrc(job.ownerProfileImageData || job.ownerProfile?.profileImageData || '', '');
+    return resolveMediaSrc(job.ownerProfileImageData || job.ownerProfile?.profileImageData || '', 'images/sections/profileimg.avif');
   }
 
   async function enrichJobsWithOwnerProfiles(authHelper, jobs = []) {

@@ -203,9 +203,53 @@ function getUserJobListSessionKey(uid) {
   return `worklinkup_user_jobs_${uid}`;
 }
 
+function normalizeStoredProfileImage(value = '') {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return '';
+
+  const normalized = rawValue
+    .replace(/^https?:\/\/[^/]+\//i, '')
+    .replace(/^\.?\//, '')
+    .replace(/^(\.\.\/)+/, '')
+    .split('?')[0]
+    .split('#')[0];
+
+  const catalogImages = (Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [])
+    .map((category) => String(category?.image || '').trim())
+    .filter(Boolean)
+    .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
+
+  if (
+    normalized === 'images/logo/logo.jpg'
+    || normalized === 'images/sections/findme.avif'
+    || normalized.startsWith('images/categories/')
+    || catalogImages.includes(normalized)
+  ) {
+    return '';
+  }
+
+  return rawValue;
+}
+
+function normalizeUserDocumentProfile(userDoc = {}) {
+  if (!userDoc || typeof userDoc !== 'object') return userDoc;
+  return {
+    ...userDoc,
+    profileImageData: normalizeStoredProfileImage(userDoc.profileImageData)
+  };
+}
+
+function normalizeProviderProfileRecord(profile = {}) {
+  if (!profile || typeof profile !== 'object') return profile;
+  return {
+    ...profile,
+    profileImageData: normalizeStoredProfileImage(profile.profileImageData)
+  };
+}
+
 function cacheUserDocument(uid, userDoc) {
   if (!uid || !userDoc) return;
-  const entry = { value: userDoc, cachedAt: Date.now() };
+  const entry = { value: normalizeUserDocumentProfile(userDoc), cachedAt: Date.now() };
   userDocumentCache.set(uid, entry);
   writeSessionJson(getUserDocumentSessionKey(uid), entry);
 }
@@ -213,12 +257,16 @@ function cacheUserDocument(uid, userDoc) {
 function getCachedUserDocument(uid) {
   if (!uid) return null;
   const memoryValue = getFreshCacheValue(userDocumentCache, uid, USER_DOC_CACHE_TTL_MS);
-  if (memoryValue) return memoryValue;
+  if (memoryValue) return normalizeUserDocumentProfile(memoryValue);
   const sessionEntry = readSessionJson(getUserDocumentSessionKey(uid));
   if (!sessionEntry) return null;
   if (Date.now() - Number(sessionEntry.cachedAt || 0) > USER_DOC_CACHE_TTL_MS) return null;
-  userDocumentCache.set(uid, sessionEntry);
-  return sessionEntry.value ?? null;
+  const normalizedEntry = {
+    ...sessionEntry,
+    value: normalizeUserDocumentProfile(sessionEntry.value)
+  };
+  userDocumentCache.set(uid, normalizedEntry);
+  return normalizedEntry.value ?? null;
 }
 
 function cacheProviderLookup(uid, provinceSlug = '') {
@@ -245,30 +293,38 @@ function getCachedProviderLookup(uid) {
 function cacheProviderProfile(profile) {
   const uid = String(profile?.uid || '').trim();
   if (!uid || !profile) return;
+  const normalizedProfile = normalizeProviderProfileRecord(profile);
   providerProfileCache.set(uid, {
-    value: profile,
+    value: normalizedProfile,
     cachedAt: Date.now()
   });
-  if (profile.provinceSlug) {
-    cacheProviderLookup(uid, profile.provinceSlug);
+  if (normalizedProfile.provinceSlug) {
+    cacheProviderLookup(uid, normalizedProfile.provinceSlug);
   }
 }
 
 function getCachedProviderList() {
   if (providerListCache && Date.now() - Number(providerListCache.cachedAt || 0) <= PROVIDER_LIST_CACHE_TTL_MS) {
-    return providerListCache.value;
+    return Array.isArray(providerListCache.value)
+      ? providerListCache.value.map((profile) => normalizeProviderProfileRecord(profile))
+      : providerListCache.value;
   }
   const sessionEntry = readSessionJson(getProviderListSessionKey());
   if (!sessionEntry) return null;
   if (Date.now() - Number(sessionEntry.cachedAt || 0) > PROVIDER_LIST_CACHE_TTL_MS) return null;
-  providerListCache = sessionEntry;
-  return sessionEntry.value;
+  providerListCache = {
+    ...sessionEntry,
+    value: Array.isArray(sessionEntry.value)
+      ? sessionEntry.value.map((profile) => normalizeProviderProfileRecord(profile))
+      : sessionEntry.value
+  };
+  return providerListCache.value;
 }
 
 function cacheProviderList(providers = []) {
   if (!Array.isArray(providers)) return;
   const entry = {
-    value: providers,
+    value: providers.map((profile) => normalizeProviderProfileRecord(profile)),
     cachedAt: Date.now()
   };
   providerListCache = entry;
@@ -505,10 +561,10 @@ function createConversationId(firstUid, secondUid) {
 
 function mapProviderProfile(snapshot) {
   const data = snapshot.data();
-  return {
+  return normalizeProviderProfileRecord({
     uid: snapshot.id,
     ...data
-  };
+  });
 }
 
 function getCartDocId(account) {
@@ -1210,7 +1266,7 @@ async function getUserDocument(uid = auth.currentUser?.uid) {
 
   const request = (async () => {
     const snapshot = await getDoc(doc(db, 'users', uid));
-    const nextUserDoc = snapshot.exists() ? snapshot.data() : null;
+    const nextUserDoc = snapshot.exists() ? normalizeUserDocumentProfile(snapshot.data()) : null;
     if (nextUserDoc) cacheUserDocument(uid, nextUserDoc);
     return nextUserDoc;
   })();
@@ -1548,7 +1604,7 @@ async function saveProviderProfile(profileInput = {}) {
     certifications: certificationItems,
     portfolioLinks,
     professionalDocuments,
-    profileImageData: String(profileInput.profileImageData || existingProviderProfile?.profileImageData || '').trim(),
+    profileImageData: normalizeStoredProfileImage(profileInput.profileImageData || existingProviderProfile?.profileImageData || ''),
     bannerImageData: String(profileInput.bannerImageData || existingProviderProfile?.bannerImageData || '').trim(),
     averageRating: Number(profileInput.averageRating || 4.8),
     reviewCount: Number(profileInput.reviewCount || 12),
@@ -1688,7 +1744,7 @@ async function saveClientProfile(profileInput = {}) {
     address,
     city,
     bio: String(profileInput.bio || existingClientProfile?.bio || '').trim(),
-    profileImageData: String(profileInput.profileImageData || existingClientProfile?.profileImageData || '').trim(),
+    profileImageData: normalizeStoredProfileImage(profileInput.profileImageData || existingClientProfile?.profileImageData || ''),
     bannerImageData: String(profileInput.bannerImageData || existingClientProfile?.bannerImageData || '').trim(),
     createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
     updatedAtMs: Date.now(),
