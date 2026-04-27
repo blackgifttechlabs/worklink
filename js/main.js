@@ -1,5 +1,23 @@
 // Nav mega dropdown hover logic
 document.addEventListener('DOMContentLoaded', () => {
+  const appLoader = document.getElementById('app-loader');
+
+  function hideAppLoader() {
+    if (!appLoader || appLoader.dataset.hidden === 'true') return;
+    appLoader.dataset.hidden = 'true';
+    appLoader.classList.add('is-hidden');
+    window.setTimeout(() => {
+      appLoader.remove();
+    }, 420);
+  }
+
+  if (appLoader) {
+    window.addEventListener('load', () => {
+      window.setTimeout(hideAppLoader, 450);
+    }, { once: true });
+    window.setTimeout(hideAppLoader, 3000);
+  }
+
   const cookieBanner = document.getElementById('cookie-banner');
   const cookieAccept = document.querySelector('.cookie-accept');
   const cookieDecline = document.querySelector('.cookie-decline');
@@ -617,17 +635,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildHomeAvailableJobCard(job = {}) {
     const categoryConfig = getHomeJobCategoryConfig(job);
     const categoryImage = resolveHomeMediaSrc(categoryConfig.image || 'images/categories/digital_converted.avif');
-    const ownerName = String(job.ownerName || job.ownerProfile?.displayName || 'WorkLinkUp client').trim();
-    const ownerImage = resolveHomeMediaSrc(job.ownerProfileImageData || job.ownerProfile?.profileImageData || '');
     const title = String(job.subcategory || job.category || 'Open job').trim();
     const href = buildHomeJobDetailHref(job.id);
-    const description = String(job.description || 'Open job ready for bids.').trim();
-    const shortDescription = `${escapeHtml(description.slice(0, 88))}${description.length > 88 ? '...' : ''}`;
-    const locationLabel = String(job.address || job.city || 'Address shared in details').trim();
-    const ownerLabel = ownerName || 'WorkLinkUp client';
-    const ownerAvatarMarkup = ownerImage
-      ? `<img src="${escapeHtml(ownerImage)}" alt="${escapeHtml(ownerLabel)}" loading="lazy" decoding="async" />`
-      : `<span>${escapeHtml(getHomeJobInitials(ownerLabel))}</span>`;
+    const serviceText = `${job.category || 'Service request'} • ${formatHomeJobCurrency(job.budget)}`;
 
     return `
       <article class="home-market-card home-market-available-card wl-showcase-card wl-showcase-card--home">
@@ -636,32 +646,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="wl-showcase-card__overlay"></div>
         </a>
         <div class="wl-showcase-card__badge-row">
-          <span class="wl-showcase-card__badge">${escapeHtml(job.category || 'Available job')}</span>
-          <span class="wl-showcase-card__badge wl-showcase-card__badge--accent">${escapeHtml(formatHomeJobDate(job.createdAtMs))}</span>
-        </div>
-        <div class="wl-showcase-card__owner" aria-label="${escapeHtml(ownerLabel)}">
-          ${ownerAvatarMarkup}
+          <span class="wl-showcase-card__badge">${escapeHtml(formatHomeJobDate(job.createdAtMs))}</span>
+          <span class="wl-showcase-card__badge wl-showcase-card__badge--accent">New</span>
         </div>
         <div class="wl-showcase-card__content">
-          <div class="wl-showcase-card__eyebrow-row">
-            <span class="wl-showcase-card__eyebrow">${escapeHtml(ownerLabel)}</span>
-            <strong class="wl-showcase-card__price">${escapeHtml(formatHomeJobCurrency(job.budget))}</strong>
-          </div>
           <h3 class="wl-showcase-card__title">${escapeHtml(title)}</h3>
-          <p class="wl-showcase-card__subtitle">${shortDescription}</p>
-          <div class="wl-showcase-card__details">
-            <span class="wl-showcase-card__detail">
-              <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-              <span>${escapeHtml(locationLabel)}</span>
-            </span>
-            <span class="wl-showcase-card__detail">
-              <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
-              <span>${escapeHtml(job.category || 'Job post')}</span>
-            </span>
-          </div>
+          <p class="wl-showcase-card__subtitle">${escapeHtml(serviceText)}</p>
         </div>
-        <a class="wl-showcase-card__action" href="${escapeHtml(href)}">
-          <span>Accept Job</span>
+        <a class="wl-showcase-card__action" href="${escapeHtml(href)}" aria-label="Open ${escapeHtml(title)} job">
           <i class="fa-solid fa-arrow-right"></i>
         </a>
       </article>
@@ -678,34 +670,41 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="wl-showcase-card__overlay"></div>
         </a>
         <div class="wl-showcase-card__badge-row">
-          <span class="wl-showcase-card__badge">How it works</span>
-          <span class="wl-showcase-card__badge wl-showcase-card__badge--accent">Step ${escapeHtml(card.step || '')}</span>
+          <span class="wl-showcase-card__badge">Today</span>
+          <span class="wl-showcase-card__badge wl-showcase-card__badge--accent">New</span>
         </div>
-        <div class="wl-showcase-card__owner wl-showcase-card__owner--step home-guide-step" aria-hidden="true"><span>${escapeHtml(card.step || '')}</span></div>
         <div class="wl-showcase-card__content">
-          <div class="wl-showcase-card__eyebrow-row">
-            <span class="wl-showcase-card__eyebrow">WorkLinkUp guide</span>
-            <strong class="wl-showcase-card__price">Step ${escapeHtml(card.step || '')}</strong>
-          </div>
           <h3 class="wl-showcase-card__title">${escapeHtml(card.title || 'Open jobs')}</h3>
-          <p class="wl-showcase-card__subtitle">${escapeHtml(card.text || 'Find posted work, open the details, and place your bid.')}</p>
-          <div class="wl-showcase-card__details">
-            <span class="wl-showcase-card__detail">
-              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-              <span>Simple next step</span>
-            </span>
-            <span class="wl-showcase-card__detail">
-              <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
-              <span>Ready now</span>
-            </span>
-          </div>
+          <p class="wl-showcase-card__subtitle">${escapeHtml(card.text || 'Find posted work and place your bid.')}</p>
         </div>
-        <a class="wl-showcase-card__action" href="${escapeHtml(href)}">
-          <span>${escapeHtml(card.cta || 'View Jobs')}</span>
+        <a class="wl-showcase-card__action" href="${escapeHtml(href)}" aria-label="${escapeHtml(card.cta || 'View Jobs')}">
           <i class="fa-solid fa-arrow-right"></i>
         </a>
       </article>
     `;
+  }
+
+  function updateHomeAvailableStats(totalJobs = 0) {
+    const statPills = Array.from(document.querySelectorAll('[data-home-available-stats]'));
+    if (!statPills.length) return;
+
+    const isUp = Math.random() >= 0.5;
+    const percentage = Math.floor(4 + (Math.random() * 38));
+    statPills.forEach((pill) => {
+      pill.classList.toggle('is-up', isUp);
+      pill.classList.toggle('is-down', !isUp);
+      const totalEl = pill.querySelector('[data-home-available-total]');
+      const trendEl = pill.querySelector('[data-home-available-trend]');
+      const iconEl = pill.querySelector('[data-home-available-trend-icon]');
+      if (totalEl) totalEl.textContent = String(totalJobs);
+      if (trendEl) trendEl.textContent = `${percentage}%`;
+      if (iconEl) iconEl.textContent = isUp ? '▲' : '▼';
+    });
+
+    window.clearTimeout(window.homeAvailableStatsTimer);
+    window.homeAvailableStatsTimer = window.setTimeout(() => {
+      updateHomeAvailableStats(totalJobs);
+    }, 3000 + Math.floor(Math.random() * 9000));
   }
 
   function renderHomeAvailableJobCards(hosts, jobs = []) {
@@ -757,6 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hosts.length) return;
 
     renderHomeAvailableJobCards(hosts, []);
+    updateHomeAvailableStats(0);
 
     const authHelper = typeof window.ensureWorkLinkAuth === 'function'
       ? await window.ensureWorkLinkAuth().catch(() => null)
@@ -764,12 +764,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!authHelper || typeof authHelper.listJobPosts !== 'function') return;
 
     const jobs = await authHelper.listJobPosts().catch(() => []);
-    const latestJobs = jobs
-      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open')
+    const openJobs = jobs
+      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open');
+    const latestJobs = openJobs
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
       .slice(0, 6);
     const enrichedJobs = await enrichHomeJobsWithOwnerProfiles(authHelper, latestJobs);
     renderHomeAvailableJobCards(hosts, enrichedJobs);
+    updateHomeAvailableStats(openJobs.length);
   }
 
   function initHomeMarketScrollers() {

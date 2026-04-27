@@ -944,6 +944,8 @@
     const specialty = normalizeProviderServiceValue(provider.specialty) || services[0]?.service || 'Specialist';
     const primaryCategory = normalizeProviderServiceValue(provider.primaryCategory) || services[0]?.category || getCategoryConfig('').label;
     const city = provider.city || provider.address || provider.province || '';
+    const ratingTotal = Math.max(0, Number(provider.ratingTotal || 0));
+    const reviewCount = ratingTotal > 0 ? Math.max(0, Number(provider.reviewCount || 0)) : 0;
     return {
       ...provider,
       provinceSlug,
@@ -951,8 +953,9 @@
       primaryCategory,
       services,
       city,
-      averageRating: Number(provider.averageRating || 4.7),
-      reviewCount: Number(provider.reviewCount || 0),
+      averageRating: reviewCount > 0 ? Number(provider.averageRating || (ratingTotal / reviewCount) || 0) : 0,
+      reviewCount,
+      ratingTotal,
       completedJobs: Number(provider.completedJobs || 0),
       bio: provider.bio || 'WorkLinkUp specialist ready to help.',
       title: normalizeProviderServiceValue(provider.title) || getServiceListLabel(services) || specialty,
@@ -2660,6 +2663,24 @@
     const linksCard = page.querySelector('[data-provider-links-card]');
     const linksHost = page.querySelector('[data-provider-links]');
 
+    function setProviderRatingDisplay(provider = {}) {
+      if (!(rating instanceof HTMLElement)) return;
+      const ratingTotal = Math.max(0, Number(provider.ratingTotal || 0));
+      const ratingCount = ratingTotal > 0 ? Math.max(0, Number(provider.reviewCount || 0)) : 0;
+      const ratingValue = ratingCount > 0 ? Number(provider.averageRating || (ratingTotal / ratingCount) || 0) : 0;
+      rating.textContent = `${ratingValue.toFixed(1)} ★`;
+    }
+
+    function setProviderRatingDisplayFromReviews(reviews = []) {
+      const ratedReviews = Array.isArray(reviews) ? reviews.filter((review) => Number(review.rating || 0) > 0) : [];
+      const ratingTotal = ratedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+      setProviderRatingDisplay({
+        ratingTotal,
+        reviewCount: ratedReviews.length,
+        averageRating: ratedReviews.length ? ratingTotal / ratedReviews.length : 0
+      });
+    }
+
     backBtn?.addEventListener('click', () => {
       if (window.history.length > 1) {
         window.history.back();
@@ -2712,7 +2733,7 @@
         }
       }
       if (postCount instanceof HTMLElement) postCount.textContent = String(Number(freshProvider.postCount || 0));
-      if (rating instanceof HTMLElement) rating.textContent = `${freshProvider.averageRating.toFixed(1)} ★`;
+      setProviderRatingDisplay(freshProvider);
       if (jobs instanceof HTMLElement) jobs.textContent = String(freshProvider.completedJobs || 0);
       if (messageLink instanceof HTMLAnchorElement) messageLink.href = freshProvider.messageUrl;
       if (messageLink instanceof HTMLElement) messageLink.hidden = isOwner;
@@ -2991,7 +3012,7 @@
       const ratingButton = page.querySelector('[data-provider-rating-modal]');
       if (ratingButton) {
         ratingButton.addEventListener('click', () => {
-          const ratings = freshProvider.ratings || [];
+          const ratings = liveProviderReviews.length ? liveProviderReviews : (freshProvider.ratings || []);
           openProviderDialog(`
             <div class="provider-ratings-modal">
               <h2>Your ratings</h2>
@@ -3260,6 +3281,7 @@
             if (typeof authHelper.subscribeProviderReviews === 'function') {
               stopProviderReviewSubscription = await authHelper.subscribeProviderReviews(freshProvider.uid, freshProvider.provinceSlug, (reviews = []) => {
                 liveProviderReviews = reviews;
+                setProviderRatingDisplayFromReviews(reviews);
                 renderProviderJobTabs().catch((error) => console.error('Error rendering provider reviews:', error));
               });
             }

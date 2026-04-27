@@ -139,7 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const province = String(provider.province || provider.providerProvince || '').trim();
     const address = String(provider.address || '').trim();
     const location = address || [city, province].filter(Boolean).join(', ') || 'Zimbabwe';
-    const rating = Number(provider.averageRating || 4.7);
+    const ratingTotal = Math.max(0, Number(provider.ratingTotal || 0));
+    const reviewCount = ratingTotal > 0 ? Math.max(0, Number(provider.reviewCount || 0)) : 0;
+    const rating = reviewCount > 0 ? Number(provider.averageRating || (ratingTotal / reviewCount) || 0) : 0;
     const image = normalizeProfileImage(provider.profileImageData);
     const skillText = flattenSearchValues(provider.skills);
     const languageText = flattenSearchValues(provider.languages);
@@ -153,6 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
       category,
       location,
       rating,
+      reviewCount,
+      ratingTotal,
       image: resolveImage(image),
       href: providerProfileHref(provider),
       terms: [

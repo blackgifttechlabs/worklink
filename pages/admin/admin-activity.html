@@ -99,43 +99,37 @@
             <div class="admin-inline-total" id="admin-admin-activity-total">0 actions</div>
           </div>
 
-          <div class="admin-dashboard-grid admin-subpanel-grid" id="admin-admin-overview">
-            <section class="admin-visual-card">
-              <div class="admin-card-head">
-                <div>
-                  <span>Create admin access</span>
-                  <h3>New admin</h3>
-                </div>
-              </div>
-              <form class="admin-create-form" id="admin-create-form">
-                <label class="admin-form-field">
-                  <span>Name</span>
-                  <input type="text" id="admin-create-name" placeholder="Admin name" />
-                </label>
-                <label class="admin-form-field">
-                  <span>Email</span>
-                  <input type="email" id="admin-create-email" placeholder="admin@worklinkup.com" />
-                </label>
-                <label class="admin-form-field">
-                  <span>PIN</span>
-                  <input type="password" id="admin-create-pin" inputmode="numeric" maxlength="8" placeholder="4 to 8 digits" />
-                </label>
-                <button type="submit" class="admin-gate-submit">Create Admin</button>
-                <div class="admin-form-message" id="admin-create-message" hidden></div>
-              </form>
-            </section>
+          <div class="admin-action-row">
+            <button type="button" class="admin-gate-submit admin-compact-action" id="admin-create-open">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Create admin</span>
+            </button>
+            <button type="button" class="admin-lock-btn admin-compact-action" id="admin-admins-open">
+              <i class="fa-solid fa-user-shield"></i>
+              <span>Active admins</span>
+            </button>
+          </div>
 
-            <section class="admin-visual-card">
-              <div class="admin-card-head">
-                <div>
-                  <span>Admin roster</span>
-                  <h3>Active admins</h3>
-                </div>
-              </div>
-              <div class="admin-stacked-list" id="admin-admins-list">
-                <div class="admin-list-empty">Loading admins...</div>
-              </div>
-            </section>
+          <div class="admin-toolbar admin-activity-filters">
+            <label class="admin-filter-field">
+              <span>Date</span>
+              <select id="admin-activity-date-filter">
+                <option value="all">All dates</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+              </select>
+            </label>
+            <label class="admin-filter-field">
+              <span>Action</span>
+              <select id="admin-activity-action-filter">
+                <option value="all">All actions</option>
+              </select>
+            </label>
+            <label class="admin-search-field">
+              <i class="fa-solid fa-bullseye"></i>
+              <input type="search" id="admin-activity-target-filter" placeholder="Filter by target" />
+            </label>
           </div>
 
           <div class="admin-table-shell">
@@ -154,9 +148,65 @@
               </tbody>
             </table>
           </div>
+          <div class="admin-table-footer">
+            <span id="admin-activity-page-summary">Showing 0 to 0, page 1 of 1</span>
+            <div class="admin-pagination-actions">
+              <button type="button" id="admin-activity-prev" class="admin-lock-btn"><i class="fa-solid fa-chevron-left"></i><span>Prev</span></button>
+              <button type="button" id="admin-activity-next" class="admin-lock-btn"><span>Next</span><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
         </section>
       </main>
     </div>
+  </div>
+
+  <div class="admin-modal-shell" id="admin-create-modal" hidden>
+    <div class="admin-modal-backdrop" data-admin-modal-close="create"></div>
+    <section class="admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-create-modal-title">
+      <div class="admin-modal-head">
+        <div>
+          <span>Create admin access</span>
+          <h3 id="admin-create-modal-title">New admin</h3>
+        </div>
+        <button type="button" class="admin-modal-close" data-admin-modal-close="create" aria-label="Close create admin modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form class="admin-create-form" id="admin-create-form">
+        <label class="admin-form-field">
+          <span>Name</span>
+          <input type="text" id="admin-create-name" placeholder="Admin name" />
+        </label>
+        <label class="admin-form-field">
+          <span>Email</span>
+          <input type="email" id="admin-create-email" placeholder="admin@worklinkup.com" />
+        </label>
+        <label class="admin-form-field">
+          <span>PIN</span>
+          <input type="password" id="admin-create-pin" inputmode="numeric" maxlength="8" placeholder="4 to 8 digits" />
+        </label>
+        <button type="submit" class="admin-gate-submit">Create Admin</button>
+        <div class="admin-form-message" id="admin-create-message" hidden></div>
+      </form>
+    </section>
+  </div>
+
+  <div class="admin-modal-shell" id="admin-admins-modal" hidden>
+    <div class="admin-modal-backdrop" data-admin-modal-close="admins"></div>
+    <section class="admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-admins-modal-title">
+      <div class="admin-modal-head">
+        <div>
+          <span>Admin roster</span>
+          <h3 id="admin-admins-modal-title">Active admins</h3>
+        </div>
+        <button type="button" class="admin-modal-close" data-admin-modal-close="admins" aria-label="Close active admins modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="admin-stacked-list" id="admin-admins-list">
+        <div class="admin-list-empty">Loading admins...</div>
+      </div>
+    </section>
   </div>
 
   <script type="module" src="../../js/firebase-auth.js"></script>

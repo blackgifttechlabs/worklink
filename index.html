@@ -12,6 +12,29 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="home-page-body">
+<div class="app-loader-overlay" id="app-loader" role="status" aria-live="polite" aria-label="Loading WorkLinkUp">
+  <div class="app-loader-mark" aria-hidden="true">
+    <div aria-label="Orange and tan hamster running in a metal wheel" role="img" class="wheel-and-hamster">
+      <div class="wheel"></div>
+      <div class="hamster">
+        <div class="hamster__body">
+          <div class="hamster__head">
+            <div class="hamster__ear"></div>
+            <div class="hamster__eye"></div>
+            <div class="hamster__nose"></div>
+          </div>
+          <div class="hamster__limb hamster__limb--fr"></div>
+          <div class="hamster__limb hamster__limb--fl"></div>
+          <div class="hamster__limb hamster__limb--br"></div>
+          <div class="hamster__limb hamster__limb--bl"></div>
+          <div class="hamster__tail"></div>
+        </div>
+      </div>
+      <div class="spoke"></div>
+    </div>
+  </div>
+  <span>Loading WorkLinkUp</span>
+</div>
 
 <div id="site-header"></div>
 
@@ -91,6 +114,17 @@
         <a href="pages/search-results.html?category=Transport%20%26%20Logistics"><i class="fa-solid fa-truck-fast"></i><span>Transport</span><i class="fa-solid fa-chevron-right"></i></a>
       </aside>
 
+      <div class="home-available-section-head">
+        <div>
+          <h2>Available Jobs</h2>
+          <p>Latest posted work ready for bids.</p>
+        </div>
+        <div class="home-available-stat-pill is-up" data-home-available-stats>
+          <strong><span data-home-available-total>0</span> jobs</strong>
+          <span><i data-home-available-trend-icon>▲</i><b data-home-available-trend>12%</b> this week</span>
+        </div>
+      </div>
+
       <div class="home-market-booked-shell" data-home-available-jobs-shell>
         <button type="button" class="home-market-scroll-btn is-prev" data-home-market-scroll="prev" aria-label="Scroll Available Jobs left">
           <i class="fa-solid fa-chevron-left"></i>
@@ -169,8 +203,16 @@
     </div>
 
     <div class="home-market-mobile">
-      <h2>Available Jobs</h2>
-      <p class="home-market-mobile-subtitle">Latest posted work ready for bids.</p>
+      <div class="home-available-section-head">
+        <div>
+          <h2>Available Jobs</h2>
+          <p>Latest posted work ready for bids.</p>
+        </div>
+        <div class="home-available-stat-pill is-up" data-home-available-stats>
+          <strong><span data-home-available-total>0</span> jobs</strong>
+          <span><i data-home-available-trend-icon>▲</i><b data-home-available-trend>12%</b> this week</span>
+        </div>
+      </div>
       <div class="home-mobile-arrivals" data-home-available-jobs-mobile></div>
 
       <div class="home-mobile-card-grid">

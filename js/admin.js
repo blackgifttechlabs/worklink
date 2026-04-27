@@ -1,6 +1,7 @@
 (function adminConsoleBootstrap() {
   const ADMIN_PIN = '1677';
   const ADMIN_SESSION_KEY = 'worklinkup_admin_session';
+  const ADMIN_DATA_CACHE_KEY = 'worklinkup_admin_dashboard_cache_v1';
   const VIEW_TITLES = {
     dashboard: 'Dashboard',
     users: 'Users',
@@ -17,6 +18,14 @@
     messages: 'messages.html',
     'admin-activity': 'admin-activity.html'
   };
+  const ADMIN_MOBILE_NAV_ITEMS = [
+    { view: 'dashboard', label: 'Home', icon: 'fa-solid fa-chart-line' },
+    { view: 'users', label: 'Users', icon: 'fa-solid fa-user-group' },
+    { view: 'providers', label: 'Providers', icon: 'fa-solid fa-id-badge' },
+    { view: 'engagement', label: 'Stats', icon: 'fa-solid fa-chart-column' },
+    { view: 'messages', label: 'Messages', icon: 'fa-solid fa-envelope' },
+    { view: 'admin-activity', label: 'Activity', icon: 'fa-solid fa-user-shield' }
+  ];
 
   const state = {
     view: 'dashboard',
@@ -28,6 +37,11 @@
     providersCategory: 'all',
     messagesSearch: '',
     messagesStatus: 'all',
+    adminActivityDate: 'all',
+    adminActivityAction: 'all',
+    adminActivityTarget: '',
+    adminActivityPage: 1,
+    adminActivityPageSize: 50,
     loading: false,
     sidebarOpen: false,
     lastLoadedAtMs: 0
@@ -192,6 +206,23 @@
     select.value = values.includes(currentValue) || currentValue === 'all' ? currentValue : 'all';
   }
 
+  function getPeriodStartMs(period) {
+    const now = new Date();
+    if (period === 'today') {
+      now.setHours(0, 0, 0, 0);
+      return now.getTime();
+    }
+    if (period === 'week') {
+      now.setHours(0, 0, 0, 0);
+      now.setDate(now.getDate() - 6);
+      return now.getTime();
+    }
+    if (period === 'month') {
+      return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    }
+    return 0;
+  }
+
   function formatDateTime(value) {
     const timestamp = Number(value || 0);
     if (!timestamp) return '—';
@@ -275,6 +306,44 @@
     }
   }
 
+  function readAdminDataCache() {
+    try {
+      const raw = localStorage.getItem(ADMIN_DATA_CACHE_KEY);
+      if (!raw) return null;
+      const cache = JSON.parse(raw);
+      if (!cache || typeof cache !== 'object' || !cache.snapshot) return null;
+      return {
+        snapshot: cache.snapshot,
+        savedAtMs: Number(cache.savedAtMs || 0)
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeAdminDataCache(snapshot) {
+    if (!snapshot) return;
+    try {
+      localStorage.setItem(ADMIN_DATA_CACHE_KEY, JSON.stringify({
+        savedAtMs: Date.now(),
+        snapshot
+      }));
+    } catch (error) {
+      // Storage can fail in private mode or if the admin dataset grows too large.
+    }
+  }
+
+  function renderCachedAdminData() {
+    const cache = readAdminDataCache();
+    if (!cache?.snapshot) return false;
+
+    state.snapshot = cache.snapshot;
+    state.lastLoadedAtMs = cache.savedAtMs || Date.now();
+    renderAll();
+    setStatus(`Cached data • ${getRelativeTime(state.lastLoadedAtMs)}`, 'default');
+    return true;
+  }
+
   function setStatus(text, mode = 'default') {
     if (!refs.statusPill) return;
     refs.statusPill.textContent = text;
@@ -331,6 +400,7 @@
   function showApp() {
     if (refs.gate) refs.gate.hidden = true;
     if (refs.app) refs.app.hidden = false;
+    ensureAdminBottomNav();
     setView(state.view);
   }
 
@@ -360,11 +430,49 @@
     return VIEW_TITLES[pageView] ? pageView : 'dashboard';
   }
 
+  function syncAdminBottomNav() {
+    refs.bottomNav?.querySelectorAll('[data-admin-bottom-view]').forEach((link) => {
+      const isActive = link.getAttribute('data-admin-bottom-view') === state.view;
+      link.classList.toggle('is-active', isActive);
+      if (isActive) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function ensureAdminBottomNav() {
+    if (refs.bottomNav || !refs.app) {
+      syncAdminBottomNav();
+      return;
+    }
+
+    const nav = document.createElement('div');
+    nav.className = 'admin-bottom-nav';
+    nav.setAttribute('role', 'navigation');
+    nav.setAttribute('aria-label', 'Admin mobile navigation');
+    nav.innerHTML = ADMIN_MOBILE_NAV_ITEMS.map((item) => `
+      <a href="./${VIEW_ROUTES[item.view]}" class="admin-bottom-nav-link" data-admin-bottom-view="${escapeHtml(item.view)}">
+        <i class="${escapeHtml(item.icon)}" aria-hidden="true"></i>
+        <span>${escapeHtml(item.label)}</span>
+      </a>
+    `).join('');
+
+    nav.addEventListener('click', () => {
+      setSidebarOpen(false);
+    });
+
+    refs.app.appendChild(nav);
+    refs.bottomNav = nav;
+    syncAdminBottomNav();
+  }
+
   function setView(view) {
     state.view = VIEW_TITLES[view] ? view : 'dashboard';
     if (refs.viewTitle) refs.viewTitle.textContent = VIEW_TITLES[state.view];
 
-    document.querySelectorAll('[data-admin-view]').forEach((link) => {
+    document.querySelectorAll('.admin-nav-link[data-admin-view]').forEach((link) => {
       link.classList.toggle('is-active', link.getAttribute('data-admin-view') === state.view);
     });
 
@@ -372,7 +480,32 @@
       panel.hidden = panel.getAttribute('data-admin-panel') !== state.view;
     });
 
+    syncAdminBottomNav();
     setSidebarOpen(false);
+  }
+
+  function enhanceAdminResponsiveTables(root = document) {
+    root.querySelectorAll?.('.admin-table').forEach((table) => {
+      const headings = Array.from(table.querySelectorAll('thead th')).map((heading) => heading.textContent.trim());
+      table.querySelectorAll('tbody tr').forEach((row) => {
+        Array.from(row.children).forEach((cell, index) => {
+          if (!(cell instanceof HTMLElement)) return;
+          if (cell.hasAttribute('colspan')) {
+            cell.dataset.label = '';
+            return;
+          }
+          cell.dataset.label = headings[index] || '';
+        });
+      });
+    });
+  }
+
+  function watchAdminResponsiveTables() {
+    enhanceAdminResponsiveTables();
+    document.querySelectorAll('.admin-table tbody').forEach((tbody) => {
+      const observer = new MutationObserver(() => enhanceAdminResponsiveTables());
+      observer.observe(tbody, { childList: true, subtree: true });
+    });
   }
 
   function renderSidebarMetrics() {
@@ -494,7 +627,7 @@
 
     return `
       <div class="admin-donut-layout">
-        <div class="admin-donut-ring" style="background:${stops.length ? `conic-gradient(${stops.join(', ')})` : 'conic-gradient(rgba(255,255,255,0.08) 0% 100%)'}">
+        <div class="admin-donut-ring" style="background:${stops.length ? `conic-gradient(${stops.join(', ')})` : 'conic-gradient(rgba(15,23,42,0.10) 0% 100%)'}">
           <div class="admin-donut-core">
             <strong>${escapeHtml(centerValue)}</strong>
             <span>${escapeHtml(centerLabel)}</span>
@@ -516,7 +649,7 @@
     const progress = clampPercent(value);
     return `
       <article class="admin-mini-gauge">
-        <div class="admin-mini-gauge-ring" style="background:conic-gradient(${accent} 0% ${progress}%, rgba(255,255,255,0.08) ${progress}% 100%)">
+        <div class="admin-mini-gauge-ring" style="background:conic-gradient(${accent} 0% ${progress}%, rgba(15,23,42,0.10) ${progress}% 100%)">
           <div class="admin-mini-gauge-core">
             <strong>${Math.round(progress)}%</strong>
           </div>
@@ -1202,12 +1335,22 @@
     refs.createAdminMessage.dataset.state = mode;
   }
 
+  function setAdminModal(name, isOpen) {
+    const modal = name === 'admins' ? refs.adminsModal : refs.createAdminModal;
+    if (!modal) return;
+    modal.hidden = !isOpen;
+    document.body.classList.toggle('admin-mobile-menu-open', Boolean(isOpen || state.sidebarOpen));
+    if (isOpen && name === 'create') {
+      window.setTimeout(() => refs.createAdminName?.focus(), 60);
+    }
+  }
+
   function renderAdminActivity() {
     if (!refs.adminActivityBody || !refs.adminActivityTotal || !refs.adminsList) return;
     const admins = Array.isArray(state.snapshot?.admins) ? state.snapshot.admins : [];
-    const adminAudit = Array.isArray(state.snapshot?.adminAudit) ? state.snapshot.adminAudit : [];
-
-    refs.adminActivityTotal.textContent = `${formatNumber(adminAudit.length)} actions`;
+    const adminAudit = Array.isArray(state.snapshot?.adminAudit) ? state.snapshot.adminAudit.slice() : [];
+    const actionOptions = uniqueSortedValues(adminAudit.map((entry) => getActivityBadge(entry.type)));
+    if (refs.adminActivityAction) syncSelectOptions(refs.adminActivityAction, actionOptions, 'All actions');
 
     refs.adminsList.innerHTML = admins.length
       ? admins.map((admin) => `
@@ -1227,12 +1370,45 @@
       `).join('')
       : '<div class="admin-list-empty">No admin accounts are available yet.</div>';
 
-    if (!adminAudit.length) {
+    const periodStartMs = getPeriodStartMs(state.adminActivityDate);
+    const targetQuery = state.adminActivityTarget.trim().toLowerCase();
+    const filtered = adminAudit
+      .filter((entry) => {
+        if (periodStartMs && Number(entry.createdAtMs || 0) < periodStartMs) return false;
+        if (state.adminActivityAction !== 'all' && getActivityBadge(entry.type) !== state.adminActivityAction) return false;
+        if (!targetQuery) return true;
+        return [
+          entry.subjectName,
+          entry.subjectUid,
+          entry.sourceRef,
+          entry.actorName,
+          entry.title,
+          entry.description
+        ].join(' ').toLowerCase().includes(targetQuery);
+      })
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+
+    refs.adminActivityTotal.textContent = `${formatNumber(filtered.length)} actions`;
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / state.adminActivityPageSize));
+    state.adminActivityPage = Math.min(Math.max(1, state.adminActivityPage), totalPages);
+    const startIndex = (state.adminActivityPage - 1) * state.adminActivityPageSize;
+    const pageItems = filtered.slice(startIndex, startIndex + state.adminActivityPageSize);
+    const showingStart = filtered.length ? startIndex + 1 : 0;
+    const showingEnd = filtered.length ? startIndex + pageItems.length : 0;
+
+    if (refs.adminActivityPageSummary) {
+      refs.adminActivityPageSummary.textContent = `Showing ${formatNumber(showingStart)} to ${formatNumber(showingEnd)}, page ${formatNumber(state.adminActivityPage)} of ${formatNumber(totalPages)} pages`;
+    }
+    if (refs.adminActivityPrev) refs.adminActivityPrev.disabled = state.adminActivityPage <= 1;
+    if (refs.adminActivityNext) refs.adminActivityNext.disabled = state.adminActivityPage >= totalPages;
+
+    if (!filtered.length) {
       refs.adminActivityBody.innerHTML = '<tr><td colspan="5" class="admin-empty-cell">No admin actions have been recorded yet.</td></tr>';
       return;
     }
 
-    refs.adminActivityBody.innerHTML = adminAudit.map((entry) => `
+    refs.adminActivityBody.innerHTML = pageItems.map((entry) => `
       <tr>
         <td>
           <div class="admin-table-stack">
@@ -1290,11 +1466,13 @@
     if (refs.adminActivityBody) refs.adminActivityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
   }
 
-  async function loadDashboardData() {
+  async function loadDashboardData(options = {}) {
     if (state.loading) return;
+    const hasRenderedSnapshot = Boolean(state.snapshot);
+    const showPlaceholders = options.showPlaceholders ?? !hasRenderedSnapshot;
     state.loading = true;
-    setStatus('Refreshing live data...', 'loading');
-    setLoadingTables('Loading live admin data...');
+    setStatus(hasRenderedSnapshot ? 'Updating cached data...' : 'Refreshing live data...', 'loading');
+    if (showPlaceholders) setLoadingTables('Loading live admin data...');
     if (refs.refreshButton) refs.refreshButton.disabled = true;
 
     try {
@@ -1305,41 +1483,46 @@
 
       state.snapshot = await authHelper.getAdminDashboardData();
       state.lastLoadedAtMs = Date.now();
+      writeAdminDataCache(state.snapshot);
       setStatus('Live Firebase data', 'success');
       renderAll();
     } catch (error) {
-      setStatus('Could not load admin data', 'error');
       const message = error?.message || 'The admin console could not reach the live data source.';
-      setLoadingTables(message);
-      if (refs.overviewDashboard) {
-        refs.overviewDashboard.innerHTML = `
-          <section class="admin-visual-card admin-overview-placeholder">
-            <div class="admin-empty-state">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <p>${escapeHtml(message)}</p>
-            </div>
-          </section>
-        `;
-      }
-      if (refs.providersOverview) {
-        refs.providersOverview.innerHTML = `
-          <section class="admin-visual-card admin-overview-placeholder">
-            <div class="admin-empty-state">
-              <i class="fa-solid fa-user-tie"></i>
-              <p>${escapeHtml(message)}</p>
-            </div>
-          </section>
-        `;
-      }
-      if (refs.engagementDashboard) {
-        refs.engagementDashboard.innerHTML = `
-          <section class="admin-visual-card admin-overview-placeholder">
-            <div class="admin-empty-state">
-              <i class="fa-solid fa-chart-column"></i>
-              <p>${escapeHtml(message)}</p>
-            </div>
-          </section>
-        `;
+      if (state.snapshot) {
+        setStatus(`Offline cache • ${getRelativeTime(state.lastLoadedAtMs)}`, 'default');
+      } else {
+        setStatus('Could not load admin data', 'error');
+        setLoadingTables(message);
+        if (refs.overviewDashboard) {
+          refs.overviewDashboard.innerHTML = `
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <p>${escapeHtml(message)}</p>
+              </div>
+            </section>
+          `;
+        }
+        if (refs.providersOverview) {
+          refs.providersOverview.innerHTML = `
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-user-tie"></i>
+                <p>${escapeHtml(message)}</p>
+              </div>
+            </section>
+          `;
+        }
+        if (refs.engagementDashboard) {
+          refs.engagementDashboard.innerHTML = `
+            <section class="admin-visual-card admin-overview-placeholder">
+              <div class="admin-empty-state">
+                <i class="fa-solid fa-chart-column"></i>
+                <p>${escapeHtml(message)}</p>
+              </div>
+            </section>
+          `;
+        }
       }
     } finally {
       state.loading = false;
@@ -1379,7 +1562,8 @@
       setCurrentAdmin(matchedAdmin);
       saveAdminSession();
       showApp();
-      loadDashboardData();
+      renderCachedAdminData();
+      loadDashboardData({ showPlaceholders: !state.snapshot });
       logCurrentView();
       logAdminAction('admin_login', 'Admin signed in', `${matchedAdmin.name} unlocked the admin console.`, {
         uid: matchedAdmin.id,
@@ -1388,7 +1572,7 @@
       });
     });
 
-    document.querySelectorAll('[data-admin-view]').forEach((link) => {
+    document.querySelectorAll('.admin-nav-link[data-admin-view]').forEach((link) => {
       link.addEventListener('click', () => {
         const nextView = link.getAttribute('data-admin-view') || 'dashboard';
         setView(nextView);
@@ -1423,6 +1607,49 @@
     refs.messagesStatus?.addEventListener('change', (event) => {
       state.messagesStatus = String(event.target.value || 'all');
       renderMessages();
+    });
+
+    refs.adminActivityDate?.addEventListener('change', (event) => {
+      state.adminActivityDate = String(event.target.value || 'all');
+      state.adminActivityPage = 1;
+      renderAdminActivity();
+    });
+
+    refs.adminActivityAction?.addEventListener('change', (event) => {
+      state.adminActivityAction = String(event.target.value || 'all');
+      state.adminActivityPage = 1;
+      renderAdminActivity();
+    });
+
+    refs.adminActivityTarget?.addEventListener('input', (event) => {
+      state.adminActivityTarget = String(event.target.value || '');
+      state.adminActivityPage = 1;
+      renderAdminActivity();
+    });
+
+    refs.adminActivityPrev?.addEventListener('click', () => {
+      state.adminActivityPage = Math.max(1, state.adminActivityPage - 1);
+      renderAdminActivity();
+    });
+
+    refs.adminActivityNext?.addEventListener('click', () => {
+      state.adminActivityPage += 1;
+      renderAdminActivity();
+    });
+
+    refs.createAdminOpen?.addEventListener('click', () => {
+      setCreateAdminMessage('');
+      setAdminModal('create', true);
+    });
+
+    refs.adminsOpen?.addEventListener('click', () => {
+      setAdminModal('admins', true);
+    });
+
+    document.querySelectorAll('[data-admin-modal-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        setAdminModal(button.getAttribute('data-admin-modal-close'), false);
+      });
     });
 
     refs.refreshButton?.addEventListener('click', () => {
@@ -1469,18 +1696,36 @@
       }
     });
 
-    refs.menuToggle?.addEventListener('click', () => {
+    refs.menuToggle?.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       setSidebarOpen(!state.sidebarOpen);
+    });
+
+    refs.sidebar?.querySelectorAll('.admin-nav-link').forEach((link) => {
+      link.addEventListener('click', () => setSidebarOpen(false));
     });
 
     refs.mobileBackdrop?.addEventListener('click', () => {
       setSidebarOpen(false);
     });
 
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+        setAdminModal('create', false);
+        setAdminModal('admins', false);
+      }
+    });
+
     window.addEventListener('resize', () => {
       if (window.innerWidth > 980) {
         setSidebarOpen(false);
       }
+    });
+
+    window.addEventListener('online', () => {
+      if (hasAdminSession()) loadDashboardData({ showPlaceholders: false });
     });
   }
 
@@ -1522,21 +1767,36 @@
     refs.createAdminPin = document.getElementById('admin-create-pin');
     refs.createAdminMessage = document.getElementById('admin-create-message');
     refs.adminsList = document.getElementById('admin-admins-list');
+    refs.createAdminOpen = document.getElementById('admin-create-open');
+    refs.adminsOpen = document.getElementById('admin-admins-open');
+    refs.createAdminModal = document.getElementById('admin-create-modal');
+    refs.adminsModal = document.getElementById('admin-admins-modal');
+    refs.adminActivityDate = document.getElementById('admin-activity-date-filter');
+    refs.adminActivityAction = document.getElementById('admin-activity-action-filter');
+    refs.adminActivityTarget = document.getElementById('admin-activity-target-filter');
+    refs.adminActivityPageSummary = document.getElementById('admin-activity-page-summary');
+    refs.adminActivityPrev = document.getElementById('admin-activity-prev');
+    refs.adminActivityNext = document.getElementById('admin-activity-next');
     refs.adminActivityTotal = document.getElementById('admin-admin-activity-total');
     refs.adminActivityBody = document.getElementById('admin-admin-activity-body');
+
+    refs.menuToggle?.setAttribute('aria-controls', 'admin-sidebar');
+    refs.menuToggle?.setAttribute('aria-expanded', 'false');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     state.view = getInitialView();
     cacheElements();
     bindEvents();
+    watchAdminResponsiveTables();
     setView(state.view);
 
     const savedSession = readAdminSession();
     if (savedSession?.id) {
       setCurrentAdmin(savedSession);
       showApp();
-      loadDashboardData();
+      renderCachedAdminData();
+      loadDashboardData({ showPlaceholders: !state.snapshot });
       logCurrentView();
       return;
     }

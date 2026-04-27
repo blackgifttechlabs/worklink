@@ -241,8 +241,17 @@ function normalizeUserDocumentProfile(userDoc = {}) {
 
 function normalizeProviderProfileRecord(profile = {}) {
   if (!profile || typeof profile !== 'object') return profile;
+  const ratingTotal = Math.max(0, Number(profile.ratingTotal || 0));
+  const hasStoredRatingTotal = Object.prototype.hasOwnProperty.call(profile, 'ratingTotal');
+  const reviewCount = hasStoredRatingTotal ? Math.max(0, Number(profile.reviewCount || 0)) : 0;
+  const averageRating = reviewCount > 0 && ratingTotal > 0
+    ? Math.max(0, Math.min(5, Number(profile.averageRating || (ratingTotal / reviewCount) || 0)))
+    : 0;
   return {
     ...profile,
+    averageRating,
+    reviewCount,
+    ratingTotal,
     profileImageData: normalizeStoredProfileImage(profile.profileImageData)
   };
 }
@@ -563,8 +572,53 @@ function mapProviderProfile(snapshot) {
   const data = snapshot.data();
   return normalizeProviderProfileRecord({
     uid: snapshot.id,
+    ratingStatsHydrated: Object.prototype.hasOwnProperty.call(data, 'ratingTotal'),
     ...data
   });
+}
+
+async function hydrateProviderRatingStats(provider = {}) {
+  const uid = String(provider.uid || '').trim();
+  const provinceSlug = String(provider.provinceSlug || provider.providerProvinceSlug || '').trim();
+  if (!uid || !provinceSlug || provider.ratingStatsHydrated) return provider;
+
+  const reviewsSnapshot = await getDocs(collection(db, 'providers', provinceSlug, 'profiles', uid, 'reviews')).catch(() => null);
+  if (!reviewsSnapshot) {
+    return normalizeProviderProfileRecord({
+      ...provider,
+      ratingTotal: 0,
+      reviewCount: 0,
+      averageRating: 0,
+      ratingStatsHydrated: true
+    });
+  }
+
+  const ratedReviews = reviewsSnapshot.docs
+    .map((docSnapshot) => docSnapshot.data() || {})
+    .filter((review) => Number(review.rating || 0) > 0);
+  const ratingTotal = ratedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+  const reviewCount = ratedReviews.length;
+  const averageRating = reviewCount > 0 ? Number((ratingTotal / reviewCount).toFixed(2)) : 0;
+  const hydratedProvider = normalizeProviderProfileRecord({
+    ...provider,
+    averageRating,
+    reviewCount,
+    ratingTotal,
+    ratingStatsHydrated: true
+  });
+
+  setDoc(doc(db, 'providers', provinceSlug, 'profiles', uid), {
+    averageRating,
+    reviewCount,
+    ratingTotal
+  }, { merge: true }).catch(() => {});
+  setDoc(doc(db, 'users', uid), {
+    averageRating,
+    reviewCount,
+    ratingTotal
+  }, { merge: true }).catch(() => {});
+
+  return hydratedProvider;
 }
 
 function getCartDocId(account) {
@@ -1578,6 +1632,14 @@ async function saveProviderProfile(profileInput = {}) {
     updatedAt: serverTimestamp()
   }, { merge: true });
 
+  const existingRatingTotal = Math.max(0, Number(existingProviderProfile?.ratingTotal || existingUserDoc?.ratingTotal || 0));
+  const existingReviewCount = existingRatingTotal > 0
+    ? Math.max(0, Number(existingProviderProfile?.reviewCount || existingUserDoc?.reviewCount || 0))
+    : 0;
+  const existingAverageRating = existingReviewCount > 0
+    ? Math.max(0, Math.min(5, Number(existingProviderProfile?.averageRating || existingUserDoc?.averageRating || (existingRatingTotal / existingReviewCount) || 0)))
+    : 0;
+
   const providerProfile = {
     uid: account.uid,
     providerPublicId,
@@ -1606,9 +1668,10 @@ async function saveProviderProfile(profileInput = {}) {
     professionalDocuments,
     profileImageData: normalizeStoredProfileImage(profileInput.profileImageData || existingProviderProfile?.profileImageData || ''),
     bannerImageData: String(profileInput.bannerImageData || existingProviderProfile?.bannerImageData || '').trim(),
-    averageRating: Number(profileInput.averageRating || 4.8),
-    reviewCount: Number(profileInput.reviewCount || 12),
-    completedJobs: Number(profileInput.completedJobs || 8),
+    averageRating: existingAverageRating,
+    reviewCount: existingReviewCount,
+    ratingTotal: existingRatingTotal,
+    completedJobs: Number(existingProviderProfile?.completedJobs || existingUserDoc?.completedJobs || 0),
     createdAtMs: existingUserDoc?.createdAtMs || Date.now(),
     updatedAtMs: Date.now(),
     createdAt: existingUserDoc?.createdAt || serverTimestamp(),
@@ -1638,6 +1701,10 @@ async function saveProviderProfile(profileInput = {}) {
     bio: providerProfile.bio,
     profileImageData: providerProfile.profileImageData,
     bannerImageData: providerProfile.bannerImageData,
+    averageRating: providerProfile.averageRating,
+    reviewCount: providerProfile.reviewCount,
+    ratingTotal: providerProfile.ratingTotal,
+    completedJobs: providerProfile.completedJobs,
     services,
     languages,
     skills,
@@ -1683,6 +1750,10 @@ async function saveProviderProfile(profileInput = {}) {
     bio: providerProfile.bio,
     profileImageData: providerProfile.profileImageData,
     bannerImageData: providerProfile.bannerImageData,
+    averageRating: providerProfile.averageRating,
+    reviewCount: providerProfile.reviewCount,
+    ratingTotal: providerProfile.ratingTotal,
+    completedJobs: providerProfile.completedJobs,
     services,
     languages,
     skills,
@@ -2641,19 +2712,24 @@ async function submitJobReview(jobId = '', applicationId = '', review = {}) {
       if (allReviewsSnap) {
         const reviews = allReviewsSnap.docs.map((docSnapshot) => docSnapshot.data() || {});
         const ratedReviews = reviews.filter((item) => Number(item.rating || 0) > 0);
-        const avg = ratedReviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / Math.max(1, ratedReviews.length);
+        const ratingTotal = ratedReviews.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+        const avg = ratingTotal / Math.max(1, ratedReviews.length);
         const avgRating = Number(avg.toFixed(2));
         const reviewCount = ratedReviews.length;
 
         await setDoc(doc(db, 'providers', providerProfile.provinceSlug || 'unknown', 'profiles', providerUid), {
           averageRating: avgRating,
           reviewCount,
+          ratingTotal,
+          lastReviewedAtMs: now,
           completedJobs
         }, { merge: true }).catch(() => {});
 
         await setDoc(doc(db, 'users', providerUid), {
           averageRating: avgRating,
           reviewCount,
+          ratingTotal,
+          lastReviewedAtMs: now,
           completedJobs
         }, { merge: true }).catch(() => {});
       }
@@ -2690,8 +2766,9 @@ async function listProviders(options = {}) {
 
   providerListInFlight = (async () => {
     const snapshot = await getDocs(collectionGroup(db, 'profiles'));
-    const providers = snapshot.docs
+    const providers = (await Promise.all(snapshot.docs
       .map(mapProviderProfile)
+      .map((provider) => hydrateProviderRatingStats(provider))))
       .sort((first, second) => Number(second.averageRating || 0) - Number(first.averageRating || 0));
     providers.forEach(cacheProviderProfile);
     cacheProviderList(providers);
