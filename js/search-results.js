@@ -623,15 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderResults() {
     const buckets = getSearchBuckets();
-    const filtered = buckets.exact.length ? buckets.exact : buckets.related;
-    const desktopResults = [...buckets.exact, ...buckets.related]
-      .filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
+    const exactResults = buckets.exact;
+    const relatedResults = buckets.related.filter((item) => !exactResults.some((exact) => exact.href === item.href));
     const label = state.query || state.service || state.category || 'all services';
     if (titleHost) titleHost.innerHTML = `Results for <span>"${escapeHtml(label)}"</span>`;
     if (countHost) {
       countHost.textContent = providersLoaded
-        ? (desktopResults.length || filtered.length
-          ? `${desktopResults.length || filtered.length} result${(desktopResults.length || filtered.length) === 1 ? '' : 's'} for "${label}"`
+        ? (exactResults.length
+          ? `${exactResults.length} result${exactResults.length === 1 ? '' : 's'} for "${label}"`
           : '0 providers')
         : 'Loading providers';
     }
@@ -645,16 +644,35 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (!filtered.length) {
+    if (!exactResults.length) {
       bestHost.innerHTML = `
         <div class="search-results-empty">
           <i class="fa-regular fa-compass"></i>
           <h2>No matching providers</h2>
-          <p>Try a different name, service, category, city, or clear one of the filters.</p>
+          <p>No exact match was found. Related providers are shown below.</p>
         </div>
       `;
-      relatedBlock.hidden = true;
+      relatedBlock.hidden = !relatedResults.length;
+      const visibleRelated = relatedResults.slice(0, state.showAllRelated ? 48 : 8);
+      const relatedMarkup = visibleRelated.map((item) => `
+        <a href="${escapeHtml(item.href)}" class="search-result-related-card">
+          <div class="search-result-related-image">
+            <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
+            <button type="button" aria-label="Save provider"><i class="fa-regular fa-heart"></i></button>
+            <span>Provider</span>
+          </div>
+          <div class="search-result-related-copy">
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml(item.subtitle)}</p>
+            <strong>${Number(item.rating || 0).toFixed(1)} <i class="fa-solid fa-star"></i> <small>(${formatNumber(item.reviewCount || 0)})</small></strong>
+            <div><i class="fa-solid fa-location-dot"></i>${escapeHtml(item.city || item.location)}</div>
+            <small>${item.priceLabel ? `From ${escapeHtml(item.priceLabel)}` : `${formatNumber(item.nearness || 0)}% match`}</small>
+          </div>
+        </a>
+      `).join('');
+      relatedHost.innerHTML = visibleRelated.length > 3 ? `${relatedMarkup}${relatedMarkup}` : relatedMarkup;
       gridHost.innerHTML = '';
+      renderPagination(1);
       renderPopularSearches(buckets.intent);
       return;
     }
@@ -727,18 +745,19 @@ document.addEventListener('DOMContentLoaded', () => {
       </a>
     `;
 
-    const best = buckets.exact[0] || filtered[0];
-    const remainingExact = buckets.exact.filter((item) => item.href !== best.href);
-    const related = [...remainingExact, ...buckets.related].filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
+    const best = exactResults[0];
+    const mobileRelated = [...exactResults.slice(1), ...relatedResults]
+      .filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
     bestHost.innerHTML = renderFeaturedCard(best);
-    relatedBlock.hidden = !related.length;
-    relatedHost.innerHTML = related.slice(0, state.showAllRelated ? 48 : 8).map(renderRelatedCard).join('');
-    const pageSize = 10;
-    const gridResults = desktopResults.length ? desktopResults : filtered;
-    const totalPages = Math.max(1, Math.ceil(gridResults.length / pageSize));
+    relatedBlock.hidden = !mobileRelated.length;
+    const visibleMobileRelated = mobileRelated.slice(0, state.showAllRelated ? 48 : 8);
+    const relatedMarkup = visibleMobileRelated.map(renderRelatedCard).join('');
+    relatedHost.innerHTML = visibleMobileRelated.length > 3 ? `${relatedMarkup}${relatedMarkup}` : relatedMarkup;
+    const pageSize = 15;
+    const totalPages = Math.max(1, Math.ceil(exactResults.length / pageSize));
     state.page = Math.min(Math.max(1, state.page), totalPages);
     const pageStart = (state.page - 1) * pageSize;
-    gridHost.innerHTML = gridResults.slice(pageStart, pageStart + pageSize).map(renderCard).join('');
+    gridHost.innerHTML = exactResults.slice(pageStart, pageStart + pageSize).map(renderCard).join('');
     renderPagination(totalPages);
     renderPopularSearches(buckets.intent);
   }
