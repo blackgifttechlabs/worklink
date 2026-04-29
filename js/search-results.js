@@ -494,21 +494,28 @@ document.addEventListener('DOMContentLoaded', () => {
           || Number(first.aiIndex || 999) - Number(second.aiIndex || 999);
       });
 
+    const exactThreshold = 80;
+
     if (!normalizedService) {
       return {
         intent,
-        exact: rankedCandidates.filter((item) => !queryTerms.length || queryTerms.some((term) => providerMatchesTerm(item, term) || Number(item.nearness || 0) >= 54)),
-        related: []
+        exact: rankedCandidates.filter((item) => Number(item.nearness || 0) >= exactThreshold || (item.aiGroup === 'best' && Number(item.nearness || 0) >= exactThreshold)),
+        related: normalizedCategory
+          ? rankedCandidates.filter((item) => providerMatchesCategory(item, normalizedCategory) && Number(item.nearness || 0) < exactThreshold)
+          : []
       };
     }
 
     const exactServiceTerms = getEquivalentServiceTerms(normalizedService);
-    const exact = rankedCandidates.filter((item) => item.aiGroup === 'best' || exactServiceTerms.some((term) => providerMatchesTerm(item, term)) || Number(item.nearness || 0) >= 72);
+    const exact = rankedCandidates.filter((item) => (
+      Number(item.nearness || 0) >= exactThreshold
+      && (item.aiGroup === 'best' || exactServiceTerms.some((term) => providerMatchesTerm(item, term)) || providerMatchesCategory(item, normalizedCategory))
+    ));
     const exactHrefs = new Set(exact.map((item) => item.href));
     const related = rankedCandidates.filter((item) => (
       !exactHrefs.has(item.href)
       && normalizedCategory
-      && (item.aiGroup === 'related' || providerMatchesCategory(item, normalizedCategory) || Number(item.nearness || 0) >= 28)
+      && providerMatchesCategory(item, normalizedCategory)
     )).sort((first, second) => Number(second.nearness || 0) - Number(first.nearness || 0) || Number(second.score || 0) - Number(first.score || 0));
 
     return { intent, exact, related };
@@ -745,10 +752,19 @@ document.addEventListener('DOMContentLoaded', () => {
       </a>
     `;
 
-    const best = exactResults[0];
+    const renderExactCarousel = (items) => `
+      <section class="search-results-exact-carousel" aria-label="Exact matching providers">
+        ${items.length > 1 ? '<button type="button" class="search-results-exact-nav is-prev" data-search-exact-prev aria-label="Previous result"><i class="fa-solid fa-chevron-left"></i></button>' : ''}
+        <div class="search-results-exact-track" data-search-exact-track>
+          ${items.map(renderFeaturedCard).join('')}
+        </div>
+        ${items.length > 1 ? '<button type="button" class="search-results-exact-nav is-next" data-search-exact-next aria-label="Next result"><i class="fa-solid fa-chevron-right"></i></button>' : ''}
+      </section>
+    `;
+
     const mobileRelated = [...exactResults.slice(1), ...relatedResults]
       .filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
-    bestHost.innerHTML = renderFeaturedCard(best);
+    bestHost.innerHTML = renderExactCarousel(exactResults);
     relatedBlock.hidden = !mobileRelated.length;
     const visibleMobileRelated = mobileRelated.slice(0, state.showAllRelated ? 48 : 8);
     const relatedMarkup = visibleMobileRelated.map(renderRelatedCard).join('');
@@ -896,6 +912,16 @@ document.addEventListener('DOMContentLoaded', () => {
   page.querySelector('[data-search-view-all-related]')?.addEventListener('click', () => {
     state.showAllRelated = !state.showAllRelated;
     render();
+  });
+  bestHost?.addEventListener('click', (event) => {
+    const track = bestHost.querySelector('[data-search-exact-track]');
+    if (!track) return;
+    if (event.target.closest('[data-search-exact-prev]')) {
+      track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
+    }
+    if (event.target.closest('[data-search-exact-next]')) {
+      track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
+    }
   });
   filterCloseTriggers.forEach((trigger) => trigger.addEventListener('click', closeDialog));
   resetBtn?.addEventListener('click', () => {
