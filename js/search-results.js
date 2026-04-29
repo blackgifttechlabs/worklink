@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const relatedBlock = page.querySelector('[data-search-related-block]');
   const relatedHost = page.querySelector('[data-search-related-results]');
   const popularChipsHost = page.querySelector('[data-search-popular-chips]');
+  const paginationHost = page.querySelector('[data-search-pagination]');
+  const desktopFilterForm = page.querySelector('[data-search-desktop-filter-form]');
+  const desktopQueryInput = page.querySelector('[data-search-desktop-query]');
+  const desktopCategorySelect = page.querySelector('[data-search-desktop-category]');
+  const desktopServiceSelect = page.querySelector('[data-search-desktop-service]');
+  const desktopLocationInput = page.querySelector('[data-search-desktop-location]');
+  const desktopRatingInput = page.querySelector('[data-search-desktop-rating]');
+  const desktopClearBtn = page.querySelector('[data-search-desktop-clear]');
   const gridHost = page.querySelector('[data-search-results-grid]');
   const activeFiltersHost = page.querySelector('[data-search-active-filters]');
   const dialog = document.querySelector('[data-search-filter-dialog]');
@@ -32,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     sort: String(params.get('sort') || 'relevant'),
     searchIntent: null,
     aiRanking: null,
-    showAllRelated: false
+    showAllRelated: false,
+    page: Number(params.get('page') || 1)
   };
 
   let allResults = [];
@@ -41,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (searchInput) searchInput.value = state.query || state.service || state.category || '';
   if (sortSelect) sortSelect.value = state.sort;
+  if (desktopQueryInput) desktopQueryInput.value = state.query || state.service || state.category || '';
+  if (desktopRatingInput) desktopRatingInput.checked = Number(state.rating || 0) >= 4.5;
 
   function escapeHtml(value = '') {
     return String(value)
@@ -520,6 +531,8 @@ document.addEventListener('DOMContentLoaded', () => {
     else nextUrl.searchParams.delete('rating');
     if (state.sort && state.sort !== 'relevant') nextUrl.searchParams.set('sort', state.sort);
     else nextUrl.searchParams.delete('sort');
+    if (state.page > 1) nextUrl.searchParams.set('page', String(state.page));
+    else nextUrl.searchParams.delete('page');
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
   }
 
@@ -536,9 +549,30 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => {
           state.category = button.getAttribute('data-search-category') || '';
           state.aiRanking = null;
+          state.page = 1;
           render();
         });
       });
+    }
+
+    if (desktopCategorySelect) {
+      const categories = getCatalog();
+      desktopCategorySelect.innerHTML = [
+        '<option value="">All categories</option>',
+        ...categories.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`)
+      ].join('');
+      desktopCategorySelect.value = state.category || getCurrentSearchIntent().category || '';
+    }
+
+    if (desktopServiceSelect) {
+      const category = state.category || getCurrentSearchIntent().category || '';
+      const catalogMatch = getCatalog().find((item) => normalizeText(item.label) === normalizeText(category));
+      const services = Array.isArray(catalogMatch?.subservices) ? catalogMatch.subservices : [];
+      desktopServiceSelect.innerHTML = [
+        '<option value="">All subcategories</option>',
+        ...services.map((service) => `<option value="${escapeHtml(service)}">${escapeHtml(service)}</option>`)
+      ].join('');
+      desktopServiceSelect.value = services.includes(state.service) ? state.service : '';
     }
 
     ratingOptionButtons.forEach((button) => {
@@ -547,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
       button.dataset.searchRatingBound = '1';
       button.addEventListener('click', () => {
         state.rating = Number(button.getAttribute('data-search-rating') || 0);
+        state.page = 1;
         render();
       });
     });
@@ -572,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.rating = 0;
         state.service = '';
         state.aiRanking = null;
+        state.page = 1;
         render();
       });
     });
@@ -580,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.service = '';
       state.rating = 0;
       state.aiRanking = null;
+      state.page = 1;
       render();
     });
   }
@@ -587,12 +624,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderResults() {
     const buckets = getSearchBuckets();
     const filtered = buckets.exact.length ? buckets.exact : buckets.related;
+    const desktopResults = [...buckets.exact, ...buckets.related]
+      .filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
     const label = state.query || state.service || state.category || 'all services';
     if (titleHost) titleHost.innerHTML = `Results for <span>"${escapeHtml(label)}"</span>`;
     if (countHost) {
       countHost.textContent = providersLoaded
-        ? (filtered.length || buckets.related.length
-          ? `${buckets.exact.length || filtered.length} result${(buckets.exact.length || filtered.length) === 1 ? '' : 's'} for "${label}"`
+        ? (desktopResults.length || filtered.length
+          ? `${desktopResults.length || filtered.length} result${(desktopResults.length || filtered.length) === 1 ? '' : 's'} for "${label}"`
           : '0 providers')
         : 'Loading providers';
     }
@@ -674,13 +713,16 @@ document.addEventListener('DOMContentLoaded', () => {
       <a href="${escapeHtml(item.href)}" class="search-result-card">
         <div class="search-result-card-image">
           <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
-          <span class="search-result-badge">${formatNumber(item.nearness || 0)}% match</span>
+          <button type="button" class="search-result-save" aria-label="Save provider"><i class="fa-regular fa-heart"></i></button>
+          <span class="search-result-badge">Provider</span>
         </div>
         <div class="search-result-card-copy">
           <h2>${escapeHtml(item.title)}</h2>
           <p>${escapeHtml(item.subtitle)}</p>
-          <strong>${Number(item.rating || 0).toFixed(1)} <i class="fa-solid fa-star"></i></strong>
-          <small>${escapeHtml(item.location)}</small>
+          <strong>${Number(item.rating || 0).toFixed(1)} <i class="fa-solid fa-star"></i> <small>(${formatNumber(item.reviewCount || 0)})</small></strong>
+          <small><i class="fa-solid fa-location-dot"></i>${escapeHtml(item.city || item.location)}</small>
+          <em>${Number(item.nearness || 0) >= 45 ? 'Available now' : 'Available soon'}</em>
+          <b>${item.priceLabel ? `From ${escapeHtml(item.priceLabel)}` : `${formatNumber(item.nearness || 0)}% match`}</b>
         </div>
       </a>
     `;
@@ -691,8 +733,43 @@ document.addEventListener('DOMContentLoaded', () => {
     bestHost.innerHTML = renderFeaturedCard(best);
     relatedBlock.hidden = !related.length;
     relatedHost.innerHTML = related.slice(0, state.showAllRelated ? 48 : 8).map(renderRelatedCard).join('');
-    gridHost.innerHTML = filtered.slice(0, 48).map(renderCard).join('');
+    const pageSize = 10;
+    const gridResults = desktopResults.length ? desktopResults : filtered;
+    const totalPages = Math.max(1, Math.ceil(gridResults.length / pageSize));
+    state.page = Math.min(Math.max(1, state.page), totalPages);
+    const pageStart = (state.page - 1) * pageSize;
+    gridHost.innerHTML = gridResults.slice(pageStart, pageStart + pageSize).map(renderCard).join('');
+    renderPagination(totalPages);
     renderPopularSearches(buckets.intent);
+  }
+
+  function renderPagination(totalPages = 1) {
+    if (!paginationHost) return;
+    if (totalPages <= 1) {
+      paginationHost.innerHTML = '';
+      return;
+    }
+    const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
+    paginationHost.innerHTML = `
+      <button type="button" data-page-prev ${state.page <= 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>
+      ${pages.map((pageNumber) => `<button type="button" data-page-number="${pageNumber}" class="${pageNumber === state.page ? 'is-active' : ''}">${pageNumber}</button>`).join('')}
+      ${totalPages > 5 ? '<span>...</span>' : ''}
+      <button type="button" data-page-next ${state.page >= totalPages ? 'disabled' : ''}>Next <i class="fa-solid fa-chevron-right"></i></button>
+    `;
+    paginationHost.querySelector('[data-page-prev]')?.addEventListener('click', () => {
+      state.page = Math.max(1, state.page - 1);
+      render();
+    });
+    paginationHost.querySelector('[data-page-next]')?.addEventListener('click', () => {
+      state.page = Math.min(totalPages, state.page + 1);
+      render();
+    });
+    paginationHost.querySelectorAll('[data-page-number]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.page = Number(button.getAttribute('data-page-number') || 1);
+        render();
+      });
+    });
   }
 
   function render() {
@@ -787,12 +864,14 @@ document.addEventListener('DOMContentLoaded', () => {
     state.searchIntent = null;
     state.aiRanking = null;
     state.showAllRelated = false;
+    state.page = 1;
     render();
     await resolveSearchIntentBeforeLoadingProviders();
     render();
   });
   sortSelect?.addEventListener('change', () => {
     state.sort = String(sortSelect.value || 'relevant');
+    state.page = 1;
     render();
   });
   page.querySelector('[data-search-view-all-related]')?.addEventListener('click', () => {
@@ -803,6 +882,43 @@ document.addEventListener('DOMContentLoaded', () => {
   resetBtn?.addEventListener('click', () => {
     state.category = '';
     state.rating = 0;
+    state.page = 1;
+    render();
+  });
+
+  desktopCategorySelect?.addEventListener('change', () => {
+    const category = String(desktopCategorySelect.value || '');
+    state.category = category;
+    state.service = '';
+    state.page = 1;
+    renderFilterOptions();
+  });
+
+  desktopFilterForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    state.query = String(desktopQueryInput?.value || '').trim();
+    state.category = String(desktopCategorySelect?.value || '').trim();
+    state.service = String(desktopServiceSelect?.value || '').trim();
+    state.rating = desktopRatingInput?.checked ? 4.5 : 0;
+    state.searchIntent = null;
+    state.aiRanking = null;
+    state.page = 1;
+    render();
+    await resolveSearchIntentBeforeLoadingProviders();
+    render();
+  });
+
+  desktopClearBtn?.addEventListener('click', () => {
+    state.query = '';
+    state.category = '';
+    state.service = '';
+    state.rating = 0;
+    state.searchIntent = null;
+    state.aiRanking = null;
+    state.page = 1;
+    if (desktopQueryInput) desktopQueryInput.value = '';
+    if (desktopLocationInput) desktopLocationInput.value = '';
+    if (desktopRatingInput) desktopRatingInput.checked = false;
     render();
   });
 

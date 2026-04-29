@@ -46,29 +46,70 @@
 
     <section class="search-results-active-filters" data-search-active-filters aria-label="Active filters"></section>
 
-    <section class="search-results-shell" data-search-results-shell>
-      <section class="search-results-best" data-search-best-results>
-        <article class="search-result-card is-loading"></article>
-      </section>
+    <section class="search-results-desktop-layout">
+      <aside class="search-results-refine-panel" aria-label="Refine your search">
+        <h2>Refine your search</h2>
+        <form data-search-desktop-filter-form>
+          <label class="search-results-refine-field">
+            <span>Search</span>
+            <div><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-search-desktop-query /></div>
+          </label>
+          <label class="search-results-refine-field">
+            <span>Category</span>
+            <select data-search-desktop-category></select>
+          </label>
+          <label class="search-results-refine-field">
+            <span>Subcategory</span>
+            <select data-search-desktop-service></select>
+          </label>
+          <label class="search-results-refine-field">
+            <span>Location</span>
+            <div><i class="fa-solid fa-location-dot"></i><input type="text" data-search-desktop-location placeholder="City, province or suburb" /></div>
+          </label>
+          <div class="search-results-refine-field">
+            <span>Price range</span>
+            <div class="search-results-price-row">
+              <input type="text" placeholder="Min price" />
+              <input type="text" placeholder="Max price" />
+            </div>
+          </div>
+          <div class="search-results-refine-checks">
+            <span>Provider type</span>
+            <label><input type="checkbox" data-search-desktop-rating /> Top rated</label>
+            <label><input type="checkbox" /> Available now</label>
+            <label><input type="checkbox" /> Verified providers</label>
+          </div>
+          <button type="submit" class="search-results-apply-desktop">Apply filters</button>
+          <button type="button" class="search-results-clear-desktop" data-search-desktop-clear>Clear all</button>
+        </form>
+      </aside>
 
-      <section class="search-results-related-block" data-search-related-block hidden>
-        <div class="search-results-section-head">
-          <h2>Related results</h2>
-          <button type="button" data-search-view-all-related>View all <i class="fa-solid fa-chevron-right"></i></button>
-        </div>
-        <div class="search-results-related-track" data-search-related-results></div>
-      </section>
+      <section class="search-results-shell" data-search-results-shell>
+        <section class="search-results-best" data-search-best-results>
+          <article class="search-result-card is-loading"></article>
+        </section>
 
-      <section class="search-results-popular" data-search-popular-block>
-        <h2>Popular searches</h2>
-        <div class="search-results-popular-chips" data-search-popular-chips></div>
-      </section>
+        <section class="search-results-related-block" data-search-related-block hidden>
+          <div class="search-results-section-head">
+            <h2>Related results</h2>
+            <button type="button" data-search-view-all-related>View all <i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+          <div class="search-results-related-track" data-search-related-results></div>
+        </section>
 
-      <section class="search-results-grid" data-search-results-grid>
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
+        <section class="search-results-grid" data-search-results-grid>
+          <article class="search-result-card is-loading"></article>
+          <article class="search-result-card is-loading"></article>
+          <article class="search-result-card is-loading"></article>
+          <article class="search-result-card is-loading"></article>
+        </section>
+
+        <nav class="search-results-pagination" data-search-pagination aria-label="Search result pages"></nav>
+
+        <section class="search-results-popular" data-search-popular-block>
+          <h2>Popular searches</h2>
+          <div class="search-results-popular-chips" data-search-popular-chips></div>
+        </section>
       </section>
     </section>
   </main>
