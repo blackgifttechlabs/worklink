@@ -31813,7 +31813,7 @@ footer {
 
   .search-results-page {
     width: 100%;
-    padding: 8px 10px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 8px calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .search-results-toolbar {
@@ -31835,18 +31835,21 @@ footer {
   }
 
   .search-result-featured {
-    grid-template-columns: 128px minmax(0, 1fr);
+    width: 100%;
+    max-width: calc(100vw - 16px);
+    grid-template-columns: 108px minmax(0, 1fr);
     border-radius: 12px;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
   }
 
   .search-result-featured .search-result-card-image img {
-    min-height: 170px;
+    min-height: 154px;
   }
 
   .search-result-featured-copy {
-    padding: 12px;
-    gap: 6px;
+    padding: 9px;
+    gap: 4px;
+    min-width: 0;
   }
 
   .search-result-provider-pill {
@@ -31855,18 +31858,27 @@ footer {
   }
 
   .search-result-featured-copy h2 {
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 1.12;
   }
 
   .search-result-featured-copy p,
   .search-result-description {
-    font-size: 10px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .search-result-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .search-result-rating-row,
   .search-result-location {
-    font-size: 10px;
-    gap: 5px;
+    font-size: 9px;
+    gap: 4px;
   }
 
   .search-result-service-chips {
@@ -31875,20 +31887,27 @@ footer {
   }
 
   .search-result-service-chips span {
-    min-height: 24px;
-    padding: 0 9px;
-    font-size: 9px;
+    min-height: 21px;
+    padding: 0 7px;
+    font-size: 8px;
   }
 
   .search-result-featured-actions {
-    gap: 7px;
+    gap: 6px;
+    margin-top: 3px;
   }
 
   .search-result-message,
   .search-result-profile {
-    min-height: 34px;
+    min-height: 30px;
     border-radius: 7px;
-    font-size: 10px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .search-results-exact-track,
+  .search-results-exact-track .search-result-featured {
+    max-width: calc(100vw - 16px);
   }
 
   .search-results-related-track {
