@@ -23,6 +23,115 @@ function extractJsonObject(text = '') {
   return match ? safeJsonParse(match[0], null) : null;
 }
 
+const FALLBACK_ALIASES = [
+  ['capender', 'Carpenter', 'Home Services'],
+  ['capenter', 'Carpenter', 'Home Services'],
+  ['carpender', 'Carpenter', 'Home Services'],
+  ['carpenter', 'Carpenter', 'Home Services'],
+  ['wood work', 'Carpenter', 'Home Services'],
+  ['woodwork', 'Carpenter', 'Home Services'],
+  ['garden', 'General Gardener', 'Gardening & Landscaping'],
+  ['gardens', 'General Gardener', 'Gardening & Landscaping'],
+  ['gardener', 'General Gardener', 'Gardening & Landscaping'],
+  ['lawn', 'Lawn Mower', 'Gardening & Landscaping'],
+  ['mowing', 'Lawn Mower', 'Gardening & Landscaping']
+];
+
+function normalizeText(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function tokenize(value = '') {
+  const stopwords = new Set(['a', 'an', 'and', 'for', 'from', 'i', 'in', 'me', 'my', 'near', 'need', 'of', 'the', 'to', 'with']);
+  return normalizeText(value).split(' ').filter((token) => token.length > 1 && !stopwords.has(token));
+}
+
+function levenshtein(a = '', b = '') {
+  const first = normalizeText(a);
+  const second = normalizeText(b);
+  if (!first || !second) return Math.max(first.length, second.length);
+  const costs = Array.from({ length: second.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= first.length; i += 1) {
+    let previous = i - 1;
+    costs[0] = i;
+    for (let j = 1; j <= second.length; j += 1) {
+      const current = costs[j];
+      costs[j] = first[i - 1] === second[j - 1]
+        ? previous
+        : Math.min(previous + 1, costs[j] + 1, costs[j - 1] + 1);
+      previous = current;
+    }
+  }
+  return costs[second.length];
+}
+
+function scoreCandidate(candidate = {}, rawQuery = '') {
+  const query = normalizeText(rawQuery);
+  const queryTokens = tokenize(query);
+  const title = normalizeText(candidate.title);
+  const service = normalizeText(candidate.service);
+  const category = normalizeText(candidate.category);
+  const city = normalizeText(candidate.city);
+  const province = normalizeText(candidate.province);
+  const values = [title, service, category, city, province].filter(Boolean);
+  let score = 0;
+
+  FALLBACK_ALIASES.forEach(([alias, aliasService, aliasCategory]) => {
+    const normalizedAlias = normalizeText(alias);
+    if (!query.includes(normalizedAlias)) return;
+    if (service === normalizeText(aliasService) || title === normalizeText(aliasService)) score += 260;
+    if (category === normalizeText(aliasCategory)) score += 90;
+  });
+
+  values.forEach((value) => {
+    if (value === query) score += 220;
+    if (query.includes(value) && value.length >= 3) score += 130;
+    if (value.includes(query) && query.length >= 3) score += 95;
+    const valueTokens = tokenize(value);
+    queryTokens.forEach((token) => {
+      if (valueTokens.includes(token)) score += 42;
+      else if (valueTokens.some((valueToken) => valueToken.startsWith(token) || token.startsWith(valueToken))) score += 26;
+      else if (valueTokens.some((valueToken) => levenshtein(token, valueToken) <= 2)) score += 18;
+    });
+  });
+
+  if (candidate.kind === 'location' && queryTokens.length > 1) score *= 0.55;
+  if (candidate.service) score += 16;
+  if (candidate.category) score += 8;
+  return Math.round(score);
+}
+
+function resolveFallbackIntent(query = '', candidates = [], reason = 'fallback') {
+  const ranked = candidates
+    .map((candidate) => ({ ...candidate, _score: scoreCandidate(candidate, query) }))
+    .filter((candidate) => candidate._score > 20)
+    .sort((first, second) => Number(second._score || 0) - Number(first._score || 0));
+  const bestService = ranked.find((candidate) => candidate.service);
+  const bestCategory = ranked.find((candidate) => candidate.category);
+  const bestLocation = ranked.find((candidate) => candidate.kind === 'location' || candidate.city || candidate.province);
+
+  const suggestions = [];
+  ranked.forEach((candidate) => {
+    const title = String(candidate.title || '').trim();
+    if (title && !suggestions.includes(title)) suggestions.push(title);
+  });
+
+  return {
+    query,
+    service: String(bestService?.service || '').trim(),
+    category: String(bestService?.category || bestCategory?.category || '').trim(),
+    city: String(bestLocation?.city || '').trim(),
+    province: String(bestLocation?.province || '').trim(),
+    suggestions: suggestions.slice(0, 6),
+    source: reason
+  };
+}
+
 module.exports = async function searchIntent(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -31,17 +140,17 @@ module.exports = async function searchIntent(request, response) {
   }
 
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    sendJson(response, 503, { error: 'GROQ_API_KEY is not configured' });
-    return;
-  }
-
   const body = typeof request.body === 'string' ? safeJsonParse(request.body, {}) : (request.body || {});
   const query = String(body.query || '').trim().slice(0, 160);
-  const candidates = Array.isArray(body.candidates) ? body.candidates.slice(0, 220) : [];
+  const candidates = Array.isArray(body.candidates) ? body.candidates.slice(0, 600) : [];
 
   if (!query) {
     sendJson(response, 400, { error: 'query is required' });
+    return;
+  }
+
+  if (!apiKey) {
+    sendJson(response, 200, resolveFallbackIntent(query, candidates, 'missing-groq-key'));
     return;
   }
 
@@ -75,8 +184,7 @@ module.exports = async function searchIntent(request, response) {
     });
 
     if (!groqResponse.ok) {
-      const details = await groqResponse.text().catch(() => '');
-      sendJson(response, 502, { error: 'Groq search intent request failed', details: details.slice(0, 500) });
+      sendJson(response, 200, resolveFallbackIntent(query, candidates, 'groq-error'));
       return;
     }
 
@@ -84,7 +192,7 @@ module.exports = async function searchIntent(request, response) {
     const content = data?.choices?.[0]?.message?.content || '';
     const intent = extractJsonObject(content);
     if (!intent) {
-      sendJson(response, 502, { error: 'Groq returned an unreadable search intent' });
+      sendJson(response, 200, resolveFallbackIntent(query, candidates, 'unreadable-groq-response'));
       return;
     }
 
@@ -94,9 +202,10 @@ module.exports = async function searchIntent(request, response) {
       category: String(intent.category || '').trim(),
       city: String(intent.city || '').trim(),
       province: String(intent.province || '').trim(),
-      suggestions: Array.isArray(intent.suggestions) ? intent.suggestions.slice(0, 6) : []
+      suggestions: Array.isArray(intent.suggestions) ? intent.suggestions.slice(0, 6) : [],
+      source: 'groq'
     });
   } catch (error) {
-    sendJson(response, 500, { error: 'Search intent failed' });
+    sendJson(response, 200, resolveFallbackIntent(query, candidates, 'request-failed'));
   }
 };

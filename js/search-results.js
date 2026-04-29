@@ -248,31 +248,78 @@ document.addEventListener('DOMContentLoaded', () => {
     return score;
   }
 
-  function getFilteredResults() {
-    const intent = getCurrentSearchIntent();
-    const serviceTerms = [
-      state.service,
-      state.category,
-      intent.service,
-      intent.category
-    ].map((value) => String(value || '').trim()).filter(Boolean);
-    const queryTerms = serviceTerms.length
-      ? serviceTerms
-      : [state.query, state.service, state.category].map((value) => String(value || '').trim()).filter(Boolean);
-    const category = normalizeText(state.category);
+  function passesSharedFilters(item = {}, intent = getCurrentSearchIntent()) {
+    const explicitCategory = normalizeText(state.category);
     const rating = Number(state.rating || 0);
-    return allResults
-      .filter((item) => {
-        if (!queryTerms.length) return true;
-        const haystack = `${item.terms} ${item.title} ${item.subtitle}`;
-        return queryTerms.some((term) => textMatchesQuery(haystack, term));
-      })
-      .filter((item) => !category || normalizeText(item.category) === category)
-      .filter((item) => !intent.city || normalizeText(item.location).includes(normalizeText(intent.city)))
-      .filter((item) => !intent.province || normalizeText(item.location).includes(normalizeText(intent.province)))
-      .filter((item) => !rating || Number(item.rating || 0) >= rating)
+    if (explicitCategory && normalizeText(item.category) !== explicitCategory) return false;
+    if (intent.city && !normalizeText(item.location).includes(normalizeText(intent.city))) return false;
+    if (intent.province && !normalizeText(item.location).includes(normalizeText(intent.province))) return false;
+    if (rating && Number(item.rating || 0) < rating) return false;
+    return true;
+  }
+
+  function providerMatchesTerm(item = {}, term = '') {
+    const value = String(term || '').trim();
+    if (!value) return true;
+    const haystack = `${item.terms} ${item.title} ${item.subtitle}`;
+    return textMatchesQuery(haystack, value);
+  }
+
+  function getEquivalentServiceTerms(term = '') {
+    const normalized = normalizeText(term);
+    if (normalized === 'barber' || normalized === 'hairdresser') {
+      return ['Barber', 'Hairdresser', 'Braiding & Hair Weaving', 'Loc / Dreadlock Maintenance'];
+    }
+    return [term];
+  }
+
+  function providerMatchesCategory(item = {}, category = '') {
+    const normalizedCategory = normalizeText(category);
+    if (!normalizedCategory) return false;
+    return normalizeText(item.category) === normalizedCategory || normalizeText(item.terms).includes(normalizedCategory);
+  }
+
+  function getSearchBuckets() {
+    const intent = getCurrentSearchIntent();
+    const normalizedService = String(state.service || intent.service || '').trim();
+    const normalizedCategory = String(state.category || intent.category || '').trim();
+    const intentTerms = normalizedService
+      ? [normalizedService]
+      : normalizedCategory
+        ? [normalizedCategory]
+        : [];
+    const queryTerms = intentTerms.length
+      ? intentTerms
+      : [state.query, state.service, state.category].map((value) => String(value || '').trim()).filter(Boolean);
+
+    const sharedCandidates = allResults
+      .filter((item) => passesSharedFilters(item, intent))
       .map((item) => ({ ...item, score: scoreResult(item) }))
       .sort((first, second) => Number(second.score || 0) - Number(first.score || 0));
+
+    if (!normalizedService) {
+      return {
+        intent,
+        exact: sharedCandidates.filter((item) => !queryTerms.length || queryTerms.some((term) => providerMatchesTerm(item, term))),
+        related: []
+      };
+    }
+
+    const exactServiceTerms = getEquivalentServiceTerms(normalizedService);
+    const exact = sharedCandidates.filter((item) => exactServiceTerms.some((term) => providerMatchesTerm(item, term)));
+    const exactHrefs = new Set(exact.map((item) => item.href));
+    const related = sharedCandidates.filter((item) => (
+      !exactHrefs.has(item.href)
+      && normalizedCategory
+      && providerMatchesCategory(item, normalizedCategory)
+    ));
+
+    return { intent, exact, related };
+  }
+
+  function getFilteredResults() {
+    const buckets = getSearchBuckets();
+    return buckets.exact.length ? buckets.exact : buckets.related;
   }
 
   function syncUrl() {
@@ -332,7 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderResults() {
-    const filtered = getFilteredResults();
+    const buckets = getSearchBuckets();
+    const filtered = buckets.exact.length ? buckets.exact : buckets.related;
     const label = state.query || state.service || state.category || 'all services';
     if (titleHost) titleHost.innerHTML = `Results for <span>"${escapeHtml(label)}"</span>`;
     if (countHost) {
@@ -365,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    gridHost.innerHTML = filtered.slice(0, 48).map((item) => `
+    const renderCard = (item) => `
       <a href="${escapeHtml(item.href)}" class="search-result-card">
         <div class="search-result-card-image">
           <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
@@ -378,7 +426,23 @@ document.addEventListener('DOMContentLoaded', () => {
           <small>${escapeHtml(item.location)}</small>
         </div>
       </a>
-    `).join('');
+    `;
+
+    const relatedMarkup = buckets.related.length
+      ? `
+        <div class="search-results-section-title ${buckets.exact.length ? '' : 'is-related-only'}">
+          ${buckets.exact.length
+            ? '<h2>Related results</h2><p>These providers are in the same service category.</p>'
+            : `<h2>No exact ${escapeHtml(buckets.intent.service || 'worker')} match yet</h2><p>We could not find exactly that worker. Below are related service providers in ${escapeHtml(buckets.intent.category || 'the same category')}.</p>`}
+        </div>
+        ${buckets.related.slice(0, buckets.exact.length ? 12 : 48).map(renderCard).join('')}
+      `
+      : '';
+
+    gridHost.innerHTML = `
+      ${buckets.exact.length ? buckets.exact.slice(0, 24).map(renderCard).join('') : ''}
+      ${relatedMarkup}
+    `;
   }
 
   function render() {
@@ -401,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const remoteIntent = await searchIntel.refineIntentWithGroq(rawSearch, state.searchIntent.suggestions || [], {
       includeAllCandidates: true,
-      maxCandidates: 220,
+      maxCandidates: 600,
       timeoutMs: 4500
     });
 

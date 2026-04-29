@@ -811,6 +811,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function bindHomeMomentumRail(rail) {
+    if (!(rail instanceof HTMLElement) || rail.dataset.homeMomentumBound === '1') return;
+    rail.dataset.homeMomentumBound = '1';
+
+    let isDown = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let lastX = 0;
+    let lastTime = 0;
+    let velocity = 0;
+    let frameId = 0;
+
+    function stopMomentum() {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = 0;
+    }
+
+    function runMomentum() {
+      stopMomentum();
+      const step = () => {
+        velocity *= 0.94;
+        if (Math.abs(velocity) < 0.12) {
+          frameId = 0;
+          return;
+        }
+        rail.scrollLeft -= velocity * 16;
+        frameId = window.requestAnimationFrame(step);
+      };
+      frameId = window.requestAnimationFrame(step);
+    }
+
+    rail.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      isDown = true;
+      startX = event.clientX;
+      lastX = event.clientX;
+      lastTime = performance.now();
+      startScrollLeft = rail.scrollLeft;
+      velocity = 0;
+      stopMomentum();
+      rail.classList.add('is-momentum-dragging');
+      rail.setPointerCapture?.(event.pointerId);
+    });
+
+    rail.addEventListener('pointermove', (event) => {
+      if (!isDown) return;
+      const now = performance.now();
+      const dx = event.clientX - startX;
+      const dt = Math.max(1, now - lastTime);
+      velocity = (event.clientX - lastX) / dt;
+      rail.scrollLeft = startScrollLeft - dx;
+      lastX = event.clientX;
+      lastTime = now;
+    });
+
+    function endDrag(event) {
+      if (!isDown) return;
+      isDown = false;
+      rail.classList.remove('is-momentum-dragging');
+      rail.releasePointerCapture?.(event.pointerId);
+      runMomentum();
+    }
+
+    rail.addEventListener('pointerup', endDrag);
+    rail.addEventListener('pointercancel', endDrag);
+    rail.addEventListener('pointerleave', endDrag);
+  }
+
+  function initHomeMomentumScroll() {
+    document
+      .querySelectorAll('[data-home-market-scroll-window], [data-scroll-rail]')
+      .forEach(bindHomeMomentumRail);
+  }
+
   function initHomeCardCarousels() {
     document.querySelectorAll('[data-home-card-carousel]').forEach((carousel) => {
       if (!(carousel instanceof HTMLElement) || carousel.dataset.carouselBound === '1') return;
@@ -1403,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHomeAvailableJobs();
   initHomeHeroSearchTyping();
   initHomeMarketScrollers();
+  initHomeMomentumScroll();
   initHomeCardCarousels();
   initScrollableRails(document);
 

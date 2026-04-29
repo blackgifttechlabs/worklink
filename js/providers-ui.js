@@ -5595,59 +5595,68 @@
 
         <section class="provider-profile-summary">
           <div class="provider-profile-summary-main">
-            <div class="provider-profile-divider"></div>
+            <button type="button" class="client-profile-switch-provider" data-client-become-provider>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Switch to Provider</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
 
             <div class="provider-profile-actions-compact">
-              <a href="${base}pages/job-giver-profile.html" class="provider-profile-action-compact">
+              <a href="${base}pages/post-job.html" class="provider-profile-action-compact client-profile-action-card is-primary">
                 <i class="fa-solid fa-briefcase"></i>
-                <span>Jobs and Bids</span>
+                <strong>Post a Job</strong>
+                <small>Find the right specialist</small>
               </a>
-              <a href="${base}pages/messages.html" class="provider-profile-action-compact">
-                <i class="fa-solid fa-envelope"></i>
-                <span>Messages</span>
+              <a href="${base}pages/messages.html" class="provider-profile-action-compact client-profile-action-card">
+                <i class="fa-regular fa-message"></i>
+                <strong>Messages</strong>
+                <small>Chat with specialists</small>
               </a>
-              <button type="button" class="provider-profile-action-compact" data-client-become-provider>
-                <i class="fa-solid fa-user-tie"></i>
-                <span>Become Provider</span>
-              </button>
-            </div>
-
-            <div class="provider-profile-stats-row client-profile-stats-row">
-              <div class="provider-stat-item">
-                <div class="provider-stat-label">Account</div>
-                <div class="provider-stat-value">Client</div>
-              </div>
-              <button type="button" class="provider-stat-item provider-stat-clickable" data-client-edit-tab-trigger>
-                <div class="provider-stat-label">Profile</div>
-                <div class="provider-stat-value">${profile.bio || profile.phone || profile.city ? 'Ready' : 'Edit'}</div>
-              </button>
-              <button type="button" class="provider-stat-item provider-stat-clickable" data-client-become-provider>
-                <div class="provider-stat-label">Provider</div>
-                <div class="provider-stat-value">Start</div>
-              </button>
+              <a href="${base}pages/job-giver-profile.html?tab=bids" class="provider-profile-action-compact client-profile-action-card">
+                <i class="fa-solid fa-chart-simple"></i>
+                <strong>My Bids</strong>
+                <small>Track and manage your bids</small>
+              </a>
             </div>
 
             <div class="provider-profile-services">
               <h3>Client Tools</h3>
-              <div class="provider-services-list">
-                <span class="provider-service-tag">Post jobs</span>
-                <span class="provider-service-tag">Track bids</span>
-                <span class="provider-service-tag">Message specialists</span>
+              <div class="client-profile-tool-row">
+                <a href="${base}pages/post-job.html"><i class="fa-regular fa-square-plus"></i><span>Post Jobs</span></a>
+                <a href="${base}pages/job-giver-profile.html?tab=bids"><i class="fa-solid fa-chart-line"></i><span>Track Bids</span></a>
+                <a href="${base}pages/messages.html"><i class="fa-regular fa-message"></i><span>Message Specialists</span></a>
               </div>
             </div>
 
-            <div class="provider-profile-location">
+            <section class="client-profile-info-panel">
+              <div class="client-profile-panel-head">
+                <h3>Profile Information</h3>
+                <button type="button" data-client-edit-tab-trigger><i class="fa-solid fa-pen"></i> Edit Profile</button>
+              </div>
+              <button type="button" class="client-profile-info-row">
+                <i class="fa-regular fa-envelope"></i>
+                <span><strong>Email</strong><small>${escapeHtml(profile.email || 'Not set')}</small></span>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <button type="button" class="client-profile-info-row" data-client-edit-tab-trigger>
+                <i class="fa-solid fa-phone"></i>
+                <span><strong>Phone</strong><small>${escapeHtml(profile.phone || 'Not set')}</small></span>
+                <em>${profile.phone ? 'Edit' : 'Add'}</em>
+              </button>
+              <button type="button" class="client-profile-info-row" data-client-edit-tab-trigger>
+                <i class="fa-solid fa-location-dot"></i>
+                <span><strong>Location</strong><small>${escapeHtml(locationLabel)}</small></span>
+                <em>${profile.city || profile.address ? 'Edit' : 'Add'}</em>
+              </button>
+            </section>
+
+            <div class="provider-profile-location client-profile-location-card">
               <i class="fa-solid fa-location-dot"></i>
               <span>${escapeHtml(locationLabel)}</span>
+              <i class="fa-solid fa-chevron-right"></i>
             </div>
 
-            <button type="button" class="provider-profile-skills-link" data-client-become-provider>
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-              <span>Switch this account to a provider profile</span>
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-
-            <p class="provider-profile-bio">${escapeHtml(profile.bio || 'Use this profile when you post jobs, review bids, and message specialists on WorkLinkUp.')}</p>
+            <p class="provider-profile-bio client-profile-note"><i class="fa-solid fa-users"></i>${escapeHtml(profile.bio || 'Use this profile when you post jobs, review bids, and message specialists on WorkLinkUp.')}</p>
           </div>
         </section>
       </section>
@@ -5740,7 +5749,7 @@
           quality: 0.84,
           outputType: 'image/avif'
         });
-        const avatar = page.querySelector('.client-profile-avatar');
+        const avatar = page.querySelector('.provider-profile-avatar-ring');
         if (avatar instanceof HTMLElement) {
           avatar.innerHTML = `<img src="${escapeHtml(resolveMediaSrc(pendingProfileImageData))}" alt="${escapeHtml(profile.displayName)}" />`;
         }
