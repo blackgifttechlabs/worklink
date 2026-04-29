@@ -284,7 +284,10 @@
             city: item.city || '',
             province: item.province || '',
             subtitle: item.subtitle || ''
-          }))
+          })),
+          categories: Array.isArray(options.categories) ? options.categories : [],
+          matchingCategory: options.matchingCategory || '',
+          providers: Array.isArray(options.providers) ? options.providers.slice(0, Number(options.maxProviders || 500)) : []
         })
       });
       if (!response.ok) return null;

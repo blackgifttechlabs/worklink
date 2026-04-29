@@ -92,7 +92,13 @@
               <p class="admin-panel-kicker">Inbox stream</p>
               <h2>Messages</h2>
             </div>
-            <div class="admin-inline-total" id="admin-messages-total">0 messages</div>
+            <div class="admin-action-row">
+              <button type="button" class="admin-refresh-btn admin-compact-action" id="admin-broadcast-open">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Send broadcast</span>
+              </button>
+              <div class="admin-inline-total" id="admin-messages-total">0 messages</div>
+            </div>
           </div>
 
           <div class="admin-toolbar">
@@ -109,6 +115,13 @@
               </select>
             </label>
           </div>
+
+          <section class="admin-visual-card" id="admin-broadcast-history">
+            <div class="admin-empty-state">
+              <i class="fa-solid fa-paper-plane"></i>
+              <p>Loading previous admin broadcasts...</p>
+            </div>
+          </section>
 
           <div class="admin-table-shell">
             <table class="admin-table">
@@ -130,6 +143,57 @@
         </section>
       </main>
     </div>
+  </div>
+
+  <div class="admin-modal-shell admin-full-modal-shell" id="admin-broadcast-modal" hidden>
+    <div class="admin-modal-backdrop" data-broadcast-close></div>
+    <section class="admin-modal-panel admin-full-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-broadcast-title">
+      <div class="admin-modal-head">
+        <div>
+          <span>JobLinks Support</span>
+          <h3 id="admin-broadcast-title">Send broadcast message</h3>
+        </div>
+        <button type="button" class="admin-modal-close" data-broadcast-close aria-label="Close broadcast modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form class="admin-create-form admin-broadcast-form" id="admin-broadcast-form">
+        <div class="admin-form-grid">
+          <label class="admin-form-field">
+            <span>Recipients</span>
+            <select id="admin-broadcast-scope">
+              <option value="all">All users</option>
+              <option value="province">Filter by province</option>
+              <option value="category">Filter by category</option>
+              <option value="province-category">Filter by province and category</option>
+            </select>
+          </label>
+          <label class="admin-form-field">
+            <span>Province</span>
+            <select id="admin-broadcast-province">
+              <option value="all">All provinces</option>
+            </select>
+          </label>
+          <label class="admin-form-field">
+            <span>Category</span>
+            <select id="admin-broadcast-category">
+              <option value="all">All categories</option>
+            </select>
+          </label>
+        </div>
+        <label class="admin-form-field">
+          <span>Message</span>
+          <textarea id="admin-broadcast-text" rows="8" placeholder="Type the message users should receive from JobLinks Support"></textarea>
+        </label>
+        <div class="admin-form-actions">
+          <button type="submit" class="admin-refresh-btn">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Send message</span>
+          </button>
+          <div class="admin-form-message" id="admin-broadcast-message" hidden></div>
+        </div>
+      </form>
+    </section>
   </div>
 
   <script type="module" src="../../js/firebase-auth.js"></script>

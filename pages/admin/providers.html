@@ -134,16 +134,33 @@
                   <th>Jobs</th>
                   <th>Rating</th>
                   <th>Updated</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="admin-providers-body">
-                <tr><td colspan="7" class="admin-empty-cell">Loading providers...</td></tr>
+                <tr><td colspan="8" class="admin-empty-cell">Loading providers...</td></tr>
               </tbody>
             </table>
           </div>
         </section>
       </main>
     </div>
+  </div>
+
+  <div class="admin-modal-shell admin-full-modal-shell" id="admin-provider-detail-modal" hidden>
+    <div class="admin-modal-backdrop" data-provider-detail-close></div>
+    <section class="admin-modal-panel admin-full-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-provider-detail-title">
+      <div class="admin-modal-head">
+        <div>
+          <span>Provider information</span>
+          <h3 id="admin-provider-detail-title">Provider details</h3>
+        </div>
+        <button type="button" class="admin-modal-close" data-provider-detail-close aria-label="Close provider details">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="admin-provider-detail-body"></div>
+    </section>
   </div>
 
   <script type="module" src="../../js/firebase-auth.js"></script>

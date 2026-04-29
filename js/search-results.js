@@ -6,6 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const countHost = page.querySelector('[data-search-results-count]');
   const titleHost = page.querySelector('[data-search-results-title]');
+  const form = page.querySelector('[data-search-results-form]');
+  const searchInput = page.querySelector('[data-search-results-input]');
+  const sortSelect = page.querySelector('[data-search-sort]');
+  const filterDot = document.querySelector('[data-search-filter-dot]');
+  const backBtn = page.querySelector('[data-search-back]');
+  const bestHost = page.querySelector('[data-search-best-results]');
+  const relatedBlock = page.querySelector('[data-search-related-block]');
+  const relatedHost = page.querySelector('[data-search-related-results]');
+  const popularChipsHost = page.querySelector('[data-search-popular-chips]');
   const gridHost = page.querySelector('[data-search-results-grid]');
   const activeFiltersHost = page.querySelector('[data-search-active-filters]');
   const dialog = document.querySelector('[data-search-filter-dialog]');
@@ -20,11 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
     category: String(params.get('category') || '').trim(),
     service: String(params.get('service') || '').trim(),
     rating: Number(params.get('rating') || 0),
-    searchIntent: null
+    sort: String(params.get('sort') || 'relevant'),
+    searchIntent: null,
+    aiRanking: null,
+    showAllRelated: false
   };
 
   let allResults = [];
+  let rawProviders = [];
   let providersLoaded = false;
+
+  if (searchInput) searchInput.value = state.query || state.service || state.category || '';
+  if (sortSelect) sortSelect.value = state.sort;
 
   function escapeHtml(value = '') {
     return String(value)
@@ -33,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function formatNumber(value) {
+    return new Intl.NumberFormat('en-US').format(Number(value || 0));
   }
 
   function normalizeText(value = '') {
@@ -94,6 +114,67 @@ document.addEventListener('DOMContentLoaded', () => {
     return queryParts.length > 1 && queryParts.every((part) => normalizedText.includes(part));
   }
 
+  function tokenizeSearch(value = '') {
+    const stopwords = new Set(['a', 'an', 'and', 'for', 'from', 'i', 'in', 'me', 'my', 'near', 'need', 'of', 'the', 'to', 'too', 'with', 'is']);
+    return normalizeText(value).split(' ').filter((token) => token.length > 1 && !stopwords.has(token));
+  }
+
+  function levenshtein(firstValue = '', secondValue = '') {
+    const first = normalizeText(firstValue);
+    const second = normalizeText(secondValue);
+    if (!first || !second) return Math.max(first.length, second.length);
+    const costs = Array.from({ length: second.length + 1 }, (_, index) => index);
+    for (let i = 1; i <= first.length; i += 1) {
+      let previous = i - 1;
+      costs[0] = i;
+      for (let j = 1; j <= second.length; j += 1) {
+        const current = costs[j];
+        costs[j] = first[i - 1] === second[j - 1]
+          ? previous
+          : Math.min(previous + 1, costs[j] + 1, costs[j - 1] + 1);
+        previous = current;
+      }
+    }
+    return costs[second.length];
+  }
+
+  function getNearnessPercent(item = {}, intent = getCurrentSearchIntent()) {
+    const queryParts = [
+      state.query,
+      state.service,
+      state.category,
+      intent.service,
+      intent.category,
+      intent.city,
+      intent.province
+    ].filter(Boolean);
+    const query = normalizeText(queryParts.join(' '));
+    const haystack = normalizeText(`${item.title} ${item.subtitle} ${item.category} ${item.location} ${item.terms}`);
+    if (!query) return Math.min(100, Math.round(Number(item.rating || 0) * 12));
+    if (haystack.includes(query)) return 100;
+
+    const queryTokens = tokenizeSearch(query);
+    const haystackTokens = tokenizeSearch(haystack);
+    if (!queryTokens.length || !haystackTokens.length) return 0;
+    const tokenScores = queryTokens.map((token) => {
+      let best = 0;
+      haystackTokens.forEach((candidate) => {
+        if (candidate === token) best = Math.max(best, 1);
+        else if (candidate.startsWith(token) || token.startsWith(candidate)) best = Math.max(best, 0.82);
+        else {
+          const distance = levenshtein(token, candidate);
+          const maxLength = Math.max(token.length, candidate.length, 1);
+          best = Math.max(best, Math.max(0, 1 - (distance / maxLength)));
+        }
+      });
+      return best;
+    });
+    const average = tokenScores.reduce((sum, value) => sum + value, 0) / tokenScores.length;
+    const categoryBoost = intent.category && normalizeText(item.category).includes(normalizeText(intent.category)) ? 0.12 : 0;
+    const serviceBoost = intent.service && normalizeText(item.terms).includes(normalizeText(intent.service)) ? 0.18 : 0;
+    return Math.max(0, Math.min(100, Math.round((average + categoryBoost + serviceBoost) * 100)));
+  }
+
   function getSearchIntel() {
     return window.WorkLinkUpSearchIntelligence || null;
   }
@@ -126,6 +207,56 @@ document.addEventListener('DOMContentLoaded', () => {
     ].map((value) => String(value || '').trim()).filter(Boolean);
   }
 
+  function getProviderServiceChips(item = {}) {
+    const services = Array.isArray(item.raw?.services)
+      ? item.raw.services.map((entry) => (
+        typeof entry === 'string'
+          ? entry
+          : entry?.service || entry?.name || entry?.label || entry?.specialty || ''
+      ))
+      : [];
+    return [item.subtitle, ...services, item.category]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .filter((value, index, list) => list.findIndex((other) => normalizeText(other) === normalizeText(value)) === index)
+      .slice(0, 3);
+  }
+
+  function getPopularSearches(intent = getCurrentSearchIntent()) {
+    const fromIntent = Array.isArray(intent.suggestions)
+      ? intent.suggestions.map((entry) => entry.service || entry.title || entry.query || '').filter(Boolean)
+      : [];
+    const category = String(intent.category || state.category || '').trim();
+    const catalogMatch = getCatalog().find((item) => normalizeText(item.label) === normalizeText(category));
+    const subservices = Array.isArray(catalogMatch?.subservices) ? catalogMatch.subservices : [];
+    return [
+      ...fromIntent,
+      ...subservices,
+      state.service,
+      category,
+      'haircut',
+      'hair treatment',
+      'box braids',
+      'hair color',
+      'dreadlocks',
+      'hair styling'
+    ].map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .filter((value, index, list) => list.findIndex((other) => normalizeText(other) === normalizeText(value)) === index)
+      .slice(0, 8);
+  }
+
+  function renderPopularSearches(intent = getCurrentSearchIntent()) {
+    if (!popularChipsHost) return;
+    const searches = getPopularSearches(intent);
+    popularChipsHost.innerHTML = searches.map((search) => `
+      <a href="${escapeHtml(buildSearchHref(search))}">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span>${escapeHtml(search)}</span>
+      </a>
+    `).join('');
+  }
+
   function resolveImage(src = '') {
     const value = String(src || '').trim();
     if (!value) return `${base}images/logo/joblinks.avif`;
@@ -151,6 +282,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (service) params.set('service', service);
     const queryString = params.toString();
     return `${base}pages/search-results.html${queryString ? `?${queryString}` : ''}`;
+  }
+
+  function providerMessageHref(provider = {}) {
+    const uid = String(provider.uid || '').trim();
+    const provinceSlug = String(provider.provinceSlug || provider.providerProvinceSlug || provider.province || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    if (!uid) return `${base}pages/messages.html`;
+    const params = new URLSearchParams({ provider: uid });
+    if (provinceSlug) params.set('province', provinceSlug);
+    return `${base}pages/messages.html?${params.toString()}`;
   }
 
   function providerProfileHref(provider = {}) {
@@ -183,15 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const certificationText = flattenSearchValues(provider.certifications);
     return {
       kind: 'provider',
+      uid: String(provider.uid || '').trim(),
       title: displayName,
       subtitle: specialty,
       category,
       location,
+      city,
+      province,
+      raw: provider,
       rating,
       reviewCount,
       ratingTotal,
       image: resolveImage(image),
       href: providerProfileHref(provider),
+      messageHref: providerMessageHref(provider),
+      priceLabel: String(provider.priceLabel || provider.startingPrice || provider.rate || '').trim(),
       terms: [
         displayName,
         provider.username,
@@ -218,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const authHelper = await window.ensureWorkLinkAuth();
       if (!authHelper || typeof authHelper.listProviders !== 'function') return [];
       const providers = await authHelper.listProviders();
+      rawProviders = Array.isArray(providers) ? providers : [];
       return Array.isArray(providers) ? providers.map(normalizeProvider) : [];
     } catch (error) {
       return [];
@@ -245,6 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (terms.includes(query)) score += 18;
     score += query.split(' ').filter((part) => part && terms.includes(part)).length * 6;
     score += 4;
+    score += getNearnessPercent(item, intent);
     return score;
   }
 
@@ -294,25 +446,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sharedCandidates = allResults
       .filter((item) => passesSharedFilters(item, intent))
-      .map((item) => ({ ...item, score: scoreResult(item) }))
-      .sort((first, second) => Number(second.score || 0) - Number(first.score || 0));
+      .map((item) => ({
+        ...item,
+        score: scoreResult(item),
+        nearness: getNearnessPercent(item, intent)
+      }));
+
+    const aiOrder = state.aiRanking && typeof state.aiRanking === 'object'
+      ? new Map([
+        ...((Array.isArray(state.aiRanking.bestMatches) ? state.aiRanking.bestMatches : []).map((match, index) => [String(match.uid || '').trim(), { group: 'best', index, match }])),
+        ...((Array.isArray(state.aiRanking.relatedMatches) ? state.aiRanking.relatedMatches : []).map((match, index) => [String(match.uid || '').trim(), { group: 'related', index, match }]))
+      ])
+      : new Map();
+
+    const rankedCandidates = sharedCandidates
+      .map((item) => {
+        const aiMatch = aiOrder.get(item.uid);
+        const aiPercent = Number(aiMatch?.match?.matchPercent || 0);
+        return {
+          ...item,
+          aiGroup: aiMatch?.group || '',
+          aiIndex: Number.isFinite(aiMatch?.index) ? aiMatch.index : 999,
+          nearness: Math.max(Number(item.nearness || 0), aiPercent)
+        };
+      })
+      .sort((first, second) => {
+        if (state.sort === 'rating') {
+          return Number(second.rating || 0) - Number(first.rating || 0) || Number(second.nearness || 0) - Number(first.nearness || 0);
+        }
+        if (state.sort === 'near') {
+          return Number(second.nearness || 0) - Number(first.nearness || 0) || Number(second.score || 0) - Number(first.score || 0);
+        }
+        const firstGroupBoost = first.aiGroup === 'best' ? 2000 : first.aiGroup === 'related' ? 1000 : 0;
+        const secondGroupBoost = second.aiGroup === 'best' ? 2000 : second.aiGroup === 'related' ? 1000 : 0;
+        return (secondGroupBoost + Number(second.score || 0) + Number(second.nearness || 0)) - (firstGroupBoost + Number(first.score || 0) + Number(first.nearness || 0))
+          || Number(first.aiIndex || 999) - Number(second.aiIndex || 999);
+      });
 
     if (!normalizedService) {
       return {
         intent,
-        exact: sharedCandidates.filter((item) => !queryTerms.length || queryTerms.some((term) => providerMatchesTerm(item, term))),
+        exact: rankedCandidates.filter((item) => !queryTerms.length || queryTerms.some((term) => providerMatchesTerm(item, term) || Number(item.nearness || 0) >= 54)),
         related: []
       };
     }
 
     const exactServiceTerms = getEquivalentServiceTerms(normalizedService);
-    const exact = sharedCandidates.filter((item) => exactServiceTerms.some((term) => providerMatchesTerm(item, term)));
+    const exact = rankedCandidates.filter((item) => item.aiGroup === 'best' || exactServiceTerms.some((term) => providerMatchesTerm(item, term)) || Number(item.nearness || 0) >= 72);
     const exactHrefs = new Set(exact.map((item) => item.href));
-    const related = sharedCandidates.filter((item) => (
+    const related = rankedCandidates.filter((item) => (
       !exactHrefs.has(item.href)
       && normalizedCategory
-      && providerMatchesCategory(item, normalizedCategory)
-    ));
+      && (item.aiGroup === 'related' || providerMatchesCategory(item, normalizedCategory) || Number(item.nearness || 0) >= 28)
+    )).sort((first, second) => Number(second.nearness || 0) - Number(first.nearness || 0) || Number(second.score || 0) - Number(first.score || 0));
 
     return { intent, exact, related };
   }
@@ -332,6 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
     else nextUrl.searchParams.delete('service');
     if (state.rating) nextUrl.searchParams.set('rating', String(state.rating));
     else nextUrl.searchParams.delete('rating');
+    if (state.sort && state.sort !== 'relevant') nextUrl.searchParams.set('sort', state.sort);
+    else nextUrl.searchParams.delete('sort');
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
   }
 
@@ -347,6 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.classList.toggle('is-active', button.getAttribute('data-search-category') === state.category);
         button.addEventListener('click', () => {
           state.category = button.getAttribute('data-search-category') || '';
+          state.aiRanking = null;
           render();
         });
       });
@@ -373,9 +562,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (intent.city) filters.push(intent.city);
     if (intent.province && intent.province !== intent.city) filters.push(intent.province);
     if (state.rating) filters.push(`${state.rating.toFixed(state.rating % 1 ? 1 : 0)}+ rating`);
+    if (filterDot) filterDot.hidden = !(state.category || state.rating);
     activeFiltersHost.innerHTML = filters.length
-      ? filters.map((filter) => `<span>${escapeHtml(filter)}</span>`).join('')
+      ? `${filters.map((filter) => `<span>${escapeHtml(filter)} ${filter !== `Search: ${state.query}` ? '<button type="button" data-filter-clear aria-label="Clear filter"><i class="fa-solid fa-xmark"></i></button>' : ''}</span>`).join('')}${filters.length > 1 ? '<button type="button" class="search-results-clear-all" data-search-clear-all>Clear all</button>' : ''}`
       : '<span>All WorkLinkUp providers</span>';
+    activeFiltersHost.querySelectorAll('[data-filter-clear]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.category = '';
+        state.rating = 0;
+        state.service = '';
+        state.aiRanking = null;
+        render();
+      });
+    });
+    activeFiltersHost.querySelector('[data-search-clear-all]')?.addEventListener('click', () => {
+      state.category = '';
+      state.service = '';
+      state.rating = 0;
+      state.aiRanking = null;
+      render();
+    });
   }
 
   function renderResults() {
@@ -385,39 +591,90 @@ document.addEventListener('DOMContentLoaded', () => {
     if (titleHost) titleHost.innerHTML = `Results for <span>"${escapeHtml(label)}"</span>`;
     if (countHost) {
       countHost.textContent = providersLoaded
-        ? (filtered.length
-          ? `1-${Math.min(filtered.length, 48)} of ${filtered.length} provider${filtered.length === 1 ? '' : 's'}`
+        ? (filtered.length || buckets.related.length
+          ? `${buckets.exact.length || filtered.length} result${(buckets.exact.length || filtered.length) === 1 ? '' : 's'} for "${label}"`
           : '0 providers')
         : 'Loading providers';
     }
-    if (!gridHost) return;
+    if (!gridHost || !bestHost || !relatedHost || !relatedBlock) return;
 
     if (!providersLoaded) {
-      gridHost.innerHTML = `
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
-        <article class="search-result-card is-loading"></article>
-      `;
+      bestHost.innerHTML = '<article class="search-result-featured is-loading"></article>';
+      relatedBlock.hidden = true;
+      gridHost.innerHTML = '<article class="search-result-card is-loading"></article><article class="search-result-card is-loading"></article><article class="search-result-card is-loading"></article><article class="search-result-card is-loading"></article>';
+      renderPopularSearches(buckets.intent);
       return;
     }
 
     if (!filtered.length) {
-      gridHost.innerHTML = `
+      bestHost.innerHTML = `
         <div class="search-results-empty">
           <i class="fa-regular fa-compass"></i>
           <h2>No matching providers</h2>
           <p>Try a different name, service, category, city, or clear one of the filters.</p>
         </div>
       `;
+      relatedBlock.hidden = true;
+      gridHost.innerHTML = '';
+      renderPopularSearches(buckets.intent);
       return;
     }
+
+    const renderStars = (rating) => {
+      const rounded = Math.max(0, Math.min(5, Math.round(Number(rating || 0))));
+      return Array.from({ length: 5 }, (_, index) => `<i class="fa-${index < rounded ? 'solid' : 'regular'} fa-star"></i>`).join('');
+    };
+
+    const renderFeaturedCard = (item) => `
+      <article class="search-result-featured">
+        <div class="search-result-card-image">
+          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
+          <span class="search-result-badge">Provider</span>
+        </div>
+        <div class="search-result-featured-copy">
+          <span class="search-result-provider-pill">Provider</span>
+          <h2>${escapeHtml(item.title)} <i class="fa-solid fa-circle-check"></i></h2>
+          <p>${escapeHtml(item.subtitle)}</p>
+          <div class="search-result-rating-row">
+            <strong>${Number(item.rating || 0).toFixed(1)}</strong>
+            <span>${renderStars(item.rating)}</span>
+            <small>(${formatNumber(item.reviewCount || 0)} reviews)</small>
+          </div>
+          <div class="search-result-location"><i class="fa-solid fa-location-dot"></i>${escapeHtml(item.city || item.location)}</div>
+          <p class="search-result-description">${escapeHtml(item.raw?.bio || `Specialized in ${item.subtitle} and related ${item.category} services.`)}</p>
+          <div class="search-result-service-chips">
+            ${getProviderServiceChips(item).map((chip) => `<span>${escapeHtml(chip)}</span>`).join('')}
+          </div>
+          <div class="search-result-featured-actions">
+            <a href="${escapeHtml(item.messageHref)}" class="search-result-message"><i class="fa-regular fa-comment"></i> Message</a>
+            <a href="${escapeHtml(item.href)}" class="search-result-profile">View Profile</a>
+          </div>
+        </div>
+      </article>
+    `;
+
+    const renderRelatedCard = (item) => `
+      <a href="${escapeHtml(item.href)}" class="search-result-related-card">
+        <div class="search-result-related-image">
+          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
+          <button type="button" aria-label="Save provider"><i class="fa-regular fa-heart"></i></button>
+          <span>Provider</span>
+        </div>
+        <div class="search-result-related-copy">
+          <h3>${escapeHtml(item.title)}</h3>
+          <p>${escapeHtml(item.subtitle)}</p>
+          <strong>${Number(item.rating || 0).toFixed(1)} <i class="fa-solid fa-star"></i> <small>(${formatNumber(item.reviewCount || 0)})</small></strong>
+          <div><i class="fa-solid fa-location-dot"></i>${escapeHtml(item.city || item.location)}</div>
+          <small>${item.priceLabel ? `From ${escapeHtml(item.priceLabel)}` : `${formatNumber(item.nearness || 0)}% match`}</small>
+        </div>
+      </a>
+    `;
 
     const renderCard = (item) => `
       <a href="${escapeHtml(item.href)}" class="search-result-card">
         <div class="search-result-card-image">
           <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
-          <span class="search-result-badge">Provider</span>
+          <span class="search-result-badge">${formatNumber(item.nearness || 0)}% match</span>
         </div>
         <div class="search-result-card-copy">
           <h2>${escapeHtml(item.title)}</h2>
@@ -428,21 +685,14 @@ document.addEventListener('DOMContentLoaded', () => {
       </a>
     `;
 
-    const relatedMarkup = buckets.related.length
-      ? `
-        <div class="search-results-section-title ${buckets.exact.length ? '' : 'is-related-only'}">
-          ${buckets.exact.length
-            ? '<h2>Related results</h2><p>These providers are in the same service category.</p>'
-            : `<h2>No exact ${escapeHtml(buckets.intent.service || 'worker')} match yet</h2><p>We could not find exactly that worker. Below are related service providers in ${escapeHtml(buckets.intent.category || 'the same category')}.</p>`}
-        </div>
-        ${buckets.related.slice(0, buckets.exact.length ? 12 : 48).map(renderCard).join('')}
-      `
-      : '';
-
-    gridHost.innerHTML = `
-      ${buckets.exact.length ? buckets.exact.slice(0, 24).map(renderCard).join('') : ''}
-      ${relatedMarkup}
-    `;
+    const best = buckets.exact[0] || filtered[0];
+    const remainingExact = buckets.exact.filter((item) => item.href !== best.href);
+    const related = [...remainingExact, ...buckets.related].filter((item, index, array) => array.findIndex((other) => other.href === item.href) === index);
+    bestHost.innerHTML = renderFeaturedCard(best);
+    relatedBlock.hidden = !related.length;
+    relatedHost.innerHTML = related.slice(0, state.showAllRelated ? 48 : 8).map(renderRelatedCard).join('');
+    gridHost.innerHTML = filtered.slice(0, 48).map(renderCard).join('');
+    renderPopularSearches(buckets.intent);
   }
 
   function render() {
@@ -466,6 +716,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const remoteIntent = await searchIntel.refineIntentWithGroq(rawSearch, state.searchIntent.suggestions || [], {
       includeAllCandidates: true,
       maxCandidates: 600,
+      categories: getCatalog().map((category) => ({
+        label: category.label,
+        shortLabel: category.shortLabel || '',
+        subservices: Array.isArray(category.subservices) ? category.subservices : []
+      })),
+      matchingCategory: state.searchIntent.category || '',
+      providers: buildProviderAiPayload(),
       timeoutMs: 4500
     });
 
@@ -479,6 +736,27 @@ document.addEventListener('DOMContentLoaded', () => {
       province: remoteIntent.province || state.searchIntent.province,
       suggestions: state.searchIntent.suggestions || []
     };
+    state.aiRanking = {
+      bestMatches: Array.isArray(remoteIntent.bestMatches) ? remoteIntent.bestMatches : [],
+      relatedMatches: Array.isArray(remoteIntent.relatedMatches) ? remoteIntent.relatedMatches : []
+    };
+  }
+
+  function buildProviderAiPayload() {
+    return allResults.map((item) => ({
+      uid: item.uid,
+      name: item.title,
+      title: item.subtitle,
+      specialty: item.subtitle,
+      category: item.category,
+      city: item.city,
+      province: item.province,
+      location: item.location,
+      rating: Number(item.rating || 0),
+      reviewCount: Number(item.reviewCount || 0),
+      services: getProviderServiceChips(item),
+      bio: String(item.raw?.bio || '').slice(0, 260)
+    }));
   }
 
   function openDialog() {
@@ -496,6 +774,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   filterOpenBtn?.addEventListener('click', openDialog);
+  backBtn?.addEventListener('click', () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = `${base}index.html`;
+  });
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const nextQuery = String(searchInput?.value || '').trim();
+    state.query = nextQuery;
+    state.service = '';
+    state.category = '';
+    state.searchIntent = null;
+    state.aiRanking = null;
+    state.showAllRelated = false;
+    render();
+    await resolveSearchIntentBeforeLoadingProviders();
+    render();
+  });
+  sortSelect?.addEventListener('change', () => {
+    state.sort = String(sortSelect.value || 'relevant');
+    render();
+  });
+  page.querySelector('[data-search-view-all-related]')?.addEventListener('click', () => {
+    state.showAllRelated = !state.showAllRelated;
+    render();
+  });
   filterCloseTriggers.forEach((trigger) => trigger.addEventListener('click', closeDialog));
   resetBtn?.addEventListener('click', () => {
     state.category = '';
@@ -505,10 +808,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function init() {
     render();
-    await resolveSearchIntentBeforeLoadingProviders();
     const providerResults = await getProviderResults();
     allResults = providerResults;
     providersLoaded = true;
+    await resolveSearchIntentBeforeLoadingProviders();
     render();
   }
 

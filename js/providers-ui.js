@@ -1072,6 +1072,7 @@
 
   function normalizeMessageContact(contact = {}) {
     const uid = String(contact.uid || '').trim();
+    const isSupport = uid === 'joblink-support' || contact.isSupport === true || contact.peerIsSupport === true;
     const province = String(contact.province || contact.providerProvince || '').trim();
     const city = String(contact.city || contact.address || '').trim();
     const primaryCategory = String(contact.primaryCategory || '').trim();
@@ -1092,6 +1093,7 @@
       contact.displayName
       || contact.name
       || contact.providerPublicId
+      || (isSupport ? 'JobLinks Support' : '')
       || 'WorkLinkUp user'
     ).trim() || 'WorkLinkUp user';
 
@@ -1105,14 +1107,15 @@
       primaryCategory,
       specialty,
       bio: String(contact.bio || '').trim(),
+      isSupport,
       isProvider,
-      roleLabel: specialty || primaryCategory || (isProvider ? 'Provider' : 'Member'),
+      roleLabel: isSupport ? 'Verified support' : (specialty || primaryCategory || (isProvider ? 'Provider' : 'Member')),
       statusLabel: city || province
         ? [city, province].filter(Boolean).join(', ')
-        : (isProvider ? 'Provider on WorkLinkUp' : 'WorkLinkUp member'),
+        : (isSupport ? 'Official JobLink account' : (isProvider ? 'Provider on WorkLinkUp' : 'WorkLinkUp member')),
       profileImageData: String(
         contact.profileImageData
-        || (isProvider ? 'images/sections/profileimg.avif' : '')
+        || (isSupport ? 'images/logo/joblinks.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
       ).trim(),
       providerPublicId: String(contact.providerPublicId || '').trim()
     };
@@ -4249,6 +4252,7 @@
   }
 
   function getConversationRoleLabel(profile) {
+    if (profile?.isSupport) return 'Verified support';
     return profile?.roleLabel || profile?.specialty || profile?.primaryCategory || 'WorkLinkUp member';
   }
 
@@ -4749,6 +4753,11 @@
             });
             if (normalized.uid) contactDirectory.set(normalized.uid, normalized);
           });
+          contactDirectory.set('joblink-support', normalizeMessageContact({
+            uid: 'joblink-support',
+            displayName: 'JobLinks Support',
+            isSupport: true
+          }));
 
           return Array.from(contactDirectory.values());
         });
@@ -4758,6 +4767,11 @@
 
     async function ensureContactProfile(uid, provinceSlug = '') {
       if (!uid) return null;
+      if (uid === 'joblink-support') {
+        const support = normalizeMessageContact({ uid, displayName: 'JobLinks Support', isSupport: true });
+        contactDirectory.set(uid, support);
+        return support;
+      }
       if (contactDirectory.has(uid)) return contactDirectory.get(uid);
 
       const [userDoc, providerProfile] = await Promise.all([
@@ -4808,7 +4822,7 @@
               <div class="messages-chat-top">
                 <div class="messages-chat-title">
                   <strong>${escapeHtml(conversation.peerName)}</strong>
-                  ${conversation.profile?.isProvider ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
+                  ${conversation.profile?.isProvider || conversation.profile?.isSupport ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
                 </div>
                 <span class="messages-chat-time">${escapeHtml(formatMessagesListStamp(conversation.createdAtMs))}</span>
               </div>
@@ -4898,7 +4912,7 @@
               <div class="messages-suggestion-copy">
                 <div class="messages-suggestion-title">
                   <strong>${escapeHtml(contact.displayName)}</strong>
-                  ${contact.isProvider ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
+                  ${contact.isProvider || contact.isSupport ? '<span class="messages-verified-tick"><i class="fa-solid fa-check"></i></span>' : ''}
                 </div>
                 <div class="messages-suggestion-role">${escapeHtml(getConversationRoleLabel(contact))}</div>
                 <div class="messages-suggestion-meta">
@@ -4974,7 +4988,7 @@
           state.activePeerProvince = activeProfile.provinceSlug || state.activePeerProvince;
           threadTitle.textContent = state.activePeerName || 'Conversation';
           threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
-          threadVerified.hidden = !state.activePeerProfile?.isProvider;
+          threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
           threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
         }
       }
@@ -4985,11 +4999,14 @@
     async function applyConversationList(conversations) {
       const nextConversations = conversations.map((conversation) => {
         const profile = contactDirectory.get(conversation.peerUid) || conversation.profile || null;
+        const supportProfile = conversation.peerIsSupport || conversation.peerUid === 'joblink-support'
+          ? normalizeMessageContact({ uid: 'joblink-support', displayName: 'JobLinks Support', isSupport: true })
+          : null;
         return {
           ...conversation,
-          peerName: profile?.displayName || conversation.peerName || 'Conversation',
-          peerProvinceSlug: profile?.provinceSlug || conversation.peerProvinceSlug || '',
-          profile
+          peerName: supportProfile?.displayName || profile?.displayName || conversation.peerName || 'Conversation',
+          peerProvinceSlug: supportProfile?.provinceSlug || profile?.provinceSlug || conversation.peerProvinceSlug || '',
+          profile: supportProfile || profile
         };
       });
 
@@ -5036,7 +5053,7 @@
 
       threadTitle.textContent = state.activePeerName || 'Conversation';
       threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile, lastSeenAtMs);
-      threadVerified.hidden = !state.activePeerProfile?.isProvider;
+      threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
       threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
       threadBody.innerHTML = visibleMessages.length
         ? buildThreadMessagesMarkup(visibleMessages, account.uid, threadQuery)
@@ -5087,7 +5104,7 @@
       refreshComposerState();
       threadTitle.textContent = state.activePeerName || 'Conversation';
       threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
-      threadVerified.hidden = !state.activePeerProfile?.isProvider;
+      threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
       threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
 
       ensureContactProfile(currentPeerUid, state.activePeerProvince).then((profile) => {
@@ -5097,7 +5114,7 @@
         state.activePeerProvince = profile.provinceSlug || state.activePeerProvince;
         threadTitle.textContent = state.activePeerName || 'Conversation';
         threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
-        threadVerified.hidden = !state.activePeerProfile?.isProvider;
+        threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
         threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
         renderChatList();
       }).catch(() => {});

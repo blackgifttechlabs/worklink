@@ -66,6 +66,10 @@ const ADMIN_BOOTSTRAP_ID = 'primary-admin';
 const ADMIN_BOOTSTRAP_PIN = '1677';
 const MESSAGE_THREADS_PATH = 'messages';
 const MESSAGE_INDEX_PATH = 'conversationIndex';
+const SUPPORT_UID = 'joblink-support';
+const SUPPORT_NAME = 'JobLinks Support';
+const SUPPORT_EMAIL = 'support@joblink.co.zw';
+const SUPPORT_PHONE = '+263788575998';
 const CLIENTS_COLLECTION = 'clients';
 const JOBS_COLLECTION = 'jobs';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
@@ -526,6 +530,26 @@ function getAccountPayload(user = auth.currentUser) {
   };
 }
 
+function getBannedAccountMessage() {
+  return `Your account was temporarily banned. Contact support at ${SUPPORT_EMAIL} or ${SUPPORT_PHONE}.`;
+}
+
+async function assertAccountActive(uid) {
+  if (!uid) return null;
+  const userDoc = await getUserDocument(uid, { forceRefresh: true }).catch(() => null);
+  const status = String(userDoc?.accountStatus || '').trim().toLowerCase();
+  const isBanned = userDoc?.accountDeactivated === true
+    || userDoc?.deactivated === true
+    || status === 'deactivated'
+    || status === 'banned'
+    || status === 'temporarily_banned';
+  if (!isBanned) return userDoc;
+
+  await firebaseSignOut(auth).catch(() => {});
+  persistUser(null);
+  throw new Error(getBannedAccountMessage());
+}
+
 function persistAccountDetails(extra = {}) {
   try {
     const current = getStoredAccount() || {};
@@ -661,18 +685,25 @@ function normalizeAdminRecord(id, data = {}) {
 }
 
 function normalizeRealtimeMessage(id, data = {}, conversationId = '') {
+  const fromUid = String(data.fromUid || '').trim();
+  const toUid = String(data.toUid || '').trim();
+  const fromIsSupport = Boolean(data.fromIsSupport) || fromUid === SUPPORT_UID;
+  const toIsSupport = Boolean(data.toIsSupport) || toUid === SUPPORT_UID;
   return {
     id,
     conversationId: String(data.conversationId || conversationId || '').trim(),
     participants: Array.isArray(data.participants) ? data.participants : [],
-    fromUid: String(data.fromUid || '').trim(),
-    toUid: String(data.toUid || '').trim(),
-    fromName: String(data.fromName || '').trim(),
-    toName: String(data.toName || '').trim(),
+    fromUid,
+    toUid,
+    fromName: fromIsSupport ? SUPPORT_NAME : String(data.fromName || '').trim(),
+    toName: toIsSupport ? SUPPORT_NAME : String(data.toName || '').trim(),
     fromProvinceSlug: String(data.fromProvinceSlug || '').trim(),
     toProvinceSlug: String(data.toProvinceSlug || '').trim(),
     text: String(data.text || '').trim(),
     imageData: String(data.imageData || '').trim(),
+    fromIsSupport,
+    toIsSupport,
+    broadcastId: String(data.broadcastId || '').trim(),
     viewedAtMs: Number(data.viewedAtMs || 0),
     createdAtMs: Number(data.createdAtMs || 0)
   };
@@ -716,8 +747,9 @@ function buildConversationIndexMap(messages) {
     const senderSummary = indexMap.get(senderKey) || {
       conversationId: message.conversationId,
       peerUid: message.toUid,
-      peerName: message.toName,
+      peerName: message.toIsSupport || message.toUid === SUPPORT_UID ? SUPPORT_NAME : message.toName,
       peerProvinceSlug: message.toProvinceSlug || '',
+      peerIsSupport: message.toIsSupport || message.toUid === SUPPORT_UID,
       lastMessage: '',
       lastMessageType: 'text',
       createdAtMs: 0,
@@ -729,8 +761,9 @@ function buildConversationIndexMap(messages) {
     const recipientSummary = indexMap.get(recipientKey) || {
       conversationId: message.conversationId,
       peerUid: message.fromUid,
-      peerName: message.fromName,
+      peerName: message.fromIsSupport || message.fromUid === SUPPORT_UID ? SUPPORT_NAME : message.fromName,
       peerProvinceSlug: message.fromProvinceSlug || '',
+      peerIsSupport: message.fromIsSupport || message.fromUid === SUPPORT_UID,
       lastMessage: '',
       lastMessageType: 'text',
       createdAtMs: 0,
@@ -984,6 +1017,12 @@ async function syncUserDocument(account, extra = {}) {
   mergeBool('clientProfileComplete', extra.clientProfileComplete);
   mergeBool('providerProfileComplete', extra.providerProfileComplete, account.providerProfileComplete);
 
+  payload.accountStatus = String(extra.accountStatus || existingUser?.accountStatus || 'active').trim() || 'active';
+  payload.accountDeactivated = Boolean(extra.accountDeactivated ?? existingUser?.accountDeactivated ?? false);
+  if (existingUser?.deactivatedBy) payload.deactivatedBy = existingUser.deactivatedBy;
+  if (existingUser?.deactivatedAtMs) payload.deactivatedAtMs = Number(existingUser.deactivatedAtMs || 0);
+  if (existingUser?.reactivatedAtMs) payload.reactivatedAtMs = Number(existingUser.reactivatedAtMs || 0);
+
   const mergeNum = (key, value) => {
     const nextValue = value ?? (existingUser ? existingUser[key] : 0);
     payload[key] = Number(nextValue || 0);
@@ -1105,6 +1144,7 @@ async function signInWithGoogle() {
     const user = result.user;
     const account = getAccountPayload(user);
     await syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
+    await assertAccountActive(user.uid);
     return {
       user,
       redirected: false
@@ -1129,6 +1169,7 @@ async function signInWithEmail(email, password) {
   const user = result.user;
   const account = getAccountPayload(user);
   await syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
+  await assertAccountActive(user.uid);
   return user;
 }
 
@@ -1311,9 +1352,10 @@ async function resetPassword(email) {
   await sendPasswordResetEmail(auth, email);
 }
 
-async function getUserDocument(uid = auth.currentUser?.uid) {
+async function getUserDocument(uid = auth.currentUser?.uid, options = {}) {
   if (!uid) return null;
-  const cached = getCachedUserDocument(uid);
+  const forceRefresh = Boolean(options?.forceRefresh);
+  const cached = forceRefresh ? null : getCachedUserDocument(uid);
   if (cached) return cached;
   const pending = userDocumentInFlight.get(uid);
   if (pending) return pending;
@@ -3083,6 +3125,174 @@ async function sendMessageToProvider(payload = {}) {
   };
 }
 
+async function writeSupportMessageToUser(payload = {}) {
+  const toUid = String(payload.toUid || '').trim();
+  if (!toUid) throw new Error('Choose a recipient first.');
+
+  const recipientUserDoc = await getUserDocument(toUid).catch(() => null);
+  const recipientName = String(payload.toName || recipientUserDoc?.name || recipientUserDoc?.username || 'WorkLinkUp user').trim();
+  const recipientProvinceSlug = String(payload.toProvinceSlug || recipientUserDoc?.providerProvinceSlug || '').trim();
+  const text = String(payload.text || '').trim();
+  if (!text) throw new Error('Type a message first.');
+
+  const conversationId = createConversationId(SUPPORT_UID, toUid);
+  const now = Date.now();
+  const messagePayload = {
+    conversationId,
+    participants: [SUPPORT_UID, toUid].sort(),
+    fromUid: SUPPORT_UID,
+    toUid,
+    fromName: SUPPORT_NAME,
+    toName: recipientName,
+    fromProvinceSlug: '',
+    toProvinceSlug: recipientProvinceSlug,
+    text,
+    imageData: '',
+    fromIsSupport: true,
+    toIsSupport: false,
+    broadcastId: String(payload.broadcastId || '').trim(),
+    viewedAtMs: 0,
+    createdAtMs: now,
+    createdAt: serverTimestamp()
+  };
+
+  scheduleRealtimeMessagesMigration();
+
+  const createdRef = push(ref(realtimeDb, `${MESSAGE_THREADS_PATH}/${conversationId}`));
+  const createdId = createdRef.key;
+  const recipientIndexSnapshot = await get(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${toUid}/${conversationId}`));
+  const recipientIndex = recipientIndexSnapshot.exists() ? recipientIndexSnapshot.val() : {};
+  const summary = getMessageSummary(messagePayload);
+
+  await Promise.all([
+    set(createdRef, messagePayload),
+    set(ref(realtimeDb, `${MESSAGE_INDEX_PATH}/${toUid}/${conversationId}`), {
+      conversationId,
+      peerUid: SUPPORT_UID,
+      peerName: SUPPORT_NAME,
+      peerProvinceSlug: '',
+      peerIsSupport: true,
+      lastMessage: summary.lastMessage,
+      lastMessageType: summary.lastMessageType,
+      createdAtMs: now,
+      unreadCount: Number(recipientIndex.unreadCount || 0) + 1,
+      lastSeenAtMs: Math.max(Number(recipientIndex.lastSeenAtMs || 0), now),
+      lastMessageIsMine: false,
+      lastMessageViewedAtMs: 0
+    })
+  ]);
+
+  return {
+    id: createdId,
+    ...messagePayload
+  };
+}
+
+async function sendSupportMessageToUser(payload = {}) {
+  const message = await writeSupportMessageToUser(payload);
+  await recordAdminActivity('admin_support_message_sent', {
+    actorScope: 'admin',
+    actorUid: String(payload.admin?.id || ''),
+    actorName: String(payload.admin?.name || 'Admin'),
+    actorEmail: String(payload.admin?.email || ''),
+    subjectUid: message.toUid,
+    subjectName: message.toName,
+    title: 'Support message sent',
+    description: `${SUPPORT_NAME} sent a direct message to ${message.toName}.`,
+    sourceRef: `messages/${message.conversationId}/${message.id}`,
+    createdAtMs: message.createdAtMs
+  });
+  return message;
+}
+
+async function sendAdminBroadcastMessage(payload = {}) {
+  const text = String(payload.text || '').trim();
+  const recipients = Array.isArray(payload.recipients) ? payload.recipients : [];
+  const uniqueRecipients = Array.from(new Map(recipients
+    .map((recipient) => [String(recipient?.uid || '').trim(), recipient])
+    .filter(([uid]) => Boolean(uid))).values());
+
+  if (!text) throw new Error('Type a broadcast message first.');
+  if (!uniqueRecipients.length) throw new Error('No users match that broadcast filter.');
+
+  const broadcastId = `broadcast_${Date.now()}`;
+  const sentMessages = await Promise.all(uniqueRecipients.map((recipient) => writeSupportMessageToUser({
+    toUid: recipient.uid,
+    toName: recipient.name || recipient.displayName || recipient.username || '',
+    toProvinceSlug: recipient.providerProvinceSlug || recipient.provinceSlug || '',
+    text,
+    broadcastId
+  })));
+
+  const scopeLabel = String(payload.scopeLabel || 'All users').trim() || 'All users';
+  await recordAdminActivity('admin_broadcast_sent', {
+    actorScope: 'admin',
+    actorUid: String(payload.admin?.id || ''),
+    actorName: String(payload.admin?.name || 'Admin'),
+    actorEmail: String(payload.admin?.email || ''),
+    subjectUid: broadcastId,
+    subjectName: scopeLabel,
+    title: 'Broadcast message sent',
+    description: `${SUPPORT_NAME} sent a broadcast to ${sentMessages.length} users (${scopeLabel}).`,
+    sourceRef: `broadcasts/${broadcastId}`,
+    createdAtMs: Date.now()
+  });
+
+  return {
+    id: broadcastId,
+    totalSent: sentMessages.length,
+    messages: sentMessages
+  };
+}
+
+async function updateUserAccountStatus(payload = {}) {
+  const uid = String(payload.uid || '').trim();
+  const isActive = String(payload.status || '').trim().toLowerCase() !== 'deactivated';
+  if (!uid) throw new Error('Choose a user first.');
+
+  const now = Date.now();
+  const userDoc = await getUserDocument(uid, { forceRefresh: true }).catch(() => null);
+  const userPayload = {
+    accountStatus: isActive ? 'active' : 'deactivated',
+    accountDeactivated: !isActive,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  };
+
+  if (isActive) {
+    userPayload.reactivatedAtMs = now;
+    userPayload.reactivatedBy = String(payload.admin?.id || '');
+  } else {
+    userPayload.deactivatedAtMs = now;
+    userPayload.deactivatedBy = String(payload.admin?.id || '');
+    userPayload.deactivationReason = String(payload.reason || 'Temporarily banned by admin').trim();
+  }
+
+  await setDoc(doc(db, 'users', uid), userPayload, { merge: true });
+  const provinceSlug = String(payload.provinceSlug || userDoc?.providerProvinceSlug || '').trim();
+  if (provinceSlug) {
+    await setDoc(doc(db, 'providers', provinceSlug, 'profiles', uid), userPayload, { merge: true }).catch(() => {});
+  }
+
+  await recordAdminActivity(isActive ? 'admin_user_activated' : 'admin_user_deactivated', {
+    actorScope: 'admin',
+    actorUid: String(payload.admin?.id || ''),
+    actorName: String(payload.admin?.name || 'Admin'),
+    actorEmail: String(payload.admin?.email || ''),
+    subjectUid: uid,
+    subjectName: String(payload.name || userDoc?.name || uid),
+    title: isActive ? 'Account activated' : 'Account deactivated',
+    description: `${payload.admin?.name || 'An admin'} ${isActive ? 'activated' : 'temporarily banned'} ${payload.name || userDoc?.name || uid}.`,
+    sourceRef: `users/${uid}`,
+    createdAtMs: now
+  });
+
+  return {
+    uid,
+    ...userPayload
+  };
+}
+
 async function listMessagesWithUser(peerUid) {
   if (!auth.currentUser || !peerUid) return [];
   scheduleRealtimeMessagesMigration();
@@ -3139,6 +3349,7 @@ async function listConversations() {
       peerUid: String(conversation.peerUid || '').trim(),
       peerName: String(conversation.peerName || '').trim(),
       peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
+      peerIsSupport: Boolean(conversation.peerIsSupport),
       lastMessage: String(conversation.lastMessage || '').trim(),
       lastMessageType: String(conversation.lastMessageType || 'text').trim(),
       createdAtMs: Number(conversation.createdAtMs || 0),
@@ -3180,6 +3391,7 @@ async function subscribeConversations(callback) {
           peerUid: String(conversation.peerUid || '').trim(),
           peerName: String(conversation.peerName || '').trim(),
           peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
+          peerIsSupport: Boolean(conversation.peerIsSupport),
           lastMessage: String(conversation.lastMessage || '').trim(),
           lastMessageType: String(conversation.lastMessageType || 'text').trim(),
           createdAtMs: Number(conversation.createdAtMs || 0),
@@ -3304,6 +3516,15 @@ onAuthStateChanged(auth, (user) => {
     getUserDocument(user.uid)
       .then((userDoc) => {
         if (!userDoc) return null;
+        const status = String(userDoc.accountStatus || '').trim().toLowerCase();
+        if (userDoc.accountDeactivated === true || status === 'deactivated' || status === 'banned' || status === 'temporarily_banned') {
+          firebaseSignOut(auth).catch(() => {});
+          persistUser(null);
+          window.dispatchEvent(new CustomEvent('worklinkup-auth-blocked', {
+            detail: { message: getBannedAccountMessage() }
+          }));
+          return null;
+        }
         persistAccountDetails({
           name: userDoc.name || account.name,
           email: userDoc.email || '',
@@ -3316,7 +3537,9 @@ onAuthStateChanged(auth, (user) => {
           providerProvince: userDoc.providerProvince || '',
           providerProvinceSlug: userDoc.providerProvinceSlug || '',
           providerPublicId: userDoc.providerPublicId || '',
-          whatsappNumber: userDoc.whatsappNumber || ''
+          whatsappNumber: userDoc.whatsappNumber || '',
+          accountStatus: userDoc.accountStatus || 'active',
+          accountDeactivated: Boolean(userDoc.accountDeactivated)
         });
         return userDoc;
       })
@@ -3422,6 +3645,20 @@ async function getAdminDashboardData() {
   });
 
   const providerByUid = new Map(providers.map((providerProfile) => [providerProfile.uid, providerProfile]));
+  const userByUid = new Map(users.map((user) => [user.uid, user]));
+  const providersWithUserDetails = providers.map((providerProfile) => {
+    const user = userByUid.get(providerProfile.uid) || {};
+    return {
+      ...providerProfile,
+      accountStatus: user.accountStatus || providerProfile.accountStatus || 'active',
+      accountDeactivated: Boolean(user.accountDeactivated || providerProfile.accountDeactivated),
+      deactivatedAtMs: Number(user.deactivatedAtMs || providerProfile.deactivatedAtMs || 0),
+      lastSeenAtMs: Number(user.lastSeenAtMs || providerProfile.lastSeenAtMs || 0),
+      phone: user.phone || providerProfile.phone || '',
+      authEmail: user.authEmail || providerProfile.authEmail || '',
+      username: user.username || providerProfile.username || ''
+    };
+  });
   const usersWithDetails = users.map((user) => {
     const providerProfile = providerByUid.get(user.uid);
     return {
@@ -3451,7 +3688,7 @@ async function getAdminDashboardData() {
   const totalWishlistSaves = carts.reduce((sum, cartDoc) => sum + Number(cartDoc.wishlistCount || 0), 0);
 
   const categoryBreakdownMap = new Map();
-  providers.forEach((providerProfile) => {
+  providersWithUserDetails.forEach((providerProfile) => {
     const key = String(providerProfile.primaryCategory || 'Uncategorized').trim() || 'Uncategorized';
     categoryBreakdownMap.set(key, (categoryBreakdownMap.get(key) || 0) + 1);
   });
@@ -3561,7 +3798,7 @@ async function getAdminDashboardData() {
     users: usersWithDetails,
     admins,
     adminAudit,
-    providers,
+    providers: providersWithUserDetails,
     posts,
     messages,
     carts,
@@ -3628,6 +3865,9 @@ window.softGigglesAuth = {
   recordAdminConsoleAction,
   waitForAuthSession,
   sendMessageToProvider,
+  sendSupportMessageToUser,
+  sendAdminBroadcastMessage,
+  updateUserAccountStatus,
   listMessagesWithUser,
   listConversations,
   markConversationViewed,

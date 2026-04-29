@@ -132,6 +132,61 @@ function resolveFallbackIntent(query = '', candidates = [], reason = 'fallback')
   };
 }
 
+function scoreProvider(provider = {}, rawQuery = '', intent = {}) {
+  const query = normalizeText([
+    rawQuery,
+    intent.service,
+    intent.category,
+    intent.city,
+    intent.province
+  ].filter(Boolean).join(' '));
+  const queryTokens = tokenize(query);
+  const fields = [
+    provider.name,
+    provider.displayName,
+    provider.title,
+    provider.specialty,
+    provider.category,
+    provider.primaryCategory,
+    provider.city,
+    provider.province,
+    provider.location,
+    provider.bio,
+    Array.isArray(provider.services) ? provider.services.join(' ') : ''
+  ].map(normalizeText).filter(Boolean);
+  let score = 0;
+
+  fields.forEach((field) => {
+    if (field === query) score += 260;
+    if (query.includes(field) && field.length >= 3) score += 120;
+    if (field.includes(query) && query.length >= 3) score += 95;
+    const fieldTokens = tokenize(field);
+    queryTokens.forEach((token) => {
+      if (fieldTokens.includes(token)) score += 36;
+      else if (fieldTokens.some((fieldToken) => fieldToken.startsWith(token) || token.startsWith(fieldToken))) score += 24;
+      else if (fieldTokens.some((fieldToken) => levenshtein(token, fieldToken) <= 2)) score += 14;
+    });
+  });
+
+  if (intent.category && fields.some((field) => field.includes(normalizeText(intent.category)))) score += 80;
+  if (intent.service && fields.some((field) => field.includes(normalizeText(intent.service)))) score += 100;
+  if (intent.city && fields.some((field) => field.includes(normalizeText(intent.city)))) score += 40;
+  if (intent.province && fields.some((field) => field.includes(normalizeText(intent.province)))) score += 28;
+  score += Math.min(24, Number(provider.rating || 0) * 4);
+  return Math.max(0, Math.min(100, Math.round((score / 360) * 100)));
+}
+
+function rankProvidersFallback(query = '', providers = [], intent = {}) {
+  return providers
+    .map((provider) => ({
+      uid: String(provider.uid || '').trim(),
+      matchPercent: scoreProvider(provider, query, intent),
+      reason: 'Local text similarity'
+    }))
+    .filter((provider) => provider.uid && provider.matchPercent > 10)
+    .sort((first, second) => second.matchPercent - first.matchPercent);
+}
+
 module.exports = async function searchIntent(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -143,6 +198,9 @@ module.exports = async function searchIntent(request, response) {
   const body = typeof request.body === 'string' ? safeJsonParse(request.body, {}) : (request.body || {});
   const query = String(body.query || '').trim().slice(0, 160);
   const candidates = Array.isArray(body.candidates) ? body.candidates.slice(0, 600) : [];
+  const categories = Array.isArray(body.categories) ? body.categories.slice(0, 80) : [];
+  const matchingCategory = String(body.matchingCategory || '').trim();
+  const providers = Array.isArray(body.providers) ? body.providers.slice(0, 500) : [];
 
   if (!query) {
     sendJson(response, 400, { error: 'query is required' });
@@ -150,19 +208,31 @@ module.exports = async function searchIntent(request, response) {
   }
 
   if (!apiKey) {
-    sendJson(response, 200, resolveFallbackIntent(query, candidates, 'missing-groq-key'));
+    const fallbackIntent = resolveFallbackIntent(query, candidates, 'missing-groq-key');
+    const rankedProviders = rankProvidersFallback(query, providers, fallbackIntent);
+    sendJson(response, 200, {
+      ...fallbackIntent,
+      bestMatches: rankedProviders.slice(0, 3),
+      relatedMatches: rankedProviders.slice(3, 36)
+    });
     return;
   }
 
   const prompt = [
-    'You map messy marketplace searches to the best WorkLinkUp service/category/location candidates.',
-    'Return only compact JSON with keys: query, service, category, city, province, suggestions.',
+    'You map messy marketplace searches to the best WorkLinkUp service/category/location candidates and rank real providers.',
+    'Return only compact JSON with keys: query, service, category, city, province, suggestions, bestMatches, relatedMatches.',
     'suggestions must be an array of at most 6 candidate titles from the provided candidates.',
+    'bestMatches and relatedMatches must be arrays of objects: {uid, matchPercent, reason}.',
+    'matchPercent must be 0-100 and represent nearness to the user search term.',
     'Choose the best service/category/location from the provided candidates. Prefer service/category meaning over location-only matches.',
     'Never invent a service, category, city, or province outside the provided candidates unless it is empty.',
+    'Rank bestMatches first by strongest direct service/category/name fit. Rank relatedMatches by matchPercent nearness to the query.',
     'If a query contains both a service and a location, return both. Example: "gardens in harare" should return a gardening service/category and Harare.',
     `User search: ${query}`,
-    `Candidates: ${JSON.stringify(candidates)}`
+    `Available categories: ${JSON.stringify(categories)}`,
+    `Locally matched category: ${matchingCategory}`,
+    `Candidates: ${JSON.stringify(candidates)}`,
+    `Providers: ${JSON.stringify(providers)}`
   ].join('\n');
 
   try {
@@ -184,7 +254,13 @@ module.exports = async function searchIntent(request, response) {
     });
 
     if (!groqResponse.ok) {
-      sendJson(response, 200, resolveFallbackIntent(query, candidates, 'groq-error'));
+      const fallbackIntent = resolveFallbackIntent(query, candidates, 'groq-error');
+      const rankedProviders = rankProvidersFallback(query, providers, fallbackIntent);
+      sendJson(response, 200, {
+        ...fallbackIntent,
+        bestMatches: rankedProviders.slice(0, 3),
+        relatedMatches: rankedProviders.slice(3, 36)
+      });
       return;
     }
 
@@ -192,7 +268,13 @@ module.exports = async function searchIntent(request, response) {
     const content = data?.choices?.[0]?.message?.content || '';
     const intent = extractJsonObject(content);
     if (!intent) {
-      sendJson(response, 200, resolveFallbackIntent(query, candidates, 'unreadable-groq-response'));
+      const fallbackIntent = resolveFallbackIntent(query, candidates, 'unreadable-groq-response');
+      const rankedProviders = rankProvidersFallback(query, providers, fallbackIntent);
+      sendJson(response, 200, {
+        ...fallbackIntent,
+        bestMatches: rankedProviders.slice(0, 3),
+        relatedMatches: rankedProviders.slice(3, 36)
+      });
       return;
     }
 
@@ -203,9 +285,17 @@ module.exports = async function searchIntent(request, response) {
       city: String(intent.city || '').trim(),
       province: String(intent.province || '').trim(),
       suggestions: Array.isArray(intent.suggestions) ? intent.suggestions.slice(0, 6) : [],
+      bestMatches: Array.isArray(intent.bestMatches) ? intent.bestMatches.slice(0, 8) : [],
+      relatedMatches: Array.isArray(intent.relatedMatches) ? intent.relatedMatches.slice(0, 60) : [],
       source: 'groq'
     });
   } catch (error) {
-    sendJson(response, 200, resolveFallbackIntent(query, candidates, 'request-failed'));
+    const fallbackIntent = resolveFallbackIntent(query, candidates, 'request-failed');
+    const rankedProviders = rankProvidersFallback(query, providers, fallbackIntent);
+    sendJson(response, 200, {
+      ...fallbackIntent,
+      bestMatches: rankedProviders.slice(0, 3),
+      relatedMatches: rankedProviders.slice(3, 36)
+    });
   }
 };

@@ -37,6 +37,11 @@
     providersCategory: 'all',
     messagesSearch: '',
     messagesStatus: 'all',
+    activeProviderUid: '',
+    activeProviderProvinceSlug: '',
+    broadcastScope: 'all',
+    broadcastProvince: 'all',
+    broadcastCategory: 'all',
     adminActivityDate: 'all',
     adminActivityAction: 'all',
     adminActivityTarget: '',
@@ -267,6 +272,50 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function getUserByUid(uid) {
+    const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
+    return users.find((user) => String(user.uid || '') === String(uid || '')) || null;
+  }
+
+  function getProviderByUid(uid) {
+    const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
+    return providers.find((provider) => String(provider.uid || '') === String(uid || '')) || null;
+  }
+
+  function isAccountDeactivated(record = {}) {
+    const status = String(record.accountStatus || '').trim().toLowerCase();
+    return record.accountDeactivated === true || status === 'deactivated' || status === 'banned' || status === 'temporarily_banned';
+  }
+
+  function getProviderMessages(uid) {
+    const messages = Array.isArray(state.snapshot?.messages) ? state.snapshot.messages : [];
+    return messages.filter((message) => message.fromUid === uid || message.toUid === uid)
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  }
+
+  function getProviderActivity(uid) {
+    const activity = Array.isArray(state.snapshot?.activity) ? state.snapshot.activity : [];
+    const adminAudit = Array.isArray(state.snapshot?.adminAudit) ? state.snapshot.adminAudit : [];
+    return [...activity, ...adminAudit]
+      .filter((entry) => entry.actorUid === uid || entry.subjectUid === uid)
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  }
+
+  function getMostActiveDays(items) {
+    const counts = new Map();
+    const formatter = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+    items.forEach((item) => {
+      const timestamp = Number(item.createdAtMs || item.updatedAtMs || item.lastSeenAtMs || 0);
+      if (!timestamp) return;
+      const label = formatter.format(new Date(timestamp));
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([label, total]) => ({ label, total }))
+      .sort((first, second) => second.total - first.total)
+      .slice(0, 3);
   }
 
   function readAdminSession() {
@@ -1020,6 +1069,153 @@
     `).join('');
   }
 
+  function setProviderDetailModal(isOpen) {
+    if (!refs.providerDetailModal) return;
+    refs.providerDetailModal.hidden = !isOpen;
+    document.body.classList.toggle('admin-mobile-menu-open', Boolean(isOpen || state.sidebarOpen));
+    if (!isOpen) {
+      state.activeProviderUid = '';
+      state.activeProviderProvinceSlug = '';
+    }
+  }
+
+  function renderProviderDetail(provider) {
+    if (!refs.providerDetailBody || !provider) return;
+    const user = getUserByUid(provider.uid) || {};
+    const merged = { ...provider, ...user, ...provider };
+    const isDeactivated = isAccountDeactivated(merged);
+    const messages = getProviderMessages(provider.uid);
+    const activities = getProviderActivity(provider.uid);
+    const posts = (Array.isArray(state.snapshot?.posts) ? state.snapshot.posts : [])
+      .filter((post) => post.providerUid === provider.uid || post.uid === provider.uid)
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+    const sentCount = messages.filter((message) => message.fromUid === provider.uid).length;
+    const receivedCount = messages.filter((message) => message.toUid === provider.uid).length;
+    const activeDays = getMostActiveDays([
+      ...messages,
+      ...activities,
+      ...posts,
+      { lastSeenAtMs: merged.lastSeenAtMs }
+    ]);
+
+    refs.providerDetailBody.innerHTML = `
+      <div class="admin-detail-layout">
+        <section class="admin-detail-hero ${isDeactivated ? 'is-deactivated' : ''}">
+          <div class="admin-person-main">
+            ${renderAvatar(merged.displayName || merged.name || merged.providerPublicId || 'Provider', merged.profileImageData)}
+            <div class="admin-person-copy">
+              <strong>${escapeHtml(merged.displayName || merged.name || merged.providerPublicId || 'Provider')}</strong>
+              <small>${escapeHtml(merged.providerPublicId || merged.uid || 'No provider ID')}</small>
+            </div>
+          </div>
+          <span class="admin-badge ${isDeactivated ? 'is-danger' : 'is-provider'}">${isDeactivated ? 'Deactivated' : 'Active'}</span>
+        </section>
+
+        <section class="admin-detail-grid">
+          ${[
+            ['Email', merged.email || merged.authEmail || 'No email'],
+            ['Phone', merged.whatsappNumber || merged.phone || 'No phone'],
+            ['Username', merged.username || 'Not set'],
+            ['Province', merged.province || merged.providerProvince || 'Not set'],
+            ['City', merged.city || 'No city'],
+            ['Address', merged.address || 'No address'],
+            ['Category', merged.primaryCategory || 'Not set'],
+            ['Specialty', merged.specialty || 'No specialty'],
+            ['Completed jobs', formatNumber(merged.completedJobs || 0)],
+            ['Rating', Number(merged.averageRating || 0).toFixed(1)],
+            ['Created', formatDateTime(merged.createdAtMs)],
+            ['Last login / seen', formatDateTime(merged.lastSeenAtMs || merged.updatedAtMs)]
+          ].map(([label, value]) => `
+            <div class="admin-detail-field">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `).join('')}
+        </section>
+
+        <section class="admin-detail-actions">
+          <div>
+            <span class="admin-panel-kicker">Account status</span>
+            <div class="admin-radio-row">
+              <label><input type="radio" name="provider-status" value="active" data-provider-status-radio ${isDeactivated ? '' : 'checked'} /> Active</label>
+              <label><input type="radio" name="provider-status" value="deactivated" data-provider-status-radio ${isDeactivated ? 'checked' : ''} /> Deactivated</label>
+            </div>
+          </div>
+          <form class="admin-support-form" data-provider-support-form>
+            <label class="admin-form-field">
+              <span>Send to inbox as JobLinks Support</span>
+              <textarea rows="4" data-provider-support-text placeholder="Type a direct support message"></textarea>
+            </label>
+            <button type="submit" class="admin-refresh-btn">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Send message</span>
+            </button>
+            <div class="admin-form-message" data-provider-support-message hidden></div>
+          </form>
+        </section>
+
+        <section class="admin-detail-grid is-stats">
+          <div class="admin-mini-stat"><span>Messages sent</span><strong>${formatNumber(sentCount)}</strong></div>
+          <div class="admin-mini-stat"><span>Messages received</span><strong>${formatNumber(receivedCount)}</strong></div>
+          <div class="admin-mini-stat"><span>Work posts</span><strong>${formatNumber(posts.length)}</strong></div>
+          <div class="admin-mini-stat"><span>Activities</span><strong>${formatNumber(activities.length)}</strong></div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Most active days</h4>
+          <div class="admin-stacked-list">
+            ${activeDays.length ? activeDays.map((day) => `
+              <div class="admin-person-row"><strong>${escapeHtml(day.label)}</strong><small>${formatNumber(day.total)} activities</small></div>
+            `).join('') : '<div class="admin-list-empty">No activity day pattern is available yet.</div>'}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Recent activity</h4>
+          <div class="admin-stacked-list">
+            ${activities.slice(0, 12).map((entry) => `
+              <div class="admin-activity-feed-row">
+                <div class="admin-activity-badge is-${escapeHtml(getActivityGroup(entry.type))}">${escapeHtml(getActivityBadge(entry.type))}</div>
+                <div class="admin-activity-copy">
+                  <strong>${escapeHtml(entry.title || 'Activity')}</strong>
+                  <p>${escapeHtml(entry.description || 'WorkLinkUp event')}</p>
+                </div>
+                <small>${getRelativeTime(entry.createdAtMs)}</small>
+              </div>
+            `).join('') || '<div class="admin-list-empty">No activity has been recorded for this provider.</div>'}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Messages sent and received</h4>
+          <div class="admin-stacked-list">
+            ${messages.slice(0, 20).map((message) => `
+              <div class="admin-message-log-row">
+                <strong>${escapeHtml(message.fromName || 'Unknown')} to ${escapeHtml(message.toName || 'Unknown')}</strong>
+                <p>${escapeHtml(message.text || (message.imageData ? 'Photo' : 'No text'))}</p>
+                <small>${formatDateTime(message.createdAtMs)}</small>
+              </div>
+            `).join('') || '<div class="admin-list-empty">No messages found for this provider.</div>'}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function openProviderDetail(uid) {
+    const provider = getProviderByUid(uid);
+    if (!provider) return;
+    state.activeProviderUid = provider.uid || '';
+    state.activeProviderProvinceSlug = provider.provinceSlug || '';
+    renderProviderDetail(provider);
+    setProviderDetailModal(true);
+    logAdminAction('admin_provider_detail_opened', 'Provider detail opened', `${state.currentAdmin?.name || 'An admin'} opened provider details for ${provider.displayName || provider.providerPublicId || provider.uid}.`, {
+      uid: provider.uid,
+      name: provider.displayName || provider.providerPublicId || provider.uid,
+      sourceRef: `providers/${provider.provinceSlug || 'unknown'}/profiles/${provider.uid}`
+    });
+  }
+
   function renderProviders() {
     if (!refs.providersBody || !refs.providersTotal || !refs.providersOverview) return;
     const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers.slice() : [];
@@ -1151,16 +1347,17 @@
     `;
 
     if (!filtered.length) {
-      refs.providersBody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">No providers match the current filters.</td></tr>';
+      refs.providersBody.innerHTML = '<tr><td colspan="8" class="admin-empty-cell">No providers match the current filters.</td></tr>';
       return;
     }
 
     refs.providersBody.innerHTML = filtered.map((provider) => `
-      <tr>
+      <tr class="${isAccountDeactivated(provider) ? 'is-deactivated' : ''}">
         <td>
           <div class="admin-table-user">
             <strong>${escapeHtml(provider.displayName || provider.providerPublicId || 'Provider')}</strong>
             <span>${escapeHtml(provider.providerPublicId || provider.uid || 'No public ID')}</span>
+            ${isAccountDeactivated(provider) ? '<small class="admin-danger-copy">Temporarily banned</small>' : ''}
           </div>
         </td>
         <td>
@@ -1188,6 +1385,12 @@
             <span>${formatDateTime(provider.updatedAtMs || provider.createdAtMs)}</span>
             <small>${getRelativeTime(provider.updatedAtMs || provider.createdAtMs)}</small>
           </div>
+        </td>
+        <td>
+          <button type="button" class="admin-row-action" data-provider-detail="${escapeHtml(provider.uid || '')}">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>More</span>
+          </button>
         </td>
       </tr>
     `).join('');
@@ -1295,6 +1498,8 @@
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 
     refs.messagesTotal.textContent = `${formatNumber(filtered.length)} messages`;
+    renderBroadcastHistory();
+    hydrateBroadcastFilters();
 
     if (!filtered.length) {
       refs.messagesBody.innerHTML = '<tr><td colspan="6" class="admin-empty-cell">No messages match the current filters.</td></tr>';
@@ -1326,6 +1531,93 @@
         </td>
       </tr>
     `).join('');
+
+  }
+
+  function hydrateBroadcastFilters() {
+    const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
+    const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
+    const provinceOptions = uniqueSortedValues([
+      ...users.map((user) => user.providerProvince || user.province),
+      ...providers.map((provider) => provider.province)
+    ]);
+    const categoryOptions = uniqueSortedValues(providers.map((provider) => provider.primaryCategory));
+    syncSelectOptions(refs.broadcastProvince, provinceOptions, 'All provinces');
+    syncSelectOptions(refs.broadcastCategory, categoryOptions, 'All categories');
+  }
+
+  function getBroadcastRecipients() {
+    const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
+    const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
+    const providerByUid = new Map(providers.map((provider) => [provider.uid, provider]));
+    return users.filter((user) => {
+      if (!user.uid || user.uid === 'joblink-support') return false;
+      const provider = providerByUid.get(user.uid) || {};
+      const province = String(user.providerProvince || provider.province || '').trim();
+      const category = String(user.primaryCategory || provider.primaryCategory || '').trim();
+      const needsProvince = state.broadcastScope === 'province' || state.broadcastScope === 'province-category';
+      const needsCategory = state.broadcastScope === 'category' || state.broadcastScope === 'province-category';
+      if (needsProvince && state.broadcastProvince !== 'all' && province !== state.broadcastProvince) return false;
+      if (needsCategory && state.broadcastCategory !== 'all' && category !== state.broadcastCategory) return false;
+      return true;
+    }).map((user) => ({
+      ...user,
+      ...(providerByUid.get(user.uid) || {})
+    }));
+  }
+
+  function getBroadcastScopeLabel() {
+    if (state.broadcastScope === 'province') return `Province: ${state.broadcastProvince}`;
+    if (state.broadcastScope === 'category') return `Category: ${state.broadcastCategory}`;
+    if (state.broadcastScope === 'province-category') return `Province: ${state.broadcastProvince}, Category: ${state.broadcastCategory}`;
+    return 'All users';
+  }
+
+  function setBroadcastMessage(text, mode = 'default') {
+    if (!refs.broadcastMessage) return;
+    refs.broadcastMessage.hidden = !text;
+    refs.broadcastMessage.textContent = text || '';
+    refs.broadcastMessage.dataset.state = mode;
+  }
+
+  function setBroadcastModal(isOpen) {
+    if (!refs.broadcastModal) return;
+    refs.broadcastModal.hidden = !isOpen;
+    document.body.classList.toggle('admin-mobile-menu-open', Boolean(isOpen || state.sidebarOpen));
+    if (isOpen) {
+      hydrateBroadcastFilters();
+      window.setTimeout(() => refs.broadcastText?.focus(), 60);
+    }
+  }
+
+  function renderBroadcastHistory() {
+    if (!refs.broadcastHistory) return;
+    const adminAudit = Array.isArray(state.snapshot?.adminAudit) ? state.snapshot.adminAudit : [];
+    const broadcasts = adminAudit
+      .filter((entry) => entry.type === 'admin_broadcast_sent' || entry.type === 'admin_support_message_sent')
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
+      .slice(0, 8);
+
+    refs.broadcastHistory.innerHTML = `
+      <div class="admin-card-head">
+        <div>
+          <span>Admin sent messages</span>
+          <h3>Previous messages</h3>
+        </div>
+      </div>
+      <div class="admin-stacked-list">
+        ${broadcasts.length ? broadcasts.map((entry) => `
+          <div class="admin-activity-feed-row">
+            <div class="admin-activity-badge is-message">${entry.type === 'admin_broadcast_sent' ? 'Broadcast' : 'Support'}</div>
+            <div class="admin-activity-copy">
+              <strong>${escapeHtml(entry.title || 'Admin message')}</strong>
+              <p>${escapeHtml(entry.description || 'Message sent by JobLinks Support.')}</p>
+            </div>
+            <small>${getRelativeTime(entry.createdAtMs)}</small>
+          </div>
+        `).join('') : '<div class="admin-list-empty">No admin messages have been sent yet.</div>'}
+      </div>
+    `;
   }
 
   function setCreateAdminMessage(text, mode = 'default') {
@@ -1461,7 +1753,7 @@
 
   function setLoadingTables(copy) {
     if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
-    if (refs.providersBody) refs.providersBody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.providersBody) refs.providersBody.innerHTML = `<tr><td colspan="8" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.messagesBody) refs.messagesBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.adminActivityBody) refs.adminActivityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
   }
@@ -1599,6 +1891,79 @@
       renderProviders();
     });
 
+    refs.providersBody?.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-provider-detail]');
+      if (!trigger) return;
+      openProviderDetail(trigger.getAttribute('data-provider-detail') || '');
+    });
+
+    document.querySelectorAll('[data-provider-detail-close]').forEach((button) => {
+      button.addEventListener('click', () => setProviderDetailModal(false));
+    });
+
+    refs.providerDetailBody?.addEventListener('change', async (event) => {
+      const radio = event.target.closest('[data-provider-status-radio]');
+      if (!radio || !state.activeProviderUid) return;
+      const provider = getProviderByUid(state.activeProviderUid);
+      const nextStatus = String(radio.value || 'active');
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      if (!provider || !authHelper || typeof authHelper.updateUserAccountStatus !== 'function') return;
+      radio.disabled = true;
+      try {
+        await authHelper.updateUserAccountStatus({
+          uid: provider.uid,
+          name: provider.displayName || provider.providerPublicId || provider.uid,
+          provinceSlug: provider.provinceSlug || provider.providerProvinceSlug || '',
+          status: nextStatus,
+          admin: state.currentAdmin
+        });
+        await loadDashboardData({ showPlaceholders: false });
+        const refreshedProvider = getProviderByUid(provider.uid) || { ...provider, accountStatus: nextStatus, accountDeactivated: nextStatus === 'deactivated' };
+        state.activeProviderUid = provider.uid;
+        renderProviderDetail(refreshedProvider);
+      } catch (error) {
+        window.alert(error?.message || 'Could not update account status.');
+        renderProviderDetail(provider);
+      }
+    });
+
+    refs.providerDetailBody?.addEventListener('submit', async (event) => {
+      const form = event.target.closest('[data-provider-support-form]');
+      if (!form || !state.activeProviderUid) return;
+      event.preventDefault();
+      const provider = getProviderByUid(state.activeProviderUid);
+      const textarea = form.querySelector('[data-provider-support-text]');
+      const messageEl = form.querySelector('[data-provider-support-message]');
+      const text = String(textarea?.value || '').trim();
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      if (!provider || !authHelper || typeof authHelper.sendSupportMessageToUser !== 'function') return;
+      if (messageEl) {
+        messageEl.hidden = false;
+        messageEl.dataset.state = 'default';
+        messageEl.textContent = 'Sending...';
+      }
+      try {
+        await authHelper.sendSupportMessageToUser({
+          toUid: provider.uid,
+          toName: provider.displayName || provider.name || provider.providerPublicId || 'WorkLinkUp user',
+          toProvinceSlug: provider.provinceSlug || provider.providerProvinceSlug || '',
+          text,
+          admin: state.currentAdmin
+        });
+        if (textarea) textarea.value = '';
+        if (messageEl) {
+          messageEl.dataset.state = 'success';
+          messageEl.textContent = 'Message sent to their inbox as JobLinks Support.';
+        }
+        await loadDashboardData({ showPlaceholders: false });
+      } catch (error) {
+        if (messageEl) {
+          messageEl.dataset.state = 'error';
+          messageEl.textContent = error?.message || 'Could not send the support message.';
+        }
+      }
+    });
+
     refs.messagesSearch?.addEventListener('input', (event) => {
       state.messagesSearch = String(event.target.value || '');
       renderMessages();
@@ -1607,6 +1972,59 @@
     refs.messagesStatus?.addEventListener('change', (event) => {
       state.messagesStatus = String(event.target.value || 'all');
       renderMessages();
+    });
+
+    refs.broadcastOpen?.addEventListener('click', () => {
+      setBroadcastMessage('');
+      setBroadcastModal(true);
+    });
+
+    document.querySelectorAll('[data-broadcast-close]').forEach((button) => {
+      button.addEventListener('click', () => setBroadcastModal(false));
+    });
+
+    refs.broadcastScope?.addEventListener('change', (event) => {
+      state.broadcastScope = String(event.target.value || 'all');
+      setBroadcastMessage(`${formatNumber(getBroadcastRecipients().length)} users match this filter.`, 'default');
+    });
+
+    refs.broadcastProvince?.addEventListener('change', (event) => {
+      state.broadcastProvince = String(event.target.value || 'all');
+      setBroadcastMessage(`${formatNumber(getBroadcastRecipients().length)} users match this filter.`, 'default');
+    });
+
+    refs.broadcastCategory?.addEventListener('change', (event) => {
+      state.broadcastCategory = String(event.target.value || 'all');
+      setBroadcastMessage(`${formatNumber(getBroadcastRecipients().length)} users match this filter.`, 'default');
+    });
+
+    refs.broadcastForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      if (!authHelper || typeof authHelper.sendAdminBroadcastMessage !== 'function') {
+        setBroadcastMessage('Admin message tools are not available right now.', 'error');
+        return;
+      }
+
+      const recipients = getBroadcastRecipients();
+      const text = String(refs.broadcastText?.value || '').trim();
+      setBroadcastMessage(`Sending to ${formatNumber(recipients.length)} users...`, 'default');
+      try {
+        const result = await authHelper.sendAdminBroadcastMessage({
+          text,
+          recipients,
+          scopeLabel: getBroadcastScopeLabel(),
+          admin: state.currentAdmin
+        });
+        refs.broadcastForm.reset();
+        state.broadcastScope = 'all';
+        state.broadcastProvince = 'all';
+        state.broadcastCategory = 'all';
+        setBroadcastMessage(`Sent to ${formatNumber(result.totalSent)} users.`, 'success');
+        await loadDashboardData({ showPlaceholders: false });
+      } catch (error) {
+        setBroadcastMessage(error?.message || 'Could not send the broadcast message.', 'error');
+      }
     });
 
     refs.adminActivityDate?.addEventListener('change', (event) => {
@@ -1715,6 +2133,8 @@
         setSidebarOpen(false);
         setAdminModal('create', false);
         setAdminModal('admins', false);
+        setProviderDetailModal(false);
+        setBroadcastModal(false);
       }
     });
 
@@ -1755,12 +2175,23 @@
     refs.providersTotal = document.getElementById('admin-providers-total');
     refs.providersOverview = document.getElementById('admin-providers-overview');
     refs.providersBody = document.getElementById('admin-providers-body');
+    refs.providerDetailModal = document.getElementById('admin-provider-detail-modal');
+    refs.providerDetailBody = document.getElementById('admin-provider-detail-body');
     refs.engagementDashboard = document.getElementById('admin-engagement-dashboard');
     refs.engagementTotal = document.getElementById('admin-engagement-total');
     refs.messagesSearch = document.getElementById('admin-messages-search');
     refs.messagesStatus = document.getElementById('admin-messages-status');
     refs.messagesTotal = document.getElementById('admin-messages-total');
     refs.messagesBody = document.getElementById('admin-messages-body');
+    refs.broadcastOpen = document.getElementById('admin-broadcast-open');
+    refs.broadcastHistory = document.getElementById('admin-broadcast-history');
+    refs.broadcastModal = document.getElementById('admin-broadcast-modal');
+    refs.broadcastForm = document.getElementById('admin-broadcast-form');
+    refs.broadcastScope = document.getElementById('admin-broadcast-scope');
+    refs.broadcastProvince = document.getElementById('admin-broadcast-province');
+    refs.broadcastCategory = document.getElementById('admin-broadcast-category');
+    refs.broadcastText = document.getElementById('admin-broadcast-text');
+    refs.broadcastMessage = document.getElementById('admin-broadcast-message');
     refs.createAdminForm = document.getElementById('admin-create-form');
     refs.createAdminName = document.getElementById('admin-create-name');
     refs.createAdminEmail = document.getElementById('admin-create-email');

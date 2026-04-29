@@ -15,23 +15,61 @@
   <div id="site-header"></div>
 
   <main class="search-results-page" data-search-results-page>
+    <section class="search-results-mobile-head">
+      <button type="button" class="search-results-back" data-search-back aria-label="Go back">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <form class="search-results-searchbar" data-search-results-form>
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" name="query" data-search-results-input placeholder="Search services" autocomplete="off" />
+      </form>
+      <button type="button" class="search-results-filter-btn" data-search-filter-open aria-label="Open filters">
+        <i class="fa-solid fa-filter"></i>
+        <span data-search-filter-dot hidden></span>
+      </button>
+    </section>
+
     <section class="search-results-toolbar">
       <div class="search-results-summary">
         <p data-search-results-count>Searching WorkLinkUp</p>
         <h1 data-search-results-title>Results</h1>
       </div>
-      <button type="button" class="search-results-filter-btn" data-search-filter-open aria-label="Open filters">
-        <i class="fa-solid fa-filter"></i>
-      </button>
+      <label class="search-results-sort">
+        <span>Most relevant</span>
+        <select data-search-sort>
+          <option value="relevant">Most relevant</option>
+          <option value="rating">Top rated</option>
+          <option value="near">Nearest match</option>
+        </select>
+      </label>
     </section>
 
     <section class="search-results-active-filters" data-search-active-filters aria-label="Active filters"></section>
 
-    <section class="search-results-grid" data-search-results-grid>
-      <article class="search-result-card is-loading"></article>
-      <article class="search-result-card is-loading"></article>
-      <article class="search-result-card is-loading"></article>
-      <article class="search-result-card is-loading"></article>
+    <section class="search-results-shell" data-search-results-shell>
+      <section class="search-results-best" data-search-best-results>
+        <article class="search-result-card is-loading"></article>
+      </section>
+
+      <section class="search-results-related-block" data-search-related-block hidden>
+        <div class="search-results-section-head">
+          <h2>Related results</h2>
+          <button type="button" data-search-view-all-related>View all <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="search-results-related-track" data-search-related-results></div>
+      </section>
+
+      <section class="search-results-popular" data-search-popular-block>
+        <h2>Popular searches</h2>
+        <div class="search-results-popular-chips" data-search-popular-chips></div>
+      </section>
+
+      <section class="search-results-grid" data-search-results-grid>
+        <article class="search-result-card is-loading"></article>
+        <article class="search-result-card is-loading"></article>
+        <article class="search-result-card is-loading"></article>
+        <article class="search-result-card is-loading"></article>
+      </section>
     </section>
   </main>
 
