@@ -149,7 +149,71 @@ document.addEventListener('DOMContentLoaded', () => {
     return costs[second.length];
   }
 
+  function normalizeIdentityValue(value = '') {
+    return normalizeText(String(value || '').replace(/^@+/, ''));
+  }
+
+  function getProviderIdentifierFields(item = {}) {
+    const raw = item.raw || {};
+    return [
+      raw.username,
+      raw.providerPublicId,
+      raw.publicId,
+      raw.email,
+      raw.authEmail,
+      raw.phone,
+      raw.phoneNumber,
+      raw.whatsappNumber
+    ].map(normalizeIdentityValue).filter(Boolean);
+  }
+
+  function getProviderNameFields(item = {}) {
+    const raw = item.raw || {};
+    return [
+      raw.displayName,
+      raw.fullName,
+      raw.name,
+      item.title
+    ].map(normalizeIdentityValue).filter(Boolean);
+  }
+
+  function getIdentityMatchScore(item = {}, rawQuery = state.query) {
+    const query = normalizeIdentityValue(rawQuery);
+    if (!query || query.length < 2) return 0;
+
+    const compactQuery = query.replace(/\s+/g, '');
+    const identifiers = getProviderIdentifierFields(item);
+    const names = getProviderNameFields(item);
+    const compactIdentifiers = identifiers.map((value) => value.replace(/\s+/g, ''));
+    const compactNames = names.map((value) => value.replace(/\s+/g, ''));
+
+    if (identifiers.some((value) => value === query)) return 100;
+    if (compactQuery.length >= 3 && compactIdentifiers.some((value) => value === compactQuery)) return 99;
+    if (query.length >= 3 && identifiers.some((value) => value.startsWith(query))) return 96;
+    if (query.length >= 5 && identifiers.some((value) => value.includes(query))) return 91;
+    if (names.some((value) => value === query)) return 94;
+    if (compactQuery.length >= 4 && compactNames.some((value) => value === compactQuery)) return 92;
+    return 0;
+  }
+
+  function getStrongIdentityMatches(rawQuery = state.query) {
+    return allResults
+      .map((item) => ({
+        ...item,
+        identityScore: getIdentityMatchScore(item, rawQuery)
+      }))
+      .filter((item) => Number(item.identityScore || 0) >= 90)
+      .sort((first, second) => (
+        Number(second.identityScore || 0) - Number(first.identityScore || 0)
+        || Number(second.rating || 0) - Number(first.rating || 0)
+        || String(first.title || '').localeCompare(String(second.title || ''))
+      ));
+  }
+
   function getNearnessPercent(item = {}, intent = getCurrentSearchIntent()) {
+    const identityScore = getIdentityMatchScore(item, state.query);
+    if (identityScore >= 90) return identityScore;
+
     const queryParts = [
       state.query,
       state.service,
@@ -444,6 +508,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getSearchBuckets() {
     const intent = getCurrentSearchIntent();
+    const identityMatches = getStrongIdentityMatches(state.query);
+    if (identityMatches.length) {
+      return {
+        intent: {
+          ...intent,
+          service: '',
+          category: '',
+          city: '',
+          province: ''
+        },
+        exact: identityMatches.map((item) => ({
+          ...item,
+          aiGroup: 'identity',
+          aiIndex: 0,
+          nearness: Number(item.identityScore || 100),
+          score: 10000 + Number(item.identityScore || 100)
+        })),
+        related: []
+      };
+    }
+
     const normalizedService = String(state.service || intent.service || '').trim();
     const normalizedCategory = String(state.category || intent.category || '').trim();
     const intentTerms = normalizedService
@@ -823,6 +908,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (countHost) countHost.textContent = 'Understanding your search';
     renderActiveFilters();
 
+    const identityMatches = getStrongIdentityMatches(rawSearch);
+    if (identityMatches.length) {
+      state.searchIntent = {
+        query: rawSearch,
+        service: '',
+        category: '',
+        city: '',
+        province: '',
+        suggestions: []
+      };
+      state.aiRanking = {
+        bestMatches: identityMatches.map((item) => ({
+          uid: item.uid,
+          matchPercent: Number(item.identityScore || 100),
+          reason: 'Direct provider identity match'
+        })),
+        relatedMatches: []
+      };
+      if (countHost) {
+        countHost.textContent = `${identityMatches.length} result${identityMatches.length === 1 ? '' : 's'} for "${rawSearch}"`;
+      }
+      renderActiveFilters();
+      return;
+    }
+
     if (typeof searchIntel.refineIntentWithGroq !== 'function') return;
 
     const remoteIntent = await searchIntel.refineIntentWithGroq(rawSearch, state.searchIntent.suggestions || [], {
@@ -858,6 +968,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return allResults.map((item) => ({
       uid: item.uid,
       name: item.title,
+      username: String(item.raw?.username || ''),
+      providerPublicId: String(item.raw?.providerPublicId || item.raw?.publicId || ''),
       title: item.subtitle,
       specialty: item.subtitle,
       category: item.category,
