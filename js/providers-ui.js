@@ -333,7 +333,7 @@
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/logo.jpg'
+      normalized === 'images/logo/joblinks.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -780,7 +780,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.jpg`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/joblinks.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -1475,7 +1475,7 @@
     const cards = items.map((category) => {
       const href = buildSearchResultsHref(category.label, { category: category.label });
       const summary = (category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`;
-      const imageSrc = resolveMediaSrc(category.image || 'images/logo/logo.jpg');
+      const imageSrc = resolveMediaSrc(category.image || 'images/logo/joblinks.avif');
 
       return `
         <article class="specialists-suggested-card specialists-suggested-category-card">
@@ -4346,7 +4346,7 @@
       page.innerHTML = `
         <div class="messages-auth-empty">
           <div class="messages-auth-empty-panel">
-            <img src="${getBase()}images/logo/logo.jpg" alt="WorkLinkUp" />
+            <img src="${getBase()}images/logo/joblinks.avif" alt="WorkLinkUp" />
             <h1>Sign in to message people on WorkLinkUp.</h1>
             <a href="${getBase()}pages/account.html" class="messages-auth-empty-action">Sign in</a>
           </div>
@@ -5507,7 +5507,7 @@
     if (!account?.loggedIn || !account?.uid) {
       page.innerHTML = `
         <section class="client-profile-auth-card">
-          <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" />
+          <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" />
           <h1>Sign in to view your client profile.</h1>
           <p>Your client profile is separate from provider profiles, so it will not show the provider "no profile found" page.</p>
           <a href="${base}pages/account.html" class="client-profile-primary-link">Sign in</a>

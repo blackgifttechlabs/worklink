@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     query: String(params.get('query') || '').trim(),
     category: String(params.get('category') || '').trim(),
     service: String(params.get('service') || '').trim(),
-    rating: Number(params.get('rating') || 0)
+    rating: Number(params.get('rating') || 0),
+    searchIntent: null
   };
 
   let allResults = [];
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/logo.jpg'
+      normalized === 'images/logo/joblinks.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -93,9 +94,41 @@ document.addEventListener('DOMContentLoaded', () => {
     return queryParts.length > 1 && queryParts.every((part) => normalizedText.includes(part));
   }
 
+  function getSearchIntel() {
+    return window.WorkLinkUpSearchIntelligence || null;
+  }
+
+  function getCurrentSearchIntent() {
+    if (state.searchIntent) return state.searchIntent;
+    const searchIntel = getSearchIntel();
+    if (!searchIntel || typeof searchIntel.resolveIntent !== 'function') {
+      return {
+        query: state.query,
+        service: state.service,
+        category: state.category,
+        city: '',
+        province: '',
+        suggestions: []
+      };
+    }
+    return searchIntel.resolveIntent([state.query, state.service, state.category].filter(Boolean).join(' '));
+  }
+
+  function getIntentSearchTerms(intent = {}) {
+    return [
+      state.query,
+      state.service,
+      state.category,
+      intent.service,
+      intent.category,
+      intent.city,
+      intent.province
+    ].map((value) => String(value || '').trim()).filter(Boolean);
+  }
+
   function resolveImage(src = '') {
     const value = String(src || '').trim();
-    if (!value) return `${base}images/logo/logo.jpg`;
+    if (!value) return `${base}images/logo/joblinks.avif`;
     const unescaped = value
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -192,17 +225,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function scoreResult(item = {}) {
-    const query = normalizeText(state.query || state.service || state.category);
+    const intent = getCurrentSearchIntent();
+    const query = normalizeText(intent.service || state.query || state.service || intent.category || state.category);
     if (!query) return Number(item.rating || 0);
     const title = normalizeText(item.title);
     const subtitle = normalizeText(item.subtitle);
     const category = normalizeText(item.category);
+    const location = normalizeText(item.location);
     const terms = normalizeText(item.terms);
     let score = Number(item.rating || 0);
     if (title === query) score += 100;
     if (title.startsWith(query)) score += 60;
     if (subtitle === query || category === query) score += 48;
     if (subtitle.includes(query) || category.includes(query)) score += 32;
+    if (intent.category && category === normalizeText(intent.category)) score += 44;
+    if (intent.service && terms.includes(normalizeText(intent.service))) score += 56;
+    if (intent.city && location.includes(normalizeText(intent.city))) score += 36;
+    if (intent.province && location.includes(normalizeText(intent.province))) score += 24;
     if (terms.includes(query)) score += 18;
     score += query.split(' ').filter((part) => part && terms.includes(part)).length * 6;
     score += 4;
@@ -210,12 +249,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getFilteredResults() {
-    const query = normalizeText(state.query || state.service);
+    const intent = getCurrentSearchIntent();
+    const serviceTerms = [
+      state.service,
+      state.category,
+      intent.service,
+      intent.category
+    ].map((value) => String(value || '').trim()).filter(Boolean);
+    const queryTerms = serviceTerms.length
+      ? serviceTerms
+      : [state.query, state.service, state.category].map((value) => String(value || '').trim()).filter(Boolean);
     const category = normalizeText(state.category);
     const rating = Number(state.rating || 0);
     return allResults
-      .filter((item) => !query || textMatchesQuery(`${item.terms} ${item.title} ${item.subtitle}`, query))
+      .filter((item) => {
+        if (!queryTerms.length) return true;
+        const haystack = `${item.terms} ${item.title} ${item.subtitle}`;
+        return queryTerms.some((term) => textMatchesQuery(haystack, term));
+      })
       .filter((item) => !category || normalizeText(item.category) === category)
+      .filter((item) => !intent.city || normalizeText(item.location).includes(normalizeText(intent.city)))
+      .filter((item) => !intent.province || normalizeText(item.location).includes(normalizeText(intent.province)))
       .filter((item) => !rating || Number(item.rating || 0) >= rating)
       .map((item) => ({ ...item, score: scoreResult(item) }))
       .sort((first, second) => Number(second.score || 0) - Number(first.score || 0));
@@ -265,8 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderActiveFilters() {
     if (!activeFiltersHost) return;
     const filters = [];
+    const intent = getCurrentSearchIntent();
     if (state.query) filters.push(`Search: ${state.query}`);
-    if (state.category) filters.push(state.category);
+    if (state.category || intent.category) filters.push(state.category || intent.category);
+    if (intent.service && intent.service !== state.query) filters.push(intent.service);
+    if (intent.city) filters.push(intent.city);
+    if (intent.province && intent.province !== intent.city) filters.push(intent.province);
     if (state.rating) filters.push(`${state.rating.toFixed(state.rating % 1 ? 1 : 0)}+ rating`);
     activeFiltersHost.innerHTML = filters.length
       ? filters.map((filter) => `<span>${escapeHtml(filter)}</span>`).join('')
@@ -330,6 +388,35 @@ document.addEventListener('DOMContentLoaded', () => {
     renderResults();
   }
 
+  async function resolveSearchIntentBeforeLoadingProviders() {
+    const searchIntel = getSearchIntel();
+    const rawSearch = [state.query, state.service, state.category].filter(Boolean).join(' ');
+    if (!rawSearch || !searchIntel || typeof searchIntel.resolveIntent !== 'function') return;
+
+    state.searchIntent = searchIntel.resolveIntent(rawSearch);
+    if (countHost) countHost.textContent = 'Understanding your search';
+    renderActiveFilters();
+
+    if (typeof searchIntel.refineIntentWithGroq !== 'function') return;
+
+    const remoteIntent = await searchIntel.refineIntentWithGroq(rawSearch, state.searchIntent.suggestions || [], {
+      includeAllCandidates: true,
+      maxCandidates: 220,
+      timeoutMs: 4500
+    });
+
+    if (!remoteIntent) return;
+    state.searchIntent = {
+      ...state.searchIntent,
+      query: remoteIntent.query || state.searchIntent.query,
+      service: remoteIntent.service || state.searchIntent.service,
+      category: remoteIntent.category || state.searchIntent.category,
+      city: remoteIntent.city || state.searchIntent.city,
+      province: remoteIntent.province || state.searchIntent.province,
+      suggestions: state.searchIntent.suggestions || []
+    };
+  }
+
   function openDialog() {
     if (!dialog) return;
     dialog.hidden = false;
@@ -354,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function init() {
     render();
+    await resolveSearchIntentBeforeLoadingProviders();
     const providerResults = await getProviderResults();
     allResults = providerResults;
     providersLoaded = true;

@@ -1,10 +1,14 @@
-const MAWORKS_CACHE = 'maworks-shell-v2';
+const MAWORKS_CACHE = 'maworks-shell-v5';
 const MAWORKS_ASSETS = [
   './',
   './index.html',
   './css/style.css',
+  './js/home-metrics.js',
   './js/main.js',
+  './js/search-intelligence.js',
   './js/shared-header.js',
+  './js/zimbabwe-locations.js',
+  './images/logo/joblinks.avif',
   './images/pwa/maworks-icon-192.png',
   './images/pwa/maworks-icon-512.png'
 ];

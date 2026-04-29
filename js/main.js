@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getSearchItemIcon(item = {}) {
+    if (item.icon) return item.icon;
     if (item.kind === 'service' || item.kind === 'category') {
       return item.icon || getSearchProviderIcon(item);
     }
@@ -684,27 +685,23 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  function updateHomeAvailableStats(totalJobs = 0) {
+  function updateHomeAvailableStats(totalJobs = 0, jobs = []) {
     const statPills = Array.from(document.querySelectorAll('[data-home-available-stats]'));
     if (!statPills.length) return;
 
-    const isUp = Math.random() >= 0.5;
-    const percentage = Math.floor(4 + (Math.random() * 38));
+    if (window.worklinkHomeMetrics && typeof window.worklinkHomeMetrics.updateOpportunityStat === 'function') {
+      window.worklinkHomeMetrics.updateOpportunityStat(totalJobs, jobs);
+      return;
+    }
+
     statPills.forEach((pill) => {
-      pill.classList.toggle('is-up', isUp);
-      pill.classList.toggle('is-down', !isUp);
       const totalEl = pill.querySelector('[data-home-available-total]');
       const trendEl = pill.querySelector('[data-home-available-trend]');
       const iconEl = pill.querySelector('[data-home-available-trend-icon]');
       if (totalEl) totalEl.textContent = String(totalJobs);
-      if (trendEl) trendEl.textContent = `${percentage}%`;
-      if (iconEl) iconEl.textContent = isUp ? '▲' : '▼';
+      if (trendEl) trendEl.textContent = '0%';
+      if (iconEl) iconEl.textContent = '▲';
     });
-
-    window.clearTimeout(window.homeAvailableStatsTimer);
-    window.homeAvailableStatsTimer = window.setTimeout(() => {
-      updateHomeAvailableStats(totalJobs);
-    }, 3000 + Math.floor(Math.random() * 9000));
   }
 
   function renderHomeAvailableJobCards(hosts, jobs = []) {
@@ -757,21 +754,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderHomeAvailableJobCards(hosts, []);
     updateHomeAvailableStats(0);
+    if (window.worklinkHomeMetrics && typeof window.worklinkHomeMetrics.renderLoading === 'function') {
+      window.worklinkHomeMetrics.renderLoading();
+    }
 
     const authHelper = typeof window.ensureWorkLinkAuth === 'function'
       ? await window.ensureWorkLinkAuth().catch(() => null)
       : window.softGigglesAuth || null;
     if (!authHelper || typeof authHelper.listJobPosts !== 'function') return;
 
-    const jobs = await authHelper.listJobPosts().catch(() => []);
+    const jobs = await authHelper.listJobPosts({ includeApplicationCounts: true }).catch(() => []);
     const openJobs = jobs
-      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open');
+      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open' && !Number(job.completedAtMs || 0) && !String(job.acceptedApplicationUid || '').trim());
     const latestJobs = openJobs
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0))
       .slice(0, 6);
     const enrichedJobs = await enrichHomeJobsWithOwnerProfiles(authHelper, latestJobs);
     renderHomeAvailableJobCards(hosts, enrichedJobs);
-    updateHomeAvailableStats(openJobs.length);
+    updateHomeAvailableStats(openJobs.length, jobs);
+    if (window.worklinkHomeMetrics && typeof window.worklinkHomeMetrics.update === 'function') {
+      window.worklinkHomeMetrics.update({ authHelper, jobs }).catch((error) => {
+        console.error('Error loading home marketplace metrics:', error);
+      });
+    }
   }
 
   function initHomeMarketScrollers() {
@@ -853,6 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function getSearchMatches(rawQuery) {
     const query = String(rawQuery || '').trim().toLowerCase();
+    const searchIntel = window.WorkLinkUpSearchIntelligence;
     const [providers, serviceItems] = await Promise.all([
       getSearchProviders(),
       Promise.resolve(getServiceSearchItems())
@@ -880,24 +886,48 @@ document.addEventListener('DOMContentLoaded', () => {
         _score: item._score
       }));
 
-    const rankedServices = serviceItems
-      .map((item) => ({
-        ...item,
-        _score: scoreServiceSearchItem(item, query)
-      }))
-      .filter((item) => query && item._score > 0)
-      .sort((first, second) => Number(second._score || 0) - Number(first._score || 0))
-      .slice(0, 4)
-      .map((item) => ({
-        kind: item.kind,
+    const localCatalogMatches = searchIntel && typeof searchIntel.rankEntries === 'function'
+      ? searchIntel.rankEntries(query, { limit: 8 })
+      : serviceItems
+        .map((item) => ({
+          ...item,
+          _score: scoreServiceSearchItem(item, query)
+        }))
+        .filter((item) => query && item._score > 0)
+        .sort((first, second) => Number(second._score || 0) - Number(first._score || 0))
+        .slice(0, 6);
+
+    let remoteIntent = null;
+    if (query.length > 3 && searchIntel && typeof searchIntel.refineIntentWithGroq === 'function') {
+      remoteIntent = await searchIntel.refineIntentWithGroq(rawQuery, [...localCatalogMatches, ...rankedProviders], { timeoutMs: 700 });
+    }
+
+    const rankedServices = localCatalogMatches.map((item) => {
+      const remoteBoost = remoteIntent && (
+        normalizeSearchTerms([remoteIntent.service, remoteIntent.category, remoteIntent.city, remoteIntent.province])
+          .map((value) => value.toLowerCase())
+          .some((value) => value && normalizeSearchTerms([item.service, item.category, item.city, item.province, item.title])
+            .map((term) => term.toLowerCase())
+            .includes(value))
+      ) ? 260 : 0;
+
+      return {
+        kind: item.kind === 'alias' ? 'service' : item.kind,
         query: item.query,
         title: item.title,
-        subtitle: item.kind === 'category' ? `Category • ${item.subtitle}` : `Service • ${item.subtitle}`,
+        subtitle: item.kind === 'location'
+          ? item.subtitle
+          : item.kind === 'category'
+            ? `Category • ${item.subtitle}`
+            : `Service • ${item.category || item.subtitle}`,
         icon: item.icon,
         category: item.category || '',
         service: item.service || '',
-        _score: item._score
-      }));
+        city: item.city || '',
+        province: item.province || '',
+        _score: Number(item._score || 0) + remoteBoost
+      };
+    });
 
     return [...rankedServices, ...rankedProviders]
       .sort((first, second) => Number(second._score || 0) - Number(first._score || 0))
@@ -938,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <strong>${highlightMatch(item.title, query)}</strong>
           <small>${highlightMatch(item.subtitle, query)}</small>
         </span>
-        <span class="search-result-type">${escapeHtml(item.kind === 'provider' ? 'Provider' : item.kind === 'category' ? 'Category' : 'Service')}</span>
+        <span class="search-result-type">${escapeHtml(item.kind === 'provider' ? 'Provider' : item.kind === 'category' ? 'Category' : item.kind === 'location' ? 'Location' : 'Service')}</span>
       </button>
     `;
   }
@@ -1326,7 +1356,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.search-bar input').forEach(input => {
     const context = input.dataset.searchContext || 'inline';
-    if (context === 'specialists-page') return;
 
     input.addEventListener('focus', () => {
       if (context === 'overlay') {
@@ -1497,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const image = event.target;
     if (!(image instanceof HTMLImageElement) || image.dataset.fallbackApplied === 'true') return;
     image.dataset.fallbackApplied = 'true';
-    image.src = `${getSiteBasePath()}images/logo/logo.jpg`;
+    image.src = `${getSiteBasePath()}images/logo/joblinks.avif`;
   }, true);
 
   // Filter chips toggle

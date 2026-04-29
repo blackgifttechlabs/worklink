@@ -724,7 +724,7 @@
     const activityMix = [
       { label: 'Registrations', value: userSeries[userSeries.length - 1] || 0, color: '#22c55e' },
       { label: 'Profiles', value: providerSeries[providerSeries.length - 1] || 0, color: '#38bdf8' },
-      { label: 'Posts', value: postSeries[postSeries.length - 1] || 0, color: '#f59e0b' },
+      { label: 'Posts', value: postSeries[postSeries.length - 1] || 0, color: '#da7756' },
       { label: 'Messages', value: messageSeries[messageSeries.length - 1] || 0, color: '#f43f5e' },
       { label: 'Commerce', value: commerceSeries[commerceSeries.length - 1] || 0, color: '#a855f7' }
     ];
@@ -791,7 +791,7 @@
         detail: `${formatNumber(metrics.postsToday)} posted today`,
         icon: 'fa-solid fa-image',
         trend: getSeriesTrend(postSeries),
-        sparkline: renderSparkline(postSeries, '#f59e0b', 'rgba(245,158,11,0.28)')
+        sparkline: renderSparkline(postSeries, '#da7756', 'rgba(218, 119, 86,0.28)')
       })}
 
       ${renderMetricCard({
@@ -814,7 +814,7 @@
         ${renderGroupedBars(labels, userSeries, messageSeries, 'Signups', 'Messages')}
         <div class="admin-mini-gauges">
           ${renderGauge(metrics.providerCompletionRate, 'Provider Completion', `${formatNumber(metrics.providerCount)} profiles live`, '#22c55e')}
-          ${renderGauge(readRate, 'Message Read Rate', `${formatNumber(metrics.unreadMessageCount)} unread messages`, '#f59e0b')}
+          ${renderGauge(readRate, 'Message Read Rate', `${formatNumber(metrics.unreadMessageCount)} unread messages`, '#da7756')}
         </div>
       </section>
 

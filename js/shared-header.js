@@ -578,10 +578,7 @@ function renderHeader() {
     <div class="header-inner">
       <div class="mobile-header-left">
         <a href="${base}index.html" class="logo" aria-label="WorkLinkUp home">
-          <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" class="logo-image" />
-          <span class="logo-wordmark" aria-hidden="true">
-            <span class="logo-work">Work</span><span class="logo-link">Link</span>
-          </span>
+          <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" class="logo-image" />
         </a>
       </div>
       <nav class="header-center-nav" aria-label="Primary navigation">
@@ -660,10 +657,7 @@ function renderHeader() {
       </svg>
     </button>
     <a href="${base}index.html" class="mobile-nav-brand" aria-label="WorkLinkUp home">
-      <img src="${base}images/logo/logo.jpg" alt="WorkLinkUp" class="logo-image" />
-      <span class="logo-wordmark" aria-hidden="true">
-        <span class="logo-work">Work</span><span class="logo-link">Link</span>
-      </span>
+      <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" class="logo-image" />
     </a>
     <div class="nav-inner">
       ${mobileNavItems}
@@ -682,10 +676,7 @@ function renderAccountPanel() {
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
         <div class="account-brand-lockup" aria-hidden="true">
-          <img src="${base}images/logo/logo.jpg" alt="" class="account-brand-logo" />
-          <span class="account-brand-wordmark">
-            <span class="logo-work">Work</span><span class="logo-link">Link</span>
-          </span>
+          <img src="${base}images/logo/joblinks.avif" alt="" class="account-brand-logo" />
         </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
         <p class="account-auth-subtext">Create an account or sign in to continue with WorkLinkUp.</p>
@@ -726,7 +717,7 @@ function renderAccountPanel() {
             <svg class="google-g" viewBox="0 0 18 18" focusable="false">
               <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z" />
               <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.94v2.33A9 9 0 0 0 9 18Z" />
-              <path fill="#FBBC05" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
+              <path fill="#da7756" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
               <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A8.63 8.63 0 0 0 9 0 9 9 0 0 0 .94 4.96l3.01 2.33C4.66 5.16 6.65 3.58 9 3.58Z" />
             </svg>
           </span>
@@ -853,10 +844,7 @@ function injectSharedHeaderOverrides() {
     #site-header .header-inner { max-width: none; width: 100%; padding: 0 28px; display: flex !important; align-items: center; gap: 18px; height: 72px; }
     #site-header .mobile-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 0 0 auto; }
     #site-header .logo { align-items: center; gap: 12px; font-size: 0; white-space: nowrap; }
-    #site-header .logo-image { height: 34px; width: auto; }
-    #site-header .logo-wordmark { display: inline-flex; align-items: baseline; font-size: 31px; font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
-    #site-header .logo-work { color: #076fe5; }
-    #site-header .logo-link { color: rgba(7, 111, 229, 0.42); }
+    #site-header .logo-image { height: 48px; width: auto; object-fit: contain; }
     #site-header nav.header-center-nav { min-width: 0; margin-left: auto; display: flex !important; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; background: transparent !important; border: 0 !important; box-shadow: none !important; position: static !important; z-index: auto !important; width: auto; }
     #site-header .header-center-nav .nav-link { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; font-size: 14px; font-weight: 700; border-radius: 999px; border-bottom: 0; }
     #site-header .header-center-nav .nav-link::after { display: none !important; }
@@ -888,8 +876,7 @@ function injectSharedHeaderOverrides() {
     .account-auth-panel { width: min(32vw, 470px); min-width: 360px; padding: 30px 20px 24px; border-radius: 20px 0 0 20px; }
     .account-auth-copy { text-align: left; margin: 28px 0 18px; }
     .account-brand-lockup { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; }
-    .account-brand-logo { width: auto; height: 26px; }
-    .account-brand-wordmark { display: inline-flex; align-items: baseline; font-size: 29px; font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
+    .account-brand-logo { width: auto; height: 48px; object-fit: contain; }
     .account-email-form-wrap, .account-email-form-wrap.is-open { max-height: none; opacity: 1; margin-top: 0; overflow: visible; }
     .account-auth-method-card,
     .account-auth-btn,
@@ -916,8 +903,7 @@ function injectSharedHeaderOverrides() {
     @media (max-width: 768px) {
       #site-header .header-inner { height: 60px; padding: 0 16px; display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; }
       #site-header .logo { gap: 8px; }
-      #site-header .logo-wordmark { font-size: 22px; }
-      #site-header .logo-image { height: 22px; }
+      #site-header .logo-image { height: 34px; }
       #site-header nav.header-center-nav, #site-header .header-how-link { display: none !important; }
       #site-header .account-link { gap: 0; font-size: 0; }
       .mobile-search-trigger { display: inline-flex; }
@@ -927,7 +913,6 @@ function injectSharedHeaderOverrides() {
       .mobile-search-panel { width: calc(100vw - 20px); border-radius: 24px; }
       .mobile-search-results { max-height: calc(100vh - 220px); }
       .account-auth-panel { width: 100%; min-width: 0; padding: 24px 16px 20px; border-radius: 20px 20px 0 0; }
-      .account-brand-wordmark { font-size: 24px; }
       .account-auth-switch-copy { align-items: flex-start; flex-direction: column; gap: 2px; }
     }
   `;
@@ -1047,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="app-install-sheet__brand">
-            <img src="${getBasePath()}images/pwa/maworks-icon-192.png" alt="MaWorks logo" class="app-install-sheet__logo" />
+            <img src="${getBasePath()}images/logo/joblinks.avif" alt="WorkLinkUp logo" class="app-install-sheet__logo" />
             <div class="app-install-sheet__copy">
               <span class="app-install-sheet__eyebrow">Download App</span>
               <h3 id="app-install-sheet-title">Install MaWorks</h3>

@@ -6,6 +6,9 @@
     week: 7,
     month: 31
   };
+  const JOB_POST_DRAFT_KEY = 'worklinkup_post_job_draft_v1';
+  const JOB_METRIC_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const JOB_METRIC_ONLINE_WINDOW_MS = 15 * 60 * 1000;
 
   function getBase() {
     if (typeof getBasePath === 'function') return getBasePath();
@@ -19,6 +22,170 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function toMetricMs(value) {
+    const numeric = Number(value || 0);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+
+  function countMetricWindow(records = [], fieldName = 'createdAtMs', startMs = 0, endMs = Date.now()) {
+    return records.filter((record) => {
+      const recordMs = toMetricMs(record[fieldName]);
+      return recordMs >= startMs && recordMs < endMs;
+    }).length;
+  }
+
+  function calculateMetricChange(currentValue = 0, previousValue = 0) {
+    const current = Number(currentValue || 0);
+    const previous = Number(previousValue || 0);
+    if (!previous) return current ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }
+
+  function calculateFasterChange(currentValue = 0, previousValue = 0) {
+    const current = Number(currentValue || 0);
+    const previous = Number(previousValue || 0);
+    if (!previous) return 0;
+    return Math.round(((previous - current) / previous) * 100);
+  }
+
+  function formatMetricDuration(minutes = 0) {
+    const rounded = Math.max(0, Math.round(Number(minutes || 0)));
+    if (rounded < 60) return `${rounded || 0} min`;
+    const hours = rounded / 60;
+    return hours < 10 ? `${Math.round(hours * 10) / 10} hr` : `${Math.round(hours)} hr`;
+  }
+
+  function averageMetricValue(values = []) {
+    const valid = values.filter((value) => Number.isFinite(Number(value)) && Number(value) >= 0);
+    if (!valid.length) return 0;
+    return valid.reduce((sum, value) => sum + Number(value), 0) / valid.length;
+  }
+
+  function getMetricMonthWindow(offset = 0) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
+    return { startMs: start.getTime(), endMs: end.getTime() };
+  }
+
+  function isOpenMetricJob(job = {}) {
+    const status = String(job.status || 'open').trim().toLowerCase();
+    return status === 'open' && !toMetricMs(job.completedAtMs) && !String(job.acceptedApplicationUid || '').trim();
+  }
+
+  function isCompletedMetricJob(job = {}) {
+    const status = String(job.status || '').trim().toLowerCase();
+    return Boolean(toMetricMs(job.completedAtMs) || status === 'completed' || status === 'paid');
+  }
+
+  function getMetricTrend(change = 0, suffix = '') {
+    const direction = Number(change || 0) >= 0 ? 'up' : 'down';
+    return {
+      direction,
+      className: direction === 'up' ? 'is-up' : 'is-down',
+      icon: direction === 'up' ? '▲' : '▼',
+      text: `${Math.abs(Math.round(Number(change || 0)))}%${suffix ? ` ${suffix}` : ''}`
+    };
+  }
+
+  function buildJobMarketSparkline(points = []) {
+    const values = points.map((point) => Math.max(0, Number(point || 0)));
+    const width = 260;
+    const height = 72;
+    const maxValue = Math.max(1, ...values);
+    const step = values.length > 1 ? width / (values.length - 1) : width;
+    const linePoints = values.map((value, index) => {
+      const x = Math.round(index * step);
+      const y = Math.round(height - ((value / maxValue) * (height - 14)) - 7);
+      return `${x},${y}`;
+    }).join(' ');
+    const fillPoints = `0,${height} ${linePoints} ${width},${height}`;
+    return `
+      <svg class="job-market-sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Posted jobs over the last 14 days" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="job-market-line-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#da7756" stop-opacity="0.26" />
+            <stop offset="100%" stop-color="#da7756" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points="${escapeHtml(fillPoints)}" fill="url(#job-market-line-fill)"></polygon>
+        <polyline points="${escapeHtml(linePoints)}" fill="none" stroke="#da7756" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      </svg>
+    `;
+  }
+
+  function initJobPageMomentumScroll(page) {
+    if (!(page instanceof HTMLElement) || page.dataset.momentumScrollBound === '1') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    page.dataset.momentumScrollBound = '1';
+
+    let frameId = 0;
+    let velocity = 0;
+    let lastTouchY = 0;
+    let lastTouchAt = 0;
+
+    function cancelMomentum() {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = 0;
+      velocity = 0;
+    }
+
+    function canUseMomentum(event) {
+      const target = event.target instanceof Element ? event.target : null;
+      return !target?.closest('input, textarea, select, [contenteditable="true"], .job-modal-shell, .job-location-dropdown');
+    }
+
+    function runMomentum() {
+      if (Math.abs(velocity) < 0.04) {
+        cancelMomentum();
+        return;
+      }
+      const before = window.scrollY;
+      window.scrollBy({ top: velocity * 16, left: 0, behavior: 'auto' });
+      const after = window.scrollY;
+      if (before === after) {
+        cancelMomentum();
+        return;
+      }
+      velocity *= 0.92;
+      frameId = window.requestAnimationFrame(runMomentum);
+    }
+
+    page.addEventListener('touchstart', (event) => {
+      if (!canUseMomentum(event)) return;
+      cancelMomentum();
+      const touch = event.touches[0];
+      lastTouchY = Number(touch?.clientY || 0);
+      lastTouchAt = performance.now();
+    }, { passive: true });
+
+    page.addEventListener('touchmove', (event) => {
+      if (!canUseMomentum(event)) return;
+      const touch = event.touches[0];
+      const nextY = Number(touch?.clientY || 0);
+      const now = performance.now();
+      const elapsed = Math.max(8, now - lastTouchAt);
+      const delta = lastTouchY - nextY;
+      velocity = (delta / elapsed) * 0.82;
+      lastTouchY = nextY;
+      lastTouchAt = now;
+    }, { passive: true });
+
+    page.addEventListener('touchend', (event) => {
+      if (!canUseMomentum(event) || Math.abs(velocity) < 0.08) return;
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(runMomentum);
+    }, { passive: true });
+
+    page.addEventListener('wheel', (event) => {
+      if (!canUseMomentum(event) || Math.abs(event.deltaY) < 2) return;
+      event.preventDefault();
+      velocity += event.deltaY * 0.03;
+      velocity = Math.max(-4.8, Math.min(4.8, velocity));
+      if (!frameId) frameId = window.requestAnimationFrame(runMomentum);
+    }, { passive: false });
   }
 
   function getStoredAccount() {
@@ -561,7 +728,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/logo.jpg`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/joblinks.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -888,14 +1055,259 @@
         <svg class="google-g" viewBox="0 0 18 18" focusable="false">
           <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.08-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z" />
           <path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.34-1.58-5.05-3.71H.94v2.33A9 9 0 0 0 9 18Z" />
-          <path fill="#FBBC05" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
+          <path fill="#da7756" d="M3.95 10.71A5.41 5.41 0 0 1 3.67 9c0-.59.1-1.16.28-1.71V4.96H.94A9 9 0 0 0 0 9c0 1.45.34 2.82.94 4.04l3.01-2.33Z" />
           <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58A8.63 8.63 0 0 0 9 0 9 9 0 0 0 .94 4.96l3.01 2.33C4.66 5.16 6.65 3.58 9 3.58Z" />
         </svg>
       </span>
     `;
   }
 
+  function getZimbabweLocationData() {
+    return Array.isArray(window.WorkLinkUpZimbabweLocations) ? window.WorkLinkUpZimbabweLocations : [];
+  }
+
+  function getProvinceItems(query = '') {
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    return getZimbabweLocationData()
+      .filter((item) => !normalizedQuery || item.province.toLowerCase().includes(normalizedQuery))
+      .map((item) => ({
+        value: item.province,
+        label: item.province,
+        subtitle: `${item.cities.length} cities and towns`,
+        icon: 'fa-solid fa-map'
+      }));
+  }
+
+  function getCityItems(province = '', query = '') {
+    const normalizedProvince = String(province || '').trim();
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const provinceRecord = getZimbabweLocationData().find((item) => item.province === normalizedProvince);
+    const cities = provinceRecord ? provinceRecord.cities : [];
+    return cities
+      .filter((city, index, list) => list.indexOf(city) === index)
+      .filter((city) => !normalizedQuery || city.toLowerCase().includes(normalizedQuery))
+      .sort((first, second) => first.localeCompare(second))
+      .map((city) => ({
+        value: city,
+        label: city,
+        subtitle: normalizedProvince || 'Zimbabwe',
+        icon: 'fa-solid fa-location-dot'
+      }));
+  }
+
+  function readPostJobDraft() {
+    try {
+      const raw = sessionStorage.getItem(JOB_POST_DRAFT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writePostJobDraft(draft = {}) {
+    try {
+      sessionStorage.setItem(JOB_POST_DRAFT_KEY, JSON.stringify(draft));
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function clearPostJobDraft() {
+    try {
+      sessionStorage.removeItem(JOB_POST_DRAFT_KEY);
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function getPostJobDraftFromForm(form, controls = {}) {
+    if (!(form instanceof HTMLFormElement)) return {};
+    const data = new FormData(form);
+    return {
+      category: controls.categoryCombobox?.getValue() || controls.categoryCombobox?.getInputValue() || String(data.get('category') || ''),
+      subcategory: controls.subcategoryCombobox?.getValue() || controls.subcategoryCombobox?.getInputValue() || String(data.get('subcategory') || ''),
+      description: String(data.get('description') || ''),
+      budget: String(data.get('budget') || ''),
+      province: controls.provinceCombobox?.getValue() || controls.provinceCombobox?.getInputValue() || String(data.get('province') || ''),
+      city: controls.cityCombobox?.getValue() || controls.cityCombobox?.getInputValue() || String(data.get('city') || ''),
+      streetAddress: String(data.get('streetAddress') || '')
+    };
+  }
+
+  function buildPostAuthCompactMarkup() {
+    return `
+      <section class="job-post-auth-compact" data-auth-scope="post">
+        <div>
+          <strong>Sign in to post</strong>
+          <span>Your draft stays here while you sign in.</span>
+        </div>
+        <div class="job-post-auth-buttons">
+          <button type="button" class="job-post-auth-choice" data-job-post-email-auth>
+            <i class="fa-regular fa-envelope"></i>
+            <span>Sign in with email</span>
+          </button>
+          <button type="button" class="job-post-auth-choice is-google" data-job-post-google-auth>
+            ${getGoogleIconMarkup()}
+            <span>Continue with Google</span>
+          </button>
+        </div>
+        <div class="job-post-email-panel" data-job-post-email-panel hidden>
+          <div class="job-auth-mode-switch">
+            <button type="button" class="is-active" data-post-auth-mode="signin">Sign in</button>
+            <button type="button" data-post-auth-mode="signup">Create account</button>
+          </div>
+          <label class="job-auth-field" data-post-auth-name-row hidden>
+            <span>Full name</span>
+            <input type="text" data-post-auth-name placeholder="Tinashe Moyo" />
+          </label>
+          <label class="job-auth-field">
+            <span>Email address</span>
+            <input type="email" data-post-auth-email placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label class="job-auth-field">
+            <span>Password</span>
+            <input type="password" data-post-auth-password placeholder="Enter password" autocomplete="current-password" />
+          </label>
+          <button type="button" class="btn-primary job-auth-submit" data-post-auth-submit>Sign in and continue</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function bindPostAuthCompact(form, controls = {}) {
+    const host = document.querySelector('[data-auth-scope="post"]');
+    if (!(host instanceof HTMLElement)) return;
+    const emailButton = host.querySelector('[data-job-post-email-auth]');
+    const googleButton = host.querySelector('[data-job-post-google-auth]');
+    const emailPanel = host.querySelector('[data-job-post-email-panel]');
+    const modeButtons = Array.from(host.querySelectorAll('[data-post-auth-mode]'));
+    const nameRow = host.querySelector('[data-post-auth-name-row]');
+    const nameInput = host.querySelector('[data-post-auth-name]');
+    const emailInput = host.querySelector('[data-post-auth-email]');
+    const passwordInput = host.querySelector('[data-post-auth-password]');
+    const submitButton = host.querySelector('[data-post-auth-submit]');
+    let authMode = 'signin';
+
+    function preserveDraft() {
+      writePostJobDraft(getPostJobDraftFromForm(form, controls));
+    }
+
+    function syncMode() {
+      modeButtons.forEach((button) => button.classList.toggle('is-active', button.getAttribute('data-post-auth-mode') === authMode));
+      if (nameRow instanceof HTMLElement) nameRow.hidden = authMode !== 'signup';
+      if (submitButton instanceof HTMLElement) {
+        submitButton.textContent = authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue';
+      }
+    }
+
+    emailButton?.addEventListener('click', () => {
+      preserveDraft();
+      if (emailPanel instanceof HTMLElement) {
+        emailPanel.hidden = !emailPanel.hidden;
+        window.setTimeout(() => emailInput?.focus(), 40);
+      }
+    });
+
+    modeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        authMode = button.getAttribute('data-post-auth-mode') || 'signin';
+        syncMode();
+      });
+    });
+
+    googleButton?.addEventListener('click', async () => {
+      preserveDraft();
+      const authHelper = await waitForAuthHelper();
+      if (!authHelper || typeof authHelper.signInWithGoogle !== 'function') return;
+      setButtonLoading(googleButton, true);
+      try {
+        const result = await authHelper.signInWithGoogle();
+        if (result?.redirected) return;
+        window.location.href = `${getBase()}pages/post-job.html`;
+      } catch (error) {
+        window.alert(error.message || 'Could not complete Google sign in.');
+      } finally {
+        setButtonLoading(googleButton, false);
+      }
+    });
+
+    submitButton?.addEventListener('click', async () => {
+      preserveDraft();
+      const authHelper = await waitForAuthHelper();
+      if (!authHelper) return;
+      const email = String(emailInput?.value || '').trim();
+      const password = String(passwordInput?.value || '').trim();
+      const name = String(nameInput?.value || '').trim();
+      if (!email || !password || (authMode === 'signup' && !name)) {
+        window.alert('Enter your email and password first.');
+        return;
+      }
+      setButtonLoading(submitButton, true);
+      try {
+        if (authMode === 'signup') {
+          await authHelper.signUpWithIdentifier(name, email, password, 'email', { userRole: 'client' });
+        } else {
+          await authHelper.signInWithIdentifier(email, password, 'email');
+        }
+        const account = getStoredAccount();
+        if (typeof authHelper.waitForAuthSession === 'function') {
+          await authHelper.waitForAuthSession(account?.uid || '', 12000).catch(() => null);
+        }
+        window.location.href = `${getBase()}pages/post-job.html`;
+      } catch (error) {
+        window.alert(error.message || 'Could not sign in.');
+      } finally {
+        setButtonLoading(submitButton, false);
+      }
+    });
+
+    syncMode();
+  }
+
   function buildJobAuthCardMarkup(scope = 'post') {
+    if (scope === 'bid') {
+      return `
+        <section class="job-auth-card job-auth-card--bid" data-job-auth-card data-auth-scope="bid">
+          <div class="job-auth-bid-kicker"><i class="fa-solid fa-shield-halved"></i><span>Continue to bid</span></div>
+          <h3>Sign in to bid for this job</h3>
+          <p class="job-auth-bid-subtitle">Create an account to send your bid and keep track of it.</p>
+          <p class="job-auth-bid-switch">Already have an account? <button type="button" data-job-auth-mode="signin">Sign in</button></p>
+          <button type="button" class="account-auth-btn account-google-btn job-auth-google-btn" data-job-google-auth>
+            ${getGoogleIconMarkup()}
+            <span class="account-btn-label">Continue with Google</span>
+          </button>
+          <div class="job-auth-divider"><span>OR</span></div>
+          <div class="job-auth-fields">
+            <label class="job-auth-field" data-job-auth-name-row>
+              <span>Full name</span>
+              <div class="job-auth-input-shell">
+                <i class="fa-regular fa-user"></i>
+                <input type="text" data-job-auth-name placeholder="Enter your full name" autocomplete="name" />
+              </div>
+            </label>
+            <label class="job-auth-field">
+              <span data-job-auth-identifier-label>Email address</span>
+              <div class="job-auth-input-shell">
+                <i class="fa-regular fa-envelope"></i>
+                <input type="email" data-job-auth-identifier placeholder="Enter your email address" autocomplete="email" />
+              </div>
+            </label>
+            <label class="job-auth-field">
+              <span>Password</span>
+              <div class="job-auth-input-shell">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" data-job-auth-password placeholder="Create a password" autocomplete="new-password" />
+                <button type="button" class="job-auth-password-toggle" data-job-auth-password-toggle aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+              </div>
+            </label>
+          </div>
+          <p class="job-auth-note" data-job-auth-note><i class="fa-solid fa-shield-halved"></i><span>Your information is secure and encrypted.</span></p>
+          <button type="button" class="btn-primary job-auth-submit account-submit-btn account-submit-signin" data-job-auth-submit>Create account &amp; continue <i class="fa-solid fa-arrow-right"></i></button>
+          <p class="job-auth-terms">By continuing, you agree to our <a href="${getBase()}pages/help.html">Terms of Service</a> and <a href="${getBase()}pages/help.html">Privacy Policy</a>.</p>
+        </section>
+      `;
+    }
+
     return `
       <section class="job-auth-card" data-job-auth-card data-auth-scope="${scope}">
         <div class="job-auth-head">
@@ -952,9 +1364,11 @@
     const identifierInput = host.querySelector('[data-job-auth-identifier]');
     const identifierLabel = host.querySelector('[data-job-auth-identifier-label]');
     const passwordInput = host.querySelector('[data-job-auth-password]');
+    const passwordToggle = host.querySelector('[data-job-auth-password-toggle]');
     const note = host.querySelector('[data-job-auth-note]');
     const submitBtn = host.querySelector('[data-job-auth-submit]');
     const googleBtn = host.querySelector('[data-job-google-auth]');
+    const isBidCard = host.classList.contains('job-auth-card--bid');
     let authMode = 'signup';
     let idMode = 'email';
 
@@ -964,19 +1378,32 @@
       if (nameRow instanceof HTMLElement) nameRow.hidden = authMode !== 'signup';
       if (identifierLabel instanceof HTMLElement) identifierLabel.textContent = idMode === 'phone' ? 'Phone number' : 'Email address';
       if (identifierInput instanceof HTMLInputElement) {
-        identifierInput.placeholder = idMode === 'phone' ? '+263 77 123 4567' : 'you@example.com';
+        identifierInput.placeholder = isBidCard
+          ? 'Enter your email address'
+          : (idMode === 'phone' ? '+263 77 123 4567' : 'you@example.com');
       }
       if (note instanceof HTMLElement) {
-        note.textContent = scope === 'bid'
-          ? (authMode === 'signup'
-            ? 'Create a quick account with email or phone so you can send your bid and keep track of it later.'
-            : 'Sign in with your email or phone account to continue placing this bid.')
+        const noteMessage = scope === 'bid'
+          ? (isBidCard
+            ? 'Your information is secure and encrypted.'
+            : (authMode === 'signup'
+              ? 'Create a quick account with email or phone so you can send your bid and keep track of it later.'
+              : 'Sign in with your email or phone account to continue placing this bid.'))
           : 'Use email or phone plus a password so your job dashboard is saved to your account.';
+        const noteText = note.querySelector('span');
+        if (noteText instanceof HTMLElement) noteText.textContent = noteMessage;
+        else note.textContent = noteMessage;
       }
       if (submitBtn instanceof HTMLElement) {
-        submitBtn.textContent = scope === 'bid'
-          ? (authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue')
-          : (authMode === 'signup' ? 'Create account and post job' : 'Sign in and post job');
+        if (isBidCard) {
+          submitBtn.innerHTML = authMode === 'signup'
+            ? 'Create account &amp; continue <i class="fa-solid fa-arrow-right"></i>'
+            : 'Sign in &amp; continue <i class="fa-solid fa-arrow-right"></i>';
+        } else {
+          submitBtn.textContent = scope === 'bid'
+            ? (authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue')
+            : (authMode === 'signup' ? 'Create account and post job' : 'Sign in and post job');
+        }
       }
     }
 
@@ -991,6 +1418,16 @@
         idMode = button.getAttribute('data-job-auth-id-mode') || 'email';
         sync();
       });
+    });
+    passwordToggle?.addEventListener('click', () => {
+      if (!(passwordInput instanceof HTMLInputElement)) return;
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      const icon = passwordToggle.querySelector('i');
+      if (icon instanceof HTMLElement) {
+        icon.className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+      }
     });
 
     googleBtn?.addEventListener('click', async () => {
@@ -1076,7 +1513,11 @@
     const clientProfile = account?.loggedIn && authHelper?.getClientProfileByUid
       ? await authHelper.getClientProfileByUid(account.uid).catch(() => null)
       : null;
-    const defaultCategory = '';
+    const restoredDraft = readPostJobDraft();
+    const defaultCategory = String(restoredDraft.category || '').trim();
+    const defaultSubcategory = String(restoredDraft.subcategory || '').trim();
+    const defaultProvince = String(restoredDraft.province || clientProfile?.province || userDoc?.province || '').trim();
+    const defaultCity = String(restoredDraft.city || clientProfile?.city || userDoc?.city || '').trim();
 
     page.innerHTML = `
       <section class="job-page-shell job-post-create-shell">
@@ -1124,6 +1565,14 @@
           </aside>
 
           <form class="job-post-form" data-job-post-form>
+            <header class="job-post-form-hero">
+              <div class="job-post-form-hero-icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></div>
+              <div>
+                <h1>Post a New Job</h1>
+                <p>Fill in the details below to get the right professionals for your job.</p>
+              </div>
+              <span class="job-post-form-dots" aria-hidden="true"></span>
+            </header>
             <section class="job-post-form-section">
               <div class="job-post-section-head">
                 <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
@@ -1143,13 +1592,15 @@
                 ${buildJobComboboxMarkup({
                   type: 'subcategory',
                   label: 'Service',
-                  placeholder: 'Optional service'
+                  placeholder: 'Optional service',
+                  value: defaultSubcategory
                 })}
                 <label class="job-form-field is-wide">
                   <span>Describe the job</span>
                   <div class="job-form-textarea-shell">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-regular fa-clipboard"></i></span>
-                    <textarea name="description" required placeholder="Describe the work, materials, timing, or anything the provider should know before bidding."></textarea>
+                    <textarea name="description" maxlength="1000" required placeholder="Describe the work, materials, timing, or anything the provider should know before bidding.">${escapeHtml(restoredDraft.description || '')}</textarea>
+                    <small class="job-form-count"><span data-job-description-count>0</span> / 1000</small>
                   </div>
                 </label>
               </div>
@@ -1168,14 +1619,28 @@
                   <span>Budget</span>
                   <div class="job-form-input-shell">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
-                    <input type="number" name="budget" min="1" step="1" required placeholder="120" />
+                    <input type="number" name="budget" min="1" step="1" required placeholder="120" value="${escapeHtml(restoredDraft.budget || '')}" />
                   </div>
                 </label>
+                ${buildJobComboboxMarkup({
+                  type: 'province',
+                  label: 'Province',
+                  placeholder: 'Select province',
+                  value: defaultProvince,
+                  required: true
+                })}
+                ${buildJobComboboxMarkup({
+                  type: 'city',
+                  label: 'City or town',
+                  placeholder: defaultProvince ? 'Select city' : 'Select province first',
+                  value: defaultCity,
+                  required: true
+                })}
                 <label class="job-form-field is-wide">
-                  <span>Address where the job needs to be done</span>
+                  <span>Street address or nearby landmark</span>
                   <div class="job-form-textarea-shell is-address">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
-                    <textarea name="address" required placeholder="12 Mukuvisi Road, Greendale, Harare"></textarea>
+                    <textarea name="streetAddress" required placeholder="12 Mukuvisi Road, Greendale">${escapeHtml(restoredDraft.streetAddress || '')}</textarea>
                   </div>
                 </label>
               </div>
@@ -1186,7 +1651,7 @@
                 <strong>Posting as ${escapeHtml(clientProfile?.displayName || userDoc?.name || account.name || 'your account')}</strong>
                 <span>Your job will be saved to your dashboard so you can review bids and message providers.</span>
               </section>
-            ` : buildJobAuthCardMarkup('post')}
+            ` : buildPostAuthCompactMarkup()}
 
             <div class="job-post-form-actions">
               <button type="submit" class="btn-primary job-post-action-primary" data-job-post-submit><i class="fa-solid fa-paper-plane"></i><span>Post Job</span></button>
@@ -1201,10 +1666,23 @@
     const submitBtn = page.querySelector('[data-job-post-submit]');
     const categoryHost = page.querySelector('[data-job-combobox="category"]');
     const subcategoryHost = page.querySelector('[data-job-combobox="subcategory"]');
+    const provinceHost = page.querySelector('[data-job-combobox="province"]');
+    const cityHost = page.querySelector('[data-job-combobox="city"]');
     const guideHost = page.querySelector('[data-job-post-guide]');
     const guideToggles = Array.from(page.querySelectorAll('[data-job-post-guide-toggle]'));
     const guideContent = page.querySelector('[data-job-post-guide-content]');
+    const descriptionInput = page.querySelector('textarea[name="description"]');
+    const descriptionCount = page.querySelector('[data-job-description-count]');
     const guideMediaQuery = window.matchMedia('(max-width: 768px)');
+
+    function syncDescriptionCount() {
+      if (descriptionCount instanceof HTMLElement) {
+        descriptionCount.textContent = String(String(descriptionInput?.value || '').length);
+      }
+    }
+
+    descriptionInput?.addEventListener('input', syncDescriptionCount);
+    syncDescriptionCount();
 
     function setGuideOpen(isOpen) {
       if (!(guideHost instanceof HTMLElement) || !(guideContent instanceof HTMLElement)) return;
@@ -1289,7 +1767,7 @@
     let activeCategory = defaultCategory;
     const subcategoryCombobox = bindJobCombobox(subcategoryHost, {
       type: 'subcategory',
-      value: '',
+      value: defaultSubcategory,
       defaultIcon: 'fa-solid fa-list-ul',
       getItems: (query) => getSubcategoryItems(activeCategory, query)
     });
@@ -1310,13 +1788,56 @@
       }
     });
     activeCategory = categoryCombobox?.getValue() || defaultCategory;
-    subcategoryCombobox?.clear();
+    if (defaultSubcategory) {
+      subcategoryCombobox?.setValue(defaultSubcategory);
+    } else {
+      subcategoryCombobox?.clear();
+    }
+
+    let activeProvince = defaultProvince;
+    const cityCombobox = bindJobCombobox(cityHost, {
+      type: 'city',
+      value: defaultCity,
+      defaultIcon: 'fa-solid fa-location-dot',
+      getItems: (query) => getCityItems(activeProvince, query)
+    });
+    const provinceCombobox = bindJobCombobox(provinceHost, {
+      type: 'province',
+      value: defaultProvince,
+      defaultIcon: 'fa-solid fa-map',
+      getItems: getProvinceItems,
+      onSelect: (match) => {
+        activeProvince = match.value;
+        cityCombobox?.clear();
+      },
+      onInput: () => {
+        activeProvince = '';
+        cityCombobox?.clear();
+      }
+    });
+    activeProvince = provinceCombobox?.getValue() || defaultProvince;
+    if (defaultCity) cityCombobox?.setValue(defaultCity);
 
     if (!account?.loggedIn) {
-      bindJobAuthCard('post', async () => {
-        window.location.reload();
+      bindPostAuthCompact(form, {
+        categoryCombobox,
+        subcategoryCombobox,
+        provinceCombobox,
+        cityCombobox
       });
     }
+
+    function persistCurrentDraft() {
+      writePostJobDraft(getPostJobDraftFromForm(form, {
+        categoryCombobox,
+        subcategoryCombobox,
+        provinceCombobox,
+        cityCombobox
+      }));
+    }
+
+    form?.addEventListener('input', persistCurrentDraft);
+    form?.addEventListener('change', persistCurrentDraft);
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -1328,7 +1849,11 @@
       const typedSubcategory = subcategoryCombobox?.getInputValue() || '';
       payload.category = String(payload.category || typedCategory).trim();
       payload.subcategory = String(payload.subcategory || typedSubcategory).trim();
-      if (!payload.category || !payload.description || !payload.address || !payload.budget) {
+      payload.province = String(provinceCombobox?.getValue() || payload.province || '').trim();
+      payload.city = String(cityCombobox?.getValue() || payload.city || '').trim();
+      payload.streetAddress = String(payload.streetAddress || '').trim();
+      payload.address = [payload.streetAddress, payload.city, payload.province].filter(Boolean).join(', ');
+      if (!payload.category || !payload.description || !payload.province || !payload.city || !payload.streetAddress || !payload.budget) {
         window.alert('Fill in the job details first.');
         return;
       }
@@ -1347,42 +1872,19 @@
         latestUserDoc = currentAccount?.loggedIn ? await authHelper.getUserDocument(currentAccount.uid).catch(() => latestUserDoc) : latestUserDoc;
         latestClientProfile = currentAccount?.loggedIn ? await authHelper.getClientProfileByUid(currentAccount.uid).catch(() => latestClientProfile) : latestClientProfile;
 
-        const postAuthCard = page.querySelector('[data-auth-scope="post"]');
-        const authMode = postAuthCard?.querySelector('[data-job-auth-mode].is-active')?.getAttribute('data-job-auth-mode') || 'signup';
-        const idMode = postAuthCard?.querySelector('[data-job-auth-id-mode].is-active')?.getAttribute('data-job-auth-id-mode') || 'email';
-        const identifier = String(postAuthCard?.querySelector('[data-job-auth-identifier]')?.value || '').trim();
-        const password = String(postAuthCard?.querySelector('[data-job-auth-password]')?.value || '').trim();
-        const name = String(postAuthCard?.querySelector('[data-job-auth-name]')?.value || '').trim();
-
         if (!currentAccount?.loggedIn) {
-          if (!identifier || !password || (authMode === 'signup' && !name)) {
-            throw new Error('Fill in the account fields so we can publish this job under your profile.');
-          }
-          if (authMode === 'signup') {
-            await authHelper.signUpWithIdentifier(name, identifier, password, idMode, {
-              userRole: 'client',
-              phone: idMode === 'phone' ? identifier : ''
-            });
-          } else {
-            await authHelper.signInWithIdentifier(identifier, password, idMode);
-          }
-          currentAccount = getStoredAccount();
-          latestUserDoc = currentAccount?.loggedIn ? await authHelper.getUserDocument(currentAccount.uid).catch(() => null) : null;
-          latestClientProfile = currentAccount?.loggedIn ? await authHelper.getClientProfileByUid(currentAccount.uid).catch(() => null) : null;
+          persistCurrentDraft();
+          throw new Error('Sign in first. Your job draft has been saved on this page.');
         }
 
-        if (!currentAccount?.loggedIn) {
-          throw new Error('Sign in first to post your job.');
-        }
-
-        const phoneValue = latestClientProfile?.phone || latestUserDoc?.phone || (idMode === 'phone' ? identifier : currentAccount.phone || '');
-        const emailValue = latestClientProfile?.email || latestUserDoc?.email || (idMode === 'email' ? identifier : currentAccount.email || '');
+        const phoneValue = latestClientProfile?.phone || latestUserDoc?.phone || currentAccount.phone || '';
+        const emailValue = latestClientProfile?.email || latestUserDoc?.email || currentAccount.email || '';
         await authHelper.saveClientProfile({
-          displayName: latestClientProfile?.displayName || latestUserDoc?.name || currentAccount.name || name,
+          displayName: latestClientProfile?.displayName || latestUserDoc?.name || currentAccount.name || '',
           phone: phoneValue,
           email: emailValue,
           address: String(payload.address || '').trim(),
-          city: String(payload.address || '').split(',')[0] || ''
+          city: payload.city
         });
 
         await authHelper.createJobPost({
@@ -1390,8 +1892,11 @@
           subcategory: payload.subcategory,
           description: payload.description,
           budget: payload.budget,
-          address: payload.address
+          address: payload.address,
+          city: payload.city,
+          province: payload.province
         });
+        clearPostJobDraft();
 
         showJobToast('Job has been posted.', () => {
           window.location.href = `${getBase()}pages/job-giver-profile.html?created=1`;
@@ -1407,6 +1912,7 @@
   async function renderJobPostsPage() {
     const page = document.querySelector('[data-job-posts-page]');
     if (!page) return;
+    initJobPageMomentumScroll(page);
 
     page.innerHTML = buildJobPostsSkeleton();
 
@@ -1431,6 +1937,7 @@
             <div class="job-board-toolbar-summary">
               <strong>Available jobs</strong>
               <span><strong data-job-available-count>0</strong> ready for bidding.</span>
+              <small data-job-week-delta>+0 this week</small>
             </div>
             <label class="job-board-search job-board-search-main">
               <span>Search jobs</span>
@@ -1471,9 +1978,48 @@
               <span>Post Job</span>
             </a>
           </div>
+          <div class="job-board-market-panel" data-job-market-metrics aria-label="Marketplace health">
+            <div class="job-market-overview">
+              <div>
+                <span class="job-market-live-dot"></span>
+                <strong>Marketplace Health</strong>
+                <small>Live jobs, bids, and provider activity</small>
+              </div>
+              ${buildJobMarketSparkline([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])}
+            </div>
+            <div class="job-market-metric-grid">
+              <article class="job-market-metric-card is-loading"><span>Avg. Response Time</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+              <article class="job-market-metric-card is-loading"><span>Jobs Completed</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+              <article class="job-market-metric-card is-loading"><span>Avg. Bids per Job</span><strong></strong><small class="is-down"><i>▼</i><b></b></small></article>
+              <article class="job-market-metric-card is-loading"><span>Providers</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+            </div>
+          </div>
         </aside>
 
         <section class="job-board-content">
+          <section class="job-board-mobile-market-body" aria-label="Available jobs and marketplace health">
+            <div class="job-board-toolbar-summary">
+              <strong>Available jobs</strong>
+              <span><strong data-job-available-count>0</strong> ready for bidding.</span>
+              <small data-job-week-delta>+0 this week</small>
+            </div>
+            <div class="job-board-market-panel" data-job-market-metrics aria-label="Marketplace health">
+              <div class="job-market-overview">
+                <div>
+                  <span class="job-market-live-dot"></span>
+                  <strong>Marketplace Health</strong>
+                  <small>Live jobs, bids, and provider activity</small>
+                </div>
+                ${buildJobMarketSparkline([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])}
+              </div>
+              <div class="job-market-metric-grid">
+                <article class="job-market-metric-card is-loading"><span>Avg. Response Time</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+                <article class="job-market-metric-card is-loading"><span>Jobs Completed</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+                <article class="job-market-metric-card is-loading"><span>Avg. Bids per Job</span><strong></strong><small class="is-down"><i>▼</i><b></b></small></article>
+                <article class="job-market-metric-card is-loading"><span>Providers</span><strong></strong><small class="is-up"><i>▲</i><b></b></small></article>
+              </div>
+            </div>
+          </section>
           <section class="job-board-groups" data-job-groups></section>
         </section>
       </section>
@@ -1485,6 +2031,7 @@
 
     const groupsHost = page.querySelector('[data-job-groups]');
     const toolbar = page.querySelector('.job-board-toolbar');
+    const metricsHosts = Array.from(page.querySelectorAll('[data-job-market-metrics]'));
     const searchInput = page.querySelector('[data-job-search]');
     const locationSearchInput = page.querySelector('[data-job-location-search]');
     const locationOptionsHost = page.querySelector('[data-job-location-options]');
@@ -1496,7 +2043,8 @@
     const detailModal = page.querySelector('[data-job-detail-modal]');
     const bidModal = page.querySelector('[data-job-bid-modal]');
     const authModal = page.querySelector('[data-job-auth-modal]');
-    const availableCountLabel = page.querySelector('[data-job-available-count]');
+    const availableCountLabels = Array.from(page.querySelectorAll('[data-job-available-count]'));
+    const weekDeltaLabels = Array.from(page.querySelectorAll('[data-job-week-delta]'));
     const filterButtons = Array.from(page.querySelectorAll('[data-job-filter]'));
     const viewModeButtons = Array.from(page.querySelectorAll('[data-job-view-mode]'));
     const params = new URLSearchParams(window.location.search);
@@ -1513,13 +2061,15 @@
     }
     let jobs = readCachedAvailableJobs();
     let isLoadingJobs = !jobs.length;
+    let metricsRenderSeq = 0;
     async function refreshJobsList() {
-      const nextJobs = await authHelper.listJobPosts().catch(() => null);
+      const nextJobs = await authHelper.listJobPosts({ includeApplicationCounts: true }).catch(() => null);
       isLoadingJobs = false;
       if (!Array.isArray(nextJobs)) return jobs;
       jobs = nextJobs;
       writeCachedAvailableJobs(jobs);
       syncLocationOptions();
+      renderJobMarketMetrics();
       enrichJobsWithOwnerProfiles(authHelper, nextJobs).then((enrichedJobs) => {
         if (!Array.isArray(enrichedJobs) || !enrichedJobs.length) return;
         jobs = enrichedJobs;
@@ -1563,6 +2113,155 @@
     }
 
     syncLocationOptions();
+
+    async function getApplicationsForMetricJobs(metricJobs = []) {
+      if (!authHelper || typeof authHelper.listJobApplications !== 'function') return new Map();
+      const entries = await Promise.all(metricJobs.map(async (job) => {
+        const applications = await authHelper.listJobApplications(job.id).catch(() => []);
+        return [job.id, Array.isArray(applications) ? applications : []];
+      }));
+      return new Map(entries);
+    }
+
+    function getFirstResponseMinutes(job = {}, applications = []) {
+      const jobCreatedAtMs = toMetricMs(job.createdAtMs);
+      if (!jobCreatedAtMs || !applications.length) return null;
+      const firstBidAtMs = applications
+        .map((application) => toMetricMs(application.createdAtMs || application.updatedAtMs))
+        .filter((value) => value >= jobCreatedAtMs)
+        .sort((first, second) => first - second)[0];
+      return firstBidAtMs ? (firstBidAtMs - jobCreatedAtMs) / 60000 : null;
+    }
+
+    function getMetricBidCount(job = {}, applicationsByJob = new Map()) {
+      const applications = applicationsByJob.get(job.id);
+      if (Array.isArray(applications)) return applications.length;
+      return Math.max(0, Number(job.applicationCount || 0));
+    }
+
+    function getSparklineDailyCounts(allJobs = []) {
+      const now = new Date();
+      const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+      return Array.from({ length: 14 }, (_, index) => {
+        const startMs = endToday - ((14 - index) * 24 * 60 * 60 * 1000);
+        const endMs = startMs + (24 * 60 * 60 * 1000);
+        return countMetricWindow(allJobs, 'createdAtMs', startMs, endMs);
+      });
+    }
+
+    async function renderJobMarketMetrics() {
+      if (!metricsHosts.length) return;
+      const seq = ++metricsRenderSeq;
+      const allJobs = Array.isArray(jobs) ? jobs : [];
+      const now = Date.now();
+      const currentStart = now - JOB_METRIC_WEEK_MS;
+      const previousStart = now - (JOB_METRIC_WEEK_MS * 2);
+      const currentJobs = allJobs.filter((job) => toMetricMs(job.createdAtMs) >= currentStart && toMetricMs(job.createdAtMs) < now);
+      const previousJobs = allJobs.filter((job) => toMetricMs(job.createdAtMs) >= previousStart && toMetricMs(job.createdAtMs) < currentStart);
+      const recentJobs = [...currentJobs, ...previousJobs];
+      const applicationsByJob = await getApplicationsForMetricJobs(recentJobs);
+      if (seq !== metricsRenderSeq) return;
+
+      const currentResponseValues = currentJobs
+        .map((job) => getFirstResponseMinutes(job, applicationsByJob.get(job.id) || []))
+        .filter((value) => value !== null);
+      const previousResponseValues = previousJobs
+        .map((job) => getFirstResponseMinutes(job, applicationsByJob.get(job.id) || []))
+        .filter((value) => value !== null);
+      const currentResponseAverage = averageMetricValue(currentResponseValues);
+      const previousResponseAverage = averageMetricValue(previousResponseValues);
+      const responseChange = currentResponseValues.length && previousResponseValues.length
+        ? calculateFasterChange(currentResponseAverage, previousResponseAverage)
+        : 0;
+      const responseTrend = getMetricTrend(responseChange, responseChange >= 0 ? 'faster' : 'slower');
+
+      const completedJobs = allJobs.filter(isCompletedMetricJob);
+      const currentMonth = getMetricMonthWindow(0);
+      const previousMonth = getMetricMonthWindow(-1);
+      const currentMonthCompleted = countMetricWindow(completedJobs, 'completedAtMs', currentMonth.startMs, currentMonth.endMs);
+      const previousMonthCompleted = countMetricWindow(completedJobs, 'completedAtMs', previousMonth.startMs, previousMonth.endMs);
+      const completedTrend = getMetricTrend(calculateMetricChange(currentMonthCompleted, previousMonthCompleted), 'this month');
+
+      const openJobs = allJobs.filter(isOpenMetricJob);
+      const openBidTotal = openJobs.reduce((sum, job) => sum + Math.max(0, Number(job.applicationCount || 0)), 0);
+      const averageOpenBids = openJobs.length ? openBidTotal / openJobs.length : 0;
+      const currentBidsPerJob = currentJobs.length
+        ? currentJobs.reduce((sum, job) => sum + getMetricBidCount(job, applicationsByJob), 0) / currentJobs.length
+        : 0;
+      const previousBidsPerJob = previousJobs.length
+        ? previousJobs.reduce((sum, job) => sum + getMetricBidCount(job, applicationsByJob), 0) / previousJobs.length
+        : 0;
+      const bidChange = calculateMetricChange(currentBidsPerJob, previousBidsPerJob);
+      const bidTrend = getMetricTrend(bidChange, bidChange < 0 ? 'lower' : 'higher');
+
+      const providers = typeof authHelper.listProviders === 'function'
+        ? await authHelper.listProviders().catch(() => [])
+        : [];
+      const users = typeof authHelper.listUsers === 'function'
+        ? await authHelper.listUsers().catch(() => [])
+        : [];
+      if (seq !== metricsRenderSeq) return;
+      const userByUid = new Map((Array.isArray(users) ? users : []).map((user) => [String(user.uid || ''), user]));
+      const verifiedProviders = Array.isArray(providers) ? providers : [];
+      const onlineNow = verifiedProviders.filter((provider) => {
+        const user = userByUid.get(String(provider.uid || ''));
+        return toMetricMs(user?.lastSeenAtMs || provider.lastSeenAtMs) >= now - JOB_METRIC_ONLINE_WINDOW_MS;
+      }).length;
+      const onlinePreviousWindow = verifiedProviders.filter((provider) => {
+        const user = userByUid.get(String(provider.uid || ''));
+        const lastSeenAtMs = toMetricMs(user?.lastSeenAtMs || provider.lastSeenAtMs);
+        return lastSeenAtMs >= now - (JOB_METRIC_ONLINE_WINDOW_MS * 2) && lastSeenAtMs < now - JOB_METRIC_ONLINE_WINDOW_MS;
+      }).length;
+      const onlineTrend = getMetricTrend(calculateMetricChange(onlineNow, onlinePreviousWindow), 'now');
+
+      const cards = [
+        {
+          label: 'Avg. Response Time',
+          value: currentResponseAverage ? formatMetricDuration(currentResponseAverage) : 'No bids yet',
+          trend: responseTrend
+        },
+        {
+          label: 'Jobs Completed',
+          value: `${completedJobs.length} Completed`,
+          trend: completedTrend
+        },
+        {
+          label: 'Avg. Bids per Job',
+          value: `${Math.round(averageOpenBids * 10) / 10} Bids`,
+          trend: bidTrend
+        },
+        {
+          label: 'Providers',
+          value: `${onlineNow} Online`,
+          trend: onlineTrend
+        }
+      ];
+      const metricsMarkup = `
+        <div class="job-market-overview">
+          <div>
+            <span class="job-market-live-dot"></span>
+            <strong>Marketplace Health</strong>
+            <small>${openJobs.length} open jobs tracked live</small>
+          </div>
+          ${buildJobMarketSparkline(getSparklineDailyCounts(allJobs))}
+        </div>
+        <div class="job-market-metric-grid">
+          ${cards.map((card) => `
+            <article class="job-market-metric-card">
+              <span>${escapeHtml(card.label)}</span>
+              <strong>${escapeHtml(card.value)}</strong>
+              <small class="${escapeHtml(card.trend.className)}">
+                <i>${escapeHtml(card.trend.icon)}</i>
+                <b>${escapeHtml(card.trend.text)}</b>
+              </small>
+            </article>
+          `).join('')}
+        </div>
+      `;
+      metricsHosts.forEach((metricsHost) => {
+        if (metricsHost instanceof HTMLElement) metricsHost.innerHTML = metricsMarkup;
+      });
+    }
 
     function hideLocationSuggestions() {
       if (locationSuggestionsHost instanceof HTMLElement) {
@@ -1715,9 +2414,27 @@
       });
     }
 
+    function updateAvailableJobsSummary(filteredJobs = []) {
+      availableCountLabels.forEach((availableCountLabel) => {
+        if (availableCountLabel instanceof HTMLElement) {
+          availableCountLabel.textContent = String(filteredJobs.length);
+        }
+      });
+      const now = new Date();
+      const day = now.getDay() || 7;
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+      const jobsAddedThisWeek = Math.max(0, countMetricWindow(filteredJobs, 'createdAtMs', weekStart.getTime(), now.getTime()));
+      weekDeltaLabels.forEach((weekDeltaLabel) => {
+        if (!(weekDeltaLabel instanceof HTMLElement)) return;
+        weekDeltaLabel.textContent = `+${jobsAddedThisWeek} this week`;
+        weekDeltaLabel.classList.add('is-up');
+        weekDeltaLabel.classList.remove('is-down');
+      });
+    }
+
     function renderJobs() {
       if (isLoadingJobs && !jobs.length) {
-        if (availableCountLabel) availableCountLabel.textContent = '0';
+        updateAvailableJobsSummary([]);
         groupsHost.innerHTML = buildJobBoardGroupsSkeleton();
         return;
       }
@@ -1727,9 +2444,7 @@
       const currentUid = String(currentAccount?.uid || '').trim();
       const placedBidJobIds = getPlacedBidJobIds();
 
-      if (availableCountLabel) {
-        availableCountLabel.textContent = String(filteredJobs.length);
-      }
+      updateAvailableJobsSummary(filteredJobs);
       const grouped = groupJobsByDate(filteredJobs);
       groupsHost.innerHTML = grouped.length ? grouped.map(([label, items]) => `
         <section class="job-group">
@@ -1750,7 +2465,7 @@
               let bidDisabled = false;
               let bidWarning = false;
               let ownBidWarning = false;
-              let bidText = 'Accept & Bid';
+              let bidText = 'Bid Now';
 
               if (isAcceptedByMe) {
                 statusLabel = 'Already Accepted';
@@ -1782,8 +2497,13 @@
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
                     ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
                   </div>
+                  <div class="job-card-quick-actions" aria-hidden="true">
+                    <span><i class="fa-regular fa-bookmark"></i></span>
+                    <span><i class="fa-solid fa-ellipsis-vertical"></i></span>
+                  </div>
                   <strong class="job-card-price">${escapeHtml(formatCurrency(job.budget))}</strong>
                 </div>
+                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
                 <div class="job-card-owner">
                   <div class="job-card-owner-avatar" aria-label="${escapeHtml(ownerName)}">
                     ${ownerAvatar
@@ -1798,7 +2518,6 @@
                     </div>
                   </div>
                 </div>
-                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
                 <div class="job-card-summary">
                   <p>${escapeHtml(String(job.description || '').slice(0, 96))}${String(job.description || '').length > 96 ? '…' : ''}</p>
                 </div>
@@ -1825,8 +2544,8 @@
                 </div>
                 ${statusLabel ? `<div class="job-card-status-notice ${escapeHtml(statusClass)}"><span>${escapeHtml(statusLabel)}</span></div>` : ''}
                 <div class="job-card-actions">
-                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View More</button>
                   <button type="button" class="${bidWarning ? 'btn-primary job-accepted-action' : bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''} ${bidWarning ? 'data-job-accepted-bid="1"' : ''} ${ownBidWarning ? 'data-job-own-bid="1"' : ''}>${escapeHtml(bidText)}</button>
+                  <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View Details</button>
                 </div>
               </article>
             `;}).join('')}
@@ -2109,12 +2828,22 @@
     });
 
     renderJobs();
+    renderJobMarketMetrics();
     refreshJobsList().then(() => {
       renderJobs();
+      renderJobMarketMetrics();
     }).catch(() => {
       isLoadingJobs = false;
       renderJobs();
+      renderJobMarketMetrics();
     });
+    const liveMetricsTimer = window.setInterval(() => {
+      refreshJobsList().then(() => {
+        renderJobs();
+        renderJobMarketMetrics();
+      }).catch(() => renderJobMarketMetrics());
+    }, 60000);
+    window.addEventListener('beforeunload', () => window.clearInterval(liveMetricsTimer), { once: true });
 
     const pendingDetail = readPendingJobDetail();
     const detailJobId = params.get('detailJob') || params.get('openJob') || pendingDetail?.jobId || '';

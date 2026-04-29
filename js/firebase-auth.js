@@ -220,7 +220,7 @@ function normalizeStoredProfileImage(value = '') {
     .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
   if (
-    normalized === 'images/logo/logo.jpg'
+    normalized === 'images/logo/joblinks.avif'
     || normalized === 'images/sections/findme.avif'
     || normalized.startsWith('images/categories/')
     || catalogImages.includes(normalized)
@@ -1894,6 +1894,7 @@ function normalizeJobPayload(payload = {}, owner = {}) {
     budget,
     address,
     city: String(payload.city || owner.city || '').trim(),
+    province: String(payload.province || owner.province || '').trim(),
     ownerUid: String(owner.uid || '').trim(),
     ownerName: String(owner.displayName || owner.name || '').trim(),
     ownerPhone: String(owner.phone || '').trim(),
