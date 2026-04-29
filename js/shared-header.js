@@ -849,13 +849,13 @@ function injectSharedHeaderOverrides() {
     #site-header .header-center-nav .nav-link { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; font-size: 14px; font-weight: 700; border-radius: 999px; border-bottom: 0; }
     #site-header .header-center-nav .nav-link::after { display: none !important; }
     .search-bar { border-color: rgba(15, 23, 42, 0.10); background: rgba(255, 255, 255, 0.96); }
-    .search-bar:focus-within { border-color: rgba(26, 115, 232, 0.42); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
-    .search-match { color: #1a73e8; background: transparent; }
+    .search-bar:focus-within { border-color: rgba(218, 119, 86, 0.42); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08); }
+    .search-match { color: #da7756; background: transparent; }
     #site-header .header-actions { display: flex !important; align-items: center; justify-content: flex-end; gap: 18px; margin-left: 24px; flex: 0 0 auto; }
     #site-header .account-menu-host { display: flex; align-items: center; gap: 14px; }
     #site-header .account-link { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; white-space: nowrap; }
     .header-actions a, .mobile-search-trigger, .mobile-menu-toggle { color: var(--text-muted); }
-    .header-actions a:hover, .mobile-search-trigger:hover, .mobile-menu-toggle:hover { color: #076fe5; }
+    .header-actions a:hover, .mobile-search-trigger:hover, .mobile-menu-toggle:hover { color: #da7756; }
     .header-how-link { display: inline-flex; }
     .mobile-search-trigger { display: none; }
     .mobile-search-overlay[hidden] { display: none !important; }
@@ -871,8 +871,8 @@ function injectSharedHeaderOverrides() {
     .mobile-search-results { display: grid; gap: 0; padding: 0 10px 12px; max-height: min(62vh, 470px); overflow-y: auto; }
     .mobile-search-result { border: none; border-radius: 14px; background: transparent; padding: 12px 14px; }
     body.mobile-search-open { overflow: hidden; }
-    .a-plus-btn { background: #076fe5; box-shadow: 0 14px 30px rgba(7, 111, 229, 0.22); }
-    .a-plus-btn:hover, .a-plus-btn:focus-visible { background: #0558b8 !important; }
+    .a-plus-btn { background: #da7756; box-shadow: 0 14px 30px rgba(218, 119, 86, 0.22); }
+    .a-plus-btn:hover, .a-plus-btn:focus-visible { background: #b85f43 !important; }
     .account-auth-panel { width: min(32vw, 470px); min-width: 360px; padding: 30px 20px 24px; border-radius: 20px 0 0 20px; }
     .account-auth-copy { text-align: left; margin: 28px 0 18px; }
     .account-brand-lockup { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; }
@@ -890,12 +890,12 @@ function injectSharedHeaderOverrides() {
     .account-form-row input { border-radius: 4px; }
     .account-auth-btn,
     .account-submit-btn { border-radius: 4px; }
-    .account-form-inline-link { justify-self: start; border: none; background: transparent; padding: 0; color: #076fe5; font-size: 14px; font-weight: 700; }
+    .account-form-inline-link { justify-self: start; border: none; background: transparent; padding: 0; color: #da7756; font-size: 14px; font-weight: 700; }
     .account-auth-switch-copy { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; text-align: left; }
     .account-switch-label { color: #64748b; }
-    .account-mode-switch { border: none; background: transparent; padding: 0; color: #076fe5; font-weight: 800; }
-    .account-submit-btn.account-submit-signin { background: linear-gradient(180deg, #076fe5 0%, #0558b8 100%); }
-    .account-submit-btn.account-submit-signup { background: linear-gradient(180deg, #0f84ff 0%, #076fe5 100%); color: #fff; }
+    .account-mode-switch { border: none; background: transparent; padding: 0; color: #da7756; font-weight: 800; }
+    .account-submit-btn.account-submit-signin { background: linear-gradient(180deg, #da7756 0%, #b85f43 100%); }
+    .account-submit-btn.account-submit-signup { background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%); color: #fff; }
     .account-submit-btn.has-jimu-loader .account-btn-label { opacity: 0; }
     @media (min-width: 769px) {
       #site-nav { display: none !important; }
