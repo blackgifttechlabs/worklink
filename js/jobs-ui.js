@@ -530,6 +530,25 @@
     }, 1300);
   }
 
+  async function showBrowserJobNotification(title = 'JobLink notification', options = {}) {
+    if (!('Notification' in window)) return;
+    try {
+      let permission = Notification.permission;
+      if (permission === 'default') {
+        permission = await Notification.requestPermission();
+      }
+      if (permission !== 'granted') return;
+      const notification = new Notification(title, {
+        icon: `${getBase()}images/logo/joblinks.avif`,
+        badge: `${getBase()}images/logo/joblinks.avif`,
+        ...options
+      });
+      window.setTimeout(() => notification.close(), 6500);
+    } catch (error) {
+      // Browser notifications are optional.
+    }
+  }
+
   function createSuggestionItemMarkup({ icon, title, subtitle = '', query = '', value = '' }) {
     return `
       <button type="button" class="job-combobox-option" data-job-option="${escapeHtml(value || title)}">
@@ -1584,14 +1603,14 @@
               <div class="job-form-grid">
                 ${buildJobComboboxMarkup({
                   type: 'category',
-                  label: 'Job category',
+                  label: 'Job category for this work',
                   placeholder: 'Select job category',
                   value: defaultCategory,
                   required: true
                 })}
                 ${buildJobComboboxMarkup({
                   type: 'subcategory',
-                  label: 'Service',
+                  label: 'Specific service needed',
                   placeholder: 'Optional service',
                   value: defaultSubcategory
                 })}
@@ -1616,7 +1635,7 @@
               </div>
               <div class="job-form-grid">
                 <label class="job-form-field">
-                  <span>Budget</span>
+                  <span>Estimated budget for the job</span>
                   <div class="job-form-input-shell">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
                     <input type="number" name="budget" min="1" step="1" required placeholder="120" value="${escapeHtml(restoredDraft.budget || '')}" />
@@ -1624,20 +1643,20 @@
                 </label>
                 ${buildJobComboboxMarkup({
                   type: 'province',
-                  label: 'Province',
+                  label: 'Province where job is to be done',
                   placeholder: 'Select province',
                   value: defaultProvince,
                   required: true
                 })}
                 ${buildJobComboboxMarkup({
                   type: 'city',
-                  label: 'City or town',
+                  label: 'City or town where job is to be done',
                   placeholder: defaultProvince ? 'Select city' : 'Select province first',
                   value: defaultCity,
                   required: true
                 })}
                 <label class="job-form-field is-wide">
-                  <span>Street address or nearby landmark</span>
+                  <span>Street address or nearby landmark for the job</span>
                   <div class="job-form-textarea-shell is-address">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
                     <textarea name="streetAddress" required placeholder="12 Mukuvisi Road, Greendale">${escapeHtml(restoredDraft.streetAddress || '')}</textarea>
@@ -2682,6 +2701,9 @@
             proposedBudget: formData.get('proposedBudget'),
             message: formData.get('message')
           });
+          showBrowserJobNotification('Bid sent', {
+            body: `Your bid for ${job.subcategory || job.category || 'this job'} was sent.`
+          });
           closeModal(bidModal);
           clearPendingJobBid();
           await refreshJobsList();
@@ -2981,18 +3003,6 @@
         ...(Array.isArray(job.applications) ? job.applications.map((application) => Number(application.createdAtMs || 0)) : [0])
       ), 0);
 
-      let didUpdateNotificationState = false;
-      if (activeTab === 'jobs' && latestReceivedBidAt > notificationState.receivedAt) {
-        notificationState.receivedAt = latestReceivedBidAt;
-        didUpdateNotificationState = true;
-      }
-      if (didUpdateNotificationState) {
-        writeJobNotificationState(account.uid, notificationState);
-        window.setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
-        }, 0);
-      }
-
       const receivedBidCount = currentJobs.reduce((total, job) => total + (
         Array.isArray(job.applications)
           ? job.applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
@@ -3188,7 +3198,7 @@
         `;
 
         return `
-          <article class="job-bids-modal-card ${status === 'accepted' ? 'is-accepted' : status === 'rejected' ? 'is-rejected' : ''}">
+          <article class="job-bids-modal-card ${status === 'accepted' ? 'is-accepted' : status === 'rejected' ? 'is-rejected' : ''}" data-job-bid-card data-application-id="${escapeHtml(application.id)}" tabindex="0">
             <div class="job-bids-modal-card-head">
               ${bidderProfileHref
                 ? `<a class="job-bids-modal-identity-link" href="${escapeHtml(bidderProfileHref)}" aria-label="Open ${escapeHtml(application.bidderName || 'bidder')} profile">${bidderIdentityMarkup}</a>`
@@ -3225,16 +3235,13 @@
               </div>
             </div>
             <div class="job-bids-modal-actions">
-              ${bidderProfileHref ? `
-                <a class="btn-secondary fleece-secondary" href="${escapeHtml(bidderProfileHref)}">View Profile</a>
-              ` : ''}
               ${status === 'accepted' ? `
-                <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}">Open Messages</a>
+                <a class="btn-primary" href="${getBase()}pages/messages.html?peer=${encodeURIComponent(application.bidderUid || '')}&province=${encodeURIComponent(application.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}"><i class="fa-solid fa-check"></i><span>Accepted</span></a>
               ` : `
-                <button type="button" class="btn-primary" data-job-modal-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Accept</button>
+                <button type="button" class="btn-primary" data-job-modal-application-action="accepted" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}"><i class="fa-solid fa-check"></i><span>Accept Bidder</span></button>
               `}
               ${status !== 'rejected' ? `
-                <button type="button" class="btn-secondary fleece-secondary" data-job-modal-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}">Reject</button>
+                <button type="button" class="btn-secondary fleece-secondary is-danger" data-job-modal-application-action="rejected" data-job-id="${escapeHtml(job.id)}" data-application-id="${escapeHtml(application.id)}"><i class="fa-solid fa-xmark"></i><span>Reject Bid</span></button>
               ` : ''}
             </div>
           </article>
@@ -3244,6 +3251,18 @@
       function openBidsModal(jobId = '') {
         const job = currentJobs.find((item) => item.id === jobId);
         if (!job) return;
+        const notificationState = readJobNotificationState(account.uid);
+        const latestJobBidAt = Math.max(
+          notificationState.receivedAt,
+          ...(Array.isArray(job.applications) ? job.applications.map((application) => Number(application.createdAtMs || 0)) : [0])
+        );
+        if (latestJobBidAt > notificationState.receivedAt) {
+          writeJobNotificationState(account.uid, {
+            ...notificationState,
+            receivedAt: latestJobBidAt
+          });
+          window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+        }
 
         const existing = document.querySelector('.job-bids-modal-shell');
         if (existing instanceof HTMLElement) existing.remove();
@@ -3254,7 +3273,7 @@
           <div class="job-modal-panel job-bids-modal-panel">
             <div class="job-bids-modal-hero">
               <div class="job-bids-modal-header">
-                <span class="job-bids-modal-kicker">Hiring review</span>
+                <span class="job-bids-modal-kicker"><i class="fa-solid fa-users-viewfinder"></i> Hiring review</span>
                 <h2>${escapeHtml(job.subcategory || job.category || 'Job')}</h2>
                 <p>Review the bidders for this job, compare their offers, and choose who should do the work.</p>
               </div>
@@ -3262,16 +3281,16 @@
             </div>
             <div class="job-bids-modal-summary">
               <article class="job-bids-modal-summary-card">
-                <span>Budget</span>
-                <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
+                <i class="fa-regular fa-tag"></i>
+                <div><span>Budget</span><strong>${escapeHtml(formatCurrency(job.budget))}</strong></div>
               </article>
               <article class="job-bids-modal-summary-card">
-                <span>Location</span>
-                <strong>${escapeHtml(job.address || 'Address not shared')}</strong>
+                <i class="fa-solid fa-location-dot"></i>
+                <div><span>Location</span><strong>${escapeHtml(job.address || 'Address not shared')}</strong></div>
               </article>
               <article class="job-bids-modal-summary-card">
-                <span>Bidders</span>
-                <strong>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'}</strong>
+                <i class="fa-solid fa-users"></i>
+                <div><span>Bidders</span><strong>${job.applications.length} bid${job.applications.length === 1 ? '' : 's'} received</strong></div>
               </article>
             </div>
             <div class="job-bids-modal-toolbar">
@@ -3318,14 +3337,19 @@
             setButtonLoading(button, true);
             try {
               await authHelper.updateJobApplicationStatus(nextJobId, applicationId, status);
+              if (status === 'accepted' && selectedApplication?.bidderUid && typeof authHelper.sendMessageToProvider === 'function') {
+                await authHelper.sendMessageToProvider({
+                  toUid: selectedApplication.bidderUid,
+                  toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
+                  toName: selectedApplication.bidderName || 'Provider',
+                  text: `Your bid for "${job.subcategory || job.category || 'this job'}" was accepted. Please check your Jobs and Bids page for the next step.`
+                }).catch(() => null);
+                showBrowserJobNotification('Bid accepted', {
+                  body: `${selectedApplication.bidderName || 'The provider'} has been notified.`
+                });
+              }
               window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
               window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
-              if (status === 'accepted' && selectedApplication?.bidderUid) {
-                showJobToast('Bid accepted. Opening messages...', () => {
-                  window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
-                });
-                return;
-              }
               const refreshedJobs = await loadJobsWithApplications(currentJobs);
               dashboardJobs = refreshedJobs;
               writeCachedJobGiverDashboard(account.uid, refreshedJobs);
@@ -3334,7 +3358,7 @@
               if (refreshedJob) {
                 openBidsModal(nextJobId);
               }
-              showJobToast(status === 'rejected' ? 'Bid rejected.' : 'Bid updated.');
+              showJobToast(status === 'accepted' ? 'Bid accepted and message sent.' : status === 'rejected' ? 'Bid rejected.' : 'Bid updated.');
             } catch (error) {
               window.alert(error.message || 'Could not update that bid.');
               setButtonLoading(button, false);
@@ -3348,8 +3372,11 @@
         : activeTab === 'jobs'
         ? (currentJobs.length ? currentJobs.map((job) => {
           const bidCount = Array.isArray(job.applications) ? job.applications.length : 0;
+          const jobCode = String(job.publicId || job.jobPublicId || job.id || '').slice(0, 12).toUpperCase();
+          const expiresAtMs = Number(job.expiresAtMs || 0) || (Number(job.createdAtMs || 0) + (7 * 24 * 60 * 60 * 1000));
           return `
-          <article class="job-owner-card">
+          <article class="job-owner-card job-owner-posted-card">
+            <div class="job-owner-posted-code">Job ID: ${escapeHtml(jobCode || 'JOB')}</div>
             <div class="job-owner-card-head">
               <div>
                 <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -3375,6 +3402,28 @@
             <div class="job-card-actions">
               <button type="button" class="btn-primary" data-job-view-bids="${escapeHtml(job.id)}">View Bids${bidCount ? ` (${bidCount})` : ''}</button>
               <button type="button" class="btn-secondary fleece-secondary job-delete-btn" data-job-delete="${escapeHtml(job.id)}" ${job.acceptedApplicationUid || job.completedAtMs ? 'disabled' : ''}>Delete Job</button>
+            </div>
+            <div class="job-owner-posted-details">
+              <strong>Job details</strong>
+              <div class="job-owner-posted-detail-grid">
+                <span><i class="fa-solid fa-list"></i><small>Category</small><b>${escapeHtml(job.category)}</b></span>
+                <span><i class="fa-regular fa-tag"></i><small>Subcategory</small><b>${escapeHtml(job.subcategory || job.category)}</b></span>
+                <span><i class="fa-solid fa-dollar-sign"></i><small>Budget</small><b>${escapeHtml(formatCurrency(job.budget))}</b></span>
+                <span><i class="fa-regular fa-calendar"></i><small>Posted on</small><b>${escapeHtml(formatShortDate(job.createdAtMs))}</b></span>
+                <span><i class="fa-solid fa-location-dot"></i><small>Location</small><b>${escapeHtml(job.address || 'Address not shared')}</b></span>
+                <span><i class="fa-regular fa-calendar"></i><small>Expires on</small><b>${escapeHtml(formatShortDate(expiresAtMs))}</b></span>
+                <span><i class="fa-regular fa-eye"></i><small>Visibility</small><b>Public</b></span>
+                <span><i class="fa-regular fa-id-card"></i><small>Job ID</small><b>${escapeHtml(jobCode || 'JOB')}</b></span>
+                <span><i class="fa-regular fa-circle-check"></i><small>Status</small><b class="is-active">Active</b></span>
+              </div>
+            </div>
+            <div class="job-owner-posted-tip">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <div>
+                <strong>Tips to get more responses</strong>
+                <span>Add more details, clear photos, and a realistic budget to attract the right service providers.</span>
+              </div>
+              <a href="${getBase()}pages/post-job.html">Improve My Job <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </article>
         `;}).join('') : `
@@ -3410,7 +3459,7 @@
               </aside>
 
               <div class="job-giver-main">
-                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''}">
+                <div class="job-dashboard-listing ${activeTab === 'previous' ? 'previous-jobs-host' : ''} ${activeTab === 'jobs' ? 'is-jobs-posted' : ''}">
                   ${tabContent}
                 </div>
               </div>
@@ -3481,18 +3530,22 @@
             window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
             const selectedJob = currentJobs.find((job) => job.id === jobId);
             const selectedApplication = selectedJob?.applications?.find((application) => application.id === applicationId) || null;
-            if (status === 'accepted' && selectedApplication?.bidderUid) {
-              keepLoadingState = true;
-              showJobToast('Bid accepted. Opening messages...', () => {
-                window.location.href = `${getBase()}pages/messages.html?peer=${encodeURIComponent(selectedApplication.bidderUid)}&province=${encodeURIComponent(selectedApplication.bidderProvinceSlug || '')}&draft=${encodeURIComponent('I approved a job for you.')}`;
+            if (status === 'accepted' && selectedApplication?.bidderUid && typeof authHelper.sendMessageToProvider === 'function') {
+              await authHelper.sendMessageToProvider({
+                toUid: selectedApplication.bidderUid,
+                toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
+                toName: selectedApplication.bidderName || 'Provider',
+                text: `Your bid for "${selectedJob?.subcategory || selectedJob?.category || 'this job'}" was accepted. Please check your Jobs and Bids page for the next step.`
+              }).catch(() => null);
+              showBrowserJobNotification('Bid accepted', {
+                body: `${selectedApplication.bidderName || 'The provider'} has been notified.`
               });
-              return;
             }
             const refreshedJobs = await loadJobsWithApplications(currentJobs);
             dashboardJobs = refreshedJobs;
             writeCachedJobGiverDashboard(account.uid, refreshedJobs);
             renderDashboard(currentProfile, refreshedJobs);
-            showJobToast(status === 'rejected' ? 'Bid rejected.' : 'Bid updated.');
+            showJobToast(status === 'accepted' ? 'Bid accepted and message sent.' : status === 'rejected' ? 'Bid rejected.' : 'Bid updated.');
           } catch (error) {
             window.alert(error.message || 'Could not update that bid.');
           } finally {

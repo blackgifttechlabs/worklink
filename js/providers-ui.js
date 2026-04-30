@@ -4070,6 +4070,14 @@
       });
     }
 
+    // Expose crop modal and location groups for other modules (e.g., products UI)
+    try {
+      window.openProviderPostCropModal = openProviderPostCropModal;
+      window.ZIMBABWE_LOCATION_GROUPS = ZIMBABWE_LOCATION_GROUPS;
+    } catch (e) {
+      // ignore if cannot attach to window
+    }
+
     async function refreshPosts() {
       const posts = await authHelper.listProviderPosts(normalizedProfile.uid, normalizedProfile.provinceSlug);
       feedHost.innerHTML = posts.length

@@ -72,6 +72,9 @@ const SUPPORT_EMAIL = 'support@joblink.co.zw';
 const SUPPORT_PHONE = '+263788575998';
 const CLIENTS_COLLECTION = 'clients';
 const JOBS_COLLECTION = 'jobs';
+const PRODUCTS_COLLECTION = 'products';
+const PRODUCT_ORDERS_COLLECTION = 'productOrders';
+const PRODUCT_WISHLISTS_COLLECTION = 'productWishlists';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
 const GOOGLE_REDIRECT_SUCCESS_KEY = 'worklinkup_google_redirect_success';
 const GOOGLE_AUTH_FLOW_KEY = 'worklinkup_google_auth_flow';
@@ -3495,6 +3498,169 @@ async function toggleWishlist(product) {
   };
 }
 
+async function createMarketplaceProduct(payload = {}) {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  const account = getAccountPayload(auth.currentUser);
+  const userDoc = await getUserDocument(auth.currentUser.uid).catch(() => null);
+  const now = Date.now();
+  const productPayload = {
+    sellerUid: auth.currentUser.uid,
+    sellerName: userDoc?.name || account.name || 'WorkLinkUp seller',
+    sellerUsername: userDoc?.username || account.username || '',
+    title: String(payload.title || '').trim(),
+    price: Number(payload.price || 0),
+    category: String(payload.category || '').trim(),
+    subcategory: String(payload.subcategory || '').trim(),
+    location: String(payload.location || userDoc?.city || userDoc?.providerProvince || '').trim(),
+    description: String(payload.description || '').trim(),
+    deliveryOption: String(payload.deliveryOption || 'pickup').trim(),
+    imageData: String(payload.imageData || payload.image || '').trim(),
+    images: Array.isArray(payload.images) ? payload.images.filter(Boolean).slice(0, 6) : [],
+    status: 'active',
+    wishlistCount: 0,
+    orderCount: 0,
+    createdAtMs: now,
+    updatedAtMs: now,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  if (!productPayload.title) throw new Error('Enter a product title.');
+  if (!productPayload.price || productPayload.price <= 0) throw new Error('Enter a valid product price.');
+  const created = await addDoc(collection(db, PRODUCTS_COLLECTION), productPayload);
+  return { id: created.id, ...productPayload };
+}
+
+async function listMarketplaceProducts(options = {}) {
+  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+  const products = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => String(item.status || 'active') === 'active');
+  const sellerUid = String(options.sellerUid || '').trim();
+  if (sellerUid) return products.filter((item) => String(item.sellerUid || '') === sellerUid)
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+  return products.sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+async function getMarketplaceProduct(productId = '') {
+  if (!productId) return null;
+  const snap = await getDoc(doc(db, PRODUCTS_COLLECTION, productId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+async function placeProductOrder(productId = '', payload = {}) {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  const product = await getMarketplaceProduct(productId);
+  if (!product) throw new Error('Product not found.');
+  if (String(product.sellerUid || '') === auth.currentUser.uid) throw new Error('You cannot order your own product.');
+  const account = getAccountPayload(auth.currentUser);
+  const userDoc = await getUserDocument(auth.currentUser.uid).catch(() => null);
+  const now = Date.now();
+  const offerPrice = Number(payload.offerPrice || product.price || 0);
+  const orderPayload = {
+    productId,
+    productTitle: product.title || '',
+    productImageData: product.imageData || (Array.isArray(product.images) ? product.images[0] : ''),
+    productCategory: product.category || '',
+    sellerUid: product.sellerUid || '',
+    sellerName: product.sellerName || 'Seller',
+    buyerUid: auth.currentUser.uid,
+    buyerName: userDoc?.name || account.name || 'Buyer',
+    buyerPhone: userDoc?.phone || account.phone || '',
+    deliveryLocation: String(payload.deliveryLocation || '').trim(),
+    deliveryMethod: String(product.deliveryOption || 'pickup').trim(),
+    offerPrice,
+    message: String(payload.message || '').trim(),
+    status: 'pending',
+    createdAtMs: now,
+    updatedAtMs: now,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  if (!orderPayload.deliveryLocation) throw new Error('Enter delivery or pickup location details.');
+  const created = await addDoc(collection(db, PRODUCT_ORDERS_COLLECTION), orderPayload);
+  await setDoc(doc(db, PRODUCTS_COLLECTION, productId), {
+    orderCount: Number(product.orderCount || 0) + 1,
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  }, { merge: true }).catch(() => {});
+  return { id: created.id, ...orderPayload };
+}
+
+async function listProductOrdersForUser(uid = auth.currentUser?.uid) {
+  if (!uid) return [];
+  const snapshot = await getDocs(collection(db, PRODUCT_ORDERS_COLLECTION));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => String(item.buyerUid || '') === uid || String(item.sellerUid || '') === uid)
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+async function updateProductOrderStatus(orderId = '', status = '') {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  const nextStatus = String(status || '').trim().toLowerCase();
+  if (!orderId || !['pending', 'accepted', 'rejected', 'completed'].includes(nextStatus)) throw new Error('Invalid order status.');
+  const orderRef = doc(db, PRODUCT_ORDERS_COLLECTION, orderId);
+  const snap = await getDoc(orderRef);
+  if (!snap.exists()) throw new Error('Order not found.');
+  const order = snap.data() || {};
+  if (String(order.sellerUid || '') !== auth.currentUser.uid && String(order.buyerUid || '') !== auth.currentUser.uid) {
+    throw new Error('You cannot update this order.');
+  }
+  const now = Date.now();
+  await setDoc(orderRef, { status: nextStatus, updatedAtMs: now, updatedAt: serverTimestamp() }, { merge: true });
+  return { id: orderId, ...order, status: nextStatus, updatedAtMs: now };
+}
+
+async function toggleProductWishlist(productId = '') {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  const product = await getMarketplaceProduct(productId);
+  if (!product) throw new Error('Product not found.');
+  const wishlistId = `${auth.currentUser.uid}_${productId}`;
+  const wishRef = doc(db, PRODUCT_WISHLISTS_COLLECTION, wishlistId);
+  const existing = await getDoc(wishRef);
+  const now = Date.now();
+  if (existing.exists()) {
+    await deleteDoc(wishRef);
+    await setDoc(doc(db, PRODUCTS_COLLECTION, productId), {
+      wishlistCount: Math.max(0, Number(product.wishlistCount || 0) - 1),
+      updatedAtMs: now
+    }, { merge: true }).catch(() => {});
+    return { saved: false };
+  }
+  const account = getAccountPayload(auth.currentUser);
+  await setDoc(wishRef, {
+    productId,
+    sellerUid: product.sellerUid || '',
+    productTitle: product.title || '',
+    productImageData: product.imageData || (Array.isArray(product.images) ? product.images[0] : ''),
+    productPrice: Number(product.price || 0),
+    productLocation: product.location || '',
+    buyerUid: auth.currentUser.uid,
+    buyerName: account.name || 'WorkLinkUp user',
+    createdAtMs: now,
+    createdAt: serverTimestamp()
+  });
+  await setDoc(doc(db, PRODUCTS_COLLECTION, productId), {
+    wishlistCount: Number(product.wishlistCount || 0) + 1,
+    updatedAtMs: now
+  }, { merge: true }).catch(() => {});
+  return { saved: true };
+}
+
+async function listProductWishlistForUser(uid = auth.currentUser?.uid) {
+  if (!uid) return [];
+  const snapshot = await getDocs(collection(db, PRODUCT_WISHLISTS_COLLECTION));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => String(item.buyerUid || '') === uid)
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+async function listProductWishlistSaves(productId = '') {
+  if (!productId) return [];
+  const snapshot = await getDocs(collection(db, PRODUCT_WISHLISTS_COLLECTION));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => String(item.productId || '') === productId)
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
 getRedirectResult(auth)
   .then((result) => {
     if (result?.user) {
@@ -3859,6 +4025,15 @@ window.softGigglesAuth = {
   markJobStarted,
   markJobCompleted,
   submitJobReview,
+  createMarketplaceProduct,
+  listMarketplaceProducts,
+  getMarketplaceProduct,
+  placeProductOrder,
+  listProductOrdersForUser,
+  updateProductOrderStatus,
+  toggleProductWishlist,
+  listProductWishlistForUser,
+  listProductWishlistSaves,
   resolveAdminByPin,
   listAdmins,
   createAdmin,

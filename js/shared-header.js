@@ -278,8 +278,25 @@ function getPlacedBidNotificationTime(bid = {}) {
   );
 }
 
+async function showHeaderBrowserNotification(title = 'JobLink notification', options = {}) {
+  if (!('Notification' in window)) return;
+  try {
+    let permission = Notification.permission;
+    if (permission === 'default') permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    const notification = new Notification(title, {
+      icon: `${getBasePath()}images/logo/joblinks.avif`,
+      badge: `${getBasePath()}images/logo/joblinks.avif`,
+      ...options
+    });
+    window.setTimeout(() => notification.close(), 6500);
+  } catch (error) {
+    // Browser notifications are optional.
+  }
+}
+
 function pageNeedsProvidersUi(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|categories|edit-profile|post-job|job-posts|job-giver-profile)\.html$/.test(pathname);
+  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|categories|edit-profile|post-job|job-posts|job-giver-profile|products|wishlist)\.html$/.test(pathname);
 }
 
 function hasPendingAuthBootstrapState() {
@@ -295,7 +312,7 @@ function hasPendingAuthBootstrapState() {
 }
 
 function pageNeedsEagerAuth(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|edit-profile|post-job|job-posts|job-giver-profile)\.html$/.test(pathname)
+  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|edit-profile|post-job|job-posts|job-giver-profile|products|wishlist)\.html$/.test(pathname)
     || (pathname.endsWith('/index.html') || pathname === '/' || pathname === '') && hasPendingAuthBootstrapState();
 }
 
@@ -455,6 +472,10 @@ function getMobileBottomNavActiveKey() {
     return 'services';
   }
 
+  if (/\/pages\/(products|wishlist)\.html$/.test(pathname)) {
+    return 'products';
+  }
+
   if (/\/pages\/client-profile\.html$/.test(pathname)) {
     return 'profile';
   }
@@ -479,15 +500,15 @@ function renderMobileBottomNav(base = getBasePath()) {
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
   const profileHref = getProviderProfileHref(base);
-  const jobsAndBidsHref = getJobsAndBidsHref(base);
   const settingsHref = getAccountSettingsHref(base);
   const isProvider = account?.userRole === 'provider';
   const activeKey = getMobileBottomNavActiveKey();
+  const jobsAndBidsHref = getJobsAndBidsHref(base);
   const navItems = [
     { key: 'home', label: 'Home', href: `${base}index.html`, icon: 'fa-solid fa-house' },
     { key: 'jobs', label: 'Jobs', href: `${base}pages/job-posts.html`, icon: 'fa-solid fa-briefcase' },
     { key: 'services', label: 'Services', href: `${base}pages/specialists.html`, icon: 'fa-solid fa-user-group' },
-    { key: 'bids', label: 'Bids', href: jobsAndBidsHref, icon: 'fa-solid fa-file-signature' }
+    { key: 'products', label: 'Products', href: `${base}pages/products.html`, icon: 'fa-solid fa-store' }
   ];
 
   return `
@@ -557,6 +578,8 @@ function renderHeader() {
     <a href="${base}index.html" class="nav-link">Home</a>
     <a href="${base}pages/categories.html" class="nav-link">Categories</a>
     <a href="${base}pages/specialists.html" class="nav-link">Service Providers</a>
+    <a href="${base}pages/products.html" class="nav-link">Products</a>
+    <a href="${base}pages/wishlist.html" class="nav-link">Wishlist</a>
     <a href="${base}pages/post-job.html" class="nav-link promo">Post Job</a>
   `;
   const mobileNavItems = `
@@ -568,6 +591,9 @@ function renderHeader() {
       </div>
       <div class="nav-item">
         <a href="${base}pages/specialists.html" class="nav-link">Service Providers</a>
+      </div>
+      <div class="nav-item">
+        <a href="${base}pages/products.html" class="nav-link">Products</a>
       </div>
       <div class="nav-item">
         <a href="${base}pages/post-job.html" class="nav-link promo">Post Job</a>
@@ -1154,6 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let accountConversationBadgeUnsubscribe = null;
   let accountJobBadgeUnsubscribe = null;
   let accountJobBadgeSubscriptionUid = '';
+  let hasRenderedJobBadgeOnce = false;
 
   function setBadgeCount(badge, count = 0) {
     if (!(badge instanceof HTMLElement)) return;
@@ -1188,8 +1215,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const receivedBidCount = Array.isArray(applications)
       ? applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
       : 0;
+    const previousCount = accountJobsBadgeCount;
     accountJobsBadgeCount = receivedBidCount + accountPlacedJobsBadgeCount;
     renderAccountBadgeState();
+    if (hasRenderedJobBadgeOnce && accountJobsBadgeCount > previousCount) {
+      showHeaderBrowserNotification('New bid received', {
+        body: 'A provider placed a bid on one of your jobs.'
+      });
+    }
+    hasRenderedJobBadgeOnce = true;
   }
 
   function updateMessageBadgeCount(conversations = []) {
@@ -1279,9 +1313,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const placedBidCount = Array.isArray(placedBids)
         ? placedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length
         : 0;
+      const previousCount = accountJobsBadgeCount;
+      const previousPlacedCount = accountPlacedJobsBadgeCount;
       accountPlacedJobsBadgeCount = placedBidCount;
       accountJobsBadgeCount = receivedBidCount + placedBidCount;
       renderAccountBadgeState();
+      if (hasRenderedJobBadgeOnce && accountJobsBadgeCount > previousCount) {
+        showHeaderBrowserNotification(placedBidCount > previousPlacedCount ? 'Job bid updated' : 'New job activity', {
+          body: 'Open Jobs and Bids to review the latest update.'
+        });
+      }
+      hasRenderedJobBadgeOnce = true;
       if (
         typeof authHelper.subscribeReceivedJobBids === 'function'
         && accountJobBadgeSubscriptionUid !== currentAccount.uid
