@@ -3532,12 +3532,38 @@ async function createMarketplaceProduct(payload = {}) {
 
 async function listMarketplaceProducts(options = {}) {
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-  const products = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
-    .filter((item) => String(item.status || 'active') === 'active');
+  const products = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   const sellerUid = String(options.sellerUid || '').trim();
   if (sellerUid) return products.filter((item) => String(item.sellerUid || '') === sellerUid)
     .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
-  return products.sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+  return products
+    .filter((item) => String(item.status || 'active') === 'active')
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+async function updateMarketplaceProduct(productId = '', payload = {}) {
+  if (!auth.currentUser) throw new Error('Please sign in first.');
+  const product = await getMarketplaceProduct(productId);
+  if (!product) throw new Error('Product not found.');
+  if (String(product.sellerUid || '') !== auth.currentUser.uid) throw new Error('You cannot edit this listing.');
+  const allowedStatus = ['active', 'sold'];
+  const now = Date.now();
+  const updatePayload = {
+    title: String(payload.title || product.title || '').trim(),
+    price: Number(payload.price || product.price || 0),
+    category: String(payload.category || product.category || '').trim(),
+    location: String(payload.location || product.location || '').trim(),
+    description: String(payload.description || product.description || '').trim(),
+    deliveryOption: String(payload.deliveryOption || product.deliveryOption || 'pickup').trim(),
+    status: allowedStatus.includes(String(payload.status || product.status || 'active')) ? String(payload.status || product.status || 'active') : 'active',
+    updatedAtMs: now,
+    updatedAt: serverTimestamp()
+  };
+  if (payload.imageData) updatePayload.imageData = String(payload.imageData || '').trim();
+  if (!updatePayload.title) throw new Error('Enter a product title.');
+  if (!updatePayload.price || updatePayload.price <= 0) throw new Error('Enter a valid product price.');
+  await setDoc(doc(db, PRODUCTS_COLLECTION, productId), updatePayload, { merge: true });
+  return { id: productId, ...product, ...updatePayload };
 }
 
 async function getMarketplaceProduct(productId = '') {
@@ -4028,6 +4054,7 @@ window.softGigglesAuth = {
   markJobCompleted,
   submitJobReview,
   createMarketplaceProduct,
+  updateMarketplaceProduct,
   listMarketplaceProducts,
   getMarketplaceProduct,
   placeProductOrder,

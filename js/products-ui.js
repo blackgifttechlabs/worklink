@@ -304,7 +304,7 @@
     const helper = await withTimeout(authHelper(), null);
     if (helper?.listMarketplaceProducts) {
       const remote = await helper.listMarketplaceProducts(options).catch(() => []);
-      if (remote.length || options.sellerUid) return remote;
+      if (remote.length) return remote;
     }
     return fallback;
   }
@@ -318,6 +318,25 @@
     products.unshift(item);
     writeLocalProducts(products);
     return item;
+  }
+
+  async function updateProduct(productId = '', payload = {}) {
+    const productKey = String(productId || '');
+    const canUseRemote = productKey && !productKey.startsWith('demo-') && !productKey.startsWith('local-');
+    const helper = canUseRemote ? await authHelper() : null;
+    if (helper?.updateMarketplaceProduct) return helper.updateMarketplaceProduct(productId, payload);
+    const products = readLocalProducts();
+    const existingIndex = products.findIndex((item) => String(item.id || '') === productKey);
+    if (existingIndex < 0) throw new Error('Listing not found.');
+    const nextProduct = {
+      ...products[existingIndex],
+      ...payload,
+      price: Number(payload.price || products[existingIndex].price || 0),
+      updatedAtMs: Date.now()
+    };
+    products[existingIndex] = nextProduct;
+    writeLocalProducts(products);
+    return nextProduct;
   }
 
   async function toggleWishlist(product) {
@@ -655,6 +674,84 @@
     });
   }
 
+  function openEditItemModal(scope, product = {}, onSave) {
+    const modal = scope.querySelector('[data-market-modal]') || document.createElement('div');
+    modal.hidden = false;
+    modal.className = 'market-modal-shell';
+    modal.innerHTML = `<form class="market-modal-card market-add-product-card" data-edit-product-form>
+      <button type="button" data-market-close>×</button>
+      <div class="market-modal-title">
+        <span>Marketplace seller</span>
+        <h2>Edit listing</h2>
+        <p>Update product details or mark the listing as sold.</p>
+      </div>
+      <label class="market-image-field">
+        <span>Product image</span>
+        <div class="market-image-dropzone" data-product-image-wrapper>
+          <input type="file" accept="image/*" data-product-image />
+          <div class="market-wave-layer" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="market-image-placeholder" data-product-image-placeholder ${product.imageData ? 'hidden' : ''}>
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <strong>Replace product photo</strong>
+            <small>Choose an image and crop it before saving.</small>
+          </div>
+          <div data-product-image-preview class="market-image-preview" ${product.imageData ? '' : 'hidden'}><img src="${escapeHtml(resolveImage(product.imageData || product.image || product.images?.[0]))}" alt="Product preview" /></div>
+        </div>
+      </label>
+      <div class="market-add-form-grid">
+        <label><span>Product title</span><input name="title" required value="${escapeHtml(product.title || '')}" /></label>
+        <label><span>Price</span><input name="price" type="number" min="1" required value="${escapeHtml(product.price || '')}" /></label>
+        <label><span>Category</span><select name="category">${categories().map((item) => `<option ${item.name === product.category ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></label>
+        <label><span>Location</span><select name="location" required><option value="">Select a location</option>${locationOptionsMarkup(product.location || '')}</select></label>
+      </div>
+      <label><span>Description</span><textarea name="description">${escapeHtml(product.description || '')}</textarea></label>
+      <label><span>Status</span><select name="status"><option value="active" ${String(product.status || 'active') === 'active' ? 'selected' : ''}>Available</option><option value="sold" ${String(product.status || '') === 'sold' ? 'selected' : ''}>Sold</option></select></label>
+      <label><span>Delivery option</span><select name="deliveryOption"><option value="delivery" ${product.deliveryOption === 'delivery' ? 'selected' : ''}>Delivery available</option><option value="pickup" ${product.deliveryOption !== 'delivery' ? 'selected' : ''}>Pickup only</option></select></label>
+      <button type="submit">Save listing</button>
+    </form>`;
+    if (!modal.parentElement) document.body.appendChild(modal);
+    modal.querySelector('[data-market-close]')?.addEventListener('click', () => { modal.hidden = true; });
+
+    const fileInputEl = modal.querySelector('[data-product-image]');
+    const previewHost = modal.querySelector('[data-product-image-preview]');
+    const previewImg = previewHost?.querySelector('img');
+    fileInputEl?.addEventListener('change', async () => {
+      const file = fileInputEl.files?.[0];
+      if (!file) return;
+      try {
+        const sourceDataUrl = await readFileDataUrl(file);
+        const cropped = await openProductCropModal(sourceDataUrl).catch((error) => {
+          if (error?.message === 'Crop cancelled.') return '';
+          throw error;
+        });
+        if (!cropped) return;
+        modal.dataset.croppedImage = String(cropped || '');
+        if (previewHost && previewImg) {
+          previewHost.hidden = false;
+          modal.querySelector('[data-product-image-placeholder]')?.setAttribute('hidden', '');
+          previewImg.src = cropped;
+        }
+      } catch (error) {
+        window.alert(error.message || 'Could not process that image.');
+      } finally {
+        fileInputEl.value = '';
+      }
+    });
+
+    modal.querySelector('[data-edit-product-form]')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      if (modal.dataset.croppedImage) data.imageData = modal.dataset.croppedImage;
+      try {
+        const item = await updateProduct(product.id, data);
+        modal.hidden = true;
+        onSave?.(item);
+      } catch (error) {
+        window.alert(error.message || 'Could not save listing.');
+      }
+    });
+  }
+
   window.WorkLinkUpMarketplace = {
     escapeHtml,
     formatPrice,
@@ -662,6 +759,7 @@
     getStoredAccount,
     listProducts,
     createProduct,
+    updateProduct,
     toggleWishlist,
     placeOrder,
     listProductOrdersForUser,
@@ -670,6 +768,7 @@
     getWishlistIds,
     productCard,
     openAddItemModal,
+    openEditItemModal,
     openOrderModal,
     bindMarketplaceEvents
   };
