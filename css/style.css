@@ -35965,6 +35965,11 @@ body.marketplace-page-body .market-main {
   color: #00b875;
 }
 
+.shop-stat-row b.is-down,
+.shop-chart-grid b.is-down {
+  color: #e60046;
+}
+
 .shop-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -36259,6 +36264,18 @@ body.marketplace-page-body .market-main {
 }
 
 @media (max-width: 900px) {
+  body.mobile-market-no-header #site-header {
+    display: none !important;
+  }
+
+  body.mobile-market-no-header {
+    padding-top: 0 !important;
+  }
+
+  body.mobile-market-no-header .marketplace-page {
+    min-height: 100dvh;
+  }
+
   .marketplace-page[data-my-shop-page] {
     background: #f7f8fc;
   }

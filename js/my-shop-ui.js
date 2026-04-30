@@ -45,6 +45,28 @@
     `;
   }
 
+  function windowStats(items = [], valueGetter = () => 1) {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const currentStart = now - (7 * dayMs);
+    const previousStart = now - (14 * dayMs);
+    const current = items
+      .filter((item) => Number(item.createdAtMs || 0) >= currentStart)
+      .reduce((sum, item) => sum + Number(valueGetter(item) || 0), 0);
+    const previous = items
+      .filter((item) => Number(item.createdAtMs || 0) >= previousStart && Number(item.createdAtMs || 0) < currentStart)
+      .reduce((sum, item) => sum + Number(valueGetter(item) || 0), 0);
+    const diff = current - previous;
+    const percent = previous > 0 ? Math.round((diff / previous) * 100) : (current > 0 ? 100 : 0);
+    return { current, previous, diff, percent };
+  }
+
+  function comparisonLabel(stats = {}, suffix = 'vs previous 7 days') {
+    const value = Number(stats.percent || 0);
+    const sign = value > 0 ? '+' : '';
+    return `<b class="${value < 0 ? 'is-down' : ''}">${sign}${value}%</b> ${suffix}`;
+  }
+
   function orderRow(order, api) {
     return `
       <article class="shop-order-card-row">
@@ -93,10 +115,15 @@
     const acceptedRevenue = orders
       .filter((order) => ['accepted', 'completed', 'shipped'].includes(String(order.status || '').toLowerCase()))
       .reduce((sum, order) => sum + Number(order.offerPrice || 0), 0);
+    const acceptedOrders = orders.filter((order) => ['accepted', 'completed', 'shipped'].includes(String(order.status || '').toLowerCase()));
     const pendingValue = orders
       .filter((order) => String(order.status || 'pending').toLowerCase() === 'pending')
       .reduce((sum, order) => sum + Number(order.offerPrice || 0), 0);
     const activeListings = products.filter((product) => productStatus(product) === 'active');
+    const soldListings = products.filter((product) => productStatus(product) === 'sold');
+    const orderValueStats = windowStats(orders, (order) => Number(order.offerPrice || 0));
+    const saveStats = windowStats(saves, () => 1);
+    const acceptedRevenueStats = windowStats(acceptedOrders, (order) => Number(order.offerPrice || 0));
     const days = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - index));
@@ -147,23 +174,23 @@
           </header>
 
           <section class="shop-stat-row">
-            <article><i class="fa-solid fa-bag-shopping"></i><span>Active listings</span><strong>${activeListings.length}</strong><small>${saves.length} getting saves</small></article>
+            <article><i class="fa-solid fa-bag-shopping"></i><span>Active listings</span><strong>${activeListings.length}</strong><small>${soldListings.length} sold listings</small></article>
             <article><i class="fa-solid fa-lock"></i><span>Seller orders</span><strong>${orders.length}</strong><small>${api.formatPrice(pendingValue)} pending value</small></article>
-            <article><i class="fa-regular fa-heart"></i><span>Wishlist saves</span><strong>${saves.length}</strong><small><b>+12%</b> vs last 7 days</small></article>
-            <article><i class="fa-solid fa-chart-line"></i><span>Accepted revenue</span><strong>${api.formatPrice(acceptedRevenue)}</strong><small><b>+18%</b> vs last 7 days</small></article>
+            <article><i class="fa-regular fa-heart"></i><span>Wishlist saves</span><strong>${saves.length}</strong><small>${comparisonLabel(saveStats, 'vs previous 7 days')}</small></article>
+            <article><i class="fa-solid fa-chart-line"></i><span>Accepted revenue</span><strong>${api.formatPrice(acceptedRevenue)}</strong><small>${comparisonLabel(acceptedRevenueStats, 'vs previous 7 days')}</small></article>
           </section>
 
           <section class="shop-chart-grid">
             <article>
               <div><h2>Order value trend</h2><button type="button">Last 7 days <i class="fa-solid fa-chevron-down"></i></button></div>
               <strong>${api.formatPrice(orderDays.reduce((sum, point) => sum + point.value, 0))}</strong>
-              <small><b>+18%</b> vs previous 7 days</small>
+              <small>${comparisonLabel(orderValueStats)}</small>
               ${chartMarkup(orderDays, '#ff0050', true)}
             </article>
             <article>
               <div><h2>Wishlist demand</h2><button type="button">Last 7 days <i class="fa-solid fa-chevron-down"></i></button></div>
               <strong>${saves.length}</strong>
-              <small><b>+12%</b> vs previous 7 days</small>
+              <small>${comparisonLabel(saveStats)}</small>
               ${chartMarkup(saveDays, '#b000ff')}
             </article>
           </section>
