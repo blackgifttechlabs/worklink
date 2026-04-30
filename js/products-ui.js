@@ -45,6 +45,23 @@
     return Array.isArray(window.WorkLinkUpProductCategories) ? window.WorkLinkUpProductCategories : fallbackCategories;
   }
 
+  function locationOptionsMarkup(selected = '') {
+    const groups = Array.isArray(window.WorkLinkUpZimbabweLocations) ? window.WorkLinkUpZimbabweLocations : [];
+    if (!groups.length) {
+      return ['Harare', 'Bulawayo', 'Masvingo', 'Chitungwiza', 'Mutare', 'Gweru']
+        .map((city) => `<option ${selected === city ? 'selected' : ''}>${escapeHtml(city)}</option>`)
+        .join('');
+    }
+    return groups.map((group) => {
+      const province = String(group.province || '').trim();
+      const cities = Array.isArray(group.cities) ? group.cities : [];
+      return `<optgroup label="${escapeHtml(province)}">${cities.map((city) => {
+        const value = String(city || '').trim();
+        return `<option value="${escapeHtml(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(value)}</option>`;
+      }).join('')}</optgroup>`;
+    }).join('');
+  }
+
   function resolveImage(src = '') {
     const value = String(src || '').trim();
     if (!value) return `${getBase()}images/logo/joblinks.avif`;
@@ -73,14 +90,26 @@
     return window.ensureWorkLinkAuth().catch(() => null);
   }
 
-  async function readImageAsDataUrl(file) {
+  function withTimeout(promise, fallback = null, ms = 450) {
+    return Promise.race([
+      promise,
+      new Promise((resolve) => window.setTimeout(() => resolve(fallback), ms))
+    ]);
+  }
+
+  async function readFileDataUrl(file) {
     if (!file) return '';
-    const raw = await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result || ''));
       reader.onerror = () => reject(new Error('Could not read image.'));
       reader.readAsDataURL(file);
     });
+  }
+
+  async function readImageAsDataUrl(file) {
+    const raw = await readFileDataUrl(file);
+    if (!raw) return '';
     const image = await new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
@@ -108,15 +137,167 @@
     return canvas.toDataURL('image/webp', 0.84);
   }
 
+  function loadImageElement(src = '') {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Could not process that image.'));
+      image.src = src;
+    });
+  }
+
+  async function cropImageDataUrl(sourceDataUrl = '', cropRect = {}, displayedSize = {}) {
+    const sourceImage = await loadImageElement(sourceDataUrl);
+    const displayWidth = Math.max(1, Number(displayedSize.width || sourceImage.naturalWidth || sourceImage.width || 1));
+    const displayHeight = Math.max(1, Number(displayedSize.height || sourceImage.naturalHeight || sourceImage.height || 1));
+    const scaleX = (sourceImage.naturalWidth || sourceImage.width) / displayWidth;
+    const scaleY = (sourceImage.naturalHeight || sourceImage.height) / displayHeight;
+    const sx = Math.max(0, Math.round(Number(cropRect.x || 0) * scaleX));
+    const sy = Math.max(0, Math.round(Number(cropRect.y || 0) * scaleY));
+    const sw = Math.max(1, Math.round(Number(cropRect.width || displayWidth) * scaleX));
+    const sh = Math.max(1, Math.round(Number(cropRect.height || displayHeight) * scaleY));
+    const outputScale = Math.min(1, 1600 / sw, 1600 / sh);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(sw * outputScale));
+    canvas.height = Math.max(1, Math.round(sh * outputScale));
+    const context = canvas.getContext('2d');
+    if (!context) return sourceDataUrl;
+    context.drawImage(sourceImage, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.86);
+  }
+
+  function openProductCropModal(sourceDataUrl = '') {
+    if (typeof window.openProviderPostCropModal === 'function') return window.openProviderPostCropModal(sourceDataUrl);
+    return new Promise((resolve, reject) => {
+      const shell = document.createElement('div');
+      shell.className = 'provider-post-crop-shell';
+      shell.innerHTML = `
+        <div class="provider-post-crop-panel" role="dialog" aria-modal="true" aria-label="Crop product image">
+          <div class="provider-post-crop-head">
+            <div><span>Crop product image</span><h3>Drag the edges or corners</h3></div>
+            <button type="button" class="provider-post-crop-close" data-provider-crop-cancel aria-label="Close crop modal">x</button>
+          </div>
+          <div class="provider-post-crop-stage">
+            <div class="provider-post-crop-frame" data-provider-crop-frame>
+              <img src="${escapeHtml(sourceDataUrl)}" alt="Selected product preview" data-provider-crop-image />
+              <div class="provider-post-crop-box" data-provider-crop-box>
+                <span class="provider-post-crop-grid"></span>
+                ${['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((handle) => `<button type="button" class="provider-post-crop-handle is-${handle}" data-crop-handle="${handle}" aria-label="Resize crop ${handle}"></button>`).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="provider-post-crop-actions">
+            <button type="button" class="provider-post-crop-secondary" data-provider-crop-cancel>Cancel</button>
+            <button type="button" class="provider-post-crop-primary" data-provider-crop-finish>Finish cropping</button>
+          </div>
+        </div>`;
+      document.body.appendChild(shell);
+      document.body.classList.add('job-modal-open');
+
+      const frame = shell.querySelector('[data-provider-crop-frame]');
+      const image = shell.querySelector('[data-provider-crop-image]');
+      const box = shell.querySelector('[data-provider-crop-box]');
+      const minSize = 64;
+      let crop = { x: 0, y: 0, width: 0, height: 0 };
+      let dragState = null;
+      const closeModal = () => { shell.remove(); document.body.classList.remove('job-modal-open'); };
+      const getBounds = () => ({ width: Math.max(1, image?.clientWidth || frame?.clientWidth || 1), height: Math.max(1, image?.clientHeight || frame?.clientHeight || 1) });
+      const renderCrop = () => {
+        if (!(box instanceof HTMLElement)) return;
+        box.style.left = `${crop.x}px`;
+        box.style.top = `${crop.y}px`;
+        box.style.width = `${crop.width}px`;
+        box.style.height = `${crop.height}px`;
+      };
+      const initializeCrop = () => {
+        const bounds = getBounds();
+        crop.width = Math.max(minSize, Math.round(bounds.width * 0.82));
+        crop.height = Math.max(minSize, Math.round(bounds.height * 0.72));
+        crop.x = Math.round((bounds.width - crop.width) / 2);
+        crop.y = Math.round((bounds.height - crop.height) / 2);
+        renderCrop();
+      };
+      const getPointer = (event) => {
+        const point = event.touches?.[0] || event.changedTouches?.[0] || event;
+        return { x: Number(point.clientX || 0), y: Number(point.clientY || 0) };
+      };
+      const stopDrag = () => {
+        dragState = null;
+        window.removeEventListener('mousemove', onDrag);
+        window.removeEventListener('mouseup', stopDrag);
+        window.removeEventListener('touchmove', onDrag);
+        window.removeEventListener('touchend', stopDrag);
+      };
+      const startDrag = (event, handle = 'move') => {
+        event.preventDefault();
+        dragState = { handle, pointer: getPointer(event), crop: { ...crop } };
+        window.addEventListener('mousemove', onDrag);
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchmove', onDrag, { passive: false });
+        window.addEventListener('touchend', stopDrag);
+      };
+      function onDrag(event) {
+        if (!dragState) return;
+        event.preventDefault();
+        const bounds = getBounds();
+        const pointer = getPointer(event);
+        const dx = pointer.x - dragState.pointer.x;
+        const dy = pointer.y - dragState.pointer.y;
+        const original = dragState.crop;
+        const handle = dragState.handle;
+        let next = { ...original };
+        if (handle === 'move') {
+          next.x = Math.min(Math.max(0, original.x + dx), bounds.width - original.width);
+          next.y = Math.min(Math.max(0, original.y + dy), bounds.height - original.height);
+        } else {
+          if (handle.includes('w')) {
+            const nextX = Math.min(Math.max(0, original.x + dx), original.x + original.width - minSize);
+            next.width = original.width + (original.x - nextX);
+            next.x = nextX;
+          }
+          if (handle.includes('e')) next.width = Math.min(Math.max(minSize, original.width + dx), bounds.width - original.x);
+          if (handle.includes('n')) {
+            const nextY = Math.min(Math.max(0, original.y + dy), original.y + original.height - minSize);
+            next.height = original.height + (original.y - nextY);
+            next.y = nextY;
+          }
+          if (handle.includes('s')) next.height = Math.min(Math.max(minSize, original.height + dy), bounds.height - original.y);
+        }
+        crop = next;
+        renderCrop();
+      }
+      image?.addEventListener('load', initializeCrop, { once: true });
+      if (image?.complete) window.requestAnimationFrame(initializeCrop);
+      box?.addEventListener('mousedown', (event) => { if (!event.target?.hasAttribute?.('data-crop-handle')) startDrag(event, 'move'); });
+      box?.addEventListener('touchstart', (event) => { if (!event.target?.hasAttribute?.('data-crop-handle')) startDrag(event, 'move'); }, { passive: false });
+      shell.querySelectorAll('[data-crop-handle]').forEach((button) => {
+        const handle = button.getAttribute('data-crop-handle') || 'se';
+        button.addEventListener('mousedown', (event) => startDrag(event, handle));
+        button.addEventListener('touchstart', (event) => startDrag(event, handle), { passive: false });
+      });
+      shell.querySelectorAll('[data-provider-crop-cancel]').forEach((button) => button.addEventListener('click', () => { closeModal(); reject(new Error('Crop cancelled.')); }));
+      shell.querySelector('[data-provider-crop-finish]')?.addEventListener('click', async () => {
+        try {
+          const cropped = await cropImageDataUrl(sourceDataUrl, crop, getBounds());
+          closeModal();
+          resolve(cropped);
+        } catch (error) {
+          closeModal();
+          reject(error);
+        }
+      });
+    });
+  }
+
   async function listProducts(options = {}) {
-    const helper = await authHelper();
+    const local = readLocalProducts();
+    const fallback = options.sellerUid ? local.filter((item) => item.sellerUid === options.sellerUid) : [...local, ...fallbackProducts];
+    const helper = await withTimeout(authHelper(), null);
     if (helper?.listMarketplaceProducts) {
       const remote = await helper.listMarketplaceProducts(options).catch(() => []);
       if (remote.length || options.sellerUid) return remote;
     }
-    const local = readLocalProducts();
-    const all = [...local, ...fallbackProducts];
-    return options.sellerUid ? all.filter((item) => item.sellerUid === options.sellerUid) : all;
+    return fallback;
   }
 
   async function createProduct(payload) {
@@ -189,7 +370,7 @@
 
           <div class="market-tools">
             <label><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-market-search placeholder="Search for anything..." /></label>
-            <select data-market-location><option value="">All Locations</option><option>Harare</option><option>Bulawayo</option><option>Masvingo</option><option>Chitungwiza</option></select>
+            <select data-market-location><option value="">All Locations</option>${locationOptionsMarkup()}</select>
             <select data-market-category-select><option value="">All Categories</option>${categoryItems.map((item) => `<option>${escapeHtml(item.name)}</option>`).join('')}</select>
             <select data-market-sort><option value="newest">Newest First</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select>
           </div>
@@ -236,7 +417,7 @@
   }
 
   async function getWishlistIds() {
-    const helper = await authHelper();
+    const helper = await withTimeout(authHelper(), null);
     if (helper?.listProductWishlistForUser) {
       const account = getStoredAccount();
       const remote = account?.uid ? await helper.listProductWishlistForUser(account.uid).catch(() => []) : [];
@@ -283,36 +464,41 @@
     const modal = scope.querySelector('[data-market-modal]') || document.createElement('div');
     modal.hidden = false;
     modal.className = 'market-modal-shell';
-    modal.innerHTML = `<form class="market-modal-card" data-add-product-form style="max-width:900px"><button type="button" data-market-close>×</button><h2>Add Item</h2>
-      <label>
+    modal.innerHTML = `<form class="market-modal-card market-add-product-card" data-add-product-form>
+      <button type="button" data-market-close>×</button>
+      <div class="market-modal-title">
+        <span>Marketplace seller</span>
+        <h2>Add product to My Shop</h2>
+        <p>Upload a clear product photo, choose where the product is available, and publish it to buyers.</p>
+      </div>
+      <label class="market-image-field">
         <span>Product image</span>
-        <div class="market-image-dropzone" data-product-image-wrapper style="position:relative;border-radius:12px;border:1px dashed rgba(15,23,42,0.08);min-height:160px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f7fbff 0%,#eef6ff 100%);">
-          <input type="file" accept="image/*" data-product-image style="position:absolute;inset:0;opacity:0;cursor:pointer;" />
-          <div class="market-image-placeholder" data-product-image-placeholder style="text-align:center;color:#617087;pointer-events:none">
-            <svg width="72" height="44" viewBox="0 0 72 44" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 32C10 24 20 24 30 32C40 40 50 40 60 32C66 27 72 28 72 28V44H0V32Z" fill="#E6F0FF"/></svg>
-            <div style="margin-top:8px;font-size:13px;">Tap or drop to upload — you will be asked to crop</div>
+        <div class="market-image-dropzone" data-product-image-wrapper>
+          <input type="file" accept="image/*" data-product-image />
+          <div class="market-wave-layer" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="market-image-placeholder" data-product-image-placeholder>
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <strong>Upload product photo</strong>
+            <small>Choose an image and crop it before publishing.</small>
           </div>
-          <div data-product-image-preview class="market-image-preview" hidden style="position:absolute;inset:8px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff"><img alt="Preview" style="max-width:100%;height:auto;display:block" /></div>
+          <div data-product-image-preview class="market-image-preview" hidden><img alt="Product preview" /></div>
         </div>
       </label>
-      <label><span>Title</span><input name="title" required /></label>
-      <label><span>Price</span><input name="price" type="number" min="1" required /></label>
-      <label><span>Category</span><select name="category">${categories().map((item) => `<option>${escapeHtml(item.name)}</option>`).join('')}</select></label>
-      <label><span>Location</span>
+      <div class="market-add-form-grid">
+        <label><span>Product title</span><input name="title" required placeholder="e.g. iPhone 13 128GB" /></label>
+        <label><span>Price</span><input name="price" type="number" min="1" required placeholder="US$" /></label>
+        <label><span>Category</span><select name="category">${categories().map((item) => `<option>${escapeHtml(item.name)}</option>`).join('')}</select></label>
+        <label><span>Location</span>
         <select name="location" required>
           <option value="">Select a location</option>
-          ${(() => {
-            try {
-              const groups = Array.isArray(window.ZIMBABWE_LOCATION_GROUPS) ? window.ZIMBABWE_LOCATION_GROUPS : [];
-              const cities = [...new Map(groups.map(g => [g.city, g.city]))].map(c => `<option>${escapeHtml(c)}</option>`).join('');
-              return cities;
-            } catch (e) { return `<option>Harare</option><option>Bulawayo</option><option>Masvingo</option>`; }
-          })()}
+          ${locationOptionsMarkup()}
         </select>
-      </label>
-      <label><span>Description</span><textarea name="description"></textarea></label>
+        </label>
+      </div>
+      <label><span>Description</span><textarea name="description" placeholder="Condition, size, brand, and anything the buyer should know"></textarea></label>
       <label><span>Delivery option</span><select name="deliveryOption"><option value="delivery">Delivery available</option><option value="pickup">Pickup only</option></select></label>
-      <button type="submit">Publish Item</button></form>`;
+      <button type="submit">Publish Item</button>
+    </form>`;
     if (!modal.parentElement) document.body.appendChild(modal);
     modal.querySelector('[data-market-close]')?.addEventListener('click', () => { modal.hidden = true; });
 
@@ -325,16 +511,12 @@
         const file = fileInputEl.files?.[0];
         if (!file) return;
         try {
-          const sourceDataUrl = await readImageAsDataUrl(file);
-          let cropped = sourceDataUrl;
-          if (typeof window.openProviderPostCropModal === 'function') {
-            try {
-              cropped = await window.openProviderPostCropModal(sourceDataUrl);
-            } catch (err) {
-              // if user canceled crop, keep original
-              if (err?.message === 'Crop cancelled.') return;
-            }
-          }
+          const sourceDataUrl = await readFileDataUrl(file);
+          const cropped = await openProductCropModal(sourceDataUrl).catch((error) => {
+            if (error?.message === 'Crop cancelled.') return '';
+            throw error;
+          });
+          if (!cropped) return;
           modal.dataset.croppedImage = String(cropped || '');
           if (previewHost && previewImg) {
             previewHost.hidden = false;
@@ -390,27 +572,10 @@
     const page = document.querySelector('[data-client-profile-page]');
     if (!page) return;
     window.setTimeout(async () => {
-      let tabs = page.querySelector('.provider-profile-gallery-tabs');
-      // Ensure a gallery head exists and is placed above gallery content (like provider page does).
-      if (!page.querySelector('.provider-profile-gallery-head')) {
-        const insertBeforeEl = page.querySelector('.provider-profile-gallery') || page.querySelector('.provider-profile-hero') || page.firstElementChild || page;
-        const head = document.createElement('section');
-        head.className = 'provider-profile-gallery-head';
-        head.innerHTML = `<div class="provider-profile-gallery-tabs"></div>`;
-        insertBeforeEl.parentNode.insertBefore(head, insertBeforeEl);
-      }
-      tabs = page.querySelector('.provider-profile-gallery-tabs');
-      if (tabs.querySelector('[data-client-profile-tab="shop"]')) return;
-
-      // Add a prominent two-button main tab row (Jobs / Products) above the gallery tabs for quick switching
-      if (!page.querySelector('.provider-profile-main-tabs')) {
-        const galleryHead = page.querySelector('.provider-profile-gallery-head');
-        const mainTabs = document.createElement('div');
-        mainTabs.className = 'provider-profile-main-tabs';
-        mainTabs.innerHTML = `<button type="button" class="provider-profile-main-tab" data-client-profile-tab="jobs"><span>Jobs</span></button><button type="button" class="provider-profile-main-tab" data-client-profile-tab="shop"><span>Products</span></button>`;
-        galleryHead.insertAdjacentElement('afterbegin', mainTabs);
-      }
+      const tabs = page.querySelector('.provider-profile-gallery-tabs');
+      if (!tabs || tabs.querySelector('[data-client-profile-tab="shop"]')) return;
       const account = getStoredAccount();
+      page.classList.add('is-market-dashboard');
       ['jobs', 'shop', 'orders', 'wishlist'].forEach((key) => tabs.insertAdjacentHTML('beforeend', `<button type="button" class="provider-profile-gallery-tab" data-client-profile-tab="${key}"><span>${key[0].toUpperCase()}${key.slice(1)}</span></button>`));
       page.insertAdjacentHTML('beforeend', `<section class="provider-profile-gallery client-profile-gallery" data-client-profile-panel="jobs" hidden><a class="market-profile-link" href="${getBase()}pages/job-giver-profile.html">Open Jobs and Bids</a></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="shop" hidden><button type="button" class="market-floating-add" data-market-add-item>+ Add Item</button><div class="market-grid" data-profile-shop-grid></div><div class="market-modal-shell" data-market-modal hidden></div></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="orders" hidden><div data-profile-orders></div></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="wishlist" hidden><a class="market-profile-link" href="${getBase()}pages/wishlist.html">Open Wishlist</a></section>`);
       let products = account?.uid ? await listProducts({ sellerUid: account.uid }) : [];
@@ -431,14 +596,13 @@
       const ordersHost = page.querySelector('[data-profile-orders]');
       if (ordersHost) ordersHost.innerHTML = orders.map((order) => `<article class="market-order-row"><strong>${escapeHtml(order.productTitle)}</strong><span>${escapeHtml(order.buyerName || order.sellerName || 'Marketplace user')}</span><span>${escapeHtml(formatPrice(order.offerPrice))}</span><em>${escapeHtml(order.status || 'pending')}</em><small>${escapeHtml(order.deliveryMethod || 'pickup')} · ${escapeHtml(order.deliveryLocation || 'No location')}</small></article>`).join('') || '<div class="market-empty">No product orders yet.</div>';
       page.querySelector('[data-market-add-item]')?.addEventListener('click', () => openAddItemModal(page, (item) => { shopGrid.insertAdjacentHTML('afterbegin', productCard(item)); }));
-      page.querySelectorAll('[data-client-profile-tab]').forEach((tab) => tab.addEventListener('click', () => {
-        const name = tab.getAttribute('data-client-profile-tab');
-        page.querySelectorAll('[data-client-profile-tab]').forEach((item) => item.classList.toggle('is-active', item === tab));
+      const setProfileTab = (name = 'details') => {
+        page.querySelectorAll('[data-client-profile-tab]').forEach((item) => item.classList.toggle('is-active', item.getAttribute('data-client-profile-tab') === name));
         page.querySelectorAll('[data-client-profile-panel]').forEach((panel) => { const active = panel.getAttribute('data-client-profile-panel') === name; panel.hidden = !active; panel.classList.toggle('is-active-gallery', active); });
-      }));
-      // Activate Jobs tab by default so the user sees the main Jobs panel immediately
-      const defaultTab = page.querySelector('[data-client-profile-tab="jobs"]');
-      if (defaultTab) defaultTab.click();
+      };
+      page.querySelectorAll('[data-client-profile-tab]').forEach((tab) => tab.addEventListener('click', () => setProfileTab(tab.getAttribute('data-client-profile-tab') || 'details')));
+      const requestedTab = new URLSearchParams(window.location.search).get('tab') || window.location.hash.replace(/^#/, '');
+      if (requestedTab && page.querySelector(`[data-client-profile-panel="${CSS.escape(requestedTab)}"]`)) setProfileTab(requestedTab);
     }, 900);
   }
 

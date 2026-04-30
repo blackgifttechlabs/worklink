@@ -296,7 +296,7 @@ async function showHeaderBrowserNotification(title = 'JobLink notification', opt
 }
 
 function pageNeedsProvidersUi(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|categories|edit-profile|post-job|job-posts|job-giver-profile|products|wishlist)\.html$/.test(pathname);
+  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|categories|edit-profile|post-job|job-posts|job-giver-profile)\.html$/.test(pathname);
 }
 
 function hasPendingAuthBootstrapState() {
@@ -429,6 +429,18 @@ function renderAccountMenuContent({
       <i class="fa-solid fa-briefcase"></i>
       <span>Jobs and Bids</span>
       ${includeBadges ? '<span class="account-dropdown-badge" data-account-jobs-badge-dropdown hidden>0</span>' : ''}
+    </a>
+    <a href="${base}pages/client-profile.html?tab=shop" class="account-dropdown-item">
+      <i class="fa-solid fa-store"></i>
+      <span>My Shop</span>
+    </a>
+    <a href="${base}pages/client-profile.html?tab=orders" class="account-dropdown-item">
+      <i class="fa-solid fa-bag-shopping"></i>
+      <span>Product Orders</span>
+    </a>
+    <a href="${base}pages/wishlist.html" class="account-dropdown-item">
+      <i class="fa-regular fa-heart"></i>
+      <span>Wishlist</span>
     </a>
     ${isProvider ? `
       <a href="${base}pages/my-posts.html" class="account-dropdown-item">
