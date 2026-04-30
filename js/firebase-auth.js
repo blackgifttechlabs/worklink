@@ -3626,6 +3626,7 @@ async function toggleProductWishlist(productId = '') {
     return { saved: false };
   }
   const account = getAccountPayload(auth.currentUser);
+  const userDoc = await getUserDocument(auth.currentUser.uid).catch(() => null);
   await setDoc(wishRef, {
     productId,
     sellerUid: product.sellerUid || '',
@@ -3634,7 +3635,8 @@ async function toggleProductWishlist(productId = '') {
     productPrice: Number(product.price || 0),
     productLocation: product.location || '',
     buyerUid: auth.currentUser.uid,
-    buyerName: account.name || 'WorkLinkUp user',
+    buyerName: userDoc?.name || account.name || 'WorkLinkUp user',
+    buyerPhone: userDoc?.phone || account.phone || '',
     createdAtMs: now,
     createdAt: serverTimestamp()
   });

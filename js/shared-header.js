@@ -312,7 +312,7 @@ function hasPendingAuthBootstrapState() {
 }
 
 function pageNeedsEagerAuth(pathname = window.location.pathname) {
-  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|edit-profile|post-job|job-posts|job-giver-profile|products|wishlist)\.html$/.test(pathname)
+  return /\/pages\/(specialists|provider-profile|client-profile|my-posts|messages|account|edit-profile|post-job|job-posts|job-giver-profile|products|wishlist|my-shop|product-orders)\.html$/.test(pathname)
     || (pathname.endsWith('/index.html') || pathname === '/' || pathname === '') && hasPendingAuthBootstrapState();
 }
 
@@ -430,11 +430,11 @@ function renderAccountMenuContent({
       <span>Jobs and Bids</span>
       ${includeBadges ? '<span class="account-dropdown-badge" data-account-jobs-badge-dropdown hidden>0</span>' : ''}
     </a>
-    <a href="${base}pages/client-profile.html?tab=shop" class="account-dropdown-item">
+    <a href="${base}pages/my-shop.html" class="account-dropdown-item">
       <i class="fa-solid fa-store"></i>
       <span>My Shop</span>
     </a>
-    <a href="${base}pages/client-profile.html?tab=orders" class="account-dropdown-item">
+    <a href="${base}pages/product-orders.html" class="account-dropdown-item">
       <i class="fa-solid fa-bag-shopping"></i>
       <span>Product Orders</span>
     </a>
@@ -484,7 +484,7 @@ function getMobileBottomNavActiveKey() {
     return 'services';
   }
 
-  if (/\/pages\/(products|wishlist)\.html$/.test(pathname)) {
+  if (/\/pages\/(products|wishlist|my-shop|product-orders)\.html$/.test(pathname)) {
     return 'products';
   }
 
@@ -591,6 +591,8 @@ function renderHeader() {
     <a href="${base}pages/categories.html" class="nav-link">Categories</a>
     <a href="${base}pages/specialists.html" class="nav-link">Service Providers</a>
     <a href="${base}pages/products.html" class="nav-link">Products</a>
+    <a href="${base}pages/my-shop.html" class="nav-link">My Shop</a>
+    <a href="${base}pages/product-orders.html" class="nav-link">Orders</a>
     <a href="${base}pages/wishlist.html" class="nav-link">Wishlist</a>
     <a href="${base}pages/post-job.html" class="nav-link promo">Post Job</a>
   `;

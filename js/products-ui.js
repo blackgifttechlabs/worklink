@@ -8,6 +8,7 @@
   ];
   const localProductsKey = 'worklinkup_marketplace_products';
   const localWishlistKey = 'worklinkup_marketplace_wishlist';
+  const localOrdersKey = 'worklinkup_marketplace_orders';
   const fallbackCategories = [
     { name: 'Electronics', subcategories: ['Mobile Phones', 'Tablets', 'Laptops', 'Desktops', 'TVs', 'Audio & Headphones', 'Cameras', 'Gaming Consoles', 'Accessories (Chargers, Cables, etc.)', 'Smart Home Devices'] },
     { name: 'Home & Living', subcategories: ['Furniture', 'Kitchen Appliances', 'Home Decor', 'Bedding & Mattresses', 'Lighting', 'Storage & Organization', 'Cleaning Supplies', 'Garden Furniture'] },
@@ -83,6 +84,14 @@
 
   function writeLocalWishlist(items = []) {
     localStorage.setItem(localWishlistKey, JSON.stringify(items));
+  }
+
+  function readLocalOrders() {
+    try { return JSON.parse(localStorage.getItem(localOrdersKey) || '[]'); } catch (error) { return []; }
+  }
+
+  function writeLocalOrders(items = []) {
+    localStorage.setItem(localOrdersKey, JSON.stringify(items));
   }
 
   async function authHelper() {
@@ -312,19 +321,103 @@
   }
 
   async function toggleWishlist(product) {
-    const helper = await authHelper();
-    if (helper?.toggleProductWishlist && !String(product.id).startsWith('demo-')) return helper.toggleProductWishlist(product.id);
+    const productId = String(product.id || '');
+    const canUseRemote = !productId.startsWith('demo-') && !productId.startsWith('local-');
+    const helper = canUseRemote ? await authHelper() : null;
+    if (helper?.toggleProductWishlist) return helper.toggleProductWishlist(product.id);
     const list = readLocalWishlist();
     const exists = list.some((item) => item.productId === product.id);
-    writeLocalWishlist(exists ? list.filter((item) => item.productId !== product.id) : [{ productId: product.id, productTitle: product.title, productImageData: product.imageData, productPrice: product.price, productLocation: product.location, createdAtMs: Date.now() }, ...list]);
+    const account = getStoredAccount();
+    writeLocalWishlist(exists ? list.filter((item) => item.productId !== product.id) : [{
+      productId: product.id,
+      sellerUid: product.sellerUid || '',
+      sellerName: product.sellerName || '',
+      productTitle: product.title,
+      productImageData: product.imageData,
+      productPrice: product.price,
+      productLocation: product.location,
+      buyerUid: account?.uid || 'local-buyer',
+      buyerName: account?.name || 'Local buyer',
+      buyerPhone: account?.phone || '',
+      createdAtMs: Date.now()
+    }, ...list]);
     return { saved: !exists };
   }
 
   async function placeOrder(product, payload) {
-    const helper = await authHelper();
-    if (helper?.placeProductOrder && !String(product.id).startsWith('demo-')) return helper.placeProductOrder(product.id, payload);
-    window.alert('Order saved locally for this demo product.');
-    return { id: `local-order-${Date.now()}`, productId: product.id, ...payload };
+    const productId = String(product.id || '');
+    const canUseRemote = !productId.startsWith('demo-') && !productId.startsWith('local-');
+    const helper = canUseRemote ? await authHelper() : null;
+    if (helper?.placeProductOrder) return helper.placeProductOrder(product.id, payload);
+    const account = getStoredAccount();
+    const order = {
+      id: `local-order-${Date.now()}`,
+      productId: product.id,
+      productTitle: product.title || '',
+      productImageData: product.imageData || product.image || product.images?.[0] || '',
+      productCategory: product.category || '',
+      sellerUid: product.sellerUid || '',
+      sellerName: product.sellerName || 'Seller',
+      buyerUid: account?.uid || 'local-buyer',
+      buyerName: account?.name || 'Local buyer',
+      buyerPhone: account?.phone || '',
+      deliveryLocation: String(payload.deliveryLocation || '').trim(),
+      deliveryMethod: String(product.deliveryOption || 'pickup').trim(),
+      offerPrice: Number(payload.offerPrice || product.price || 0),
+      message: String(payload.message || '').trim(),
+      status: 'pending',
+      createdAtMs: Date.now(),
+      updatedAtMs: Date.now()
+    };
+    const orders = readLocalOrders();
+    orders.unshift(order);
+    writeLocalOrders(orders);
+    return order;
+  }
+
+  async function listProductOrdersForUser(uid = getStoredAccount()?.uid) {
+    const helper = await withTimeout(authHelper(), null);
+    if (helper?.listProductOrdersForUser && uid) {
+      const remote = await helper.listProductOrdersForUser(uid).catch(() => []);
+      if (remote.length) return remote;
+    }
+    return readLocalOrders()
+      .filter((item) => !uid || String(item.buyerUid || '') === String(uid) || String(item.sellerUid || '') === String(uid))
+      .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+  }
+
+  async function listWishlistForUser(uid = getStoredAccount()?.uid) {
+    const helper = await withTimeout(authHelper(), null);
+    if (helper?.listProductWishlistForUser && uid) {
+      const remote = await helper.listProductWishlistForUser(uid).catch(() => []);
+      if (remote.length) return remote;
+    }
+    return readLocalWishlist()
+      .filter((item) => !uid || !item.buyerUid || String(item.buyerUid || '') === String(uid))
+      .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+  }
+
+  async function listWishlistSavesForSeller(sellerUid = getStoredAccount()?.uid) {
+    if (!sellerUid) return [];
+    const products = await listProducts({ sellerUid });
+    const helper = await withTimeout(authHelper(), null);
+    const rows = [];
+    for (const product of products) {
+      const productId = String(product.id || '');
+      const saves = helper?.listProductWishlistSaves && !productId.startsWith('demo-') && !productId.startsWith('local-')
+        ? await helper.listProductWishlistSaves(product.id).catch(() => [])
+        : readLocalWishlist().filter((item) => String(item.productId || '') === String(product.id));
+      saves.forEach((save) => rows.push({
+        ...save,
+        productId: product.id,
+        productTitle: save.productTitle || product.title || '',
+        productImageData: save.productImageData || product.imageData || product.image || product.images?.[0] || '',
+        productPrice: Number(save.productPrice || product.price || 0),
+        productLocation: save.productLocation || product.location || '',
+        sellerUid
+      }));
+    }
+    return rows.sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
   }
 
   function productCard(product, wishlistIds = new Set()) {
@@ -333,7 +426,7 @@
       <article class="market-product-card" data-product-id="${escapeHtml(product.id)}">
         <div class="market-product-image">
           <img src="${escapeHtml(resolveImage(product.imageData || product.image || product.images?.[0]))}" alt="${escapeHtml(product.title)}" loading="lazy" />
-          <button type="button" class="market-wish-btn ${saved ? 'is-saved' : ''}" data-product-wishlist="${escapeHtml(product.id)}" aria-label="Add to wishlist"><i class="${saved ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
+          <button type="button" class="market-wish-btn ${saved ? 'is-saved' : ''}" data-product-wishlist="${escapeHtml(product.id)}" aria-label="${saved ? 'Remove from wishlist' : 'Add to wishlist'}"><i class="${saved ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
         </div>
         <div class="market-product-copy">
           <strong>${escapeHtml(formatPrice(product.price))}</strong>
@@ -390,8 +483,8 @@
     page.innerHTML = shellMarkup();
     const account = getStoredAccount();
     let products = await listProducts();
-    const wishlist = await getWishlistIds();
-    const state = { query: '', category: '', location: '', sort: 'newest' };
+    let wishlist = await getWishlistIds();
+    const state = { query: '', category: '', location: '', sort: 'newest', wishlistIds: wishlist };
     const grid = page.querySelector('[data-market-grid]');
     const render = () => {
       let items = products.filter((item) => {
@@ -403,9 +496,9 @@
       if (state.sort === 'price-low') items.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
       else if (state.sort === 'price-high') items.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
       else items.sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
-      grid.innerHTML = items.map((item) => productCard(item, wishlist)).join('') || '<div class="market-empty">No products found.</div>';
+      grid.innerHTML = items.map((item) => productCard(item, state.wishlistIds)).join('') || '<div class="market-empty">No products found.</div>';
     };
-    bindMarketplaceEvents(page, () => products, (next) => { products = next; render(); }, state, render);
+    bindMarketplaceEvents(page, () => products, (next) => { products = next; render(); }, state, render, wishlist);
     render();
     page.querySelectorAll('[data-market-add-item]').forEach((button) => button.addEventListener('click', () => {
       if (!account?.uid) {
@@ -436,7 +529,24 @@
       const wish = event.target.closest('[data-product-wishlist]');
       if (wish) {
         const product = getProducts().find((item) => item.id === wish.getAttribute('data-product-wishlist'));
-        if (product) { await toggleWishlist(product); window.location.reload(); }
+        if (product) {
+          try {
+            const result = await toggleWishlist(product);
+            const saved = Boolean(result?.saved);
+            const id = String(product.id || '');
+            if (state?.wishlistIds instanceof Set) {
+              if (saved) state.wishlistIds.add(id);
+              else state.wishlistIds.delete(id);
+            }
+            wish.classList.toggle('is-saved', saved);
+            wish.setAttribute('aria-label', saved ? 'Remove from wishlist' : 'Add to wishlist');
+            const icon = wish.querySelector('i');
+            if (icon) icon.className = `${saved ? 'fa-solid' : 'fa-regular'} fa-heart`;
+            if (typeof render === 'function') render();
+          } catch (error) {
+            window.alert(error.message || 'Could not update your wishlist.');
+          }
+        }
       }
       const order = event.target.closest('[data-product-order]');
       if (order) {
@@ -545,70 +655,26 @@
     });
   }
 
-  async function renderWishlistPage() {
-    const page = document.querySelector('[data-wishlist-page]');
-    if (!page) return;
-    const helper = await authHelper();
-    const account = getStoredAccount();
-    const saved = helper?.listProductWishlistForUser && account?.uid ? await helper.listProductWishlistForUser(account.uid).catch(() => []) : readLocalWishlist();
-    page.innerHTML = `<section class="market-main is-standalone"><header class="market-head"><h1>Wishlist</h1><p>Products you saved from the marketplace.</p></header><section class="market-grid">${saved.map((item) => productCard({ id: item.productId, title: item.productTitle, price: item.productPrice, location: item.productLocation, imageData: item.productImageData, category: 'Saved' }, new Set([item.productId]))).join('') || '<div class="market-empty">No saved products yet.</div>'}</section></section>`;
-    page.onclick = async (event) => {
-      const wishButton = event.target.closest('[data-product-wishlist]');
-      const orderButton = event.target.closest('[data-product-order]');
-      const productId = wishButton?.getAttribute('data-product-wishlist') || orderButton?.getAttribute('data-product-order');
-      const item = saved.find((entry) => entry.productId === productId);
-      if (!item) return;
-      const product = { id: item.productId, title: item.productTitle, imageData: item.productImageData, price: item.productPrice, location: item.productLocation, category: 'Saved' };
-      if (wishButton) {
-        await toggleWishlist(product);
-        renderWishlistPage();
-      } else if (orderButton) {
-        openOrderModal(page, product);
-      }
-    };
-  }
-
-  async function renderProfileMarketplaceTabs() {
-    const page = document.querySelector('[data-client-profile-page]');
-    if (!page) return;
-    window.setTimeout(async () => {
-      const tabs = page.querySelector('.provider-profile-gallery-tabs');
-      if (!tabs || tabs.querySelector('[data-client-profile-tab="shop"]')) return;
-      const account = getStoredAccount();
-      page.classList.add('is-market-dashboard');
-      ['jobs', 'shop', 'orders', 'wishlist'].forEach((key) => tabs.insertAdjacentHTML('beforeend', `<button type="button" class="provider-profile-gallery-tab" data-client-profile-tab="${key}"><span>${key[0].toUpperCase()}${key.slice(1)}</span></button>`));
-      page.insertAdjacentHTML('beforeend', `<section class="provider-profile-gallery client-profile-gallery" data-client-profile-panel="jobs" hidden><a class="market-profile-link" href="${getBase()}pages/job-giver-profile.html">Open Jobs and Bids</a></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="shop" hidden><button type="button" class="market-floating-add" data-market-add-item>+ Add Item</button><div class="market-grid" data-profile-shop-grid></div><div class="market-modal-shell" data-market-modal hidden></div></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="orders" hidden><div data-profile-orders></div></section><section class="provider-profile-gallery client-profile-gallery market-profile-panel" data-client-profile-panel="wishlist" hidden><a class="market-profile-link" href="${getBase()}pages/wishlist.html">Open Wishlist</a></section>`);
-      let products = account?.uid ? await listProducts({ sellerUid: account.uid }) : [];
-      const helper = await authHelper();
-      if (helper?.listProductWishlistSaves && products.length) {
-        products = await Promise.all(products.map(async (product) => {
-          const saves = await helper.listProductWishlistSaves(product.id).catch(() => []);
-          return {
-            ...product,
-            _saveCount: saves.length,
-            _saverPreview: saves.slice(0, 3).map((save) => save.buyerName).filter(Boolean).join(', ')
-          };
-        }));
-      }
-      const shopGrid = page.querySelector('[data-profile-shop-grid]');
-      if (shopGrid) shopGrid.innerHTML = products.map((item) => productCard(item)).join('') || '<div class="market-empty">No products listed yet.</div>';
-      const orders = helper?.listProductOrdersForUser && account?.uid ? await helper.listProductOrdersForUser(account.uid).catch(() => []) : [];
-      const ordersHost = page.querySelector('[data-profile-orders]');
-      if (ordersHost) ordersHost.innerHTML = orders.map((order) => `<article class="market-order-row"><strong>${escapeHtml(order.productTitle)}</strong><span>${escapeHtml(order.buyerName || order.sellerName || 'Marketplace user')}</span><span>${escapeHtml(formatPrice(order.offerPrice))}</span><em>${escapeHtml(order.status || 'pending')}</em><small>${escapeHtml(order.deliveryMethod || 'pickup')} · ${escapeHtml(order.deliveryLocation || 'No location')}</small></article>`).join('') || '<div class="market-empty">No product orders yet.</div>';
-      page.querySelector('[data-market-add-item]')?.addEventListener('click', () => openAddItemModal(page, (item) => { shopGrid.insertAdjacentHTML('afterbegin', productCard(item)); }));
-      const setProfileTab = (name = 'details') => {
-        page.querySelectorAll('[data-client-profile-tab]').forEach((item) => item.classList.toggle('is-active', item.getAttribute('data-client-profile-tab') === name));
-        page.querySelectorAll('[data-client-profile-panel]').forEach((panel) => { const active = panel.getAttribute('data-client-profile-panel') === name; panel.hidden = !active; panel.classList.toggle('is-active-gallery', active); });
-      };
-      page.querySelectorAll('[data-client-profile-tab]').forEach((tab) => tab.addEventListener('click', () => setProfileTab(tab.getAttribute('data-client-profile-tab') || 'details')));
-      const requestedTab = new URLSearchParams(window.location.search).get('tab') || window.location.hash.replace(/^#/, '');
-      if (requestedTab && page.querySelector(`[data-client-profile-panel="${CSS.escape(requestedTab)}"]`)) setProfileTab(requestedTab);
-    }, 900);
-  }
+  window.WorkLinkUpMarketplace = {
+    escapeHtml,
+    formatPrice,
+    resolveImage,
+    getStoredAccount,
+    listProducts,
+    createProduct,
+    toggleWishlist,
+    placeOrder,
+    listProductOrdersForUser,
+    listWishlistForUser,
+    listWishlistSavesForSeller,
+    getWishlistIds,
+    productCard,
+    openAddItemModal,
+    openOrderModal,
+    bindMarketplaceEvents
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     renderProductsPage();
-    renderWishlistPage();
-    renderProfileMarketplaceTabs();
   });
 })();
