@@ -772,12 +772,16 @@ function renderAccountPanel() {
                 <input id="account-name" name="name" type="text" placeholder="Tinashe Moyo" />
               </div>
               <div class="account-auth-identifier-switch" data-account-identifier-switch>
-                <button type="button" class="account-identifier-option is-active" data-account-identifier-option="email">Email</button>
+                <button type="button" class="account-identifier-option is-active" data-account-identifier-option="email">Phone / Email</button>
                 <button type="button" class="account-identifier-option" data-account-identifier-option="username">Username</button>
               </div>
               <div class="account-form-row">
-                <label for="account-email" data-account-identifier-label>Email address</label>
-                <input id="account-email" name="identifier" type="email" placeholder="you@example.com" required />
+                <label for="account-email" data-account-identifier-label>Phone number or email</label>
+                <input id="account-email" name="identifier" type="text" placeholder="+263 77 123 4567" required />
+              </div>
+              <div class="account-form-row account-optional-email-row" hidden>
+                <label for="account-optional-email">Email address <span class="account-optional-label">optional</span></label>
+                <input id="account-optional-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
               </div>
               <div class="account-form-row">
                 <label for="account-password">Password</label>

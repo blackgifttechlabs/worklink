@@ -432,10 +432,17 @@ function sanitizeUsername(value) {
 }
 
 function normalizePhoneNumber(value) {
-  return String(value || '')
+  const raw = String(value || '')
     .trim()
     .replace(/[^\d+]/g, '')
     .replace(/(?!^)\+/g, '');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  let loginKey = digits;
+  if (loginKey.startsWith('00')) loginKey = loginKey.slice(2);
+  if (loginKey.startsWith('0')) loginKey = `263${loginKey.slice(1)}`;
+  if (loginKey.length === 9 && loginKey.startsWith('7')) loginKey = `263${loginKey}`;
+  return `+${loginKey}`;
 }
 
 function normalizePhoneDigits(value) {
@@ -451,6 +458,27 @@ function buildPhoneAuthEmail(value) {
   const digits = normalizePhoneDigits(value);
   if (!digits) throw new Error('Enter a valid phone number.');
   return `phone_${digits}@worklinkup.local`;
+}
+
+function buildWhatsappChatId(value) {
+  const digits = normalizePhoneDigits(value);
+  return digits ? `${digits}@c.us` : '';
+}
+
+function isInternalPhoneAuthEmail(value = '') {
+  return /^phone_\d+@worklinkup\.local$/i.test(String(value || '').trim());
+}
+
+async function findUserDocumentByPhone(phoneValue = '') {
+  const phoneNormalized = normalizePhoneDigits(phoneValue);
+  if (!phoneNormalized) return null;
+  const snapshot = await getDocs(query(collection(db, 'users'), where('phoneNormalized', '==', phoneNormalized)));
+  if (snapshot.empty) return null;
+  const docSnapshot = snapshot.docs[0];
+  return {
+    id: docSnapshot.id,
+    ...(docSnapshot.data() || {})
+  };
 }
 
 async function generateAvailableUsername(seedValue, excludeUid = '') {
@@ -997,13 +1025,15 @@ async function syncUserDocument(account, extra = {}) {
   merge('authEmail', extra.authEmail, account.authEmail);
   merge('phone', extra.phone, account.phone);
   merge('phoneNormalized', extra.phoneNormalized, normalizePhoneDigits(extra.phone || account.phone));
+  merge('phoneLoginKey', extra.phoneLoginKey, normalizePhoneDigits(extra.phone || account.phone));
   merge('provider', account.provider);
   merge('username', extra.username, account.username);
   merge('userRole', extra.userRole, account.userRole);
   merge('providerProvince', extra.providerProvince, account.providerProvince);
   merge('providerProvinceSlug', extra.providerProvinceSlug, account.providerProvinceSlug);
   merge('providerPublicId', extra.providerPublicId, account.providerPublicId);
-  merge('whatsappNumber', extra.whatsappNumber, account.whatsappNumber);
+  merge('whatsappNumber', extra.whatsappNumber, account.whatsappNumber || account.phone);
+  merge('whatsappChatId', extra.whatsappChatId, buildWhatsappChatId(extra.whatsappNumber || extra.phone || account.whatsappNumber || account.phone));
   merge('address', extra.address, account.address);
   merge('city', extra.city, account.city);
   merge('specialty', extra.specialty, account.specialty);
@@ -1022,6 +1052,8 @@ async function syncUserDocument(account, extra = {}) {
 
   payload.accountStatus = String(extra.accountStatus || existingUser?.accountStatus || 'active').trim() || 'active';
   payload.accountDeactivated = Boolean(extra.accountDeactivated ?? existingUser?.accountDeactivated ?? false);
+  payload.whatsappOptIn = Boolean(extra.whatsappOptIn ?? existingUser?.whatsappOptIn ?? true);
+  payload.whatsappWelcomeSentAtMs = Number(existingUser?.whatsappWelcomeSentAtMs || extra.whatsappWelcomeSentAtMs || 0);
   if (existingUser?.deactivatedBy) payload.deactivatedBy = existingUser.deactivatedBy;
   if (existingUser?.deactivatedAtMs) payload.deactivatedAtMs = Number(existingUser.deactivatedAtMs || 0);
   if (existingUser?.reactivatedAtMs) payload.reactivatedAtMs = Number(existingUser.reactivatedAtMs || 0);
@@ -1168,7 +1200,8 @@ async function signInWithGoogle() {
 }
 
 async function signInWithEmail(email, password) {
-  const result = await signInWithEmailAndPassword(auth, email, password);
+  const loginEmail = String(email || '').trim();
+  const result = await signInWithEmailAndPassword(auth, loginEmail, password);
   const user = result.user;
   const account = getAccountPayload(user);
   await syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
@@ -1177,8 +1210,11 @@ async function signInWithEmail(email, password) {
 }
 
 async function signInWithIdentifier(identifier, password, method = 'email') {
-  const normalizedMethod = String(method || 'email').trim().toLowerCase();
+  const requestedMethod = String(method || 'email').trim().toLowerCase();
   const rawIdentifier = String(identifier || '').trim();
+  const normalizedMethod = requestedMethod === 'email' && isPhoneIdentifier(rawIdentifier)
+    ? 'phone'
+    : requestedMethod;
   if (!rawIdentifier) {
     throw new Error(
       normalizedMethod === 'username'
@@ -1199,12 +1235,11 @@ async function signInWithIdentifier(identifier, password, method = 'email') {
       throw new Error('Enter a valid phone number first.');
     }
 
-    const snapshot = await getDocs(query(collection(db, 'users'), where('phoneNormalized', '==', phoneNormalized)));
-    if (snapshot.empty) {
+    const userDoc = await findUserDocumentByPhone(phoneNormalized);
+    if (!userDoc) {
       throw new Error('No account found for that phone number.');
     }
 
-    const userDoc = snapshot.docs[0].data() || {};
     const authEmail = String(userDoc.authEmail || userDoc.email || buildPhoneAuthEmail(phoneNormalized)).trim();
     return signInWithEmail(authEmail, password);
   }
@@ -1220,60 +1255,36 @@ async function signInWithIdentifier(identifier, password, method = 'email') {
   }
 
   const userDoc = snapshot.docs[0].data() || {};
-  const email = String(userDoc.email || '').trim();
-  if (!email) {
-    throw new Error('That username does not have an email account linked yet.');
+  const authEmail = String(userDoc.authEmail || userDoc.email || '').trim();
+  if (!authEmail) {
+    throw new Error('That username does not have a password login linked yet.');
   }
 
-  return signInWithEmail(email, password);
+  return signInWithEmail(authEmail, password);
 }
 
 async function signUpWithIdentifier(name, identifier, password, method = 'email', extra = {}) {
   const normalizedMethod = String(method || 'email').trim().toLowerCase();
   const rawIdentifier = String(identifier || '').trim();
   const normalizedName = normalizeName(name);
-  if (!rawIdentifier) {
-    throw new Error(normalizedMethod === 'phone' ? 'Enter your phone number first.' : 'Enter your email address first.');
-  }
-
-  if (normalizedMethod !== 'phone') {
-    const user = await signUpWithEmail(normalizedName, rawIdentifier, password);
-    const account = getAccountPayload(user);
-    const username = extra.username
-      ? sanitizeUsername(extra.username)
-      : await generateAvailableUsername(normalizedName || account.name || rawIdentifier.split('@')[0], account.uid);
-    await syncUserDocument({
-      ...account,
-      name: normalizedName || account.name
-    }, {
-      lastSeenAtMs: Date.now(),
-      createdAtMs: Date.now(),
-      username,
-      usernameLower: username,
-      userRole: String(extra.userRole || '').trim(),
-      email: rawIdentifier,
-      authEmail: rawIdentifier,
-      phone: String(extra.phone || '').trim(),
-      phoneNormalized: normalizePhoneDigits(extra.phone || '')
-    }).catch(() => {});
-    persistAccountDetails({
-      name: normalizedName || account.name,
-      email: rawIdentifier,
-      authEmail: rawIdentifier,
-      phone: String(extra.phone || '').trim(),
-      username,
-      userRole: String(extra.userRole || '').trim()
-    });
-    return user;
-  }
-
-  const phone = normalizePhoneNumber(rawIdentifier);
+  const phoneInput = normalizedMethod === 'phone'
+    ? rawIdentifier
+    : String(extra.phone || '').trim();
+  const optionalEmail = String(extra.email || (normalizedMethod === 'email' ? rawIdentifier : '') || '').trim();
+  const phone = normalizePhoneNumber(phoneInput);
   const phoneDigits = normalizePhoneDigits(phone);
   if (!phoneDigits) {
-    throw new Error('Enter a valid phone number first.');
+    throw new Error('Enter your phone number first.');
+  }
+  if (optionalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(optionalEmail)) {
+    throw new Error('Enter a valid email address or leave it empty.');
+  }
+  const existingPhoneUser = await findUserDocumentByPhone(phoneDigits);
+  if (existingPhoneUser) {
+    throw new Error('An account already exists for that phone number.');
   }
 
-  const authEmail = buildPhoneAuthEmail(phoneDigits);
+  const authEmail = optionalEmail || buildPhoneAuthEmail(phoneDigits);
   const result = await createUserWithEmailAndPassword(auth, authEmail, password);
   if (normalizedName) {
     await updateProfile(result.user, {
@@ -1290,7 +1301,7 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
   await syncUserDocument({
     ...account,
     name: normalizedName || account.name,
-    email: '',
+    email: optionalEmail,
     authEmail,
     phone
   }, {
@@ -1299,24 +1310,36 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
     username,
     usernameLower: username,
     userRole: String(extra.userRole || '').trim(),
-    email: '',
+    email: optionalEmail,
     authEmail,
     phone,
-    phoneNormalized: phoneDigits
+    phoneNormalized: phoneDigits,
+    phoneLoginKey: phoneDigits,
+    whatsappNumber: phone,
+    whatsappChatId: buildWhatsappChatId(phone),
+    whatsappOptIn: true,
+    whatsappWelcomeSentAtMs: 0
   }).catch(() => {});
 
   persistAccountDetails({
     name: normalizedName || account.name,
-    email: '',
+    email: optionalEmail,
     authEmail,
     phone,
+    whatsappNumber: phone,
     username,
     userRole: String(extra.userRole || '').trim()
   });
   return user;
 }
 
-async function signUpWithEmail(name, email, password) {
+async function signUpWithEmail(name, email, password, phone = '') {
+  return signUpWithIdentifier(name, String(phone || '').trim(), password, 'phone', {
+    email: String(email || '').trim()
+  });
+}
+
+async function signUpWithEmailLegacy(name, email, password) {
   const result = await createUserWithEmailAndPassword(auth, email, password);
   const normalizedName = normalizeName(name);
   if (name) {
@@ -1693,7 +1716,8 @@ async function saveProviderProfile(profileInput = {}) {
     username,
     usernameLower: username,
     userRole: 'provider',
-    whatsappNumber: String(profileInput.whatsappNumber || account.phone || '').trim(),
+    whatsappNumber: normalizePhoneNumber(profileInput.whatsappNumber || account.phone || ''),
+    whatsappChatId: buildWhatsappChatId(profileInput.whatsappNumber || account.phone || ''),
     address: String(profileInput.address || '').trim(),
     city: String(profileInput.city || '').trim(),
     province,
@@ -1729,6 +1753,8 @@ async function saveProviderProfile(profileInput = {}) {
     name: displayName,
     email: account.email || '',
     phone: providerProfile.whatsappNumber,
+    phoneNormalized: normalizePhoneDigits(providerProfile.whatsappNumber),
+    phoneLoginKey: normalizePhoneDigits(providerProfile.whatsappNumber),
     username,
     usernameLower: username,
     userRole: 'provider',
@@ -1737,6 +1763,8 @@ async function saveProviderProfile(profileInput = {}) {
     providerProvinceSlug: provinceSlug,
     providerPublicId,
     whatsappNumber: providerProfile.whatsappNumber,
+    whatsappChatId: providerProfile.whatsappChatId,
+    whatsappOptIn: true,
     address: providerProfile.address,
     city: providerProfile.city,
     experience: providerProfile.experience,
@@ -1762,6 +1790,7 @@ async function saveProviderProfile(profileInput = {}) {
   persistAccountDetails({
     name: displayName,
     phone: providerProfile.whatsappNumber,
+    whatsappNumber: providerProfile.whatsappNumber,
     username,
     userRole: 'provider',
     providerProfileComplete: true,
@@ -1778,6 +1807,8 @@ async function saveProviderProfile(profileInput = {}) {
     name: displayName,
     email: account.email || '',
     phone: providerProfile.whatsappNumber,
+    phoneNormalized: normalizePhoneDigits(providerProfile.whatsappNumber),
+    phoneLoginKey: normalizePhoneDigits(providerProfile.whatsappNumber),
     username,
     usernameLower: username,
     userRole: 'provider',
@@ -1786,6 +1817,7 @@ async function saveProviderProfile(profileInput = {}) {
     providerProvinceSlug: provinceSlug,
     providerPublicId,
     whatsappNumber: providerProfile.whatsappNumber,
+    whatsappChatId: providerProfile.whatsappChatId,
     address: providerProfile.address,
     city: providerProfile.city,
     experience: providerProfile.experience,
@@ -1855,6 +1887,9 @@ async function saveClientProfile(profileInput = {}) {
     usernameLower: username,
     phone,
     phoneNormalized: normalizePhoneDigits(phone),
+    phoneLoginKey: normalizePhoneDigits(phone),
+    whatsappNumber: phone,
+    whatsappChatId: buildWhatsappChatId(phone),
     email: String(profileInput.email || existingUserDoc?.email || account.email || '').trim(),
     authEmail: String(existingUserDoc?.authEmail || account.authEmail || auth.currentUser.email || '').trim(),
     address,
@@ -1876,6 +1911,10 @@ async function saveClientProfile(profileInput = {}) {
     authEmail: profilePayload.authEmail,
     phone,
     phoneNormalized: profilePayload.phoneNormalized,
+    phoneLoginKey: profilePayload.phoneLoginKey,
+    whatsappNumber: profilePayload.whatsappNumber,
+    whatsappChatId: profilePayload.whatsappChatId,
+    whatsappOptIn: true,
     username,
     usernameLower: username,
     userRole: effectiveUserRole,
@@ -1893,6 +1932,7 @@ async function saveClientProfile(profileInput = {}) {
     email: profilePayload.email,
     authEmail: profilePayload.authEmail,
     phone,
+    whatsappNumber: profilePayload.whatsappNumber,
     username,
     userRole: effectiveUserRole,
     clientProfileComplete: true

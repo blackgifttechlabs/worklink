@@ -1166,8 +1166,8 @@
         </div>
         <div class="job-post-auth-buttons">
           <button type="button" class="job-post-auth-choice" data-job-post-email-auth>
-            <i class="fa-regular fa-envelope"></i>
-            <span>Sign in with email</span>
+            <i class="fa-solid fa-phone"></i>
+            <span>Sign in with phone</span>
           </button>
           <button type="button" class="job-post-auth-choice is-google" data-job-post-google-auth>
             ${getGoogleIconMarkup()}
@@ -1184,8 +1184,12 @@
             <input type="text" data-post-auth-name placeholder="Tinashe Moyo" />
           </label>
           <label class="job-auth-field">
-            <span>Email address</span>
-            <input type="email" data-post-auth-email placeholder="you@example.com" autocomplete="email" />
+            <span data-post-auth-identifier-label>Phone number or email</span>
+            <input type="text" data-post-auth-email placeholder="+263 77 123 4567" autocomplete="username" />
+          </label>
+          <label class="job-auth-field" data-post-auth-optional-email-row hidden>
+            <span>Email address <small>optional</small></span>
+            <input type="email" data-post-auth-optional-email placeholder="you@example.com" autocomplete="email" />
           </label>
           <label class="job-auth-field">
             <span>Password</span>
@@ -1207,6 +1211,9 @@
     const nameRow = host.querySelector('[data-post-auth-name-row]');
     const nameInput = host.querySelector('[data-post-auth-name]');
     const emailInput = host.querySelector('[data-post-auth-email]');
+    const identifierLabel = host.querySelector('[data-post-auth-identifier-label]');
+    const optionalEmailRow = host.querySelector('[data-post-auth-optional-email-row]');
+    const optionalEmailInput = host.querySelector('[data-post-auth-optional-email]');
     const passwordInput = host.querySelector('[data-post-auth-password]');
     const submitButton = host.querySelector('[data-post-auth-submit]');
     let authMode = 'signin';
@@ -1218,6 +1225,18 @@
     function syncMode() {
       modeButtons.forEach((button) => button.classList.toggle('is-active', button.getAttribute('data-post-auth-mode') === authMode));
       if (nameRow instanceof HTMLElement) nameRow.hidden = authMode !== 'signup';
+      if (optionalEmailRow instanceof HTMLElement) optionalEmailRow.hidden = authMode !== 'signup';
+      if (optionalEmailInput instanceof HTMLInputElement) {
+        optionalEmailInput.disabled = authMode !== 'signup';
+        if (authMode !== 'signup') optionalEmailInput.value = '';
+      }
+      if (identifierLabel instanceof HTMLElement) identifierLabel.textContent = authMode === 'signup' ? 'Phone number' : 'Phone number or email';
+      if (emailInput instanceof HTMLInputElement) {
+        emailInput.type = authMode === 'signup' ? 'tel' : 'text';
+        emailInput.inputMode = authMode === 'signup' ? 'tel' : 'text';
+        emailInput.autocomplete = authMode === 'signup' ? 'tel' : 'username';
+        emailInput.placeholder = authMode === 'signup' ? '+263 77 123 4567' : '+263 77 123 4567 or you@example.com';
+      }
       if (submitButton instanceof HTMLElement) {
         submitButton.textContent = authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue';
       }
@@ -1259,6 +1278,7 @@
       const authHelper = await waitForAuthHelper();
       if (!authHelper) return;
       const email = String(emailInput?.value || '').trim();
+      const optionalEmail = String(optionalEmailInput?.value || '').trim();
       const password = String(passwordInput?.value || '').trim();
       const name = String(nameInput?.value || '').trim();
       if (!email || !password || (authMode === 'signup' && !name)) {
@@ -1268,7 +1288,10 @@
       setButtonLoading(submitButton, true);
       try {
         if (authMode === 'signup') {
-          await authHelper.signUpWithIdentifier(name, email, password, 'email', { userRole: 'client' });
+          await authHelper.signUpWithIdentifier(name, email, password, 'phone', {
+            userRole: 'client',
+            email: optionalEmail
+          });
         } else {
           await authHelper.signInWithIdentifier(email, password, 'email');
         }
@@ -1309,10 +1332,17 @@
               </div>
             </label>
             <label class="job-auth-field">
-              <span data-job-auth-identifier-label>Email address</span>
+              <span data-job-auth-identifier-label>Phone number</span>
+              <div class="job-auth-input-shell">
+                <i class="fa-solid fa-phone"></i>
+                <input type="tel" data-job-auth-identifier placeholder="+263 77 123 4567" autocomplete="tel" />
+              </div>
+            </label>
+            <label class="job-auth-field" data-job-auth-email-row>
+              <span>Email address <small>optional</small></span>
               <div class="job-auth-input-shell">
                 <i class="fa-regular fa-envelope"></i>
-                <input type="email" data-job-auth-identifier placeholder="Enter your email address" autocomplete="email" />
+                <input type="email" data-job-auth-email placeholder="you@example.com" autocomplete="email" />
               </div>
             </label>
             <label class="job-auth-field">
@@ -1344,8 +1374,8 @@
           </div>
         </div>
         <div class="job-auth-id-switch">
-          <button type="button" class="is-active" data-job-auth-id-mode="email">Email</button>
-          <button type="button" data-job-auth-id-mode="phone">Phone</button>
+          <button type="button" class="is-active" data-job-auth-id-mode="phone">Phone</button>
+          <button type="button" data-job-auth-id-mode="email">Email</button>
         </div>
         <div class="job-auth-fields">
           <label class="job-auth-field" data-job-auth-name-row>
@@ -1355,6 +1385,10 @@
           <label class="job-auth-field">
             <span data-job-auth-identifier-label>Email address</span>
             <input type="text" data-job-auth-identifier placeholder="you@example.com" />
+          </label>
+          <label class="job-auth-field" data-job-auth-email-row>
+            <span>Email address <small>optional</small></span>
+            <input type="email" data-job-auth-email placeholder="you@example.com" />
           </label>
           <label class="job-auth-field">
             <span>Password</span>
@@ -1386,6 +1420,8 @@
     const nameInput = host.querySelector('[data-job-auth-name]');
     const identifierInput = host.querySelector('[data-job-auth-identifier]');
     const identifierLabel = host.querySelector('[data-job-auth-identifier-label]');
+    const optionalEmailRow = host.querySelector('[data-job-auth-email-row]');
+    const optionalEmailInput = host.querySelector('[data-job-auth-email]');
     const passwordInput = host.querySelector('[data-job-auth-password]');
     const passwordToggle = host.querySelector('[data-job-auth-password-toggle]');
     const note = host.querySelector('[data-job-auth-note]');
@@ -1393,17 +1429,29 @@
     const googleBtn = host.querySelector('[data-job-google-auth]');
     const isBidCard = host.classList.contains('job-auth-card--bid');
     let authMode = 'signup';
-    let idMode = 'email';
+    let idMode = 'phone';
 
     function sync() {
+      if (authMode === 'signup') idMode = 'phone';
       modeButtons.forEach((button) => button.classList.toggle('is-active', button.getAttribute('data-job-auth-mode') === authMode));
       idModeButtons.forEach((button) => button.classList.toggle('is-active', button.getAttribute('data-job-auth-id-mode') === idMode));
+      idModeButtons.forEach((button) => {
+        if (button instanceof HTMLButtonElement) button.disabled = authMode === 'signup';
+      });
       if (nameRow instanceof HTMLElement) nameRow.hidden = authMode !== 'signup';
-      if (identifierLabel instanceof HTMLElement) identifierLabel.textContent = idMode === 'phone' ? 'Phone number' : 'Email address';
+      if (optionalEmailRow instanceof HTMLElement) optionalEmailRow.hidden = authMode !== 'signup';
+      if (optionalEmailInput instanceof HTMLInputElement) {
+        optionalEmailInput.disabled = authMode !== 'signup';
+        if (authMode !== 'signup') optionalEmailInput.value = '';
+      }
+      if (identifierLabel instanceof HTMLElement) identifierLabel.textContent = authMode === 'signup'
+        ? 'Phone number'
+        : (idMode === 'phone' ? 'Phone number' : 'Email address');
       if (identifierInput instanceof HTMLInputElement) {
-        identifierInput.placeholder = isBidCard
-          ? 'Enter your email address'
-          : (idMode === 'phone' ? '+263 77 123 4567' : 'you@example.com');
+        identifierInput.type = authMode === 'signup' || idMode === 'phone' ? 'tel' : 'email';
+        identifierInput.inputMode = authMode === 'signup' || idMode === 'phone' ? 'tel' : 'email';
+        identifierInput.autocomplete = authMode === 'signup' || idMode === 'phone' ? 'tel' : 'email';
+        identifierInput.placeholder = authMode === 'signup' || idMode === 'phone' ? '+263 77 123 4567' : 'you@example.com';
       }
       if (note instanceof HTMLElement) {
         const noteMessage = scope === 'bid'
@@ -1493,9 +1541,10 @@
       setButtonLoading(submitBtn, true);
       try {
         if (authMode === 'signup') {
+          const optionalEmail = String(optionalEmailInput?.value || '').trim();
           await authHelper.signUpWithIdentifier(name, identifier, password, idMode, {
             userRole: 'client',
-            phone: idMode === 'phone' ? identifier : ''
+            email: optionalEmail
           });
         } else {
           await authHelper.signInWithIdentifier(identifier, password, idMode);

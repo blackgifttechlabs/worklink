@@ -1676,6 +1676,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountEmailForm = document.getElementById('account-email-form');
   const accountFormError = document.querySelector('[data-account-form-error]');
   const accountEmailInput = document.getElementById('account-email');
+  const accountOptionalEmailRow = document.querySelector('.account-optional-email-row');
+  const accountOptionalEmailInput = document.getElementById('account-optional-email');
   const accountIdentifierModeInput = document.getElementById('account-identifier-mode');
   const accountIdentifierSwitch = document.querySelector('[data-account-identifier-switch]');
   const accountIdentifierLabel = document.querySelector('[data-account-identifier-label]');
@@ -2034,6 +2036,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!isSignup) accountNameInput.value = '';
     }
     if (accountIdentifierSwitch) accountIdentifierSwitch.hidden = isSignup;
+    if (accountOptionalEmailRow instanceof HTMLElement) accountOptionalEmailRow.hidden = !isSignup;
+    if (accountOptionalEmailInput instanceof HTMLInputElement) {
+      accountOptionalEmailInput.disabled = !isSignup;
+      if (!isSignup) accountOptionalEmailInput.value = '';
+    }
     syncIdentifierField(accountEmailInput, accountIdentifierLabel, accountIdentifierModeInput?.value || 'email', isSignup);
   }
 
@@ -2061,18 +2068,19 @@ document.addEventListener('DOMContentLoaded', () => {
     syncIdentifierField(accountPageEmailInput, accountPageIdentifierLabel, accountPageIdentifierModeInput?.value || 'email', isSignup);
   }
 
-  function syncIdentifierField(input, label, mode = 'email', forceEmail = false) {
+  function syncIdentifierField(input, label, mode = 'email', forcePhone = false) {
     if (!(input instanceof HTMLInputElement)) return;
-    const normalizedMode = forceEmail ? 'email' : (mode === 'username' ? 'username' : 'email');
+    const normalizedMode = forcePhone ? 'phone' : (mode === 'username' ? 'username' : 'email');
     const isUsername = normalizedMode === 'username';
+    const isPhone = normalizedMode === 'phone';
     if (label instanceof HTMLElement) {
-      label.textContent = isUsername ? 'Username' : 'Email address';
+      label.textContent = isUsername ? 'Username' : isPhone ? 'Phone number' : 'Phone number or email';
     }
-    input.type = isUsername ? 'text' : 'email';
-    input.inputMode = isUsername ? 'text' : 'email';
+    input.type = 'text';
+    input.inputMode = isUsername ? 'text' : isPhone ? 'tel' : 'text';
     input.autocapitalize = 'none';
-    input.autocomplete = isUsername ? 'username' : 'email';
-    input.placeholder = isUsername ? 'john_smith' : 'you@example.com';
+    input.autocomplete = isUsername ? 'username' : isPhone ? 'tel' : 'username';
+    input.placeholder = isUsername ? 'john_smith' : isPhone ? '+263 77 123 4567' : '+263 77 123 4567 or you@example.com';
   }
 
   function bindIdentifierSwitch(container, hiddenInput, input, label, isSignupCheck) {
@@ -2325,7 +2333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isLoggedIn) return;
 
     const name = account.name || 'WorkLinkUp User';
-    const email = account.email || 'you@example.com';
+    const email = account.email || 'Not set';
     const isProvider = String(account.userRole || '').trim().toLowerCase() === 'provider';
     const jobsAndBidsHref = 'job-giver-profile.html';
     if (accountDisplayName) accountDisplayName.textContent = name;
@@ -2912,6 +2920,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const formData = new FormData(accountEmailForm);
       const identifier = String(formData.get('identifier') || '').trim();
+      const optionalEmail = String(formData.get('email') || '').trim();
       const password = String(formData.get('password') || '');
       const typedName = String(formData.get('name') || '').trim();
       const isSignup = accountModeInput.value === 'signup';
@@ -2919,7 +2928,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         if (isSignup) {
-          await authHelper.signUpWithEmail(typedName, identifier, password);
+          await authHelper.signUpWithIdentifier(typedName, identifier, password, 'phone', {
+            email: optionalEmail
+          });
         } else {
           const method = accountIdentifierModeInput?.value || 'email';
           await (authHelper.signInWithIdentifier
@@ -2947,6 +2958,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const formData = new FormData(accountPageEmailForm);
       const identifier = String(formData.get('identifier') || '').trim();
+      const optionalEmail = String(formData.get('email') || '').trim();
       const password = String(formData.get('password') || '');
       const typedName = String(formData.get('name') || '').trim();
       const isSignup = accountPageModeInput.value === 'signup';
@@ -2954,7 +2966,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         if (isSignup) {
-          await authHelper.signUpWithEmail(typedName, identifier, password);
+          await authHelper.signUpWithIdentifier(typedName, identifier, password, 'phone', {
+            email: optionalEmail
+          });
         } else {
           const method = accountPageIdentifierModeInput?.value || 'email';
           await (authHelper.signInWithIdentifier
