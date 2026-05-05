@@ -189,6 +189,12 @@
     }
   }
 
+  function showReviewSavedTick(shell) {
+    const panel = shell?.querySelector?.('.job-review-modal-panel');
+    if (!(panel instanceof HTMLElement) || panel.querySelector('.job-review-success-tick')) return;
+    panel.insertAdjacentHTML('beforeend', '<div class="job-review-success-tick" aria-live="polite"><span><i class="fa-solid fa-check"></i></span></div>');
+  }
+
   function initializeOptionalSections(container = document) {
     const toggles = container.querySelectorAll('.account-setup-optional-toggle');
     toggles.forEach((toggle) => {
@@ -5405,22 +5411,28 @@
         });
 
         shell.querySelector('[data-job-review-submit]').addEventListener('click', async () => {
+          const submitButton = shell.querySelector('[data-job-review-submit]');
           const comment = (shell.querySelector('[data-job-review-comment]')?.value || '').trim();
           if (!selectedRating) {
             window.alert('Please choose a rating.');
             return;
           }
+          setButtonLoading(submitButton, true);
           try {
             await authHelper.submitJobReview(job.id || job.jobId || '', application.id || application.applicationId || '', { rating: selectedRating, comment });
+            showReviewSavedTick(shell);
             showSuccessToast('Thanks — review saved');
-            shell.remove();
-            document.body.classList.remove('job-modal-open');
-            activeJobPeerUid = '';
-            await refreshMessages();
-            window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
-            window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+            window.setTimeout(async () => {
+              shell.remove();
+              document.body.classList.remove('job-modal-open');
+              activeJobPeerUid = '';
+              await refreshMessages();
+              window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
+              window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+            }, 760);
           } catch (err) {
             window.alert(err.message || 'Could not save review.');
+            setButtonLoading(submitButton, false);
           }
         });
       } catch (err) {

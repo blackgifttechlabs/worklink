@@ -247,6 +247,31 @@
     if (button instanceof HTMLButtonElement) button.disabled = Boolean(isLoading);
   }
 
+  function markBidActionAccepted(button, card = null) {
+    if (!(button instanceof HTMLElement)) return;
+    button.classList.remove('is-loading');
+    button.classList.add('is-accepted-now');
+    button.innerHTML = '<i class="fa-solid fa-check"></i><span>Accepted</span>';
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+    if (card instanceof HTMLElement) {
+      card.classList.add('is-accepted');
+      const statusLabel = card.querySelector('.job-bidder-status');
+      if (statusLabel instanceof HTMLElement) {
+        statusLabel.className = 'job-bidder-status is-accepted';
+        statusLabel.textContent = 'accepted';
+      }
+      card.querySelectorAll('[data-job-modal-application-action="rejected"], [data-job-application-action="rejected"]').forEach((rejectButton) => {
+        if (rejectButton instanceof HTMLButtonElement) rejectButton.disabled = true;
+      });
+    }
+  }
+
+  function showReviewSavedTick(shell) {
+    const panel = shell?.querySelector?.('.job-review-modal-panel');
+    if (!(panel instanceof HTMLElement) || panel.querySelector('.job-review-success-tick')) return;
+    panel.insertAdjacentHTML('beforeend', '<div class="job-review-success-tick" aria-live="polite"><span><i class="fa-solid fa-check"></i></span></div>');
+  }
+
   function waitForAuthHelper(timeoutMs = 12000) {
     return new Promise((resolve) => {
       if (typeof window.ensureWorkLinkAuth === 'function') {
@@ -3059,10 +3084,28 @@
           : 0
       ), 0);
 
-      const currentJobsList = currentJobs.filter(job => job.acceptedApplicationUid && !job.completedAtMs);
+      const getAcceptedApplicationForJob = (job = {}) => {
+        if (!Array.isArray(job.applications)) return null;
+        const acceptedApplicationUid = String(job.acceptedApplicationUid || '').trim();
+        return job.applications.find((application) => (
+          String(application.id || '').trim() === acceptedApplicationUid
+          || String(application.status || '').trim().toLowerCase() === 'accepted'
+          || Boolean(application.completedAtMs)
+          || Boolean(application.reviewedAtMs)
+        )) || null;
+      };
+      const isReviewedOwnerJob = (job = {}) => {
+        const acceptedApp = getAcceptedApplicationForJob(job);
+        return Boolean(job.reviewedAtMs || acceptedApp?.reviewedAtMs || acceptedApp?.review?.rating || acceptedApp?.rating);
+      };
+      const currentJobsList = currentJobs.filter((job) => job.acceptedApplicationUid && !job.completedAtMs && !isReviewedOwnerJob(job));
       const currentCount = currentJobsList.length;
 
-      const completedJobs = currentJobs.filter((job) => Boolean(job.completedAtMs || (Array.isArray(job.applications) && job.applications.some((a) => Boolean(a.completedAtMs)))));
+      const completedJobs = currentJobs.filter((job) => Boolean(
+        job.completedAtMs
+        || isReviewedOwnerJob(job)
+        || (Array.isArray(job.applications) && job.applications.some((a) => Boolean(a.completedAtMs)))
+      ));
       const previousCount = completedJobs.length;
 
       // build tab content for the active tab so we can keep template readable
@@ -3174,7 +3217,9 @@
         `;
 
         return completedJobs.map((job) => {
-          const acceptedApp = Array.isArray(job.applications) ? job.applications.find((a) => a.status === 'accepted' || Boolean(a.completedAtMs)) : null;
+          const acceptedApp = Array.isArray(job.applications)
+            ? job.applications.find((a) => a.status === 'accepted' || Boolean(a.completedAtMs) || Boolean(a.reviewedAtMs) || Boolean(a.review?.rating))
+            : null;
           const completedAt = Number(job.completedAtMs || acceptedApp?.completedAtMs || 0);
           const inProgressAt = Number(acceptedApp?.inProgressAtMs || job.inProgressAtMs || 0);
           const durationMs = completedAt && inProgressAt ? Math.max(0, completedAt - inProgressAt) : 0;
@@ -3384,9 +3429,13 @@
             const nextJobId = button.getAttribute('data-job-id') || '';
             const applicationId = button.getAttribute('data-application-id') || '';
             const selectedApplication = job.applications.find((application) => application.id === applicationId) || null;
+            const bidCard = button.closest('[data-job-bid-card]');
             setButtonLoading(button, true);
             try {
               await authHelper.updateJobApplicationStatus(nextJobId, applicationId, status);
+              if (status === 'accepted') {
+                markBidActionAccepted(button, bidCard);
+              }
               if (status === 'accepted' && selectedApplication?.bidderUid && typeof authHelper.sendMessageToProvider === 'function') {
                 await authHelper.sendMessageToProvider({
                   toUid: selectedApplication.bidderUid,
@@ -3580,6 +3629,10 @@
           setButtonLoading(button, true);
           try {
             await authHelper.updateJobApplicationStatus(jobId, applicationId, status);
+            if (status === 'accepted') {
+              markBidActionAccepted(button, button.closest('[data-job-card], .job-owner-posted-card, .job-bids-modal-card'));
+              keepLoadingState = true;
+            }
             window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
             window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
             const selectedJob = currentJobs.find((job) => job.id === jobId);
@@ -3899,19 +3952,25 @@
         });
 
         shell.querySelector('[data-job-review-submit]').addEventListener('click', async () => {
+          const submitButton = shell.querySelector('[data-job-review-submit]');
           const comment = (shell.querySelector('[data-job-review-comment]')?.value || '').trim();
           if (!selectedRating) {
             window.alert('Please choose a rating.');
             return;
           }
+          setButtonLoading(submitButton, true);
           try {
             await authHelper.submitJobReview(job.id || job.jobId || '', application.id || application.applicationId || '', { rating: selectedRating, comment });
+            showReviewSavedTick(shell);
             showJobToast('Thanks — review saved');
-            shell.remove();
-            document.body.classList.remove('job-modal-open');
-            window.location.reload();
+            window.setTimeout(() => {
+              shell.remove();
+              document.body.classList.remove('job-modal-open');
+              window.location.reload();
+            }, 760);
           } catch (err) {
             window.alert(err.message || 'Could not save review.');
+            setButtonLoading(submitButton, false);
           }
         });
       } catch (err) {

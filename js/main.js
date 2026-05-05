@@ -1797,6 +1797,12 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingReviewPromptState.activeKey = '';
   }
 
+  function showPendingReviewSavedTick(shell) {
+    const panel = shell?.querySelector?.('.job-review-modal-panel');
+    if (!(panel instanceof HTMLElement) || panel.querySelector('.job-review-success-tick')) return;
+    panel.insertAdjacentHTML('beforeend', '<div class="job-review-success-tick" aria-live="polite"><span><i class="fa-solid fa-check"></i></span></div>');
+  }
+
   function buildPendingReviewStarsMarkup(selectedRating = 0) {
     return Array.from({ length: 5 }, (_, index) => {
       const value = index + 1;
@@ -1870,18 +1876,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      if (submitButton instanceof HTMLButtonElement) submitButton.disabled = true;
+      setButtonLoading(submitButton, true);
       try {
         await authHelper.submitJobReview(item.jobId, item.applicationId, {
           rating: selectedRating,
           comment
         });
-        closePendingReviewPrompt();
+        showPendingReviewSavedTick(shell);
         showAccountSuccess('Review saved');
-        window.dispatchEvent(new CustomEvent('worklinkup-review-prompt-refresh'));
+        window.setTimeout(() => {
+          closePendingReviewPrompt();
+          window.dispatchEvent(new CustomEvent('worklinkup-review-prompt-refresh'));
+        }, 760);
       } catch (error) {
         window.alert(error?.message || 'Could not save that review.');
-        if (submitButton instanceof HTMLButtonElement) submitButton.disabled = false;
+        setButtonLoading(submitButton, false);
       }
     });
   }

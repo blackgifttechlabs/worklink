@@ -2829,6 +2829,105 @@
 .job-review-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .worklinkup-review-prompt-copy { margin: 0 0 8px; color: #475569; line-height: 1.55; }
 
+.job-review-modal-panel {
+  position: relative;
+}
+
+.job-review-success-tick {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: review-success-fade 0.56s ease forwards;
+}
+
+.job-review-success-tick span {
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  box-shadow: 0 18px 44px rgba(22, 163, 74, 0.28);
+  transform: scale(0.72);
+  animation: review-success-pop 0.48s cubic-bezier(0.2, 1.2, 0.35, 1) forwards;
+}
+
+@keyframes review-success-fade {
+  to { opacity: 1; }
+}
+
+@keyframes review-success-pop {
+  to { transform: scale(1); }
+}
+
+.job-bids-modal-actions .is-loading,
+.job-bids-modal-mobile-actions .is-loading,
+[data-job-application-action].is-loading,
+[data-job-modal-application-action].is-loading,
+[data-job-review-submit].is-loading,
+[data-pending-review-submit].is-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.job-bids-modal-actions .is-loading i,
+.job-bids-modal-actions .is-loading span,
+.job-bids-modal-mobile-actions .is-loading i,
+.job-bids-modal-mobile-actions .is-loading span,
+[data-job-application-action].is-loading i,
+[data-job-application-action].is-loading span,
+[data-job-modal-application-action].is-loading i,
+[data-job-modal-application-action].is-loading span,
+[data-job-review-submit].is-loading i,
+[data-job-review-submit].is-loading span,
+[data-pending-review-submit].is-loading i,
+[data-pending-review-submit].is-loading span {
+  opacity: 0;
+}
+
+.job-bids-modal-actions .is-loading::after,
+.job-bids-modal-mobile-actions .is-loading::after,
+[data-job-application-action].is-loading::after,
+[data-job-modal-application-action].is-loading::after,
+[data-job-review-submit].is-loading::after,
+[data-pending-review-submit].is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.36);
+  border-top-color: #fff;
+  animation: account-spin 0.7s linear infinite;
+}
+
+.job-bids-modal-actions .is-danger.is-loading::after,
+.job-bids-modal-mobile-actions .is-danger.is-loading::after {
+  border-color: rgba(255, 0, 64, 0.18);
+  border-top-color: #ff0040;
+}
+
+.job-bids-modal-actions .is-accepted-now,
+[data-job-application-action].is-accepted-now,
+[data-job-modal-application-action].is-accepted-now {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #fff !important;
+}
+
 @media (max-width: 640px) {
   .messages-job-action-host { padding: 8px; }
   .messages-job-action-btn { width: 100%; }
@@ -36185,6 +36284,116 @@ footer {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+/* Compact mobile bid review sheet */
+@media (max-width: 640px) {
+  .job-bids-modal-shell.is-visible .job-bids-modal-panel {
+    height: min(88dvh, 680px);
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0 !important;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-panel::before {
+    margin: 5px auto 2px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-hero {
+    padding: 6px 8px 4px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-header p {
+    max-width: calc(100vw - 56px);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-close {
+    width: 30px;
+    height: 30px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-summary {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-summary-card {
+    min-height: 44px;
+    padding: 7px 6px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-summary-card > i {
+    width: 22px;
+    height: 22px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-toolbar {
+    padding: 2px 8px 6px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-content {
+    padding: 0 8px 8px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-card,
+  .job-bids-modal-shell.is-visible .job-bids-modal-card.is-accepted,
+  .job-bids-modal-shell.is-visible .job-bids-modal-card.is-rejected {
+    min-height: 0 !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    display: grid !important;
+    grid-template-rows: auto auto auto auto !important;
+    align-content: start !important;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-card-head {
+    grid-template-columns: minmax(0, 1fr) 72px;
+    align-items: start;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-meta-grid {
+    gap: 6px;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-meta-card {
+    min-height: 0 !important;
+    height: 34px !important;
+    padding: 5px 6px !important;
+    align-content: center !important;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-note-block {
+    gap: 0;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-note {
+    min-height: 0 !important;
+    max-height: 34px;
+    padding: 0 !important;
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.3;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-card .job-bids-modal-actions {
+    gap: 7px !important;
+    margin-top: 2px !important;
+  }
+
+  .job-bids-modal-shell.is-visible .job-bids-modal-card .job-bids-modal-actions > * {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 0 8px !important;
+    border-radius: 8px !important;
+    font-size: 9px !important;
   }
 }
 
