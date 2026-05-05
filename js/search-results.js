@@ -193,6 +193,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (query.length >= 5 && identifiers.some((value) => value.includes(query))) return 91;
     if (names.some((value) => value === query)) return 94;
     if (compactQuery.length >= 4 && compactNames.some((value) => value === compactQuery)) return 92;
+    const queryTokens = new Set(query.split(' ').filter(Boolean));
+    const embeddedNameScore = names.reduce((best, name) => {
+      const nameTokens = name.split(' ').filter(Boolean);
+      const compactName = name.replace(/\s+/g, '');
+      if (nameTokens.length < 2 || compactName.length < 6) return best;
+      if (compactQuery.includes(compactName)) return Math.max(best, 93);
+      if (nameTokens.every((token) => queryTokens.has(token))) return Math.max(best, 91);
+      return best;
+    }, 0);
+    if (embeddedNameScore) return embeddedNameScore;
     return 0;
   }
 

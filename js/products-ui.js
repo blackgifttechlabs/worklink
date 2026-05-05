@@ -9,6 +9,8 @@
   const localProductsKey = 'worklinkup_marketplace_products';
   const localWishlistKey = 'worklinkup_marketplace_wishlist';
   const localOrdersKey = 'worklinkup_marketplace_orders';
+  const marketplaceCachePrefix = 'worklinkup_marketplace_cache';
+  const marketplaceCacheMaxAgeMs = 1000 * 60 * 60 * 24 * 7;
   const fallbackCategories = [
     { name: 'Electronics', subcategories: ['Mobile Phones', 'Tablets', 'Laptops', 'Desktops', 'TVs', 'Audio & Headphones', 'Cameras', 'Gaming Consoles', 'Accessories (Chargers, Cables, etc.)', 'Smart Home Devices'] },
     { name: 'Home & Living', subcategories: ['Furniture', 'Kitchen Appliances', 'Home Decor', 'Bedding & Mattresses', 'Lighting', 'Storage & Organization', 'Cleaning Supplies', 'Garden Furniture'] },
@@ -92,6 +94,68 @@
 
   function writeLocalOrders(items = []) {
     localStorage.setItem(localOrdersKey, JSON.stringify(items));
+  }
+
+  function getCacheKey(scope = 'marketplace', uid = '') {
+    const safeScope = String(scope || 'marketplace').replace(/[^a-z0-9_-]/gi, '_');
+    const safeUid = String(uid || 'public').replace(/[^a-z0-9_-]/gi, '_');
+    return `${marketplaceCachePrefix}_${safeScope}_${safeUid}`;
+  }
+
+  function readCache(scope = 'marketplace', uid = '') {
+    try {
+      const raw = localStorage.getItem(getCacheKey(scope, uid));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (Date.now() - Number(parsed.savedAt || 0) > marketplaceCacheMaxAgeMs) return null;
+      return parsed.data ?? null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeCache(scope = 'marketplace', uid = '', data = null) {
+    try {
+      localStorage.setItem(getCacheKey(scope, uid), JSON.stringify({ savedAt: Date.now(), data }));
+    } catch (error) {
+      // Cache is only a speed boost; localStorage may be full or blocked.
+    }
+  }
+
+  function productGridSkeleton(count = 8) {
+    return Array.from({ length: count }).map(() => `
+      <article class="market-product-card market-product-card-skeleton" aria-hidden="true">
+        <div class="market-product-image"></div>
+        <div class="market-product-copy">
+          <strong></strong>
+          <h3></h3>
+          <p></p>
+          <div><span></span><span></span></div>
+          <small></small>
+          <button type="button" disabled></button>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function accountPageSkeleton(title = 'Loading') {
+    return `
+      <section class="market-account-shell market-account-skeleton" aria-busy="true">
+        <header class="market-account-hero">
+          <div><span></span><h1>${escapeHtml(title)}</h1><p></p></div>
+          <a aria-hidden="true"></a>
+        </header>
+        <section class="market-account-summary">
+          <article><span></span><strong></strong></article>
+          <article><span></span><strong></strong></article>
+          <article><span></span><strong></strong></article>
+        </section>
+        <section class="market-grid market-account-grid">
+          ${productGridSkeleton(6)}
+        </section>
+      </section>
+    `;
   }
 
   async function authHelper() {
@@ -501,8 +565,10 @@
     if (!page) return;
     page.innerHTML = shellMarkup();
     const account = getStoredAccount();
-    let products = await listProducts();
-    let wishlist = await getWishlistIds();
+    const cachedProducts = readCache('products_all') || [];
+    const cachedWishlist = readCache('wishlist_ids', account?.uid || 'guest') || [];
+    let products = Array.isArray(cachedProducts) && cachedProducts.length ? cachedProducts : [];
+    let wishlist = new Set(Array.isArray(cachedWishlist) ? cachedWishlist : []);
     const state = { query: '', category: '', location: '', sort: 'newest', wishlistIds: wishlist };
     const grid = page.querySelector('[data-market-grid]');
     const render = () => {
@@ -518,7 +584,18 @@
       grid.innerHTML = items.map((item) => productCard(item, state.wishlistIds)).join('') || '<div class="market-empty">No products found.</div>';
     };
     bindMarketplaceEvents(page, () => products, (next) => { products = next; render(); }, state, render, wishlist);
-    render();
+    if (products.length) render();
+    else if (grid) grid.innerHTML = productGridSkeleton(8);
+    Promise.all([listProducts(), getWishlistIds()]).then(([freshProducts, freshWishlist]) => {
+      products = Array.isArray(freshProducts) ? freshProducts : [];
+      wishlist = freshWishlist instanceof Set ? freshWishlist : new Set();
+      state.wishlistIds = wishlist;
+      writeCache('products_all', '', products);
+      writeCache('wishlist_ids', account?.uid || 'guest', Array.from(wishlist));
+      render();
+    }).catch(() => {
+      if (!products.length && grid) grid.innerHTML = '<div class="market-empty">Could not load products.</div>';
+    });
     page.querySelectorAll('[data-market-add-item]').forEach((button) => button.addEventListener('click', () => {
       if (!account?.uid) {
         window.alert('Please sign in to sell an item.');
@@ -556,6 +633,8 @@
             if (state?.wishlistIds instanceof Set) {
               if (saved) state.wishlistIds.add(id);
               else state.wishlistIds.delete(id);
+              const account = getStoredAccount();
+              writeCache('wishlist_ids', account?.uid || 'guest', Array.from(state.wishlistIds));
             }
             wish.classList.toggle('is-saved', saved);
             wish.setAttribute('aria-label', saved ? 'Remove from wishlist' : 'Add to wishlist');
@@ -585,7 +664,17 @@
     modal.querySelector('[data-order-form]')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-      try { await placeOrder(product, data); modal.hidden = true; window.alert('Order sent.'); } catch (error) { window.alert(error.message || 'Could not place order.'); }
+      try {
+        const createdOrder = await placeOrder(product, data);
+        const account = getStoredAccount();
+        if (account?.uid && createdOrder) {
+          const cachedOrders = readCache('buyer_orders', account.uid);
+          const nextOrders = Array.isArray(cachedOrders) ? [createdOrder, ...cachedOrders] : [createdOrder];
+          writeCache('buyer_orders', account.uid, nextOrders);
+        }
+        modal.hidden = true;
+        window.alert('Order sent.');
+      } catch (error) { window.alert(error.message || 'Could not place order.'); }
     });
   }
 
@@ -670,7 +759,23 @@
         const file = modal.querySelector('[data-product-image]')?.files?.[0];
         if (file) data.imageData = await readImageAsDataUrl(file);
       }
-      try { const item = await createProduct(data); modal.hidden = true; onCreate?.(item); } catch (error) { window.alert(error.message || 'Could not publish product.'); }
+      try {
+        const item = await createProduct(data);
+        const account = getStoredAccount();
+        const cachedProducts = readCache('products_all') || [];
+        if (Array.isArray(cachedProducts)) writeCache('products_all', '', [item, ...cachedProducts.filter((product) => String(product.id || '') !== String(item.id || ''))]);
+        if (account?.uid) {
+          const cachedShop = readCache('my_shop', account.uid);
+          if (cachedShop && typeof cachedShop === 'object') {
+            writeCache('my_shop', account.uid, {
+              ...cachedShop,
+              products: [item, ...(Array.isArray(cachedShop.products) ? cachedShop.products : [])]
+            });
+          }
+        }
+        modal.hidden = true;
+        onCreate?.(item);
+      } catch (error) { window.alert(error.message || 'Could not publish product.'); }
     });
   }
 
@@ -744,6 +849,20 @@
       if (modal.dataset.croppedImage) data.imageData = modal.dataset.croppedImage;
       try {
         const item = await updateProduct(product.id, data);
+        const account = getStoredAccount();
+        const cachedProducts = readCache('products_all') || [];
+        if (Array.isArray(cachedProducts)) {
+          writeCache('products_all', '', cachedProducts.map((cached) => String(cached.id || '') === String(item.id || '') ? item : cached));
+        }
+        if (account?.uid) {
+          const cachedShop = readCache('my_shop', account.uid);
+          if (cachedShop && typeof cachedShop === 'object' && Array.isArray(cachedShop.products)) {
+            writeCache('my_shop', account.uid, {
+              ...cachedShop,
+              products: cachedShop.products.map((cached) => String(cached.id || '') === String(item.id || '') ? item : cached)
+            });
+          }
+        }
         modal.hidden = true;
         onSave?.(item);
       } catch (error) {
@@ -765,6 +884,10 @@
     listProductOrdersForUser,
     listWishlistForUser,
     listWishlistSavesForSeller,
+    readCache,
+    writeCache,
+    productGridSkeleton,
+    accountPageSkeleton,
     getWishlistIds,
     productCard,
     openAddItemModal,

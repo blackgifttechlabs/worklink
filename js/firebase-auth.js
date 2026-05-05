@@ -2529,7 +2529,7 @@ async function findActiveJobBetweenUsers(userA = '', userB = '') {
 
 async function listPendingJobReviews(uid = auth.currentUser?.uid) {
   if (!uid) return [];
-  const jobs = await listJobsForUser(uid).catch(() => []);
+  const jobs = await listJobsForUser(uid, { forceRefresh: true }).catch(() => []);
   const pendingReviews = await Promise.all(jobs.map(async (job) => {
     const applicationId = String(job.acceptedApplicationUid || '').trim();
     const completedAtMs = Number(job.completedAtMs || 0);
@@ -2594,6 +2594,24 @@ async function markJobStarted(jobId = '', applicationId = '') {
     updatedAt: serverTimestamp()
   });
   clearUserJobListCache(job.ownerUid || '');
+
+  if (job.ownerUid) {
+    await sendMessageToProvider({
+      toUid: job.ownerUid,
+      toName: job.ownerName || 'Client',
+      text: `${application.bidderName || 'The worker'} has started "${job.subcategory || job.category || 'your job'}".`
+    }).catch(() => null);
+  }
+
+  try {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+      window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
+    }
+  } catch (error) {
+    // ignore
+  }
+
   return { jobId, applicationId, inProgressAtMs: now };
 }
 
@@ -2645,6 +2663,14 @@ async function markJobCompleted(jobId = '', applicationId = '') {
   });
   clearJobListCache();
   clearUserJobListCache(job.ownerUid || '');
+
+  if (job.ownerUid) {
+    await sendMessageToProvider({
+      toUid: job.ownerUid,
+      toName: job.ownerName || 'Client',
+      text: `${application.bidderName || 'The worker'} has completed "${job.subcategory || job.category || 'your job'}". Please leave a rating and review.`
+    }).catch(() => null);
+  }
 
   const providerUid = application.bidderUid || '';
   if (providerUid) {

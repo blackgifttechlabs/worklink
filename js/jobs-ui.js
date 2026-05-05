@@ -207,22 +207,26 @@
       const parsed = raw ? JSON.parse(raw) : {};
       return {
         receivedAt: Number(parsed?.receivedAt || 0),
-        placedAt: Number(parsed?.placedAt || 0)
+        placedAt: Number(parsed?.placedAt || 0),
+        lifecycleAt: Number(parsed?.lifecycleAt || 0)
       };
     } catch (error) {
       return {
         receivedAt: 0,
-        placedAt: 0
+        placedAt: 0,
+        lifecycleAt: 0
       };
     }
   }
 
   function writeJobNotificationState(uid = '', nextState = {}) {
     if (!uid) return;
+    const currentState = readJobNotificationState(uid);
     try {
       localStorage.setItem(getJobNotificationStorageKey(uid), JSON.stringify({
-        receivedAt: Number(nextState.receivedAt || 0),
-        placedAt: Number(nextState.placedAt || 0)
+        receivedAt: Number(nextState.receivedAt || currentState.receivedAt || 0),
+        placedAt: Number(nextState.placedAt || currentState.placedAt || 0),
+        lifecycleAt: Number(nextState.lifecycleAt || currentState.lifecycleAt || 0)
       }));
     } catch (error) {
       // Ignore storage issues.
@@ -2706,16 +2710,13 @@
           });
           closeModal(bidModal);
           clearPendingJobBid();
-          await refreshJobsList();
-          if (typeof authHelper.listPlacedJobBids === 'function') {
-            const currentAccount = getStoredAccount();
-            if (currentAccount?.uid) {
-              placedBids = await authHelper.listPlacedJobBids(currentAccount.uid).catch(() => placedBids);
-            }
-          }
           window.dispatchEvent(new CustomEvent('worklinkup-job-badges-refresh'));
-          renderJobs();
-          showJobToast('Job accepted, waiting for approval.');
+          const currentAccount = getStoredAccount();
+          const profileUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+          if (currentAccount?.uid) profileUrl.searchParams.set('uid', currentAccount.uid);
+          profileUrl.searchParams.set('tab', 'current');
+          profileUrl.searchParams.set('scroll', 'current');
+          window.location.href = profileUrl.toString();
         } catch (error) {
           window.alert(error.message || 'Could not send your bid.');
         } finally {
@@ -3498,7 +3499,11 @@
           try {
             await authHelper.markJobStarted(jobId, applicationId);
             showJobToast('Job started');
-            window.location.reload();
+            window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
+            const refreshedJobs = await loadJobsWithApplications(currentJobs);
+            dashboardJobs = refreshedJobs;
+            writeCachedJobGiverDashboard(account.uid, refreshedJobs);
+            renderDashboard(currentProfile, refreshedJobs);
           } catch (error) {
             window.alert(error.message || 'Could not start job.');
             setButtonLoading(button, false);

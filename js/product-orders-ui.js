@@ -28,11 +28,9 @@
       return;
     }
 
-    const allOrders = await api.listProductOrdersForUser(account.uid);
-    const orders = allOrders.filter((order) => String(order.buyerUid || '') === String(account.uid));
-    const totalValue = orders.reduce((sum, order) => sum + Number(order.offerPrice || 0), 0);
-
-    page.innerHTML = `
+    const render = (orders = []) => {
+      const totalValue = orders.reduce((sum, order) => sum + Number(order.offerPrice || 0), 0);
+      page.innerHTML = `
       <section class="market-account-shell">
         <header class="market-account-hero">
           <div>
@@ -69,7 +67,23 @@
           </div>
         </section>
       </section>
-    `;
+      `;
+    };
+
+    const cachedOrders = api.readCache?.('buyer_orders', account.uid);
+    if (Array.isArray(cachedOrders)) render(cachedOrders);
+    else page.innerHTML = api.accountPageSkeleton?.('Loading orders') || '';
+
+    api.listProductOrdersForUser(account.uid).then((allOrders) => {
+      const orders = (Array.isArray(allOrders) ? allOrders : [])
+        .filter((order) => String(order.buyerUid || '') === String(account.uid));
+      api.writeCache?.('buyer_orders', account.uid, orders);
+      render(orders);
+    }).catch(() => {
+      if (!Array.isArray(cachedOrders)) {
+        page.innerHTML = '<section class="market-account-shell"><div class="market-empty">Could not load your orders.</div></section>';
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', renderProductOrdersPage);

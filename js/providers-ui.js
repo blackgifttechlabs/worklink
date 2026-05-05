@@ -3000,10 +3000,12 @@
 
       function scrollToRequestedGalleryTab() {
         if (didScrollToRequestedGallery) return;
-        const shouldScroll = requestedGalleryScroll === 'bids' || requestedGalleryTab === 'bids';
+        const shouldScroll = ['bids', 'current'].includes(requestedGalleryScroll) || ['bids', 'current'].includes(requestedGalleryTab);
         if (!shouldScroll || !isOwner) return;
         didScrollToRequestedGallery = true;
-        const target = placedBidsGrid || page.querySelector('[data-provider-bids-grid]') || page.querySelector('.provider-profile-gallery-head');
+        const target = requestedGalleryScroll === 'current' || requestedGalleryTab === 'current'
+          ? currentJobsGrid || page.querySelector('[data-provider-current-grid]') || page.querySelector('.provider-profile-gallery-head')
+          : placedBidsGrid || page.querySelector('[data-provider-bids-grid]') || page.querySelector('.provider-profile-gallery-head');
         window.requestAnimationFrame(() => {
           if (target instanceof HTMLElement) {
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4522,6 +4524,170 @@
     let suggestionTimer = null;
     let activeJobPeerUid = '';
     let activeJobRefreshId = 0;
+    const messageCachePrefix = `worklinkup_messages_cache_${account.uid || 'guest'}`;
+    const messageCacheMaxAgeMs = 1000 * 60 * 60 * 24 * 7;
+    const messageCacheMaxConversations = 80;
+    const messageCacheMaxThreadMessages = 160;
+
+    function getMessageCacheKey(scope, id = '') {
+      const safeScope = String(scope || 'messages').replace(/[^a-z0-9_-]/gi, '_');
+      const safeId = String(id || '').replace(/[^a-z0-9_-]/gi, '_');
+      return safeId ? `${messageCachePrefix}_${safeScope}_${safeId}` : `${messageCachePrefix}_${safeScope}`;
+    }
+
+    function readMessageCache(scope, id = '') {
+      try {
+        const raw = window.localStorage.getItem(getMessageCacheKey(scope, id));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        if (Date.now() - Number(parsed.savedAt || 0) > messageCacheMaxAgeMs) return null;
+        return parsed.data ?? null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function writeMessageCache(scope, id = '', data = null) {
+      try {
+        const payload = {
+          savedAt: Date.now(),
+          data
+        };
+        window.localStorage.setItem(getMessageCacheKey(scope, id), JSON.stringify(payload));
+      } catch (error) {
+        // localStorage can be unavailable or full; Firebase remains the source of truth.
+      }
+    }
+
+    function normalizeCachedConversation(conversation = {}) {
+      return {
+        conversationId: String(conversation.conversationId || '').trim(),
+        peerUid: String(conversation.peerUid || '').trim(),
+        peerName: String(conversation.peerName || '').trim(),
+        peerProvinceSlug: String(conversation.peerProvinceSlug || '').trim(),
+        peerIsSupport: Boolean(conversation.peerIsSupport),
+        lastMessage: String(conversation.lastMessage || '').trim(),
+        lastMessageType: String(conversation.lastMessageType || 'text').trim(),
+        createdAtMs: Number(conversation.createdAtMs || 0),
+        unreadCount: Number(conversation.unreadCount || 0),
+        lastSeenAtMs: Number(conversation.lastSeenAtMs || 0),
+        lastMessageIsMine: Boolean(conversation.lastMessageIsMine),
+        lastMessageViewedAtMs: Number(conversation.lastMessageViewedAtMs || 0),
+        profile: conversation.profile && typeof conversation.profile === 'object' ? conversation.profile : null
+      };
+    }
+
+    function normalizeCachedMessage(message = {}) {
+      return {
+        id: String(message.id || '').trim(),
+        conversationId: String(message.conversationId || '').trim(),
+        fromUid: String(message.fromUid || '').trim(),
+        fromName: String(message.fromName || '').trim(),
+        toUid: String(message.toUid || '').trim(),
+        toName: String(message.toName || '').trim(),
+        text: String(message.text || '').trim(),
+        imageData: String(message.imageData || '').trim(),
+        createdAtMs: Number(message.createdAtMs || 0),
+        viewedAtMs: Number(message.viewedAtMs || 0),
+        type: String(message.type || '').trim()
+      };
+    }
+
+    function readCachedConversations() {
+      const cached = readMessageCache('conversations');
+      return Array.isArray(cached)
+        ? cached.map(normalizeCachedConversation).filter((conversation) => conversation.peerUid)
+        : [];
+    }
+
+    function writeCachedConversations(conversations = []) {
+      const normalized = Array.isArray(conversations)
+        ? conversations.map(normalizeCachedConversation).filter((conversation) => conversation.peerUid)
+        : [];
+      writeMessageCache('conversations', '', normalized.slice(0, messageCacheMaxConversations));
+    }
+
+    function readCachedThread(peerUid = '') {
+      const cached = readMessageCache('thread', peerUid);
+      return Array.isArray(cached)
+        ? cached.map(normalizeCachedMessage).filter((message) => message.id || message.createdAtMs)
+        : [];
+    }
+
+    function writeCachedThread(peerUid = '', messages = []) {
+      if (!peerUid) return;
+      const normalized = Array.isArray(messages)
+        ? messages.map(normalizeCachedMessage).filter((message) => message.id || message.createdAtMs)
+        : [];
+      writeMessageCache('thread', peerUid, normalized.slice(-messageCacheMaxThreadMessages));
+    }
+
+    function hydrateMessagesFromCache() {
+      const cachedConversations = readCachedConversations();
+      if (cachedConversations.length) {
+        applyConversationList(cachedConversations, { fromCache: true }).catch(() => {});
+      }
+
+      if (state.activePeerUid) {
+        const cachedThread = readCachedThread(state.activePeerUid);
+        if (cachedThread.length) {
+          renderThreadMessages(cachedThread, { fromCache: true });
+        }
+      }
+    }
+
+    function cacheSuccessfulOutgoingMessage({ text = '', imageData = '' } = {}) {
+      if (!state.activePeerUid) return;
+      const now = Date.now();
+      const lastMessageType = imageData && text ? 'mixed' : imageData ? 'image' : 'text';
+      const optimisticMessage = normalizeCachedMessage({
+        id: `local-${account.uid}-${state.activePeerUid}-${now}`,
+        conversationId: `${account.uid}__${state.activePeerUid}`,
+        fromUid: account.uid,
+        fromName: account.name || 'You',
+        toUid: state.activePeerUid,
+        toName: state.activePeerName,
+        text,
+        imageData,
+        createdAtMs: now,
+        viewedAtMs: 0,
+        type: lastMessageType
+      });
+
+      const lastMessage = state.threadMessages[state.threadMessages.length - 1];
+      const alreadyRendered = lastMessage
+        && lastMessage.fromUid === optimisticMessage.fromUid
+        && String(lastMessage.text || '') === text
+        && Boolean(lastMessage.imageData) === Boolean(imageData)
+        && Math.abs(Number(lastMessage.createdAtMs || 0) - now) < 7000;
+      const nextThread = alreadyRendered ? state.threadMessages : [...state.threadMessages, optimisticMessage];
+      writeCachedThread(state.activePeerUid, nextThread);
+      if (!alreadyRendered) {
+        renderThreadMessages(nextThread, { fromCache: true });
+      }
+
+      const nextConversations = [
+        {
+          conversationId: `${account.uid}__${state.activePeerUid}`,
+          peerUid: state.activePeerUid,
+          peerName: state.activePeerName || 'Conversation',
+          peerProvinceSlug: state.activePeerProvince || '',
+          peerIsSupport: state.activePeerUid === 'joblink-support',
+          lastMessage: text,
+          lastMessageType,
+          createdAtMs: now,
+          unreadCount: 0,
+          lastSeenAtMs: 0,
+          lastMessageIsMine: true,
+          lastMessageViewedAtMs: 0,
+          profile: state.activePeerProfile || null
+        },
+        ...state.conversations.filter((conversation) => conversation.peerUid !== state.activePeerUid)
+      ];
+      writeCachedConversations(nextConversations);
+      applyConversationList(nextConversations, { fromCache: true }).catch(() => {});
+    }
 
     if (chatList) {
       chatList.innerHTML = Array.from({ length: 5 }).map(() => `
@@ -4815,7 +4981,7 @@
     function renderChatList() {
       const conversations = getFilteredConversations();
       chatList.innerHTML = conversations.length
-        ? conversations.map((conversation) => `
+        ? `${conversations.map((conversation) => `
           <button
             type="button"
             class="messages-chat-item ${conversation.peerUid === state.activePeerUid ? 'is-active' : ''}"
@@ -4844,7 +5010,15 @@
               </div>
             </div>
           </button>
-        `).join('')
+        `).join('')}
+          <div class="messages-caught-up" aria-live="polite">
+            <div class="messages-caught-up-icon">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span></span>
+            </div>
+            <strong>No more messages</strong>
+            <p>You're all caught up!</p>
+          </div>`
         : `<div class="messages-empty messages-home-empty"><div><h2>No chats yet</h2><p>Search for someone above and start a conversation.</p></div></div>`;
 
       chatList.querySelectorAll('[data-chat-peer]').forEach((button) => {
@@ -5004,7 +5178,7 @@
       renderChatList();
     }
 
-    async function applyConversationList(conversations) {
+    async function applyConversationList(conversations, options = {}) {
       const nextConversations = conversations.map((conversation) => {
         const profile = contactDirectory.get(conversation.peerUid) || conversation.profile || null;
         const supportProfile = conversation.peerIsSupport || conversation.peerUid === 'joblink-support'
@@ -5040,10 +5214,13 @@
       renderFilterChips();
       renderChatList();
       hydrateConversationProfiles(nextConversations).catch(() => {});
+      if (!options.fromCache) {
+        writeCachedConversations(nextConversations);
+      }
       window.dispatchEvent(new CustomEvent('worklinkup-messages-badges-refresh'));
     }
 
-    function renderThreadMessages(messages) {
+    function renderThreadMessages(messages, options = {}) {
       state.threadMessages = Array.isArray(messages) ? messages : [];
       const lastSeenAtMs = messages.reduce((latest, message) => (
         message.fromUid === state.activePeerUid
@@ -5069,11 +5246,15 @@
           ? `<div class="messages-empty"><div><h2>No matches</h2><p>Try another word from this chat.</p></div></div>`
           : `<div class="messages-empty"><div><h2>Start the conversation</h2><p>Send the first message to ${escapeHtml(state.activePeerName)}.</p></div></div>`;
       state.lastRenderedMessageId = newestMessageId;
+      if (!options.fromCache && state.activePeerUid) {
+        writeCachedThread(state.activePeerUid, state.threadMessages);
+      }
       scrollThreadToBottom(shouldForceScroll);
     }
 
     async function startConversationSubscription() {
       stopConversationSubscription();
+      hydrateMessagesFromCache();
       if (typeof authHelper.subscribeConversations === 'function') {
         unsubscribeConversations = await authHelper.subscribeConversations((conversations) => {
           applyConversationList(conversations).catch(() => {});
@@ -5128,6 +5309,10 @@
       }).catch(() => {});
 
       stopMessagesSubscription();
+      const cachedThread = readCachedThread(state.activePeerUid);
+      if (cachedThread.length) {
+        renderThreadMessages(cachedThread, { fromCache: true });
+      }
       if (typeof authHelper.subscribeMessagesWithUser === 'function') {
         unsubscribeMessages = await authHelper.subscribeMessagesWithUser(state.activePeerUid, (messages) => {
           renderThreadMessages(messages);
@@ -5392,6 +5577,7 @@
           text,
           imageData
         });
+        cacheSuccessfulOutgoingMessage({ text, imageData });
         composeForm.reset();
         clearPendingImage();
         state.pendingDraft = '';

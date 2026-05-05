@@ -260,13 +260,29 @@ function readJobNotificationState(uid = '') {
     const parsed = raw ? JSON.parse(raw) : {};
     return {
       receivedAt: Number(parsed?.receivedAt || 0),
-      placedAt: Number(parsed?.placedAt || 0)
+      placedAt: Number(parsed?.placedAt || 0),
+      lifecycleAt: Number(parsed?.lifecycleAt || 0)
     };
   } catch (error) {
     return {
       receivedAt: 0,
-      placedAt: 0
+      placedAt: 0,
+      lifecycleAt: 0
     };
+  }
+}
+
+function writeJobNotificationState(uid = '', nextState = {}) {
+  if (!uid) return;
+  const currentState = readJobNotificationState(uid);
+  try {
+    localStorage.setItem(getJobNotificationStorageKey(uid), JSON.stringify({
+      receivedAt: Number(nextState.receivedAt || currentState.receivedAt || 0),
+      placedAt: Number(nextState.placedAt || currentState.placedAt || 0),
+      lifecycleAt: Number(nextState.lifecycleAt || currentState.lifecycleAt || 0)
+    }));
+  } catch (error) {
+    // Ignore storage issues.
   }
 }
 
@@ -496,8 +512,12 @@ function getMobileBottomNavActiveKey() {
     return currentUid && viewedUid && currentUid === viewedUid ? 'profile' : 'services';
   }
 
-  if (/\/pages\/(job-giver-profile|post-job|my-posts|messages)\.html$/.test(pathname)) {
-    return 'bids';
+  if (/\/pages\/messages\.html$/.test(pathname)) {
+    return 'messages';
+  }
+
+  if (/\/pages\/(job-giver-profile|post-job|my-posts)\.html$/.test(pathname)) {
+    return 'jobs';
   }
 
   if (/\/pages\/(account|edit-profile)\.html$/.test(pathname)) {
@@ -516,7 +536,13 @@ function renderMobileBottomNav(base = getBasePath()) {
   const isProvider = account?.userRole === 'provider';
   const activeKey = getMobileBottomNavActiveKey();
   const jobsAndBidsHref = getJobsAndBidsHref(base);
-  const navItems = [
+  const isMessagesPage = /\/pages\/messages\.html$/.test(window.location.pathname || '');
+  const navItems = isMessagesPage ? [
+    { key: 'home', label: 'Home', href: `${base}index.html`, icon: 'fa-solid fa-house' },
+    { key: 'jobs', label: 'Jobs', href: `${base}pages/job-posts.html`, icon: 'fa-solid fa-briefcase' },
+    { key: 'products', label: 'Products', href: `${base}pages/products.html`, icon: 'fa-solid fa-store' },
+    { key: 'messages', label: 'Messages', href: `${base}pages/messages.html`, icon: 'fa-regular fa-message' }
+  ] : [
     { key: 'home', label: 'Home', href: `${base}index.html`, icon: 'fa-solid fa-house' },
     { key: 'jobs', label: 'Jobs', href: `${base}pages/job-posts.html`, icon: 'fa-solid fa-briefcase' },
     { key: 'services', label: 'Services', href: `${base}pages/specialists.html`, icon: 'fa-solid fa-user-group' },
@@ -531,6 +557,7 @@ function renderMobileBottomNav(base = getBasePath()) {
           return `
             <a href="${item.href}" class="mobile-bottom-nav-link ${isActive ? 'is-active' : ''}" ${isActive ? 'aria-current="page"' : ''}>
               <i class="${item.icon}" aria-hidden="true"></i>
+              ${item.key === 'messages' ? '<span class="mobile-bottom-nav-badge" data-account-messages-badge-mobile hidden>0</span>' : ''}
               <span>${item.label}</span>
             </a>
           `;
@@ -577,6 +604,7 @@ function renderHeader() {
   const isLoggedIn = Boolean(account && account.loggedIn);
   const accountName = account && account.name ? account.name : 'WorkLinkUp User';
   const firstName = accountName.split(' ')[0];
+  const accountInitial = ((accountName.match(/[A-Za-z0-9]/) || [])[0] || 'U').toUpperCase();
   const profileHref = getProviderProfileHref(base);
   const jobsAndBidsHref = getJobsAndBidsHref(base);
   const settingsHref = getAccountSettingsHref(base);
@@ -617,6 +645,7 @@ function renderHeader() {
   <header>
     <div class="header-inner">
       <div class="mobile-header-left">
+        ${isMessagesPage ? `<a href="${base}index.html" class="messages-mobile-back" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></a>` : ''}
         <a href="${base}index.html" class="logo" aria-label="WorkLinkUp home">
           <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" class="logo-image" />
         </a>
@@ -630,6 +659,16 @@ function renderHeader() {
             <circle cx="11" cy="11" r="7.5"/><path d="M20 20l-4.2-4.2"/>
           </svg>
         </button>
+        ${isMessagesPage ? `
+          <a href="${base}pages/messages.html" class="messages-mobile-icon-btn messages-mobile-chat-btn" aria-label="Messages">
+            <i class="fa-regular fa-comment-dots"></i>
+            <span class="messages-mobile-icon-badge" data-account-messages-badge-mobile hidden>0</span>
+          </a>
+          <a href="${jobsAndBidsHref}" class="messages-mobile-icon-btn messages-mobile-bell-btn" aria-label="Notifications">
+            <i class="fa-regular fa-bell"></i>
+            <span class="messages-mobile-icon-badge" data-account-total-badge-mobile hidden>0</span>
+          </a>
+        ` : ''}
         <div class="account-menu-host ${isLoggedIn ? 'is-logged-in' : 'is-logged-out'}">
           ${isLoggedIn ? '' : `
             <a href="#" class="a-plus-btn account-trigger" data-account-trigger="a-plus">
@@ -642,6 +681,7 @@ function renderHeader() {
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span class="account-job-badge" data-account-jobs-badge hidden>0</span>
             </span>
+            ${isMessagesPage ? `<span class="messages-mobile-account-initial">${accountInitial}</span>` : ''}
             ${isLoggedIn ? firstName : 'Account'}
           </a>
           ${isLoggedIn ? `
@@ -1182,6 +1222,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountJobsBadge = headerEl.querySelector('[data-account-jobs-badge]');
   const accountJobsBadgeDropdown = headerEl.querySelector('[data-account-jobs-badge-dropdown]');
   const accountMessagesBadgeDropdown = headerEl.querySelector('[data-account-messages-badge-dropdown]');
+  const accountMessagesBadgesMobile = headerEl.querySelectorAll('[data-account-messages-badge-mobile]');
+  const accountTotalBadgesMobile = headerEl.querySelectorAll('[data-account-total-badge-mobile]');
   const dropdownLogoutBtns = headerEl.querySelectorAll('.account-dropdown-logout');
   const mobileBottomProfileToggle = headerEl.querySelector('[data-mobile-profile-toggle]');
   const mobileBottomProfileOverlay = headerEl.querySelector('[data-mobile-profile-overlay]');
@@ -1203,10 +1245,17 @@ document.addEventListener('DOMContentLoaded', () => {
     badge.hidden = normalizedCount <= 0;
   }
 
+  function setBadgeCounts(badges, count = 0) {
+    if (!badges || typeof badges.forEach !== 'function') return;
+    badges.forEach((badge) => setBadgeCount(badge, count));
+  }
+
   function renderAccountBadgeState() {
     setBadgeCount(accountJobsBadge, accountJobsBadgeCount + accountMessagesBadgeCount);
     setBadgeCount(accountJobsBadgeDropdown, accountJobsBadgeCount);
     setBadgeCount(accountMessagesBadgeDropdown, accountMessagesBadgeCount);
+    setBadgeCounts(accountMessagesBadgesMobile, accountMessagesBadgeCount);
+    setBadgeCounts(accountTotalBadgesMobile, accountJobsBadgeCount + accountMessagesBadgeCount);
   }
 
   function stopAccountConversationBadgeSubscription() {
@@ -1229,6 +1278,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const receivedBidCount = Array.isArray(applications)
       ? applications.filter((application) => Number(application.createdAtMs || 0) > notificationState.receivedAt).length
       : 0;
+    const latestLifecycleApplication = Array.isArray(applications)
+      ? applications.reduce((latest, application) => {
+        const lifecycleAt = Math.max(Number(application.completedAtMs || 0), Number(application.inProgressAtMs || 0));
+        return lifecycleAt > Number(latest.lifecycleAt || 0) ? { application, lifecycleAt } : latest;
+      }, { application: null, lifecycleAt: 0 })
+      : { application: null, lifecycleAt: 0 };
     const previousCount = accountJobsBadgeCount;
     accountJobsBadgeCount = receivedBidCount + accountPlacedJobsBadgeCount;
     renderAccountBadgeState();
@@ -1236,6 +1291,22 @@ document.addEventListener('DOMContentLoaded', () => {
       showHeaderBrowserNotification('New bid received', {
         body: 'A provider placed a bid on one of your jobs.'
       });
+    }
+    if (latestLifecycleApplication.lifecycleAt > Number(notificationState.lifecycleAt || 0)) {
+      writeJobNotificationState(uid, {
+        ...notificationState,
+        lifecycleAt: latestLifecycleApplication.lifecycleAt
+      });
+      if (hasRenderedJobBadgeOnce) {
+        const application = latestLifecycleApplication.application || {};
+        const isCompleted = Number(application.completedAtMs || 0) >= Number(application.inProgressAtMs || 0);
+        showHeaderBrowserNotification(isCompleted ? 'Job completed' : 'Job started', {
+          body: isCompleted
+            ? `${application.bidderName || 'The worker'} completed ${application.jobSubcategory || application.jobCategory || 'your job'}.`
+            : `${application.bidderName || 'The worker'} started ${application.jobSubcategory || application.jobCategory || 'your job'}.`
+        });
+      }
+      window.dispatchEvent(new CustomEvent('worklinkup-job-updated'));
     }
     hasRenderedJobBadgeOnce = true;
   }
@@ -1327,6 +1398,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const placedBidCount = Array.isArray(placedBids)
         ? placedBids.filter((bid) => getPlacedBidNotificationTime(bid) > notificationState.placedAt).length
         : 0;
+      const latestReceivedLifecycleAt = postedBidCounts.reduce((latest, applications) => Math.max(
+        latest,
+        ...(Array.isArray(applications) ? applications.map((application) => Math.max(Number(application.completedAtMs || 0), Number(application.inProgressAtMs || 0))) : [0])
+      ), 0);
+      if (!Number(notificationState.lifecycleAt || 0) && latestReceivedLifecycleAt) {
+        writeJobNotificationState(currentAccount.uid, {
+          ...notificationState,
+          lifecycleAt: latestReceivedLifecycleAt
+        });
+      }
       const previousCount = accountJobsBadgeCount;
       const previousPlacedCount = accountPlacedJobsBadgeCount;
       accountPlacedJobsBadgeCount = placedBidCount;

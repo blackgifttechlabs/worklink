@@ -108,10 +108,10 @@
       return;
     }
 
-    let products = await api.listProducts({ sellerUid: account.uid });
-    const allOrders = await api.listProductOrdersForUser(account.uid);
-    const orders = allOrders.filter((order) => String(order.sellerUid || '') === String(account.uid));
-    const saves = await api.listWishlistSavesForSeller(account.uid);
+    const renderLoadedShop = ({ products: initialProducts = [], orders: initialOrders = [], saves: initialSaves = [] } = {}) => {
+    let products = Array.isArray(initialProducts) ? initialProducts : [];
+    const orders = Array.isArray(initialOrders) ? initialOrders : [];
+    const saves = Array.isArray(initialSaves) ? initialSaves : [];
     const acceptedRevenue = orders
       .filter((order) => ['accepted', 'completed', 'shipped'].includes(String(order.status || '').toLowerCase()))
       .reduce((sum, order) => sum + Number(order.offerPrice || 0), 0);
@@ -325,6 +325,43 @@
         });
         document.querySelector('.shop-data-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
+    });
+    };
+
+    const cachedShop = api.readCache?.('my_shop', account.uid);
+    if (cachedShop && typeof cachedShop === 'object') {
+      renderLoadedShop(cachedShop);
+    } else {
+      page.innerHTML = `
+        <section class="shop-app-shell shop-app-skeleton" aria-busy="true">
+          <aside class="shop-side-panel"></aside>
+          <section class="shop-main-panel">
+            <header class="shop-hero-card"><div><span></span><h1>Loading My Shop</h1><p></p></div><button type="button" disabled></button></header>
+            <section class="shop-stat-row"><article></article><article></article><article></article><article></article></section>
+            <section class="shop-chart-grid"><article></article><article></article></section>
+            <section class="shop-data-card"><div class="shop-listing-table">${api.productGridSkeleton?.(4) || ''}</div></section>
+          </section>
+        </section>
+      `;
+    }
+
+    Promise.all([
+      api.listProducts({ sellerUid: account.uid }),
+      api.listProductOrdersForUser(account.uid),
+      api.listWishlistSavesForSeller(account.uid)
+    ]).then(([freshProducts, allOrders, freshSaves]) => {
+      const nextShop = {
+        products: Array.isArray(freshProducts) ? freshProducts : [],
+        orders: (Array.isArray(allOrders) ? allOrders : []).filter((order) => String(order.sellerUid || '') === String(account.uid)),
+        saves: Array.isArray(freshSaves) ? freshSaves : []
+      };
+      api.writeCache?.('my_shop', account.uid, nextShop);
+      api.writeCache?.('seller_orders', account.uid, nextShop.orders);
+      renderLoadedShop(nextShop);
+    }).catch(() => {
+      if (!cachedShop) {
+        page.innerHTML = '<section class="market-account-shell"><div class="market-empty">Could not load My Shop.</div></section>';
+      }
     });
   }
 

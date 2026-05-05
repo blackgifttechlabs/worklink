@@ -27,7 +27,11 @@
       return;
     }
 
-    let saved = await api.listWishlistForUser(account.uid);
+    const cacheKey = account.uid;
+    const cachedSaved = api.readCache?.('wishlist_items', cacheKey);
+    const hasCachedSaved = Array.isArray(cachedSaved);
+    let saved = Array.isArray(cachedSaved) ? cachedSaved : [];
+    if (!hasCachedSaved) page.innerHTML = api.accountPageSkeleton?.('Loading wishlist') || '';
     const toProduct = (item) => ({
       id: item.productId,
       title: item.productTitle,
@@ -75,6 +79,8 @@
           try {
             await api.toggleWishlist(toProduct(item));
             saved = saved.filter((entry) => String(entry.productId || '') !== productId);
+            api.writeCache?.('wishlist_items', cacheKey, saved);
+            api.writeCache?.('wishlist_ids', cacheKey, saved.map((entry) => entry.productId));
             render();
           } catch (error) {
             window.alert(error.message || 'Could not update your wishlist.');
@@ -91,7 +97,19 @@
       });
     }
 
-    render();
+    if (hasCachedSaved) render();
+    api.listWishlistForUser(account.uid).then((freshSaved) => {
+      saved = Array.isArray(freshSaved) ? freshSaved : [];
+      api.writeCache?.('wishlist_items', cacheKey, saved);
+      api.writeCache?.('wishlist_ids', cacheKey, saved.map((item) => item.productId));
+      render();
+    }).catch(() => {
+      if (!saved.length) page.innerHTML = `
+        <section class="market-account-shell">
+          <div class="market-empty">Could not load your wishlist.</div>
+        </section>
+      `;
+    });
   }
 
   document.addEventListener('DOMContentLoaded', renderWishlistPage);
