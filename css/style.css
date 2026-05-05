@@ -1539,8 +1539,16 @@
   }
 
   .job-owner-posted-card {
-    padding: 16px;
+    padding: 10px;
     border-radius: 12px;
+    gap: 10px;
+  }
+
+  .job-owner-posted-main,
+  .job-owner-posted-actions-panel,
+  .job-owner-posted-details,
+  .job-owner-posted-tip {
+    padding: 14px;
   }
 
   .job-owner-posted-code {
@@ -32740,15 +32748,18 @@ footer {
 }
 
 .job-posts-page .job-market-metric-card small {
-  color: #da7756;
+  color: #64748b;
   font-size: 12px;
 }
 
 .job-posts-page .job-market-metric-card small.is-up i,
-.job-posts-page .job-market-metric-card small.is-up b,
+.job-posts-page .job-market-metric-card small.is-up b {
+  color: #16a34a;
+}
+
 .job-posts-page .job-market-metric-card small.is-down i,
 .job-posts-page .job-market-metric-card small.is-down b {
-  color: #da7756;
+  color: #dc2626;
 }
 
 .job-posts-page .job-board-content {
@@ -35304,6 +35315,48 @@ footer {
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.job-owner-posted-card {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.job-owner-posted-section {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.job-owner-posted-main {
+  position: relative;
+  padding: 22px;
+}
+
+.job-owner-posted-actions-panel {
+  padding: 14px;
+}
+
+.job-owner-posted-card .job-card-actions {
+  margin-top: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.job-owner-posted-card .job-card-meta {
+  margin-top: 18px;
+}
+
+.job-owner-posted-details {
+  margin-top: 0;
+  padding: 18px;
+}
+
+.job-owner-posted-tip {
+  margin-top: 0;
 }
 
 .job-post-page .job-post-form,

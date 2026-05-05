@@ -106,12 +106,12 @@
       <svg class="job-market-sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Posted jobs over the last 14 days" preserveAspectRatio="none">
         <defs>
           <linearGradient id="job-market-line-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="#da7756" stop-opacity="0.26" />
-            <stop offset="100%" stop-color="#da7756" stop-opacity="0" />
+            <stop offset="0%" stop-color="#22c55e" stop-opacity="0.28" />
+            <stop offset="100%" stop-color="#22c55e" stop-opacity="0" />
           </linearGradient>
         </defs>
         <polygon points="${escapeHtml(fillPoints)}" fill="url(#job-market-line-fill)"></polygon>
-        <polyline points="${escapeHtml(linePoints)}" fill="none" stroke="#da7756" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        <polyline points="${escapeHtml(linePoints)}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
       </svg>
     `;
   }
@@ -1996,7 +1996,7 @@
         clearPostJobDraft();
 
         showJobToast('Job has been posted.', () => {
-          window.location.href = `${getBase()}pages/job-giver-profile.html?created=1`;
+          window.location.href = `${getBase()}pages/job-giver-profile.html?tab=jobs&created=1`;
         });
       } catch (error) {
         window.alert(error.message || 'Could not post your job.');
@@ -3475,34 +3475,38 @@
           const expiresAtMs = Number(job.expiresAtMs || 0) || (Number(job.createdAtMs || 0) + (7 * 24 * 60 * 60 * 1000));
           return `
           <article class="job-owner-card job-owner-posted-card">
-            <div class="job-owner-posted-code">Job ID: ${escapeHtml(jobCode || 'JOB')}</div>
-            <div class="job-owner-card-head">
-              <div>
-                <span class="job-card-tag">${escapeHtml(job.category)}</span>
-                ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
-                <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+            <section class="job-owner-posted-section job-owner-posted-main">
+              <div class="job-owner-posted-code">Job ID: ${escapeHtml(jobCode || 'JOB')}</div>
+              <div class="job-owner-card-head">
+                <div>
+                  <span class="job-card-tag">${escapeHtml(job.category)}</span>
+                  ${job.subcategory ? `<span class="job-card-subtag">${escapeHtml(job.subcategory)}</span>` : ''}
+                  <h3>${escapeHtml(job.subcategory || job.category)}</h3>
+                </div>
+                <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
               </div>
-              <strong>${escapeHtml(formatCurrency(job.budget))}</strong>
-            </div>
-            <p>${escapeHtml(job.description)}</p>
-            <div class="job-card-meta">
-              <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
-              <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
-              <button type="button" class="job-card-bids-trigger is-inline" data-job-view-bids="${escapeHtml(job.id)}" aria-label="Open bids for this job">
-                <span class="job-card-bids-trigger-icon"><i class="fa-solid fa-users-viewfinder"></i></span>
-                <span class="job-card-bids-trigger-copy">
-                  <span class="job-card-bids-trigger-eyebrow">Bid inbox</span>
-                  <strong>${bidCount === 0 ? 'No bids yet' : 'Review responses'}</strong>
-                  <span class="job-card-bids-trigger-subtitle">${bidCount} bid${bidCount === 1 ? '' : 's'} waiting</span>
-                </span>
-                <span class="job-card-bids-trigger-count">${bidCount}</span>
-              </button>
-            </div>
-            <div class="job-card-actions">
-              <button type="button" class="btn-primary" data-job-view-bids="${escapeHtml(job.id)}">View Bids${bidCount ? ` (${bidCount})` : ''}</button>
-              <button type="button" class="btn-secondary fleece-secondary job-delete-btn" data-job-delete="${escapeHtml(job.id)}" ${job.acceptedApplicationUid || job.completedAtMs ? 'disabled' : ''}>Delete Job</button>
-            </div>
-            <div class="job-owner-posted-details">
+              <p>${escapeHtml(job.description)}</p>
+              <div class="job-card-meta">
+                <span><i class="fa-solid fa-location-dot"></i>${escapeHtml(job.address)}</span>
+                <span><i class="fa-regular fa-clock"></i>${escapeHtml(formatShortDate(job.createdAtMs))}</span>
+                <button type="button" class="job-card-bids-trigger is-inline" data-job-view-bids="${escapeHtml(job.id)}" aria-label="Open bids for this job">
+                  <span class="job-card-bids-trigger-icon"><i class="fa-solid fa-users-viewfinder"></i></span>
+                  <span class="job-card-bids-trigger-copy">
+                    <span class="job-card-bids-trigger-eyebrow">Bid inbox</span>
+                    <strong>${bidCount === 0 ? 'No bids yet' : 'Review responses'}</strong>
+                    <span class="job-card-bids-trigger-subtitle">${bidCount} bid${bidCount === 1 ? '' : 's'} waiting</span>
+                  </span>
+                  <span class="job-card-bids-trigger-count">${bidCount}</span>
+                </button>
+              </div>
+            </section>
+            <section class="job-owner-posted-section job-owner-posted-actions-panel">
+              <div class="job-card-actions">
+                <button type="button" class="btn-primary" data-job-view-bids="${escapeHtml(job.id)}">View Bids${bidCount ? ` (${bidCount})` : ''}</button>
+                <button type="button" class="btn-secondary fleece-secondary job-delete-btn" data-job-delete="${escapeHtml(job.id)}" ${job.acceptedApplicationUid || job.completedAtMs ? 'disabled' : ''}>Delete Job</button>
+              </div>
+            </section>
+            <section class="job-owner-posted-section job-owner-posted-details">
               <strong>Job details</strong>
               <div class="job-owner-posted-detail-grid">
                 <span><i class="fa-solid fa-list"></i><small>Category</small><b>${escapeHtml(job.category)}</b></span>
@@ -3515,15 +3519,15 @@
                 <span><i class="fa-regular fa-id-card"></i><small>Job ID</small><b>${escapeHtml(jobCode || 'JOB')}</b></span>
                 <span><i class="fa-regular fa-circle-check"></i><small>Status</small><b class="is-active">Active</b></span>
               </div>
-            </div>
-            <div class="job-owner-posted-tip">
+            </section>
+            <section class="job-owner-posted-section job-owner-posted-tip">
               <i class="fa-solid fa-wand-magic-sparkles"></i>
               <div>
                 <strong>Tips to get more responses</strong>
                 <span>Add more details, clear photos, and a realistic budget to attract the right service providers.</span>
               </div>
               <a href="${getBase()}pages/post-job.html">Improve My Job <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
+            </section>
           </article>
         `;}).join('') : `
           <div class="specialists-empty">
