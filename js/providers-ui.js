@@ -5916,6 +5916,10 @@
               <input type="text" name="displayName" value="${escapeHtml(profile.displayName)}" required />
             </label>
             <label>
+              <span>Email</span>
+              <input type="email" name="email" value="${escapeHtml(profile.email)}" />
+            </label>
+            <label>
               <span>Phone</span>
               <input type="tel" name="phone" value="${escapeHtml(profile.phone)}" />
             </label>
@@ -5973,7 +5977,6 @@
       event.preventDefault();
       if (!(form instanceof HTMLFormElement) || typeof authHelper.saveClientProfile !== 'function') return;
       const payload = Object.fromEntries(new FormData(form).entries());
-      payload.email = profile.email;
       if (pendingProfileImageData) payload.profileImageData = pendingProfileImageData;
       if (profile.bannerImageData) payload.bannerImageData = profile.bannerImageData;
 

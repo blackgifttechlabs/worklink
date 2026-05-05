@@ -498,6 +498,35 @@ async function findUserDocumentByPhone(phoneValue = '') {
   };
 }
 
+async function findUserDocumentByEmail(emailValue = '') {
+  const email = String(emailValue || '').trim().toLowerCase();
+  if (!email) return null;
+
+  const readFirst = async (field, value) => {
+    const snapshot = await getDocs(query(collection(db, 'users'), where(field, '==', value)));
+    if (snapshot.empty) return null;
+    const docSnapshot = snapshot.docs[0];
+    return {
+      id: docSnapshot.id,
+      ...(docSnapshot.data() || {})
+    };
+  };
+
+  for (const [field, value] of [
+    ['emailLower', email],
+    ['authEmailLower', email],
+    ['email', String(emailValue || '').trim()],
+    ['authEmail', String(emailValue || '').trim()]
+  ]) {
+    const match = await readFirst(field, value);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
 async function generateAvailableUsername(seedValue, excludeUid = '') {
   const baseSeed = sanitizeUsername(seedValue) || 'worklinkup_user';
   for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -1102,8 +1131,8 @@ async function syncUserDocument(account, extra = {}) {
   };
 
   merge('name', extra.name, account.name);
-  merge('email', extra.email, account.email);
-  merge('authEmail', extra.authEmail, account.authEmail);
+  merge('email', extra.email, existingUser?.email || account.email);
+  merge('authEmail', extra.authEmail, existingUser?.authEmail || account.authEmail);
   merge('phone', extra.phone, account.phone);
   merge('phoneNormalized', extra.phoneNormalized, normalizePhoneDigits(extra.phone || account.phone));
   merge('phoneLoginKey', extra.phoneLoginKey, normalizePhoneDigits(extra.phone || account.phone));
@@ -1121,6 +1150,14 @@ async function syncUserDocument(account, extra = {}) {
 
   if (payload.username) {
     payload.usernameLower = sanitizeUsername(payload.username);
+  }
+
+  if (payload.email) {
+    payload.emailLower = String(payload.email || '').trim().toLowerCase();
+  }
+
+  if (payload.authEmail) {
+    payload.authEmailLower = String(payload.authEmail || '').trim().toLowerCase();
   }
 
   const mergeBool = (key, value, fallback) => {
@@ -1293,9 +1330,13 @@ async function signInWithEmail(email, password) {
 async function signInWithIdentifier(identifier, password, method = 'email') {
   const requestedMethod = String(method || 'email').trim().toLowerCase();
   const rawIdentifier = String(identifier || '').trim();
-  const normalizedMethod = requestedMethod === 'email' && isPhoneIdentifier(rawIdentifier)
-    ? 'phone'
-    : requestedMethod;
+  const normalizedMethod = requestedMethod === 'username'
+    ? 'username'
+    : isPhoneIdentifier(rawIdentifier)
+      ? 'phone'
+      : rawIdentifier.includes('@')
+        ? 'email'
+        : requestedMethod;
   if (!rawIdentifier) {
     throw new Error(
       normalizedMethod === 'username'
@@ -1307,7 +1348,9 @@ async function signInWithIdentifier(identifier, password, method = 'email') {
   }
 
   if (normalizedMethod === 'email') {
-    return signInWithEmail(rawIdentifier, password);
+    const userDoc = await findUserDocumentByEmail(rawIdentifier).catch(() => null);
+    const authEmail = String(userDoc?.authEmail || rawIdentifier).trim();
+    return signInWithEmail(authEmail, password);
   }
 
   if (normalizedMethod === 'phone') {
@@ -1364,9 +1407,27 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
   if (existingPhoneUser) {
     throw new Error('An account already exists for that phone number.');
   }
+  if (optionalEmail) {
+    const existingEmailUser = await findUserDocumentByEmail(optionalEmail);
+    if (existingEmailUser) {
+      throw new Error('An account already exists for that email address.');
+    }
+  }
 
-  const authEmail = optionalEmail || buildPhoneAuthEmail(phoneDigits);
-  const result = await createUserWithEmailAndPassword(auth, authEmail, password);
+  const generatedEmail = buildPhoneAuthEmail(phoneDigits);
+  const profileEmail = optionalEmail || generatedEmail;
+  const authEmail = optionalEmail || generatedEmail;
+  let result = null;
+  try {
+    result = await createUserWithEmailAndPassword(auth, authEmail, password);
+  } catch (error) {
+    if (String(error?.code || '') === 'auth/email-already-in-use') {
+      throw new Error(optionalEmail
+        ? 'An account already exists for that email address.'
+        : 'An account already exists for that phone number. Sign in with your phone number.');
+    }
+    throw error;
+  }
   if (normalizedName) {
     await updateProfile(result.user, {
       displayName: normalizedName
@@ -1382,7 +1443,7 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
   await syncUserDocument({
     ...account,
     name: normalizedName || account.name,
-    email: optionalEmail,
+    email: profileEmail,
     authEmail,
     phone
   }, {
@@ -1391,8 +1452,10 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
     username,
     usernameLower: username,
     userRole: String(extra.userRole || '').trim(),
-    email: optionalEmail,
+    email: profileEmail,
+    emailLower: profileEmail.toLowerCase(),
     authEmail,
+    authEmailLower: authEmail.toLowerCase(),
     phone,
     phoneNormalized: phoneDigits,
     phoneLoginKey: phoneDigits,
@@ -1404,7 +1467,7 @@ async function signUpWithIdentifier(name, identifier, password, method = 'email'
 
   persistAccountDetails({
     name: normalizedName || account.name,
-    email: optionalEmail,
+    email: profileEmail,
     authEmail,
     phone,
     whatsappNumber: phone,
@@ -1526,6 +1589,8 @@ async function saveAccountSetup(input = {}) {
     usernameLower: usernameCheck.normalized,
     userRole,
     name: nextName,
+    emailLower: String(existingUser?.email || account.email || '').trim().toLowerCase(),
+    authEmailLower: String(existingUser?.authEmail || account.authEmail || auth.currentUser.email || '').trim().toLowerCase(),
     updatedAtMs: Date.now(),
     updatedAt: serverTimestamp()
   };
@@ -1534,7 +1599,8 @@ async function saveAccountSetup(input = {}) {
 
   await setDoc(doc(db, 'users', account.uid), {
     uid: account.uid,
-    email: account.email || '',
+    email: existingUser?.email || account.email || '',
+    authEmail: existingUser?.authEmail || account.authEmail || auth.currentUser.email || '',
     phone: account.phone || '',
     provider: account.provider,
     createdAtMs: existingUser?.createdAtMs || Date.now(),
@@ -1791,12 +1857,14 @@ async function saveProviderProfile(profileInput = {}) {
   const existingAverageRating = existingReviewCount > 0
     ? Math.max(0, Math.min(5, Number(existingProviderProfile?.averageRating || existingUserDoc?.averageRating || (existingRatingTotal / existingReviewCount) || 0)))
     : 0;
+  const providerEmail = String(existingUserDoc?.email || account.email || '').trim();
+  const providerAuthEmail = String(existingUserDoc?.authEmail || account.authEmail || auth.currentUser.email || '').trim();
 
   const providerProfile = {
     uid: account.uid,
     providerPublicId,
     displayName,
-    email: account.email || '',
+    email: providerEmail,
     username,
     usernameLower: username,
     userRole: 'provider',
@@ -1838,7 +1906,8 @@ async function saveProviderProfile(profileInput = {}) {
     uid: account.uid,
     ...userPublicFields,
     name: displayName,
-    email: account.email || '',
+    email: providerEmail,
+    emailLower: providerEmail.toLowerCase(),
     phone: providerProfile.whatsappNumber,
     phoneNormalized: normalizePhoneDigits(providerProfile.whatsappNumber),
     phoneLoginKey: normalizePhoneDigits(providerProfile.whatsappNumber),
@@ -1849,6 +1918,8 @@ async function saveProviderProfile(profileInput = {}) {
     providerProvince: province,
     providerProvinceSlug: provinceSlug,
     providerPublicId,
+    authEmail: providerAuthEmail,
+    authEmailLower: providerAuthEmail.toLowerCase(),
     whatsappNumber: providerProfile.whatsappNumber,
     whatsappChatId: providerProfile.whatsappChatId,
     whatsappOptIn: true,
@@ -1892,7 +1963,10 @@ async function saveProviderProfile(profileInput = {}) {
     ...(existingUserDoc || {}),
     uid: account.uid,
     name: displayName,
-    email: account.email || '',
+    email: providerEmail,
+    authEmail: providerAuthEmail,
+    emailLower: providerEmail.toLowerCase(),
+    authEmailLower: providerAuthEmail.toLowerCase(),
     phone: providerProfile.whatsappNumber,
     phoneNormalized: normalizePhoneDigits(providerProfile.whatsappNumber),
     phoneLoginKey: normalizePhoneDigits(providerProfile.whatsappNumber),
@@ -1928,7 +2002,7 @@ async function saveProviderProfile(profileInput = {}) {
   await recordAdminActivity(isNewProviderProfile ? 'provider_profile_created' : 'provider_profile_updated', {
     actorUid: account.uid,
     actorName: displayName,
-    actorEmail: account.email || '',
+    actorEmail: providerEmail,
     subjectUid: account.uid,
     subjectName: displayName,
     title: isNewProviderProfile ? 'Provider profile created' : 'Provider profile updated',
@@ -1965,6 +2039,15 @@ async function saveClientProfile(profileInput = {}) {
   const phone = normalizePhoneNumber(profileInput.phone || existingClientProfile?.phone || existingUserDoc?.phone || account.phone || '');
   const address = String(profileInput.address || existingClientProfile?.address || existingUserDoc?.address || '').trim();
   const city = String(profileInput.city || existingClientProfile?.city || existingUserDoc?.city || '').trim();
+  const profileEmail = String(profileInput.email || existingUserDoc?.email || account.email || '').trim();
+  const profileAuthEmail = String(existingUserDoc?.authEmail || account.authEmail || auth.currentUser.email || '').trim();
+  if (profileEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileEmail)) {
+    throw new Error('Enter a valid email address or leave it empty.');
+  }
+  const existingEmailUser = profileEmail ? await findUserDocumentByEmail(profileEmail).catch(() => null) : null;
+  if (existingEmailUser && String(existingEmailUser.id || existingEmailUser.uid || '') !== account.uid) {
+    throw new Error('That email address is already linked to another account.');
+  }
   const username = sanitizeUsername(profileInput.username || existingUserDoc?.username || account.username || '')
     || await generateAvailableUsername(displayName || account.uid, account.uid);
   const profilePayload = {
@@ -1977,8 +2060,10 @@ async function saveClientProfile(profileInput = {}) {
     phoneLoginKey: normalizePhoneDigits(phone),
     whatsappNumber: phone,
     whatsappChatId: buildWhatsappChatId(phone),
-    email: String(profileInput.email || existingUserDoc?.email || account.email || '').trim(),
-    authEmail: String(existingUserDoc?.authEmail || account.authEmail || auth.currentUser.email || '').trim(),
+    email: profileEmail,
+    authEmail: profileAuthEmail,
+    emailLower: profileEmail.toLowerCase(),
+    authEmailLower: profileAuthEmail.toLowerCase(),
     address,
     city,
     bio: String(profileInput.bio || existingClientProfile?.bio || '').trim(),
@@ -1998,7 +2083,9 @@ async function saveClientProfile(profileInput = {}) {
     ...userPublicFields,
     name: displayName,
     email: profilePayload.email,
+    emailLower: String(profilePayload.email || '').trim().toLowerCase(),
     authEmail: profilePayload.authEmail,
+    authEmailLower: String(profilePayload.authEmail || '').trim().toLowerCase(),
     phone,
     phoneNormalized: profilePayload.phoneNormalized,
     phoneLoginKey: profilePayload.phoneLoginKey,
