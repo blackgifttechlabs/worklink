@@ -1625,9 +1625,9 @@
       <section class="job-page-shell job-post-create-shell">
         <header class="job-post-topbar">
           <div class="job-post-topbar-copy">
-            <span class="job-post-topbar-kicker">Hiring workspace</span>
+            <span class="job-post-topbar-kicker">Simple job posting</span>
             <h1>Post a Job</h1>
-            <p>Create a clear brief, add your budget and location, and start receiving bids.</p>
+            <p>Tell providers what you need, where it is, and what you can pay.</p>
           </div>
           <div class="job-post-topbar-actions" role="navigation" aria-label="Post job links">
             <button type="button" class="job-post-topbar-link is-help" data-job-post-guide-toggle aria-expanded="false">
@@ -1649,8 +1649,8 @@
           <aside class="job-post-guide" aria-label="Post job help" data-job-post-guide>
             <div class="job-post-guide-bar">
               <div class="job-post-guide-head">
-                <strong>How to post</strong>
-                <span>Keep the brief short, specific, and easy to price.</span>
+                <strong>What to do</strong>
+                <span>Follow these steps. You can use normal everyday words.</span>
               </div>
               <button type="button" class="job-post-guide-minimize" data-job-post-guide-toggle aria-expanded="false">
                 Minimize
@@ -1658,9 +1658,9 @@
             </div>
             <div class="job-post-guide-content" data-job-post-guide-content>
               <ol class="job-post-guide-list">
-                <li><strong>1</strong><span>Pick category</span></li>
-                <li><strong>2</strong><span>Add details</span></li>
-                <li><strong>3</strong><span>Post and review bids</span></li>
+                <li><strong>1</strong><span>Choose the type of work</span></li>
+                <li><strong>2</strong><span>Explain the problem clearly</span></li>
+                <li><strong>3</strong><span>Post and wait for bids</span></li>
               </ol>
               <a href="${getBase()}pages/job-giver-profile.html" class="job-post-guide-link">Open Jobs and Bids</a>
             </div>
@@ -1671,37 +1671,37 @@
               <div class="job-post-form-hero-icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></div>
               <div>
                 <h1>Post a New Job</h1>
-                <p>Fill in the details below to get the right professionals for your job.</p>
+                <p>Answer the questions below. The clearer you are, the better the bids will be.</p>
               </div>
               <span class="job-post-form-dots" aria-hidden="true"></span>
             </header>
             <section class="job-post-form-section">
               <div class="job-post-section-head">
-                <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
+                  <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
                 <div>
-                  <strong>Job Details</strong>
-                  <span>Choose the service and explain exactly what needs to be done.</span>
+                  <strong>What do you need?</strong>
+                  <span>Start with the broad service, then choose the closest specific job.</span>
                 </div>
               </div>
               <div class="job-form-grid">
                 ${buildJobComboboxMarkup({
                   type: 'category',
-                  label: 'Job category for this work',
-                  placeholder: 'Select job category',
+                  label: 'Type of work',
+                  placeholder: 'Example: Plumbing, Cleaning, Transport',
                   value: defaultCategory,
                   required: true
                 })}
                 ${buildJobComboboxMarkup({
                   type: 'subcategory',
-                  label: 'Specific service needed',
-                  placeholder: 'Optional service',
+                  label: 'Specific job',
+                  placeholder: 'Example: Leak repairs or moving service',
                   value: defaultSubcategory
                 })}
                 <label class="job-form-field is-wide">
-                  <span>Describe the job</span>
+                  <span>Explain what is happening</span>
                   <div class="job-form-textarea-shell">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-regular fa-clipboard"></i></span>
-                    <textarea name="description" maxlength="1000" required placeholder="Describe the work, materials, timing, or anything the provider should know before bidding.">${escapeHtml(restoredDraft.description || '')}</textarea>
+                    <textarea name="description" maxlength="1000" required placeholder="Example: My kitchen sink is leaking under the cupboard. I need someone to fix it today if possible.">${escapeHtml(restoredDraft.description || '')}</textarea>
                     <small class="job-form-count"><span data-job-description-count>0</span> / 1000</small>
                   </div>
                 </label>
@@ -1710,39 +1710,39 @@
 
             <section class="job-post-form-section">
               <div class="job-post-section-head">
-                <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-wallet"></i></span>
+                  <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-wallet"></i></span>
                 <div>
-                  <strong>Budget &amp; Location</strong>
-                  <span>Share the amount you expect to spend and where the work will happen.</span>
+                  <strong>Budget and location</strong>
+                  <span>This helps nearby providers decide quickly if they can help.</span>
                 </div>
               </div>
               <div class="job-form-grid">
                 <label class="job-form-field">
-                  <span>Estimated budget for the job</span>
+                  <span>How much can you pay?</span>
                   <div class="job-form-input-shell">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
-                    <input type="number" name="budget" min="1" step="1" required placeholder="120" value="${escapeHtml(restoredDraft.budget || '')}" />
+                    <input type="number" name="budget" min="1" step="1" required placeholder="Example: 120" value="${escapeHtml(restoredDraft.budget || '')}" />
                   </div>
                 </label>
                 ${buildJobComboboxMarkup({
                   type: 'province',
-                  label: 'Province where job is to be done',
-                  placeholder: 'Select province',
+                  label: 'Province',
+                  placeholder: 'Choose province',
                   value: defaultProvince,
                   required: true
                 })}
                 ${buildJobComboboxMarkup({
                   type: 'city',
-                  label: 'City or town where job is to be done',
-                  placeholder: defaultProvince ? 'Select city' : 'Select province first',
+                  label: 'City or town',
+                  placeholder: defaultProvince ? 'Choose city or town' : 'Choose province first',
                   value: defaultCity,
                   required: true
                 })}
                 <label class="job-form-field is-wide">
-                  <span>Street address or nearby landmark for the job</span>
+                  <span>Address or nearby landmark</span>
                   <div class="job-form-textarea-shell is-address">
                     <span class="job-form-field-icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
-                    <textarea name="streetAddress" required placeholder="12 Mukuvisi Road, Greendale">${escapeHtml(restoredDraft.streetAddress || '')}</textarea>
+                    <textarea name="streetAddress" required placeholder="Example: Near OK shops, Greendale">${escapeHtml(restoredDraft.streetAddress || '')}</textarea>
                   </div>
                 </label>
               </div>

@@ -18,6 +18,440 @@
   --brand-border: rgba(26, 50, 99, 0.12);
 }
 
+/* Beginner-friendly post-job interface and dropdown safety layer */
+.job-post-page {
+  --post-job-accent: #0f766e;
+  --post-job-accent-dark: #115e59;
+  --post-job-accent-soft: #ccfbf1;
+  --post-job-warning: #f97316;
+  --post-job-text: #111827;
+  --post-job-muted: #667085;
+  --post-job-line: #d8dee8;
+  --post-job-surface: #ffffff;
+  --post-job-page: #f4f7fb;
+  position: relative;
+  isolation: isolate;
+  padding: 18px 0 72px;
+  background:
+    linear-gradient(180deg, rgba(204, 251, 241, 0.58) 0%, rgba(244, 247, 251, 0.96) 260px),
+    var(--post-job-page);
+  color: var(--post-job-text);
+}
+
+body:has(.job-post-page) {
+  overflow-x: hidden;
+}
+
+.job-post-page,
+.job-post-page * {
+  box-sizing: border-box;
+}
+
+.job-post-page .job-post-create-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto 72px;
+  overflow: visible;
+}
+
+.job-post-page .job-post-topbar,
+.job-post-page .job-post-form,
+.job-post-page .job-post-guide,
+.job-post-page .job-post-form-section,
+.job-post-page .job-post-auth-compact,
+.job-post-page .job-post-signed-in-card {
+  overflow: visible;
+  border: 1px solid var(--post-job-line);
+  background: var(--post-job-surface);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.job-post-page .job-post-topbar {
+  align-items: flex-start;
+  border-radius: 14px;
+}
+
+.job-post-page .job-post-topbar-kicker,
+.job-post-page .job-post-section-icon,
+.job-post-page .job-form-field-icon,
+.job-post-page .job-combobox-leading,
+.job-post-page .job-combobox-toggle {
+  color: var(--post-job-accent);
+}
+
+.job-post-page .job-post-topbar-copy h1,
+.job-post-page .job-post-form-hero h1 {
+  letter-spacing: 0;
+}
+
+.job-post-page .job-post-topbar-copy p,
+.job-post-page .job-post-form-hero p,
+.job-post-page .job-post-section-head span,
+.job-post-page .job-post-guide-head span,
+.job-post-page .job-post-signed-in-card span {
+  color: var(--post-job-muted);
+}
+
+.job-post-page .job-post-topbar-actions {
+  flex-wrap: wrap;
+}
+
+.job-post-page .job-post-topbar-link,
+.job-post-page .job-post-guide-link,
+.job-post-page .job-post-action-secondary {
+  border-color: var(--post-job-line);
+  background: #ffffff;
+  color: var(--post-job-text);
+}
+
+.job-post-page .job-post-topbar-link:hover,
+.job-post-page .job-post-topbar-link:focus-visible,
+.job-post-page .job-post-guide-link:hover,
+.job-post-page .job-post-guide-link:focus-visible,
+.job-post-page .job-post-action-secondary:hover,
+.job-post-page .job-post-action-secondary:focus-visible {
+  border-color: rgba(15, 118, 110, 0.34);
+  background: var(--post-job-accent-soft);
+  color: var(--post-job-accent-dark);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.11);
+}
+
+.job-post-page .job-post-form {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  border-radius: 18px;
+}
+
+.job-post-page .job-post-form-hero {
+  align-items: center;
+  border-color: rgba(15, 118, 110, 0.22);
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+}
+
+.job-post-page .job-post-form-hero-icon,
+.job-post-page .job-post-section-icon {
+  background: var(--post-job-accent-soft);
+  color: var(--post-job-accent-dark);
+  border-color: rgba(15, 118, 110, 0.18);
+}
+
+.job-post-page .job-post-form-section {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  border-radius: 14px;
+}
+
+.job-post-page .job-post-form-section:has(.job-combobox.is-open),
+.job-post-page .job-form-field:has(.job-combobox.is-open) {
+  z-index: 5000;
+}
+
+.job-post-page .job-post-section-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.job-post-page .job-post-section-head strong {
+  display: block;
+  color: var(--post-job-text);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.job-post-page .job-post-section-head span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.job-post-page .job-form-grid {
+  overflow: visible;
+  align-items: start;
+  gap: 16px;
+}
+
+.job-post-page .job-form-field {
+  position: relative;
+  min-width: 0;
+  gap: 8px;
+  overflow: visible;
+}
+
+.job-post-page .job-form-field > span,
+.job-post-page .job-auth-field > span {
+  color: var(--post-job-text);
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.job-post-page .job-form-field > span::after,
+.job-post-page .job-auth-field > span::after {
+  color: var(--post-job-warning);
+}
+
+.job-post-page .job-form-input-shell,
+.job-post-page .job-form-textarea-shell,
+.job-post-page .job-combobox-shell {
+  min-height: 54px;
+  border: 1px solid var(--post-job-line);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.job-post-page .job-form-input-shell:focus-within,
+.job-post-page .job-form-textarea-shell:focus-within,
+.job-post-page .job-combobox:focus-within .job-combobox-shell,
+.job-post-page .job-combobox.is-open .job-combobox-shell {
+  border-color: var(--post-job-accent);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
+.job-post-page .job-form-input-shell input,
+.job-post-page .job-form-textarea-shell textarea,
+.job-post-page .job-combobox-input {
+  min-width: 0;
+  color: var(--post-job-text);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.job-post-page .job-form-input-shell input::placeholder,
+.job-post-page .job-form-textarea-shell textarea::placeholder,
+.job-post-page .job-combobox-input::placeholder {
+  color: #98a2b3;
+}
+
+.job-post-page .job-form-textarea-shell textarea {
+  min-height: 150px;
+  padding-bottom: 34px;
+  resize: vertical;
+}
+
+.job-post-page .job-form-textarea-shell.is-address textarea {
+  min-height: 84px;
+  height: auto;
+  resize: vertical;
+}
+
+.job-post-page .job-form-count {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--post-job-muted);
+}
+
+.job-post-page .job-combobox {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+.job-post-page .job-combobox.is-open {
+  z-index: 10000;
+}
+
+.job-post-page .job-combobox-menu {
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 10020;
+  max-height: min(360px, 52dvh);
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 26px 56px rgba(15, 23, 42, 0.24);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.job-post-page .job-combobox-option {
+  min-height: 56px;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.job-post-page .job-combobox-option:hover,
+.job-post-page .job-combobox-option:focus-visible {
+  background: #ecfdf5;
+}
+
+.job-post-page .job-combobox-option-icon {
+  background: var(--post-job-accent-soft);
+  color: var(--post-job-accent-dark);
+}
+
+.job-post-page .job-combobox-option-title {
+  color: var(--post-job-text);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.job-post-page .job-combobox-option-subtitle,
+.job-post-page .job-combobox-empty {
+  color: var(--post-job-muted);
+}
+
+.job-post-page .job-post-guide-list li {
+  min-height: 44px;
+}
+
+.job-post-page .job-post-guide-list strong {
+  background: var(--post-job-accent);
+  color: #ffffff;
+}
+
+.job-post-page .job-post-auth-compact,
+.job-post-page .job-post-signed-in-card {
+  border-left: 4px solid var(--post-job-accent);
+}
+
+.job-post-page .job-post-form-actions {
+  position: relative;
+  z-index: 0;
+  gap: 12px;
+}
+
+.job-post-page .job-post-form .btn-primary,
+.job-post-page .job-post-action-primary {
+  min-height: 54px;
+  border-radius: 12px;
+  background: var(--post-job-accent);
+  border-color: var(--post-job-accent);
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(15, 118, 110, 0.2);
+}
+
+.job-post-page .job-post-form .btn-primary:hover,
+.job-post-page .job-post-form .btn-primary:focus-visible,
+.job-post-page .job-post-action-primary:hover,
+.job-post-page .job-post-action-primary:focus-visible {
+  background: var(--post-job-accent-dark);
+  border-color: var(--post-job-accent-dark);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .job-post-page {
+    padding: 8px 0 88px;
+  }
+
+  .job-post-page .job-post-create-shell {
+    width: calc(100% - 18px);
+    margin-bottom: 48px;
+  }
+
+  .job-post-page .job-post-topbar {
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .job-post-page .job-post-topbar-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .job-post-page .job-post-topbar-link {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 6px;
+    gap: 5px;
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: normal;
+  }
+
+  .job-post-page .job-post-form {
+    padding: 12px;
+    gap: 14px;
+    border-radius: 14px;
+  }
+
+  .job-post-page .job-post-form-hero {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 11px;
+    padding: 14px;
+  }
+
+  .job-post-page .job-post-form-hero-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .job-post-page .job-post-form-hero h1 {
+    font-size: 21px;
+  }
+
+  .job-post-page .job-post-form-hero p {
+    font-size: 12px;
+  }
+
+  .job-post-page .job-post-form-section,
+  .job-post-page .job-post-auth-compact,
+  .job-post-page .job-post-signed-in-card {
+    padding: 14px;
+  }
+
+  .job-post-page .job-post-section-head {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .job-post-page .job-post-section-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .job-post-page .job-post-section-head strong {
+    font-size: 16px;
+  }
+
+  .job-post-page .job-form-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .job-post-page .job-form-input-shell,
+  .job-post-page .job-form-textarea-shell,
+  .job-post-page .job-combobox-shell {
+    min-height: 52px;
+    grid-template-columns: 38px minmax(0, 1fr) 36px;
+  }
+
+  .job-post-page .job-form-input-shell::before,
+  .job-post-page .job-form-textarea-shell::before,
+  .job-post-page .job-combobox-shell::before {
+    left: 38px;
+  }
+
+  .job-post-page .job-combobox-menu {
+    max-height: min(300px, 46dvh);
+  }
+
+  .job-post-page .job-post-form-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .job-post-page .job-post-form .btn-primary,
+  .job-post-page .job-post-action-secondary {
+    width: 100%;
+    min-height: 52px;
+  }
+}
+
 .marketplace-page,
 .market-main.is-standalone {
   min-height: calc(100vh - 72px);
@@ -37911,5 +38345,311 @@ body.marketplace-page-body .market-main {
   .shop-save-row img {
     width: 58px;
     height: 58px;
+  }
+}
+
+/* Final post-job beginner UX override: keep this at the end of the stylesheet. */
+.job-post-page {
+  --post-job-accent: #0f766e;
+  --post-job-accent-dark: #115e59;
+  --post-job-accent-soft: #ccfbf1;
+  --post-job-warning: #f97316;
+  --post-job-text: #111827;
+  --post-job-muted: #667085;
+  --post-job-line: #d8dee8;
+  --post-job-surface: #ffffff;
+  --post-job-page: #f4f7fb;
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(204, 251, 241, 0.58) 0%, rgba(244, 247, 251, 0.96) 260px), var(--post-job-page) !important;
+  color: var(--post-job-text);
+}
+
+.job-post-page .job-post-create-shell,
+.job-post-page .job-post-composer-shell,
+.job-post-page .job-post-form,
+.job-post-page .job-post-form-section,
+.job-post-page .job-form-grid,
+.job-post-page .job-form-field,
+.job-post-page .job-combobox {
+  overflow: visible !important;
+}
+
+.job-post-page .job-post-topbar,
+.job-post-page .job-post-form,
+.job-post-page .job-post-guide,
+.job-post-page .job-post-form-section,
+.job-post-page .job-post-auth-compact,
+.job-post-page .job-post-signed-in-card {
+  border-color: var(--post-job-line) !important;
+  background: var(--post-job-surface) !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.job-post-page .job-post-topbar-kicker,
+.job-post-page .job-post-section-icon,
+.job-post-page .job-form-field-icon,
+.job-post-page .job-combobox-leading,
+.job-post-page .job-combobox-toggle {
+  color: var(--post-job-accent) !important;
+}
+
+.job-post-page .job-post-form-hero {
+  border-color: rgba(15, 118, 110, 0.22) !important;
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%) !important;
+}
+
+.job-post-page .job-post-form-hero-icon,
+.job-post-page .job-post-section-icon {
+  background: var(--post-job-accent-soft) !important;
+  color: var(--post-job-accent-dark) !important;
+  border-color: rgba(15, 118, 110, 0.18) !important;
+}
+
+.job-post-page .job-post-form-section,
+.job-post-page .job-form-field {
+  position: relative;
+  z-index: 1;
+}
+
+.job-post-page .job-post-form-section:has(.job-combobox.is-open),
+.job-post-page .job-form-field:has(.job-combobox.is-open) {
+  z-index: 5000 !important;
+}
+
+.job-post-page .job-post-section-head strong {
+  color: var(--post-job-text);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.job-post-page .job-post-form-section:first-of-type .job-post-section-head,
+.job-post-page .job-post-section-head {
+  display: flex !important;
+  align-items: flex-start !important;
+}
+
+.job-post-page .job-post-section-head::after {
+  display: none !important;
+}
+
+.job-post-page .job-post-section-head span,
+.job-post-page .job-post-section-head span:not(.job-post-section-icon),
+.job-post-page .job-post-topbar-copy p,
+.job-post-page .job-post-form-hero p,
+.job-post-page .job-post-guide-head span,
+.job-post-page .job-post-signed-in-card span {
+  display: block !important;
+  color: var(--post-job-muted) !important;
+}
+
+.job-post-page .job-form-field > span,
+.job-post-page .job-auth-field > span {
+  color: var(--post-job-text) !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  font-weight: 850 !important;
+}
+
+.job-post-page .job-form-field > span::after,
+.job-post-page .job-auth-field > span::after {
+  color: var(--post-job-warning) !important;
+}
+
+.job-post-page .job-form-input-shell,
+.job-post-page .job-form-textarea-shell,
+.job-post-page .job-combobox-shell {
+  min-height: 54px !important;
+  border-color: var(--post-job-line) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+}
+
+.job-post-page .job-form-input-shell:focus-within,
+.job-post-page .job-form-textarea-shell:focus-within,
+.job-post-page .job-combobox:focus-within .job-combobox-shell,
+.job-post-page .job-combobox.is-open .job-combobox-shell {
+  border-color: var(--post-job-accent) !important;
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12) !important;
+}
+
+.job-post-page .job-form-input-shell input,
+.job-post-page .job-form-textarea-shell textarea,
+.job-post-page .job-combobox-input {
+  color: var(--post-job-text) !important;
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+}
+
+.job-post-page .job-form-input-shell input::placeholder,
+.job-post-page .job-form-textarea-shell textarea::placeholder,
+.job-post-page .job-combobox-input::placeholder {
+  color: #98a2b3 !important;
+}
+
+.job-post-page .job-form-textarea-shell textarea {
+  min-height: 150px !important;
+  padding-bottom: 34px !important;
+  resize: vertical !important;
+}
+
+.job-post-page .job-form-textarea-shell.is-address textarea {
+  min-height: 84px !important;
+  height: auto !important;
+}
+
+.job-post-page .job-combobox {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.job-post-page .job-combobox.is-open {
+  z-index: 10000 !important;
+}
+
+.job-post-page .job-combobox-menu {
+  top: calc(100% + 8px) !important;
+  z-index: 10020 !important;
+  max-height: min(360px, 52dvh) !important;
+  overflow-y: auto !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 26px 56px rgba(15, 23, 42, 0.24) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.job-post-page .job-combobox-option {
+  min-height: 56px !important;
+  border-radius: 10px !important;
+}
+
+.job-post-page .job-combobox-option:hover,
+.job-post-page .job-combobox-option:focus-visible {
+  background: #ecfdf5 !important;
+}
+
+.job-post-page .job-combobox-option-icon,
+.job-post-page .job-post-guide-list strong {
+  background: var(--post-job-accent-soft) !important;
+  color: var(--post-job-accent-dark) !important;
+}
+
+.job-post-page .job-post-auth-compact,
+.job-post-page .job-post-signed-in-card {
+  border-left: 4px solid var(--post-job-accent) !important;
+}
+
+.job-post-page .job-post-form .btn-primary,
+.job-post-page .job-post-action-primary {
+  min-height: 54px !important;
+  border-radius: 12px !important;
+  background: var(--post-job-accent) !important;
+  border-color: var(--post-job-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 30px rgba(15, 118, 110, 0.2) !important;
+}
+
+.job-post-page .job-post-form .btn-primary:hover,
+.job-post-page .job-post-form .btn-primary:focus-visible,
+.job-post-page .job-post-action-primary:hover,
+.job-post-page .job-post-action-primary:focus-visible {
+  background: var(--post-job-accent-dark) !important;
+  border-color: var(--post-job-accent-dark) !important;
+}
+
+@media (max-width: 768px) {
+  .job-post-page .job-post-create-shell {
+    width: calc(100% - 18px) !important;
+  }
+
+  .job-post-page .job-post-topbar {
+    width: 100% !important;
+    margin: 0 0 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .job-post-page .job-post-topbar-actions {
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .job-post-page .job-post-topbar-link {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 0 6px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+  }
+
+  .job-post-page .job-post-form {
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .job-post-page .job-post-create-shell,
+  .job-post-page .job-post-composer-shell,
+  .job-post-page .job-post-form,
+  .job-post-page .job-post-form-hero,
+  .job-post-page .job-post-form-section,
+  .job-post-page .job-post-auth-compact,
+  .job-post-page .job-post-signed-in-card,
+  .job-post-page .job-form-grid,
+  .job-post-page .job-form-field,
+  .job-post-page .job-form-input-shell,
+  .job-post-page .job-form-textarea-shell,
+  .job-post-page .job-combobox,
+  .job-post-page .job-combobox-shell {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .job-post-page .job-post-form-hero h1,
+  .job-post-page .job-post-form-hero p,
+  .job-post-page .job-post-section-head strong,
+  .job-post-page .job-post-section-head span,
+  .job-post-page .job-form-field > span {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .job-post-page .job-post-form-hero {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 11px !important;
+    padding: 14px !important;
+  }
+
+  .job-post-page .job-post-form-hero-icon {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .job-post-page .job-post-form-hero h1 {
+    font-size: 21px !important;
+  }
+
+  .job-post-page .job-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .job-post-page .job-form-input-shell,
+  .job-post-page .job-form-textarea-shell,
+  .job-post-page .job-combobox-shell {
+    min-height: 52px !important;
+    grid-template-columns: 38px minmax(0, 1fr) 36px !important;
+  }
+
+  .job-post-page .job-combobox-menu {
+    max-height: min(300px, 46dvh) !important;
+  }
+
+  .job-post-page .job-post-form-actions {
+    grid-template-columns: 1fr !important;
   }
 }
