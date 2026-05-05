@@ -16980,6 +16980,11 @@ header {
   display: grid;
   gap: 8px;
 }
+
+.account-form-row[hidden] {
+  display: none !important;
+}
+
 .account-form-row label {
   font-size: 13px;
   font-weight: 700;
@@ -17813,6 +17818,10 @@ header {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.job-auth-field[hidden] {
+  display: none !important;
 }
 
 .job-auth-field span,
