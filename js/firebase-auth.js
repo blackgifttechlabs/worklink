@@ -2832,6 +2832,12 @@ async function markJobStarted(jobId = '', applicationId = '') {
   return { jobId, applicationId, inProgressAtMs: now };
 }
 
+function buildFinishedJobReviewInstructionMessage(job = {}, application = {}) {
+  const workerName = String(application.bidderName || 'The worker').trim();
+  const jobTitle = String(job.subcategory || job.category || 'your job').trim();
+  return `${workerName} has clicked Finish for "${jobTitle}". Next steps: go to your profile, open Current Jobs, and you will see this job waiting for review. Open the job, choose your star rating, write a short review if you want, then submit it to complete the job.`;
+}
+
 async function markJobCompleted(jobId = '', applicationId = '') {
   if (!auth.currentUser) throw new Error('Please sign in first.');
   if (!jobId || !applicationId) throw new Error('Invalid job selection.');
@@ -2885,7 +2891,7 @@ async function markJobCompleted(jobId = '', applicationId = '') {
     await sendMessageToProvider({
       toUid: job.ownerUid,
       toName: job.ownerName || 'Client',
-      text: `${application.bidderName || 'The worker'} has completed "${job.subcategory || job.category || 'your job'}". Please leave a rating and review.`
+      text: buildFinishedJobReviewInstructionMessage(job, application)
     }).catch(() => null);
   }
 

@@ -266,6 +266,11 @@
     }
   }
 
+  function buildAcceptedBidInstructionMessage(job = {}) {
+    const jobTitle = String(job.subcategory || job.category || 'this job').trim();
+    return `Your bid for "${jobTitle}" was accepted. Next steps: go to your profile, open Current Jobs, and you will see this job there. Click Start when you begin the work. When the job is done, go back to Current Jobs and click Finish so the job owner can review it.`;
+  }
+
   function showReviewSavedTick(shell) {
     const panel = shell?.querySelector?.('.job-review-modal-panel');
     if (!(panel instanceof HTMLElement) || panel.querySelector('.job-review-success-tick')) return;
@@ -3441,7 +3446,7 @@
                   toUid: selectedApplication.bidderUid,
                   toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
                   toName: selectedApplication.bidderName || 'Provider',
-                  text: `Your bid for "${job.subcategory || job.category || 'this job'}" was accepted. Please check your Jobs and Bids page for the next step.`
+                  text: buildAcceptedBidInstructionMessage(job)
                 }).catch(() => null);
                 showBrowserJobNotification('Bid accepted', {
                   body: `${selectedApplication.bidderName || 'The provider'} has been notified.`
@@ -3646,7 +3651,7 @@
                 toUid: selectedApplication.bidderUid,
                 toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
                 toName: selectedApplication.bidderName || 'Provider',
-                text: `Your bid for "${selectedJob?.subcategory || selectedJob?.category || 'this job'}" was accepted. Please check your Jobs and Bids page for the next step.`
+                text: buildAcceptedBidInstructionMessage(selectedJob)
               }).catch(() => null);
               showBrowserJobNotification('Bid accepted', {
                 body: `${selectedApplication.bidderName || 'The provider'} has been notified.`
