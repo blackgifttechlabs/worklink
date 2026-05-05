@@ -1012,6 +1012,8 @@
         user.name,
         user.email,
         user.phone,
+        user.userDocumentName,
+        user.userPublicId,
         user.providerProvince,
         user.city,
         user.uid
@@ -1032,7 +1034,7 @@
         <td>
           <div class="admin-table-user">
             <strong>${escapeHtml(user.name || 'WorkLinkUp User')}</strong>
-            <span>${escapeHtml(user.uid || 'No ID')}</span>
+            <span>${escapeHtml(user.userDocumentName || user.userPublicId || user.uid || 'No ID')}</span>
           </div>
         </td>
         <td>

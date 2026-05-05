@@ -59,6 +59,7 @@ const db = getFirestore(app);
 const realtimeDb = getDatabase(app);
 const provider = new GoogleAuthProvider();
 const storageKey = 'softgiggles_account';
+const USER_COUNTER_START = 0;
 const PROVIDER_COUNTER_START = 3383;
 const ADMIN_ACTIVITY_COLLECTION = 'adminActivity';
 const ADMINS_COLLECTION = 'admins';
@@ -419,6 +420,22 @@ function slugifyIdentifier(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'worklinkup-user';
+}
+
+function buildUserDocumentName(name, publicId) {
+  const normalizedName = normalizeName(name || 'WorkLinkUp User')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'WorkLinkUp-User';
+  return `${normalizedName}-${publicId}`;
+}
+
+function getExistingUserPublicFields(existingUser, name = '') {
+  if (!existingUser?.userPublicId) return {};
+  return {
+    userPublicId: existingUser.userPublicId,
+    userPublicNumber: Number(existingUser.userPublicNumber || 0),
+    userDocumentName: buildUserDocumentName(name || existingUser.name || 'WorkLinkUp User', existingUser.userPublicId)
+  };
 }
 
 function sanitizeUsername(value) {
@@ -982,6 +999,57 @@ async function recordAdminConsoleAction(input = {}) {
   });
 }
 
+async function getOrCreateUserPublicFields(uid, name = '') {
+  if (!uid) return {};
+
+  const userRef = doc(db, 'users', uid);
+  const counterRef = doc(db, 'systemCounters', 'users');
+
+  return runTransaction(db, async (transaction) => {
+    const userSnapshot = await transaction.get(userRef);
+    const existingUser = userSnapshot.exists() ? (userSnapshot.data() || {}) : {};
+    const existingNumber = Number(existingUser.userPublicNumber || 0);
+    const effectiveName = name || existingUser.name || existingUser.displayName || 'WorkLinkUp User';
+
+    if (existingNumber > 0 && existingUser.userPublicId) {
+      const userDocumentName = buildUserDocumentName(effectiveName, existingUser.userPublicId);
+      transaction.set(userRef, {
+        userDocumentName,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      return {
+        userPublicId: existingUser.userPublicId,
+        userPublicNumber: existingNumber,
+        userDocumentName
+      };
+    }
+
+    const counterSnapshot = await transaction.get(counterRef);
+    const nextNumber = (counterSnapshot.exists() ? Number(counterSnapshot.data().lastNumber || USER_COUNTER_START) : USER_COUNTER_START) + 1;
+    const userPublicId = `WK${String(nextNumber).padStart(3, '0')}`;
+    const userDocumentName = buildUserDocumentName(effectiveName, userPublicId);
+
+    transaction.set(counterRef, {
+      lastNumber: nextNumber,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    transaction.set(userRef, {
+      uid,
+      userPublicId,
+      userPublicNumber: nextNumber,
+      userDocumentName,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    return {
+      userPublicId,
+      userPublicNumber: nextNumber,
+      userDocumentName
+    };
+  });
+}
+
 async function syncUserDocument(account, extra = {}) {
   if (!account.uid) return;
   const userRef = doc(db, 'users', account.uid);
@@ -999,6 +1067,13 @@ async function syncUserDocument(account, extra = {}) {
   const createdAtMs = Number(extra.createdAtMs ?? (existingUser?.createdAtMs || Date.now()));
   const updatedAtMs = Number(extra.updatedAtMs ?? Date.now());
   const lastSeenAtMs = Number(extra.lastSeenAtMs ?? existingUser?.lastSeenAtMs ?? 0);
+  const effectiveName = normalizeName(extra.name || account.name || existingUser?.name || 'WorkLinkUp User');
+  let userPublicFields = {};
+  try {
+    userPublicFields = await getOrCreateUserPublicFields(account.uid, effectiveName);
+  } catch (error) {
+    userPublicFields = getExistingUserPublicFields(existingUser, effectiveName);
+  }
 
   // Construct the payload by carefully merging data, ensuring we don't overwrite non-empty fields with empty ones.
   const payload = {
@@ -1008,6 +1083,12 @@ async function syncUserDocument(account, extra = {}) {
     lastSeenAtMs,
     updatedAt: serverTimestamp()
   };
+
+  if (userPublicFields.userPublicId) {
+    payload.userPublicId = userPublicFields.userPublicId;
+    payload.userPublicNumber = Number(userPublicFields.userPublicNumber || 0);
+    payload.userDocumentName = buildUserDocumentName(effectiveName, userPublicFields.userPublicId);
+  }
 
   if (!existingUser) {
     payload.createdAt = serverTimestamp();
@@ -1448,6 +1529,8 @@ async function saveAccountSetup(input = {}) {
     updatedAtMs: Date.now(),
     updatedAt: serverTimestamp()
   };
+  const userPublicFields = await getOrCreateUserPublicFields(account.uid, nextName)
+    .catch(() => getExistingUserPublicFields(existingUser, nextName));
 
   await setDoc(doc(db, 'users', account.uid), {
     uid: account.uid,
@@ -1456,6 +1539,7 @@ async function saveAccountSetup(input = {}) {
     provider: account.provider,
     createdAtMs: existingUser?.createdAtMs || Date.now(),
     createdAt: existingUser?.createdAt || serverTimestamp(),
+    ...userPublicFields,
     ...setupPayload
   }, { merge: true });
 
@@ -1746,10 +1830,13 @@ async function saveProviderProfile(profileInput = {}) {
     createdAt: existingUserDoc?.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp()
   };
+  const userPublicFields = await getOrCreateUserPublicFields(account.uid, displayName)
+    .catch(() => getExistingUserPublicFields(existingUserDoc, displayName));
 
   await setDoc(providerRef, providerProfile, { merge: true });
   await setDoc(userRef, {
     uid: account.uid,
+    ...userPublicFields,
     name: displayName,
     email: account.email || '',
     phone: providerProfile.whatsappNumber,
@@ -1902,10 +1989,13 @@ async function saveClientProfile(profileInput = {}) {
     createdAt: existingUserDoc?.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp()
   };
+  const userPublicFields = await getOrCreateUserPublicFields(account.uid, displayName)
+    .catch(() => getExistingUserPublicFields(existingUserDoc, displayName));
 
   await setDoc(clientRef, profilePayload, { merge: true });
   await setDoc(userRef, {
     uid: account.uid,
+    ...userPublicFields,
     name: displayName,
     email: profilePayload.email,
     authEmail: profilePayload.authEmail,
