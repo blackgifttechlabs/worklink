@@ -38653,3 +38653,417 @@ body.marketplace-page-body .market-main {
     grid-template-columns: 1fr !important;
   }
 }
+
+.home-marketplace-section {
+  width: 100vw;
+  max-width: none;
+  margin: 0 calc(50% - 50vw);
+  padding: 34px 0 58px;
+  background: #f5f7fb;
+}
+
+.home-marketplace-shell {
+  width: min(100% - 36px, 1420px);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.home-marketplace-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.home-marketplace-head span,
+.home-managed-panel-head span {
+  color: #da7756;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-marketplace-head h2 {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: clamp(30px, 3.6vw, 54px);
+  line-height: 0.98;
+  font-weight: 950;
+}
+
+.home-marketplace-head p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.home-marketplace-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.home-marketplace-actions a {
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.home-marketplace-actions a:hover,
+.home-marketplace-actions a:focus-visible {
+  border-color: rgba(218, 119, 86, 0.28);
+  color: #8f432c;
+  transform: translateY(-1px);
+}
+
+.home-marketplace-actions span {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.home-marketplace-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.88fr);
+  grid-template-areas:
+    "products jobs"
+    "products providers";
+  gap: 14px;
+  align-items: stretch;
+}
+
+.home-managed-panel {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.home-managed-products { grid-area: products; }
+.home-managed-jobs { grid-area: jobs; }
+.home-managed-providers { grid-area: providers; }
+
+.home-managed-panel-head {
+  min-height: 78px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.home-managed-panel-head h3 {
+  margin: 3px 0 0;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.home-managed-panel-head a {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.home-managed-product-grid {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home-managed-product-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  display: grid;
+  text-decoration: none;
+}
+
+.home-managed-product-card:hover,
+.home-managed-product-card:focus-visible {
+  border-color: rgba(218, 119, 86, 0.35);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.11);
+  transform: translateY(-2px);
+}
+
+.home-managed-product-card img {
+  width: 100%;
+  aspect-ratio: 1 / 0.86;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+
+.home-managed-product-card div {
+  min-width: 0;
+  padding: 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.home-managed-product-card strong {
+  color: #0f766e;
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.home-managed-product-card h4 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.home-managed-product-card p,
+.home-managed-product-card span,
+.home-managed-job-row p,
+.home-managed-provider-row p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.home-managed-product-card span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-managed-job-list,
+.home-managed-provider-list {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.home-managed-job-row,
+.home-managed-provider-row {
+  min-width: 0;
+  min-height: 74px;
+  padding: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.home-managed-job-row:hover,
+.home-managed-provider-row:hover,
+.home-managed-job-row:focus-visible,
+.home-managed-provider-row:focus-visible {
+  background: #f8fafc;
+  border-color: rgba(218, 119, 86, 0.3);
+}
+
+.home-managed-job-row > span,
+.home-managed-provider-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #111827;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.home-managed-provider-avatar {
+  border-radius: 999px;
+  background: linear-gradient(135deg, #da7756, #1f2937);
+}
+
+.home-managed-provider-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-managed-job-row div,
+.home-managed-provider-row div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.home-managed-job-row strong,
+.home-managed-provider-row strong {
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.home-managed-job-row > i {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.home-managed-provider-row small {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.home-managed-empty {
+  padding: 18px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.home-managed-skeleton {
+  min-height: 128px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: grid;
+  gap: 9px;
+  align-content: end;
+}
+
+.home-managed-skeleton span,
+.home-managed-skeleton strong,
+.home-managed-skeleton small {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 50%, #e2e8f0 100%);
+  background-size: 220% 100%;
+  animation: marketProductSkeleton 1.1s linear infinite;
+}
+
+.home-managed-skeleton strong { width: 80%; }
+.home-managed-skeleton small { width: 58%; }
+
+.admin-homepage-manager {
+  grid-column: 1 / -1;
+}
+
+.admin-homepage-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-homepage-form .admin-form-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .admin-homepage-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .home-marketplace-section {
+    padding: 24px 0 44px;
+  }
+
+  .home-marketplace-head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .home-marketplace-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "products"
+      "jobs"
+      "providers";
+  }
+
+  .home-managed-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-homepage-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-marketplace-shell {
+    width: min(100% - 20px, 1420px);
+  }
+
+  .home-marketplace-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-marketplace-actions a {
+    min-width: 0;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .home-managed-product-grid {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .home-managed-panel-head {
+    min-height: 70px;
+    padding: 14px;
+  }
+
+  .home-managed-panel-head h3 {
+    font-size: 19px;
+  }
+}

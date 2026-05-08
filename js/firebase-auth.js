@@ -76,6 +76,8 @@ const JOBS_COLLECTION = 'jobs';
 const PRODUCTS_COLLECTION = 'products';
 const PRODUCT_ORDERS_COLLECTION = 'productOrders';
 const PRODUCT_WISHLISTS_COLLECTION = 'productWishlists';
+const HOMEPAGE_SETTINGS_COLLECTION = 'homepageSettings';
+const HOMEPAGE_SETTINGS_DOC_ID = 'home';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
 const GOOGLE_REDIRECT_SUCCESS_KEY = 'worklinkup_google_redirect_success';
 const GOOGLE_AUTH_FLOW_KEY = 'worklinkup_google_auth_flow';
@@ -113,6 +115,21 @@ let jobListCache = null;
 let jobListInFlight = null;
 const userJobListCache = new Map();
 const userJobListInFlight = new Map();
+
+const DEFAULT_HOMEPAGE_SETTINGS = {
+  products: {
+    count: 8,
+    sortBy: 'recently-listed'
+  },
+  jobs: {
+    count: 5,
+    sortBy: 'recently-posted'
+  },
+  providers: {
+    count: 5,
+    sortBy: 'top-rated'
+  }
+};
 
 function normalizeName(value) {
   return String(value || '')
@@ -1026,6 +1043,61 @@ async function recordAdminConsoleAction(input = {}) {
     sourceRef: String(input.sourceRef || ''),
     createdAtMs: Number(input.createdAtMs || Date.now())
   });
+}
+
+function normalizeHomepageSettings(input = {}) {
+  const productSorts = ['top-wishlisted', 'top-views', 'top-ordered', 'recently-listed'];
+  const jobSorts = ['most-bids', 'highest-budget', 'recently-posted', 'recently-updated'];
+  const providerSorts = ['top-rated', 'most-completed', 'recently-active', 'recently-joined'];
+  const clampCount = (value, fallback) => Math.max(1, Math.min(24, Math.round(Number(value || fallback || 1))));
+  const pickSort = (value, allowed, fallback) => allowed.includes(String(value || '')) ? String(value) : fallback;
+
+  return {
+    products: {
+      count: clampCount(input.products?.count, DEFAULT_HOMEPAGE_SETTINGS.products.count),
+      sortBy: pickSort(input.products?.sortBy, productSorts, DEFAULT_HOMEPAGE_SETTINGS.products.sortBy)
+    },
+    jobs: {
+      count: clampCount(input.jobs?.count, DEFAULT_HOMEPAGE_SETTINGS.jobs.count),
+      sortBy: pickSort(input.jobs?.sortBy, jobSorts, DEFAULT_HOMEPAGE_SETTINGS.jobs.sortBy)
+    },
+    providers: {
+      count: clampCount(input.providers?.count, DEFAULT_HOMEPAGE_SETTINGS.providers.count),
+      sortBy: pickSort(input.providers?.sortBy, providerSorts, DEFAULT_HOMEPAGE_SETTINGS.providers.sortBy)
+    }
+  };
+}
+
+async function getHomepageSettings() {
+  const snap = await getDoc(doc(db, HOMEPAGE_SETTINGS_COLLECTION, HOMEPAGE_SETTINGS_DOC_ID)).catch(() => null);
+  if (!snap?.exists?.()) return normalizeHomepageSettings(DEFAULT_HOMEPAGE_SETTINGS);
+  return normalizeHomepageSettings(snap.data() || {});
+}
+
+async function updateHomepageSettings(input = {}, actorAdmin = null) {
+  const settings = normalizeHomepageSettings(input);
+  const updatedAtMs = Date.now();
+  await setDoc(doc(db, HOMEPAGE_SETTINGS_COLLECTION, HOMEPAGE_SETTINGS_DOC_ID), {
+    ...settings,
+    updatedBy: String(actorAdmin?.name || 'Admin').trim(),
+    updatedAtMs,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  await recordAdminActivity('admin_homepage_settings_updated', {
+    actorScope: 'admin',
+    actorUid: String(actorAdmin?.id || ADMIN_BOOTSTRAP_ID),
+    actorName: String(actorAdmin?.name || 'Admin'),
+    actorEmail: String(actorAdmin?.email || ''),
+    subjectUid: HOMEPAGE_SETTINGS_DOC_ID,
+    subjectName: 'Homepage settings',
+    title: 'Homepage display updated',
+    description: `${String(actorAdmin?.name || 'Admin')} updated the products, jobs, and providers shown on the home page.`,
+    sourceRef: `${HOMEPAGE_SETTINGS_COLLECTION}/${HOMEPAGE_SETTINGS_DOC_ID}`,
+    createdAtMs: updatedAtMs
+  });
+
+  return settings;
 }
 
 async function getOrCreateUserPublicFields(uid, name = '') {
@@ -3785,6 +3857,8 @@ async function listMarketplaceProducts(options = {}) {
   const sellerUid = String(options.sellerUid || '').trim();
   if (sellerUid) return products.filter((item) => String(item.sellerUid || '') === sellerUid)
     .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+  if (options.includeInactive) return products
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
   return products
     .filter((item) => String(item.status || 'active') === 'active')
     .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
@@ -4046,14 +4120,17 @@ async function listAdminActivity() {
 async function getAdminDashboardData() {
   await ensureRealtimeMessagesMigrated();
 
-  const [users, providerSnapshot, postSnapshot, messages, cartSnapshot, adminActivity, admins] = await Promise.all([
+  const [users, providerSnapshot, postSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings] = await Promise.all([
     listUsers(),
     getDocs(collectionGroup(db, 'profiles')),
     getDocs(collectionGroup(db, 'posts')),
     listAllRealtimeMessages(),
     getDocs(collection(db, 'cart')),
     listAdminActivity().catch(() => []),
-    listAdmins().catch(() => [getBootstrapAdminRecord()])
+    listAdmins().catch(() => [getBootstrapAdminRecord()]),
+    listJobPosts({ includeApplicationCounts: true }).catch(() => []),
+    listMarketplaceProducts({ includeInactive: true }).catch(() => []),
+    getHomepageSettings().catch(() => normalizeHomepageSettings(DEFAULT_HOMEPAGE_SETTINGS))
   ]);
 
   const providers = providerSnapshot.docs.map((docSnapshot) => {
@@ -4243,6 +4320,9 @@ async function getAdminDashboardData() {
     adminAudit,
     providers: providersWithUserDetails,
     posts,
+    jobs,
+    products,
+    homepageSettings,
     messages,
     carts,
     activity: activityFeed,
@@ -4312,6 +4392,8 @@ window.softGigglesAuth = {
   toggleProductWishlist,
   listProductWishlistForUser,
   listProductWishlistSaves,
+  getHomepageSettings,
+  updateHomepageSettings,
   resolveAdminByPin,
   listAdmins,
   createAdmin,

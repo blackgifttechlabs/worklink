@@ -779,6 +779,165 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const HOME_MANAGED_DEFAULTS = {
+    products: { count: 8, sortBy: 'recently-listed' },
+    jobs: { count: 5, sortBy: 'recently-posted' },
+    providers: { count: 5, sortBy: 'top-rated' }
+  };
+
+  const HOME_MANAGED_LABELS = {
+    'top-wishlisted': 'Top wishlisted',
+    'top-views': 'Most viewed',
+    'top-ordered': 'Top ordered',
+    'recently-listed': 'Recently listed',
+    'most-bids': 'Most bids',
+    'highest-budget': 'Highest budget',
+    'recently-posted': 'Recently posted',
+    'recently-updated': 'Recently updated',
+    'top-rated': 'Top rated',
+    'most-completed': 'Most completed',
+    'recently-active': 'Recently active',
+    'recently-joined': 'Recently joined'
+  };
+
+  function clampHomeManagedCount(value, fallback) {
+    return Math.max(1, Math.min(24, Math.round(Number(value || fallback || 1))));
+  }
+
+  function normalizeHomeManagedSettings(input = {}) {
+    return {
+      products: {
+        count: clampHomeManagedCount(input.products?.count, HOME_MANAGED_DEFAULTS.products.count),
+        sortBy: HOME_MANAGED_LABELS[input.products?.sortBy] ? input.products.sortBy : HOME_MANAGED_DEFAULTS.products.sortBy
+      },
+      jobs: {
+        count: clampHomeManagedCount(input.jobs?.count, HOME_MANAGED_DEFAULTS.jobs.count),
+        sortBy: HOME_MANAGED_LABELS[input.jobs?.sortBy] ? input.jobs.sortBy : HOME_MANAGED_DEFAULTS.jobs.sortBy
+      },
+      providers: {
+        count: clampHomeManagedCount(input.providers?.count, HOME_MANAGED_DEFAULTS.providers.count),
+        sortBy: HOME_MANAGED_LABELS[input.providers?.sortBy] ? input.providers.sortBy : HOME_MANAGED_DEFAULTS.providers.sortBy
+      }
+    };
+  }
+
+  function compareHomeManagedItems(sortBy) {
+    return (first = {}, second = {}) => {
+      if (sortBy === 'top-wishlisted') return Number(second.wishlistCount || second._saveCount || 0) - Number(first.wishlistCount || first._saveCount || 0);
+      if (sortBy === 'top-views') return Number(second.views || second.viewCount || 0) - Number(first.views || first.viewCount || 0);
+      if (sortBy === 'top-ordered') return Number(second.orderCount || 0) - Number(first.orderCount || 0);
+      if (sortBy === 'most-bids') return Number(second.applicationCount || 0) - Number(first.applicationCount || 0);
+      if (sortBy === 'highest-budget') return Number(second.budget || 0) - Number(first.budget || 0);
+      if (sortBy === 'recently-updated') return Number(second.updatedAtMs || second.createdAtMs || 0) - Number(first.updatedAtMs || first.createdAtMs || 0);
+      if (sortBy === 'top-rated') return Number(second.averageRating || 0) - Number(first.averageRating || 0);
+      if (sortBy === 'most-completed') return Number(second.completedJobs || 0) - Number(first.completedJobs || 0);
+      if (sortBy === 'recently-active') return Number(second.lastSeenAtMs || second.updatedAtMs || 0) - Number(first.lastSeenAtMs || first.updatedAtMs || 0);
+      return Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0);
+    };
+  }
+
+  function renderHomeManagedLoading() {
+    document.querySelectorAll('[data-home-products], [data-home-jobs], [data-home-providers]').forEach((host) => {
+      if (!(host instanceof HTMLElement)) return;
+      host.innerHTML = Array.from({ length: host.matches('[data-home-products]') ? 4 : 3 }).map(() => (
+        '<article class="home-managed-skeleton"><span></span><strong></strong><small></small></article>'
+      )).join('');
+    });
+  }
+
+  function buildHomeProductCard(product = {}) {
+    const image = resolveHomeMediaSrc(product.imageData || product.image || product.images?.[0] || 'images/categories/digital_converted.avif');
+    const title = String(product.title || 'Marketplace item').trim();
+    const href = `${getSiteBasePath()}pages/products.html`;
+    return `
+      <a class="home-managed-product-card" href="${escapeHtml(href)}" aria-label="View ${escapeHtml(title)}">
+        <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async" />
+        <div>
+          <strong>${escapeHtml(formatHomeJobCurrency(product.price))}</strong>
+          <h4>${escapeHtml(title)}</h4>
+          <p>${escapeHtml([product.category, product.location || 'Zimbabwe'].filter(Boolean).join(' • '))}</p>
+          <span><i class="fa-regular fa-heart"></i>${escapeHtml(Number(product.wishlistCount || 0))} saves</span>
+        </div>
+      </a>
+    `;
+  }
+
+  function buildHomeManagedJobRow(job = {}) {
+    const title = String(job.subcategory || job.category || 'Open job').trim();
+    const href = buildHomeJobDetailHref(job.id);
+    return `
+      <a class="home-managed-job-row" href="${escapeHtml(href)}">
+        <span><i class="fa-solid fa-briefcase"></i></span>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml([job.category || 'Service request', formatHomeJobCurrency(job.budget), `${Number(job.applicationCount || 0)} bids`].join(' • '))}</p>
+        </div>
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    `;
+  }
+
+  function buildHomeProviderRow(provider = {}) {
+    const name = String(provider.displayName || provider.name || provider.providerPublicId || 'WorkLinkUp provider').trim();
+    const image = resolveHomeMediaSrc(provider.profileImageData || provider.imageData || '');
+    const href = `${getSiteBasePath()}pages/specialists.html?query=${encodeURIComponent(name)}`;
+    const initials = getHomeJobInitials(name);
+    return `
+      <a class="home-managed-provider-row" href="${escapeHtml(href)}">
+        <span class="home-managed-provider-avatar">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" decoding="async" />` : `<b>${escapeHtml(initials)}</b>`}</span>
+        <div>
+          <strong>${escapeHtml(name)}</strong>
+          <p>${escapeHtml([provider.specialty || provider.primaryCategory || 'Provider', provider.city || provider.province || 'Zimbabwe'].filter(Boolean).join(' • '))}</p>
+        </div>
+        <small><i class="fa-solid fa-star"></i>${Number(provider.averageRating || 0).toFixed(1)}</small>
+      </a>
+    `;
+  }
+
+  async function renderHomeManagedMarketplace() {
+    const root = document.querySelector('[data-home-managed-marketplace]');
+    if (!(root instanceof HTMLElement)) return;
+    renderHomeManagedLoading();
+
+    const authHelper = typeof window.ensureWorkLinkAuth === 'function'
+      ? await window.ensureWorkLinkAuth().catch(() => null)
+      : window.softGigglesAuth || null;
+
+    const settings = normalizeHomeManagedSettings(
+      authHelper?.getHomepageSettings ? await authHelper.getHomepageSettings().catch(() => HOME_MANAGED_DEFAULTS) : HOME_MANAGED_DEFAULTS
+    );
+
+    root.querySelector('[data-home-products-mode]').textContent = HOME_MANAGED_LABELS[settings.products.sortBy] || 'Featured products';
+    root.querySelector('[data-home-jobs-mode]').textContent = HOME_MANAGED_LABELS[settings.jobs.sortBy] || 'Open work';
+    root.querySelector('[data-home-providers-mode]').textContent = HOME_MANAGED_LABELS[settings.providers.sortBy] || 'Trusted providers';
+
+    const [products, jobs, providers] = await Promise.all([
+      authHelper?.listMarketplaceProducts ? authHelper.listMarketplaceProducts().catch(() => []) : Promise.resolve([]),
+      authHelper?.listJobPosts ? authHelper.listJobPosts({ includeApplicationCounts: true }).catch(() => []) : Promise.resolve([]),
+      authHelper?.listProviders ? authHelper.listProviders().catch(() => []) : Promise.resolve([])
+    ]);
+
+    const productItems = (Array.isArray(products) ? products : [])
+      .filter((item) => String(item.status || 'active') === 'active')
+      .sort(compareHomeManagedItems(settings.products.sortBy))
+      .slice(0, settings.products.count);
+    const jobItems = (Array.isArray(jobs) ? jobs : [])
+      .filter((job) => String(job.status || 'open').trim().toLowerCase() === 'open' && !Number(job.completedAtMs || 0) && !String(job.acceptedApplicationUid || '').trim())
+      .sort(compareHomeManagedItems(settings.jobs.sortBy))
+      .slice(0, settings.jobs.count);
+    const providerItems = (Array.isArray(providers) ? providers : [])
+      .filter((provider) => !provider.accountDeactivated && String(provider.accountStatus || 'active') !== 'deactivated')
+      .sort(compareHomeManagedItems(settings.providers.sortBy))
+      .slice(0, settings.providers.count);
+
+    const productsHost = root.querySelector('[data-home-products]');
+    const jobsHost = root.querySelector('[data-home-jobs]');
+    const providersHost = root.querySelector('[data-home-providers]');
+    if (productsHost) productsHost.innerHTML = productItems.map(buildHomeProductCard).join('') || '<div class="home-managed-empty">No products are available yet.</div>';
+    if (jobsHost) jobsHost.innerHTML = jobItems.map(buildHomeManagedJobRow).join('') || '<div class="home-managed-empty">No open jobs are available yet.</div>';
+    if (providersHost) providersHost.innerHTML = providerItems.map(buildHomeProviderRow).join('') || '<div class="home-managed-empty">No providers are available yet.</div>';
+  }
+
   function initHomeMarketScrollers() {
     document.querySelectorAll('.home-market-booked-shell').forEach((shell) => {
       if (!(shell instanceof HTMLElement) || shell.dataset.marketScrollBound === '1') return;
@@ -1475,6 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHomepageCategories();
   renderHomepageTrendingJobs();
   renderHomeAvailableJobs();
+  renderHomeManagedMarketplace();
   initHomeHeroSearchTyping();
   initHomeMarketScrollers();
   initHomeMomentumScroll();

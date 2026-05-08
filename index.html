@@ -104,175 +104,55 @@
     </div>
   </section>
 
-  <section class="home-market-section" aria-label="Fresh work picks">
-    <div class="home-market-desktop">
-      <aside class="home-market-categories" aria-label="Categories for you">
-        <a href="pages/search-results.html?category=Home%20Services"><i class="fa-regular fa-star"></i><span>Home services</span><i class="fa-solid fa-chevron-right"></i></a>
-        <a href="pages/search-results.html?category=Electrical"><i class="fa-solid fa-bolt"></i><span>Electrical</span><i class="fa-solid fa-chevron-right"></i></a>
-        <a href="pages/search-results.html?category=Cleaning%20Services"><i class="fa-solid fa-broom"></i><span>Cleaning</span><i class="fa-solid fa-chevron-right"></i></a>
-        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness"><i class="fa-solid fa-spa"></i><span>Beauty</span><i class="fa-solid fa-chevron-right"></i></a>
-        <a href="pages/search-results.html?category=Transport%20%26%20Logistics"><i class="fa-solid fa-truck-fast"></i><span>Transport</span><i class="fa-solid fa-chevron-right"></i></a>
-      </aside>
-
-      <div class="home-available-section-head">
+  <section class="home-marketplace-section" aria-label="Marketplace highlights" data-home-managed-marketplace>
+    <div class="home-marketplace-shell">
+      <header class="home-marketplace-head">
         <div>
-          <h2>Available Opportunities</h2>
-          <p>Latest posted work ready for bids.</p>
+          <span>Marketplace</span>
+          <h2>Fresh picks across WorkLinkUp</h2>
+          <p>Products, open jobs, and trusted providers selected by the admin console.</p>
         </div>
-        <div class="home-available-stat-pill is-up" data-home-available-stats>
-          <strong><span data-home-available-total>0</span> opportunities</strong>
-          <span><i data-home-available-trend-icon>▲</i><b data-home-available-trend>12%</b> this week</span>
+        <div class="home-marketplace-actions">
+          <a href="pages/products.html"><i class="fa-solid fa-store"></i><span>Products</span></a>
+          <a href="pages/job-posts.html"><i class="fa-solid fa-briefcase"></i><span>Jobs</span></a>
+          <a href="pages/specialists.html"><i class="fa-solid fa-user-check"></i><span>Providers</span></a>
         </div>
-      </div>
+      </header>
 
-      <div class="home-market-health" data-home-market-health aria-label="Marketplace health"></div>
-
-      <div class="home-market-booked-shell" data-home-available-jobs-shell>
-        <button type="button" class="home-market-scroll-btn is-prev" data-home-market-scroll="prev" aria-label="Scroll Available Opportunities left">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <div class="home-market-booked-window" data-home-market-scroll-window>
-          <div class="home-market-booked-track" data-home-available-jobs></div>
-        </div>
-        <button type="button" class="home-market-scroll-btn is-next" data-home-market-scroll="next" aria-label="Scroll Available Opportunities right">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
-
-      <article class="home-market-promo home-market-hot-picks" data-home-card-carousel>
-        <h2>Hot Picks</h2>
-        <div class="home-carousel-slides">
-          <div class="home-carousel-slide is-active">
-            <img src="images/categories/electrician_converted.avif" alt="Solar installation tools" loading="lazy" decoding="async" />
-            <strong>Solar</strong>
-          </div>
-          <div class="home-carousel-slide">
-            <img src="images/categories/security_converted.avif" alt="Security service" loading="lazy" decoding="async" />
-            <strong>Security</strong>
-          </div>
-          <div class="home-carousel-slide">
-            <img src="images/categories/farmer_converted.avif" alt="Agriculture service" loading="lazy" decoding="async" />
-            <strong>Farming</strong>
-          </div>
-          <div class="home-carousel-slide">
-            <img src="images/categories/events_converted.avif" alt="Events service" loading="lazy" decoding="async" />
-            <strong>Events</strong>
-          </div>
-        </div>
-        <a href="pages/search-results.html?category=Electrical&query=Solar%20System%20Installation">View more</a>
-        <div class="home-carousel-dots" aria-label="Hot Picks slides"></div>
-      </article>
-
-      <div class="home-market-divider"><span>Recommended for your next job</span></div>
-
-      <div class="home-market-recommendations">
-        <article class="home-market-wide-promo">
-          <h2>Fast job matching</h2>
-          <p>Post once and compare local bidders.</p>
-          <ul>
-            <li>Clear job details</li>
-            <li>Local provider profiles</li>
-            <li>Direct conversations</li>
-          </ul>
-          <a href="pages/post-job.html">post a job</a>
-        </article>
-
-        <a href="pages/search-results.html?category=Cleaning%20Services&query=Deep%20House%20Cleaning" class="home-market-product-card">
-          <img src="images/categories/cleaning_converted.avif" alt="Deep house cleaning" loading="lazy" decoding="async" />
-          <span>Home reset</span>
-          <strong>Deep cleaning</strong>
-          <small>From $30</small>
-        </a>
-        <a href="pages/search-results.html?category=Food%20%26%20Catering&query=Event%20Caterer" class="home-market-product-card">
-          <img src="images/categories/catering_converted.avif" alt="Event catering" loading="lazy" decoding="async" />
-          <span>Events</span>
-          <strong>Event caterer</strong>
-          <small>From $60</small>
-        </a>
-        <a href="pages/search-results.html?category=Transport%20%26%20Logistics&query=Moving%20%26%20Relocation%20Services" class="home-market-product-card">
-          <img src="images/categories/transport_converted.avif" alt="Moving and relocation" loading="lazy" decoding="async" />
-          <span>Logistics</span>
-          <strong>Moving help</strong>
-          <small>From $50</small>
-        </a>
-        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Hairdresser" class="home-market-product-card">
-          <img src="images/categories/beauty_converted.avif" alt="Hairdresser" loading="lazy" decoding="async" />
-          <span>Beauty</span>
-          <strong>Hairdresser</strong>
-          <small>From $20</small>
-        </a>
-      </div>
-    </div>
-
-    <div class="home-market-mobile">
-      <div class="home-available-section-head">
-        <div>
-          <h2>Available Opportunities</h2>
-          <p>Latest posted work ready for bids.</p>
-        </div>
-        <div class="home-available-stat-pill is-up" data-home-available-stats>
-          <strong><span data-home-available-total>0</span> opportunities</strong>
-          <span><i data-home-available-trend-icon>▲</i><b data-home-available-trend>12%</b> this week</span>
-        </div>
-      </div>
-      <div class="home-market-health" data-home-market-health aria-label="Marketplace health"></div>
-      <div class="home-mobile-arrivals" data-home-available-jobs-mobile></div>
-
-      <div class="home-mobile-card-grid">
-        <article class="home-mobile-supplier-card" data-home-card-carousel>
-          <h3>Discover trusted providers</h3>
-          <div class="home-carousel-slides">
-            <div class="home-carousel-slide is-active">
-              <img src="images/categories/digital_converted.avif" alt="Digital provider work preview" loading="lazy" decoding="async" />
-              <strong>Designers</strong>
+      <div class="home-marketplace-layout">
+        <section class="home-managed-panel home-managed-products">
+          <div class="home-managed-panel-head">
+            <div>
+              <span data-home-products-mode>Featured products</span>
+              <h3>Shop local listings</h3>
             </div>
-            <div class="home-carousel-slide">
-              <img src="images/categories/electrician_converted.avif" alt="Electrical provider work preview" loading="lazy" decoding="async" />
-              <strong>Electricians</strong>
-            </div>
-            <div class="home-carousel-slide">
-              <img src="images/categories/farmer_converted.avif" alt="Gardening provider work preview" loading="lazy" decoding="async" />
-              <strong>Gardeners</strong>
-            </div>
-            <div class="home-carousel-slide">
-              <img src="images/categories/beauty_converted.avif" alt="Beauty provider work preview" loading="lazy" decoding="async" />
-              <strong>Stylists</strong>
-            </div>
+            <a href="pages/products.html" aria-label="View all products"><i class="fa-solid fa-arrow-right"></i></a>
           </div>
-          <a href="pages/search-results.html">View more</a>
-          <div class="home-carousel-dots" aria-label="Provider slides"></div>
-        </article>
-        <a href="pages/search-results.html?category=Beauty%20%26%20Wellness&query=Makeup%20Artist" class="home-mobile-large-card">
-          <img src="images/categories/beauty_converted.avif" alt="Beauty and wellness service" loading="lazy" decoding="async" />
-          <span>Makeup, hair, and wellness bookings</span>
-          <strong>Makeup</strong>
-          <small>Chitungwiza</small>
-        </a>
-        <a href="pages/search-results.html?category=Clothing%20%26%20Textiles" class="home-mobile-large-card">
-          <img src="images/categories/clothing_converted.avif" alt="Textile service" loading="lazy" decoding="async" />
-          <span>Tailoring and repairs</span>
-          <strong>Tailor</strong>
-          <small>Harare</small>
-        </a>
-        <a href="pages/search-results.html?category=Transport%20%26%20Logistics" class="home-mobile-large-card">
-          <img src="images/categories/transport_converted.avif" alt="Transport service" loading="lazy" decoding="async" />
-          <span>Deliveries and moving help</span>
-          <strong>Courier</strong>
-          <small>Bulawayo</small>
-        </a>
-      </div>
-    </div>
-  </section>
+          <div class="home-managed-product-grid" data-home-products></div>
+        </section>
 
-  <section class="home-job-cta">
-    <div class="home-job-cta-copy">
-      <span class="home-job-cta-kicker">Need Work Done?</span>
-      <h2>Looking for Someone to do a Job for You?</h2>
-      <p>Post your job and get the bidders.</p>
-    </div>
-    <div class="home-job-cta-actions">
-      <a href="pages/post-job.html" class="btn-primary home-job-cta-btn">Post Job</a>
-      <a href="pages/job-posts.html" class="btn-secondary fleece-secondary home-job-cta-btn">View Available Opportunities</a>
+        <section class="home-managed-panel home-managed-jobs">
+          <div class="home-managed-panel-head">
+            <div>
+              <span data-home-jobs-mode>Open work</span>
+              <h3>Jobs ready for bids</h3>
+            </div>
+            <a href="pages/job-posts.html" aria-label="View available jobs"><i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <div class="home-managed-job-list" data-home-jobs></div>
+        </section>
+
+        <section class="home-managed-panel home-managed-providers">
+          <div class="home-managed-panel-head">
+            <div>
+              <span data-home-providers-mode>Trusted providers</span>
+              <h3>People to hire now</h3>
+            </div>
+            <a href="pages/specialists.html" aria-label="View providers"><i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <div class="home-managed-provider-list" data-home-providers></div>
+        </section>
+      </div>
     </div>
   </section>
 </main>

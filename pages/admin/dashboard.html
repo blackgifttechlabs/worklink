@@ -102,6 +102,64 @@
               </div>
             </section>
           </div>
+
+          <section class="admin-visual-card admin-homepage-manager">
+            <div class="admin-card-head">
+              <div>
+                <span>Home screen</span>
+                <h3>Featured marketplace sections</h3>
+              </div>
+              <strong id="admin-homepage-summary">Products, jobs, providers</strong>
+            </div>
+            <form class="admin-homepage-form" id="admin-homepage-form">
+              <label class="admin-form-field">
+                <span>Products shown</span>
+                <input id="admin-home-products-count" type="number" min="1" max="24" step="1" />
+              </label>
+              <label class="admin-form-field">
+                <span>Product ranking</span>
+                <select id="admin-home-products-sort">
+                  <option value="top-wishlisted">Top wishlisted</option>
+                  <option value="top-views">Top views</option>
+                  <option value="top-ordered">Top ordered</option>
+                  <option value="recently-listed">Recently listed</option>
+                </select>
+              </label>
+              <label class="admin-form-field">
+                <span>Jobs shown</span>
+                <input id="admin-home-jobs-count" type="number" min="1" max="24" step="1" />
+              </label>
+              <label class="admin-form-field">
+                <span>Job ranking</span>
+                <select id="admin-home-jobs-sort">
+                  <option value="most-bids">Most bids</option>
+                  <option value="highest-budget">Highest budget</option>
+                  <option value="recently-posted">Recently posted</option>
+                  <option value="recently-updated">Recently updated</option>
+                </select>
+              </label>
+              <label class="admin-form-field">
+                <span>Providers shown</span>
+                <input id="admin-home-providers-count" type="number" min="1" max="24" step="1" />
+              </label>
+              <label class="admin-form-field">
+                <span>Provider ranking</span>
+                <select id="admin-home-providers-sort">
+                  <option value="top-rated">Top rated</option>
+                  <option value="most-completed">Most completed</option>
+                  <option value="recently-active">Recently active</option>
+                  <option value="recently-joined">Recently joined</option>
+                </select>
+              </label>
+              <div class="admin-form-actions">
+                <button type="submit" class="admin-refresh-btn">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Save Home Screen</span>
+                </button>
+                <div class="admin-form-message" id="admin-homepage-message" data-state="default" hidden></div>
+              </div>
+            </form>
+          </section>
         </section>
       </main>
     </div>

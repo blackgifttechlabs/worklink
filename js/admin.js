@@ -26,6 +26,25 @@
     { view: 'messages', label: 'Messages', icon: 'fa-solid fa-envelope' },
     { view: 'admin-activity', label: 'Activity', icon: 'fa-solid fa-user-shield' }
   ];
+  const DEFAULT_HOMEPAGE_SETTINGS = {
+    products: { count: 8, sortBy: 'recently-listed' },
+    jobs: { count: 5, sortBy: 'recently-posted' },
+    providers: { count: 5, sortBy: 'top-rated' }
+  };
+  const HOMEPAGE_SETTING_LABELS = {
+    'top-wishlisted': 'top wishlisted',
+    'top-views': 'top views',
+    'top-ordered': 'top ordered',
+    'recently-listed': 'recently listed',
+    'most-bids': 'most bids',
+    'highest-budget': 'highest budget',
+    'recently-posted': 'recently posted',
+    'recently-updated': 'recently updated',
+    'top-rated': 'top rated',
+    'most-completed': 'most completed',
+    'recently-active': 'recently active',
+    'recently-joined': 'recently joined'
+  };
 
   const state = {
     view: 'dashboard',
@@ -561,6 +580,62 @@
     const metrics = state.snapshot?.metrics || {};
     if (refs.sidebarTotalUsers) refs.sidebarTotalUsers.textContent = `${formatNumber(metrics.totalUsers || 0)} users`;
     if (refs.sidebarLastSync) refs.sidebarLastSync.textContent = state.lastLoadedAtMs ? getRelativeTime(state.lastLoadedAtMs) : 'Waiting...';
+  }
+
+  function normalizeHomepageSettings(input = {}) {
+    const clampCount = (value, fallback) => Math.max(1, Math.min(24, Math.round(Number(value || fallback || 1))));
+    const pickSort = (value, fallback) => HOMEPAGE_SETTING_LABELS[String(value || '')] ? String(value) : fallback;
+    return {
+      products: {
+        count: clampCount(input.products?.count, DEFAULT_HOMEPAGE_SETTINGS.products.count),
+        sortBy: pickSort(input.products?.sortBy, DEFAULT_HOMEPAGE_SETTINGS.products.sortBy)
+      },
+      jobs: {
+        count: clampCount(input.jobs?.count, DEFAULT_HOMEPAGE_SETTINGS.jobs.count),
+        sortBy: pickSort(input.jobs?.sortBy, DEFAULT_HOMEPAGE_SETTINGS.jobs.sortBy)
+      },
+      providers: {
+        count: clampCount(input.providers?.count, DEFAULT_HOMEPAGE_SETTINGS.providers.count),
+        sortBy: pickSort(input.providers?.sortBy, DEFAULT_HOMEPAGE_SETTINGS.providers.sortBy)
+      }
+    };
+  }
+
+  function setHomepageMessage(text = '', mode = 'default') {
+    if (!refs.homepageMessage) return;
+    refs.homepageMessage.hidden = !text;
+    refs.homepageMessage.textContent = text;
+    refs.homepageMessage.dataset.state = mode;
+  }
+
+  function getHomepageFormPayload() {
+    return normalizeHomepageSettings({
+      products: {
+        count: refs.homeProductsCount?.value,
+        sortBy: refs.homeProductsSort?.value
+      },
+      jobs: {
+        count: refs.homeJobsCount?.value,
+        sortBy: refs.homeJobsSort?.value
+      },
+      providers: {
+        count: refs.homeProvidersCount?.value,
+        sortBy: refs.homeProvidersSort?.value
+      }
+    });
+  }
+
+  function renderHomepageManager() {
+    const settings = normalizeHomepageSettings(state.snapshot?.homepageSettings || DEFAULT_HOMEPAGE_SETTINGS);
+    if (refs.homeProductsCount) refs.homeProductsCount.value = String(settings.products.count);
+    if (refs.homeProductsSort) refs.homeProductsSort.value = settings.products.sortBy;
+    if (refs.homeJobsCount) refs.homeJobsCount.value = String(settings.jobs.count);
+    if (refs.homeJobsSort) refs.homeJobsSort.value = settings.jobs.sortBy;
+    if (refs.homeProvidersCount) refs.homeProvidersCount.value = String(settings.providers.count);
+    if (refs.homeProvidersSort) refs.homeProvidersSort.value = settings.providers.sortBy;
+    if (refs.homepageSummary) {
+      refs.homepageSummary.textContent = `${settings.products.count} products by ${HOMEPAGE_SETTING_LABELS[settings.products.sortBy]}, ${settings.jobs.count} jobs by ${HOMEPAGE_SETTING_LABELS[settings.jobs.sortBy]}, ${settings.providers.count} providers by ${HOMEPAGE_SETTING_LABELS[settings.providers.sortBy]}`;
+    }
   }
 
   function renderSparkline(values, strokeColor, fillColor) {
@@ -1730,6 +1805,7 @@
 
   function renderAll() {
     renderSidebarMetrics();
+    renderHomepageManager();
     renderOverview();
     renderUsers();
     renderProviders();
@@ -2066,6 +2142,37 @@
       setAdminModal('admins', true);
     });
 
+    refs.homepageForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const authHelper = await waitForAuthHelper().catch(() => null);
+      if (!authHelper || typeof authHelper.updateHomepageSettings !== 'function') {
+        setHomepageMessage('Homepage settings tools are not available right now.', 'error');
+        return;
+      }
+
+      const payload = getHomepageFormPayload();
+      setHomepageMessage('Saving home screen settings...', 'default');
+      refs.homepageForm.querySelectorAll('button, input, select').forEach((control) => {
+        control.disabled = true;
+      });
+
+      try {
+        const saved = await authHelper.updateHomepageSettings(payload, state.currentAdmin);
+        state.snapshot = {
+          ...(state.snapshot || {}),
+          homepageSettings: saved
+        };
+        renderHomepageManager();
+        setHomepageMessage('Home screen settings saved.', 'success');
+      } catch (error) {
+        setHomepageMessage(error?.message || 'Could not save home screen settings.', 'error');
+      } finally {
+        refs.homepageForm.querySelectorAll('button, input, select').forEach((control) => {
+          control.disabled = false;
+        });
+      }
+    });
+
     document.querySelectorAll('[data-admin-modal-close]').forEach((button) => {
       button.addEventListener('click', () => {
         setAdminModal(button.getAttribute('data-admin-modal-close'), false);
@@ -2212,6 +2319,15 @@
     refs.adminActivityNext = document.getElementById('admin-activity-next');
     refs.adminActivityTotal = document.getElementById('admin-admin-activity-total');
     refs.adminActivityBody = document.getElementById('admin-admin-activity-body');
+    refs.homepageForm = document.getElementById('admin-homepage-form');
+    refs.homepageSummary = document.getElementById('admin-homepage-summary');
+    refs.homeProductsCount = document.getElementById('admin-home-products-count');
+    refs.homeProductsSort = document.getElementById('admin-home-products-sort');
+    refs.homeJobsCount = document.getElementById('admin-home-jobs-count');
+    refs.homeJobsSort = document.getElementById('admin-home-jobs-sort');
+    refs.homeProvidersCount = document.getElementById('admin-home-providers-count');
+    refs.homeProvidersSort = document.getElementById('admin-home-providers-sort');
+    refs.homepageMessage = document.getElementById('admin-homepage-message');
 
     refs.menuToggle?.setAttribute('aria-controls', 'admin-sidebar');
     refs.menuToggle?.setAttribute('aria-expanded', 'false');
