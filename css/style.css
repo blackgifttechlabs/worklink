@@ -39169,3 +39169,189 @@ body.marketplace-page-body .market-main {
     font-size: 19px;
   }
 }
+
+@media (max-width: 640px) {
+  .account-setup-modal {
+    align-items: flex-end;
+  }
+
+  .account-setup-modal-shell {
+    width: 100vw;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .account-setup-modal-content,
+  .account-setup-modal-content.is-role-choice {
+    width: 100%;
+    max-width: none;
+    padding: 44px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .account-setup-modal-close {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 22px;
+  }
+
+  .account-setup-role-stage,
+  .account-setup-role-stage-modal {
+    padding: 0;
+  }
+
+  .account-setup-role-copy {
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .account-setup-role-copy h2,
+  .account-embed-mode .account-setup-role-copy h2 {
+    font-size: 28px;
+    line-height: 1.12;
+    margin-bottom: 8px;
+  }
+
+  .account-setup-role-copy p,
+  .account-embed-mode .account-setup-role-copy p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .account-setup-role-grid,
+  .account-embed-mode .account-setup-role-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .account-setup-role-card,
+  .account-embed-mode .account-setup-role-card {
+    min-height: 0;
+    padding: 14px;
+    gap: 10px;
+    border-radius: 8px;
+  }
+
+  .account-setup-role-card i,
+  .account-embed-mode .account-setup-role-card i {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    font-size: 20px;
+  }
+
+  .account-setup-role-card strong,
+  .account-embed-mode .account-setup-role-card strong {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .account-setup-role-card span,
+  .account-embed-mode .account-setup-role-card span {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .pending-setup-overlay {
+    align-items: flex-end;
+  }
+
+  .pending-setup-panel {
+    width: 100vw;
+    height: 92dvh;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .pending-setup-frame {
+    height: 100%;
+  }
+
+  body.account-embed-mode {
+    overflow: hidden;
+  }
+
+  .account-embed-mode .account-page,
+  .account-embed-mode .account-setup-stage,
+  .account-embed-mode .account-setup-shell {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .account-embed-mode .account-setup-role-stage {
+    min-height: 100dvh;
+    display: grid;
+    align-content: center;
+    padding: 48px 14px 18px;
+  }
+
+  .provider-required-state {
+    min-height: calc(100dvh - 72px);
+    padding: 24px 12px;
+  }
+
+  .provider-required-card {
+    gap: 10px;
+    padding: 22px 16px;
+    border-radius: 8px;
+  }
+
+  .provider-required-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+  }
+
+  .provider-required-card h1,
+  .provider-required-card h2 {
+    font-size: 24px;
+    line-height: 1.12;
+  }
+
+  .provider-required-card p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .provider-required-action {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .job-bid-modal-shell .job-modal-panel.provider-required-modal,
+  .job-posts-page .job-bid-modal-shell .job-modal-panel.provider-required-modal {
+    width: 100%;
+    max-height: 82dvh;
+    min-height: 0;
+    padding: 14px;
+    border-radius: 16px 16px 0 0;
+    overflow-y: auto;
+  }
+
+  .provider-required-modal .provider-required-card {
+    padding: 28px 16px 18px;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .account-setup-role-copy h2,
+  .account-embed-mode .account-setup-role-copy h2 {
+    font-size: 24px;
+  }
+
+  .account-setup-role-card,
+  .account-embed-mode .account-setup-role-card {
+    padding: 12px;
+  }
+
+  .provider-required-card h1,
+  .provider-required-card h2 {
+    font-size: 22px;
+  }
+}
