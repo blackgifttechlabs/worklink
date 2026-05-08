@@ -38663,8 +38663,8 @@ body.marketplace-page-body .market-main {
 }
 
 .home-marketplace-shell {
-  width: min(100% - 36px, 1420px);
-  margin: 0 auto;
+  width: auto;
+  margin: 0 30px;
   display: grid;
   gap: 18px;
 }
@@ -39037,7 +39037,7 @@ body.marketplace-page-body .market-main {
 
 @media (max-width: 520px) {
   .home-marketplace-shell {
-    width: min(100% - 20px, 1420px);
+    margin: 0 10px;
   }
 
   .home-marketplace-actions {
