@@ -2630,6 +2630,32 @@
     const provider = await getProviderByIdentity(uid, provinceSlug);
 
     if (!provider) {
+      const isCurrentUserProfile = Boolean(account?.loggedIn && account.uid && (!uid || account.uid === uid));
+      if (isCurrentUserProfile) {
+        page.innerHTML = `
+          <section class="provider-required-state">
+            <div class="provider-required-card">
+              <div class="provider-required-icon"><i class="fa-solid fa-user-gear"></i></div>
+              <span>Provider account needed</span>
+              <h1>You need to become a provider to manage accepted jobs.</h1>
+              <p>Create your provider profile so you can bid for work, start accepted jobs, and show clients what you offer.</p>
+              <button type="button" class="provider-required-action" data-provider-required-become>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Become Provider</span>
+              </button>
+            </div>
+          </section>
+        `;
+        page.querySelector('[data-provider-required-become]')?.addEventListener('click', () => {
+          const setupSearch = '?setup=provider';
+          if (typeof window.openWorkLinkUpSetupModal === 'function') {
+            window.openWorkLinkUpSetupModal(setupSearch, { clearPendingOnClose: true });
+            return;
+          }
+          window.location.href = `${getBase()}pages/account.html${setupSearch}`;
+        });
+        return;
+      }
       page.innerHTML = `<div class="specialists-empty">That provider profile could not be found.</div>`;
       return;
     }
@@ -3844,7 +3870,27 @@
 
     const profile = await authHelper.getProviderProfileByUid(account.uid, account.providerProvinceSlug);
     if (!profile) {
-      page.innerHTML = `<div class="specialists-empty">Complete your provider profile first so you can start posting your work.</div>`;
+      page.innerHTML = `
+        <section class="provider-required-state">
+          <div class="provider-required-card">
+            <div class="provider-required-icon"><i class="fa-solid fa-user-gear"></i></div>
+            <span>Provider account needed</span>
+            <h1>You need to become a provider to post your work.</h1>
+            <p>Complete your provider profile first, then you can add photos of your work and receive job opportunities.</p>
+            <button type="button" class="provider-required-action" data-provider-required-become>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Become Provider</span>
+            </button>
+          </div>
+        </section>
+      `;
+      page.querySelector('[data-provider-required-become]')?.addEventListener('click', () => {
+        if (typeof window.openWorkLinkUpSetupModal === 'function') {
+          window.openWorkLinkUpSetupModal('?setup=provider', { clearPendingOnClose: true });
+          return;
+        }
+        window.location.href = `${getBase()}pages/account.html?setup=provider`;
+      });
       return;
     }
 
@@ -6234,18 +6280,27 @@
           // Ignore storage issues.
         }
 
-        // Show the hardcoded modal for account setup
         if (isGetFoundPage) {
-          if (guestStage) guestStage.hidden = true;
-          setupStage.hidden = true;
-          if (dashboard) dashboard.hidden = true;
-          // Show the hardcoded modal
-          showSetupModal();
-          return;
+          if (step === 'username') {
+            if (guestStage) guestStage.hidden = true;
+            setupStage.hidden = true;
+            if (dashboard) dashboard.hidden = true;
+            renderSetupModalUsername();
+            return;
+          }
+          if (step === 'role') {
+            if (guestStage) guestStage.hidden = true;
+            setupStage.hidden = true;
+            if (dashboard) dashboard.hidden = true;
+            renderSetupModalRoleChoice();
+            return;
+          }
         }
 
-        window.location.href = `${getBase()}index.html`;
-        return;
+        if (!isGetFoundPage) {
+          window.location.href = `${getBase()}index.html`;
+          return;
+        }
       }
 
       if (guestStage) guestStage.hidden = true;
@@ -6365,26 +6420,12 @@
           if (!(usernameInput instanceof HTMLInputElement) || !(usernameSubmit instanceof HTMLButtonElement)) return;
           setButtonLoading(usernameSubmit, true);
           try {
-            // Save username and set userRole as 'client' automatically
             await authHelper.saveAccountSetup({
               username: usernameInput.value.trim(),
-              displayName: userDoc?.name || account.name,
-              userRole: 'client'
+              displayName: userDoc?.name || account.name
             });
             await refreshState();
-            
-            // If embedded, navigate back to calling page
-            if (isEmbedded) {
-              const returnUrl = params.get('return') || params.get('returnUrl');
-              if (returnUrl) {
-                window.location.href = returnUrl;
-              } else {
-                window.parent.postMessage({ type: 'account-setup-complete', role: 'client' }, '*');
-              }
-            } else {
-              // Otherwise go to specialists/client dashboard
-              window.location.href = `${getBase()}pages/specialists.html`;
-            }
+            await renderCurrentStep();
           } catch (error) {
             if (usernameMessage) {
               usernameMessage.textContent = error.message || 'Could not save that username.';
@@ -6406,59 +6447,26 @@
         setupBody.innerHTML = `
           <section class="account-setup-role-stage">
             <div class="account-setup-role-copy">
-              <h2>${escapeHtml(userDoc?.username || account.name || 'WorkLinkUp user')}, your account has been created. What brings you to WorkLinkUp?</h2>
-              <p>We'll tailor your experience to fit your needs.</p>
+              <span class="account-auth-stage-kicker">Account created</span>
+              <h2>Are you joining us as?</h2>
+              <p>Choose how you want to use WorkLinkUp.</p>
             </div>
             <div class="account-setup-role-grid">
               <button type="button" class="account-setup-role-card" data-role-card="client">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <strong>I am a client</strong>
-                <span>I want to find providers and browse specialists.</span>
+                <strong>Seeking a service provider</strong>
+                <span>Find specialists, post jobs, and manage bids as a client.</span>
               </button>
               <button type="button" class="account-setup-role-card" data-role-card="provider">
                 <i class="fa-solid fa-user-gear"></i>
-                <strong>Service Provider</strong>
-                <span>I want to list my services and get found by clients.</span>
+                <strong>Offering services as a provider</strong>
+                <span>Create your provider profile so clients can find and hire you.</span>
               </button>
-            </div>
-            <div class="account-setup-role-actions">
-              <button type="button" class="account-submit-btn account-submit-signup" data-role-next disabled><span class="account-btn-label">Next</span></button>
             </div>
           </section>
         `;
 
-        let selectedRole = '';
-        setupBody.querySelectorAll('[data-role-card]').forEach((card) => {
-          card.addEventListener('click', () => {
-            selectedRole = card.getAttribute('data-role-card') || '';
-            setupBody.querySelectorAll('[data-role-card]').forEach((item) => item.classList.toggle('is-selected', item === card));
-            const nextBtn = setupBody.querySelector('[data-role-next]');
-            if (nextBtn instanceof HTMLButtonElement) nextBtn.disabled = !selectedRole;
-          });
-        });
-
-        setupBody.querySelector('[data-role-next]')?.addEventListener('click', async (event) => {
-          const nextBtn = event.currentTarget;
-          if (!(nextBtn instanceof HTMLButtonElement) || !selectedRole) return;
-          setButtonLoading(nextBtn, true);
-          try {
-            await authHelper.saveAccountSetup({
-              username: userDoc?.username,
-              userRole: selectedRole,
-              displayName: userDoc?.name || account.name
-            });
-            await refreshState();
-            if (selectedRole === 'client' && !isEmbedded) {
-              window.location.href = `${getBase()}pages/specialists.html`;
-              return;
-            }
-            await renderCurrentStep();
-          } catch (error) {
-            window.alert(error.message || 'Could not save your account type.');
-          } finally {
-            setButtonLoading(nextBtn, false);
-          }
-        });
+        bindRoleChoiceCards(setupBody);
 
         return;
       }
@@ -6807,22 +6815,64 @@
       });
     }
 
-    // Initialize hardcoded setup modal
-    const setupModal = document.getElementById('account-setup-modal');
-    if (setupModal instanceof HTMLElement) {
-      const modalClose = setupModal.querySelector('.account-setup-modal-close');
-      const modalBackBtn = setupModal.querySelector('[data-modal-back-home]');
-      const usernameFormModal = setupModal.querySelector('[data-account-username-form-modal]');
-      const usernameInputModal = setupModal.querySelector('[data-account-username-input-modal]');
-      const usernameMessageModal = setupModal.querySelector('[data-account-username-message-modal]');
-      const usernameSubmitModal = setupModal.querySelector('[data-account-username-submit-modal]');
-      
-      modalClose?.addEventListener('click', () => hideSetupModal());
-      
-      modalBackBtn?.addEventListener('click', () => {
+    function bindRoleChoiceCards(container) {
+      container.querySelectorAll('[data-role-card]').forEach((card) => {
+        card.addEventListener('click', async () => {
+          const selectedRole = card.getAttribute('data-role-card') || '';
+          if (!selectedRole) return;
+          container.querySelectorAll('[data-role-card]').forEach((item) => item.classList.toggle('is-selected', item === card));
+          setButtonLoading(card, true);
+          try {
+            await authHelper.saveAccountSetup({
+              username: userDoc?.username,
+              userRole: selectedRole,
+              displayName: userDoc?.name || account.name
+            });
+            await refreshState();
+            if (selectedRole === 'client' && !isEmbedded) {
+              window.location.href = `${getBase()}pages/client-profile.html`;
+              return;
+            }
+            hideSetupModal();
+            await renderCurrentStep();
+          } catch (error) {
+            window.alert(error.message || 'Could not save your account type.');
+          } finally {
+            setButtonLoading(card, false);
+          }
+        });
+      });
+    }
+
+    function renderSetupModalUsername() {
+      const setupModal = document.getElementById('account-setup-modal');
+      const content = setupModal?.querySelector('.account-setup-modal-content');
+      if (!(setupModal instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
+      content.classList.remove('is-role-choice');
+      content.innerHTML = `
+        <button type="button" class="account-setup-back-link" data-modal-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+        <h2>Get your profile started</h2>
+        <p>Add a username that is unique to you.</p>
+        <form class="account-setup-compact-form" data-account-username-form-modal>
+          <label class="account-setup-field">
+            <span>Choose a username</span>
+            <input type="text" data-account-username-input-modal value="${escapeHtml(userDoc?.username || '')}" placeholder="john_smith" />
+            <small>Build trust with your full name or business name. Usernames use letters, numbers, and underscores.</small>
+            <strong class="account-setup-field-message" data-account-username-message-modal></strong>
+          </label>
+          <button type="submit" class="account-submit-btn account-submit-signup" data-account-username-submit-modal disabled>
+            <span class="account-btn-label">Create my account</span>
+          </button>
+        </form>
+      `;
+      setupModal.querySelector('.account-setup-modal-close')?.addEventListener('click', () => hideSetupModal(), { once: true });
+      content.querySelector('[data-modal-back-home]')?.addEventListener('click', () => {
         window.location.href = `${getBase()}index.html`;
       });
-
+      const usernameFormModal = content.querySelector('[data-account-username-form-modal]');
+      const usernameInputModal = content.querySelector('[data-account-username-input-modal]');
+      const usernameMessageModal = content.querySelector('[data-account-username-message-modal]');
+      const usernameSubmitModal = content.querySelector('[data-account-username-submit-modal]');
       let usernameSetupTimer = 0;
       const validateUsernameModal = async () => {
         if (!(usernameInputModal instanceof HTMLInputElement)) return false;
@@ -6863,16 +6913,12 @@
         if (!(usernameInputModal instanceof HTMLInputElement) || !(usernameSubmitModal instanceof HTMLButtonElement)) return;
         setButtonLoading(usernameSubmitModal, true);
         try {
-          // Save username and set userRole as 'client' automatically
           await authHelper.saveAccountSetup({
             username: usernameInputModal.value.trim(),
-            displayName: userDoc?.name || account.name,
-            userRole: 'client'
+            displayName: userDoc?.name || account.name
           });
           await refreshState();
-          hideSetupModal();
-          // Redirect to the dedicated client profile for new client accounts.
-          window.location.href = `${getBase()}pages/client-profile.html`;
+          await renderCurrentStep();
         } catch (error) {
           if (usernameMessageModal) {
             usernameMessageModal.textContent = error.message || 'Could not save that username.';
@@ -6883,6 +6929,38 @@
           setButtonLoading(usernameSubmitModal, false);
         }
       });
+      showSetupModal();
+    }
+
+    function renderSetupModalRoleChoice() {
+      const setupModal = document.getElementById('account-setup-modal');
+      const content = setupModal?.querySelector('.account-setup-modal-content');
+      if (!(setupModal instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
+      content.classList.add('is-role-choice');
+      content.innerHTML = `
+        <section class="account-setup-role-stage account-setup-role-stage-modal">
+          <div class="account-setup-role-copy">
+            <span class="account-auth-stage-kicker">Account created</span>
+            <h2>Are you joining us as?</h2>
+            <p>Choose the account type that fits what you want to do next.</p>
+          </div>
+          <div class="account-setup-role-grid">
+            <button type="button" class="account-setup-role-card" data-role-card="client">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <strong>Seeking a service provider</strong>
+              <span>Use a client account to find specialists, post jobs, and manage bids.</span>
+            </button>
+            <button type="button" class="account-setup-role-card" data-role-card="provider">
+              <i class="fa-solid fa-user-gear"></i>
+              <strong>Offering services as a provider</strong>
+              <span>Fill in your provider details and start getting discovered by clients.</span>
+            </button>
+          </div>
+        </section>
+      `;
+      setupModal.querySelector('.account-setup-modal-close')?.addEventListener('click', () => hideSetupModal(), { once: true });
+      bindRoleChoiceCards(content);
+      showSetupModal();
     }
 
     await renderCurrentStep();

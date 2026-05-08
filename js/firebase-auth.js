@@ -1202,6 +1202,10 @@ async function syncUserDocument(account, extra = {}) {
     }
   };
 
+  const generatedUsername = !existingUser?.username && !extra.username && !account.username
+    ? await generateAvailableUsername(effectiveName || account.email || account.uid, account.uid).catch(() => '')
+    : '';
+
   merge('name', extra.name, account.name);
   merge('email', extra.email, existingUser?.email || account.email);
   merge('authEmail', extra.authEmail, existingUser?.authEmail || account.authEmail);
@@ -1209,7 +1213,7 @@ async function syncUserDocument(account, extra = {}) {
   merge('phoneNormalized', extra.phoneNormalized, normalizePhoneDigits(extra.phone || account.phone));
   merge('phoneLoginKey', extra.phoneLoginKey, normalizePhoneDigits(extra.phone || account.phone));
   merge('provider', account.provider);
-  merge('username', extra.username, account.username);
+  merge('username', extra.username || generatedUsername, account.username);
   merge('userRole', extra.userRole, account.userRole);
   merge('providerProvince', extra.providerProvince, account.providerProvince);
   merge('providerProvinceSlug', extra.providerProvinceSlug, account.providerProvinceSlug);
@@ -2631,6 +2635,9 @@ async function applyToJob(jobId = '', payload = {}) {
   }
   if (job.ownerUid === auth.currentUser.uid) {
     throw new Error('You cannot bid on your own job.');
+  }
+  if (!providerProfile) {
+    throw new Error('Become a provider first so you can bid for jobs and manage accepted work.');
   }
 
   const proposedBudget = Number(payload.proposedBudget || job.budget || 0);

@@ -2148,6 +2148,30 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const account = readAccount();
+    if (account?.loggedIn && account.uid && authHelper && typeof authHelper.getUserDocument === 'function') {
+      const userDoc = await authHelper.getUserDocument(account.uid).catch(() => null);
+      const userRole = String(userDoc?.userRole || account.userRole || '').trim();
+      const hasUsername = Boolean(userDoc?.username || account.username);
+      const providerComplete = Boolean(userDoc?.providerProfileComplete || account.providerProfileComplete);
+      let pendingSetupSearch = '';
+
+      if (!hasUsername || !userRole) {
+        pendingSetupSearch = '?setup=1';
+      } else if (userRole === 'provider' && !providerComplete) {
+        pendingSetupSearch = '?setup=provider';
+      }
+
+      if (pendingSetupSearch) {
+        try {
+          localStorage.setItem('worklinkup_pending_setup', pendingSetupSearch);
+          setSessionFlag('worklinkup_show_setup_modal_once');
+        } catch (error) {
+          // Ignore storage issues.
+        }
+      }
+    }
+
     // Always take them home after login/signup as requested
     window.location.replace(`${base}index.html`);
   }

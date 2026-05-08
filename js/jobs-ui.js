@@ -2458,6 +2458,37 @@
       `);
     }
 
+    function openBecomeProviderRequired(job = {}) {
+      const service = String(job.subcategory || job.category || '').trim();
+      const setupParams = new URLSearchParams();
+      setupParams.set('setup', 'provider');
+      if (service) setupParams.set('service', service);
+      openModal(bidModal, `
+        <div class="job-modal-panel provider-required-modal">
+          <button type="button" class="job-modal-close" data-job-modal-close><i class="fa-solid fa-xmark"></i></button>
+          <div class="provider-required-card provider-required-card--modal">
+            <div class="provider-required-icon"><i class="fa-solid fa-user-gear"></i></div>
+            <span>Provider account needed</span>
+            <h2>You need to become a provider to bid for jobs.</h2>
+            <p>Create your provider profile first. After that you can send bids, manage accepted jobs, and show clients your services.</p>
+            <button type="button" class="provider-required-action" data-job-become-provider>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Become Provider</span>
+            </button>
+          </div>
+        </div>
+      `);
+      bidModal.querySelector('[data-job-become-provider]')?.addEventListener('click', () => {
+        closeModal(bidModal);
+        const search = `?${setupParams.toString()}`;
+        if (typeof window.openWorkLinkUpSetupModal === 'function') {
+          window.openWorkLinkUpSetupModal(search, { clearPendingOnClose: true });
+          return;
+        }
+        window.location.href = `${getBase()}pages/account.html${search}`;
+      });
+    }
+
     function openJobDetail(job) {
       if (!job) return;
       const currentAccount = getStoredAccount();
@@ -2746,6 +2777,10 @@
       const readiness = await ensureBidderReady(authHelper);
       if (!readiness.ready) {
         window.alert(readiness.reason || 'Please sign in first.');
+        return;
+      }
+      if (!readiness.providerProfile) {
+        openBecomeProviderRequired(job);
         return;
       }
 
