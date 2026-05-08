@@ -39172,14 +39172,14 @@ body.marketplace-page-body .market-main {
 
 @media (max-width: 640px) {
   .account-setup-modal {
-    align-items: flex-end;
+    align-items: center;
   }
 
   .account-setup-modal-shell {
-    width: 100vw;
+    width: min(360px, calc(100vw - 40px));
     max-height: 92dvh;
-    margin: auto 0 0;
-    border-radius: 16px 16px 0 0;
+    margin: auto;
+    border-radius: 14px;
   }
 
   .account-setup-modal-content,
@@ -39256,15 +39256,15 @@ body.marketplace-page-body .market-main {
   }
 
   .pending-setup-overlay {
-    align-items: flex-end;
+    align-items: center;
   }
 
   .pending-setup-panel {
-    width: 100vw;
-    height: 92dvh;
+    width: min(360px, calc(100vw - 40px));
+    height: min(92dvh, 680px);
     max-height: 92dvh;
-    margin: auto 0 0;
-    border-radius: 16px 16px 0 0;
+    margin: auto;
+    border-radius: 14px;
   }
 
   .pending-setup-frame {
@@ -39353,5 +39353,499 @@ body.marketplace-page-body .market-main {
   .provider-required-card h1,
   .provider-required-card h2 {
     font-size: 22px;
+  }
+}
+
+.account-setup-modal-content.is-role-choice {
+  max-width: 980px;
+  padding: 42px 44px 48px;
+}
+
+.account-role-choice-stage {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.78fr) minmax(0, 1.42fr);
+  gap: 46px;
+  align-items: center;
+  color: #15103f;
+}
+
+.account-role-choice-intro {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+  align-content: center;
+}
+
+.account-role-choice-badge {
+  width: fit-content;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f2e9ff;
+  color: #7c00ff;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.account-role-choice-badge i {
+  font-size: 11px;
+}
+
+.account-role-choice-intro h2 {
+  margin: 0;
+  color: #15103f;
+  font-size: 31px;
+  line-height: 1.18;
+  font-weight: 950;
+}
+
+.account-role-choice-intro p {
+  max-width: 250px;
+  margin: 0;
+  color: #7f7a9e;
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.account-role-choice-illustration {
+  position: relative;
+  width: 245px;
+  max-width: 100%;
+  aspect-ratio: 1.08;
+  margin-top: 22px;
+}
+
+.account-role-orb {
+  position: absolute;
+  left: 0;
+  bottom: 8px;
+  width: 215px;
+  height: 215px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 36% 28%, rgba(153, 91, 255, 0.16), rgba(153, 91, 255, 0.08) 58%, rgba(153, 91, 255, 0));
+}
+
+.account-role-window {
+  position: absolute;
+  left: 34px;
+  top: 36px;
+  width: 168px;
+  height: 146px;
+  border: 2px solid rgba(124, 0, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 22px 46px rgba(124, 0, 255, 0.12);
+  overflow: hidden;
+}
+
+.account-role-window::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 20px;
+  background: linear-gradient(90deg, #cda9ff, #a678ff);
+}
+
+.account-role-window > span {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 7px 0 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.account-role-window strong {
+  position: absolute;
+  left: 48px;
+  top: 56px;
+  width: 86px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ece7f9;
+  box-shadow: 0 18px 0 #f2effa;
+}
+
+.account-role-window em {
+  position: absolute;
+  left: 16px;
+  top: 72px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #8a2cff, #6514dc);
+}
+
+.account-role-rating {
+  position: absolute;
+  right: 0;
+  top: 112px;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #9b54ff;
+  box-shadow: 0 18px 38px rgba(85, 49, 138, 0.14);
+}
+
+.account-role-plane {
+  position: absolute;
+  right: 6px;
+  top: 72px;
+  color: #a875ff;
+  font-size: 26px;
+  transform: rotate(10deg);
+}
+
+.account-role-choice-main {
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.account-role-choice-title {
+  display: grid;
+  grid-template-columns: minmax(40px, 1fr) auto minmax(40px, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.account-role-choice-title span {
+  height: 1px;
+  background: #e5e2ee;
+}
+
+.account-role-choice-title strong {
+  position: relative;
+  color: #15103f;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.account-role-choice-title strong::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  width: 28px;
+  height: 3px;
+  border-radius: 999px;
+  background: #7c00ff;
+  transform: translateX(-50%);
+}
+
+.account-role-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.account-role-choice-card {
+  width: 100%;
+  min-width: 0;
+  min-height: 486px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 16px;
+  padding: 30px 28px 24px;
+  border: 1px solid #e7e4ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #15103f;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  box-shadow: 0 20px 44px rgba(29, 17, 67, 0.04);
+}
+
+.account-role-choice-card.is-loading {
+  pointer-events: none;
+  opacity: 0.74;
+}
+
+.account-role-choice-card .account-role-icon {
+  width: 88px;
+  height: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 36px;
+}
+
+.account-role-choice-card.is-client .account-role-icon {
+  background: #f0e4ff;
+  color: #7c00ff;
+}
+
+.account-role-choice-card.is-provider .account-role-icon {
+  background: #fff0ee;
+  color: #ff5855;
+}
+
+.account-role-choice-card > strong {
+  color: #15103f;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.account-role-choice-card > small {
+  min-height: 54px;
+  max-width: 220px;
+  color: #817b9e;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.account-role-choice-card ul {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  margin: 10px 0 4px;
+  padding: 18px 0 0;
+  border-top: 1px solid #eeeaf5;
+  list-style: none;
+  text-align: left;
+}
+
+.account-role-choice-card li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: #514b73;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.account-role-choice-card li i {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.account-role-choice-card.is-client li i {
+  background: #f1e6ff;
+  color: #7c00ff;
+}
+
+.account-role-choice-card.is-provider li i {
+  background: #fff0ee;
+  color: #ff5855;
+}
+
+.account-role-choice-cta {
+  width: 100%;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: auto;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.account-role-choice-card.is-client .account-role-choice-cta {
+  background: #7c00ff;
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(124, 0, 255, 0.2);
+}
+
+.account-role-choice-card.is-provider .account-role-choice-cta {
+  border: 1px solid #ff706d;
+  background: #ffffff;
+  color: #ff5855;
+}
+
+.account-role-choice-security {
+  display: none;
+}
+
+.account-embed-mode .account-role-choice-stage {
+  width: min(100%, 980px);
+  margin: auto;
+  padding: 34px;
+}
+
+@media (max-width: 760px) {
+  .account-setup-modal-content.is-role-choice {
+    padding: 28px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .account-role-choice-stage {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .account-embed-mode .account-role-choice-stage {
+    width: 100%;
+    min-height: 100dvh;
+    align-content: center;
+    padding: 28px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .account-role-choice-intro {
+    justify-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .account-role-choice-intro h2 {
+    font-size: 25px;
+    line-height: 1.16;
+  }
+
+  .account-role-choice-intro p {
+    max-width: 230px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .account-role-choice-badge {
+    min-height: 24px;
+    padding: 0 10px;
+    font-size: 9px;
+  }
+
+  .account-role-choice-illustration,
+  .account-role-choice-title {
+    display: none;
+  }
+
+  .account-role-choice-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .account-role-choice-card {
+    position: relative;
+    min-height: 0;
+    gap: 10px;
+    padding: 18px 14px 14px;
+    overflow: hidden;
+  }
+
+  .account-role-choice-card::after {
+    content: "";
+    position: absolute;
+    top: 20px;
+    right: 22px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.28;
+    background-image: radial-gradient(currentColor 1.2px, transparent 1.2px);
+    background-size: 8px 8px;
+  }
+
+  .account-role-choice-card.is-client::after {
+    color: #7c00ff;
+  }
+
+  .account-role-choice-card.is-provider::after {
+    color: #ff5855;
+  }
+
+  .account-role-choice-card .account-role-icon {
+    width: 68px;
+    height: 68px;
+    font-size: 28px;
+  }
+
+  .account-role-choice-card > strong {
+    font-size: 16px;
+    line-height: 1.22;
+  }
+
+  .account-role-choice-card > small {
+    min-height: 0;
+    max-width: 210px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .account-role-choice-card ul {
+    gap: 6px;
+    margin: 4px 0 2px;
+    padding-top: 10px;
+  }
+
+  .account-role-choice-card li {
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 7px;
+    font-size: 10px;
+  }
+
+  .account-role-choice-card li i {
+    width: 18px;
+    height: 18px;
+    font-size: 8px;
+  }
+
+  .account-role-choice-cta {
+    min-height: 38px;
+    gap: 14px;
+    font-size: 11px;
+  }
+
+  .account-role-choice-security {
+    max-width: 240px;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    margin: 2px auto 0;
+    color: #7f7a9e;
+    font-size: 10px;
+    line-height: 1.35;
+    text-align: left;
+  }
+
+  .account-role-choice-security i {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #f0e4ff;
+    color: #7c00ff;
+  }
+
+  .account-role-choice-security strong {
+    color: #7c00ff;
+  }
+}
+
+@media (max-width: 380px) {
+  .account-setup-modal-content.is-role-choice {
+    padding-inline: 14px;
+  }
+
+  .account-role-choice-card {
+    padding: 15px 12px 12px;
   }
 }

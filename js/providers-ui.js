@@ -6444,27 +6444,7 @@
       }
 
       if (step === 'role') {
-        setupBody.innerHTML = `
-          <section class="account-setup-role-stage">
-            <div class="account-setup-role-copy">
-              <span class="account-auth-stage-kicker">Account created</span>
-              <h2>Are you joining us as?</h2>
-              <p>Choose how you want to use WorkLinkUp.</p>
-            </div>
-            <div class="account-setup-role-grid">
-              <button type="button" class="account-setup-role-card" data-role-card="client">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <strong>Seeking a service provider</strong>
-                <span>Find specialists, post jobs, and manage bids as a client.</span>
-              </button>
-              <button type="button" class="account-setup-role-card" data-role-card="provider">
-                <i class="fa-solid fa-user-gear"></i>
-                <strong>Offering services as a provider</strong>
-                <span>Create your provider profile so clients can find and hire you.</span>
-              </button>
-            </div>
-          </section>
-        `;
+        setupBody.innerHTML = buildRoleChoiceMarkup();
 
         bindRoleChoiceCards(setupBody);
 
@@ -6815,6 +6795,71 @@
       });
     }
 
+    function buildRoleChoiceMarkup() {
+      return `
+        <section class="account-role-choice-stage">
+          <div class="account-role-choice-intro">
+            <span class="account-role-choice-badge"><i class="fa-regular fa-circle-check"></i> Account created</span>
+            <h2>Welcome to WorkLinkUp!</h2>
+            <p>Let's get started. Choose how you want to use WorkLinkUp.</p>
+            <div class="account-role-choice-illustration" aria-hidden="true">
+              <span class="account-role-orb"></span>
+              <div class="account-role-window">
+                <span></span><span></span><span></span>
+                <strong></strong>
+                <em></em>
+              </div>
+              <div class="account-role-rating">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+              </div>
+              <i class="fa-solid fa-paper-plane account-role-plane"></i>
+            </div>
+          </div>
+
+          <div class="account-role-choice-main">
+            <div class="account-role-choice-title">
+              <span></span>
+              <strong>Are you joining us as?</strong>
+              <span></span>
+            </div>
+            <div class="account-role-choice-grid">
+              <button type="button" class="account-role-choice-card is-client" data-role-card="client">
+                <span class="account-role-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <strong>Seeking a<br />service provider</strong>
+                <small>Find specialists, post jobs, and manage bids as a client.</small>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i><span>Post jobs in minutes</span></li>
+                  <li><i class="fa-solid fa-check"></i><span>Receive competitive bids</span></li>
+                  <li><i class="fa-solid fa-check"></i><span>Manage projects easily</span></li>
+                </ul>
+                <span class="account-role-choice-cta">I need services <i class="fa-solid fa-arrow-right"></i></span>
+              </button>
+              <button type="button" class="account-role-choice-card is-provider" data-role-card="provider">
+                <span class="account-role-icon"><i class="fa-solid fa-user-gear"></i></span>
+                <strong>Offering services<br />as a provider</strong>
+                <small>Create your provider profile so clients can find and hire you.</small>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i><span>Showcase your skills</span></li>
+                  <li><i class="fa-solid fa-check"></i><span>Find new clients</span></li>
+                  <li><i class="fa-solid fa-check"></i><span>Grow your business</span></li>
+                </ul>
+                <span class="account-role-choice-cta">I offer services <i class="fa-solid fa-arrow-right"></i></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="account-role-choice-security">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Your information is safe and secure with us. <strong>We respect your privacy.</strong></span>
+          </div>
+        </section>
+      `;
+    }
+
     function bindRoleChoiceCards(container) {
       container.querySelectorAll('[data-role-card]').forEach((card) => {
         card.addEventListener('click', async () => {
@@ -6937,27 +6982,7 @@
       const content = setupModal?.querySelector('.account-setup-modal-content');
       if (!(setupModal instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
       content.classList.add('is-role-choice');
-      content.innerHTML = `
-        <section class="account-setup-role-stage account-setup-role-stage-modal">
-          <div class="account-setup-role-copy">
-            <span class="account-auth-stage-kicker">Account created</span>
-            <h2>Are you joining us as?</h2>
-            <p>Choose the account type that fits what you want to do next.</p>
-          </div>
-          <div class="account-setup-role-grid">
-            <button type="button" class="account-setup-role-card" data-role-card="client">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <strong>Seeking a service provider</strong>
-              <span>Use a client account to find specialists, post jobs, and manage bids.</span>
-            </button>
-            <button type="button" class="account-setup-role-card" data-role-card="provider">
-              <i class="fa-solid fa-user-gear"></i>
-              <strong>Offering services as a provider</strong>
-              <span>Fill in your provider details and start getting discovered by clients.</span>
-            </button>
-          </div>
-        </section>
-      `;
+      content.innerHTML = buildRoleChoiceMarkup();
       setupModal.querySelector('.account-setup-modal-close')?.addEventListener('click', () => hideSetupModal(), { once: true });
       bindRoleChoiceCards(content);
       showSetupModal();
