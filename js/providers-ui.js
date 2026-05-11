@@ -3441,167 +3441,208 @@
 
     page.innerHTML = `
       <section class="edit-profile-shell">
+        <button type="button" class="edit-profile-back" data-edit-profile-back>
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Back to profile</span>
+        </button>
+
         <div class="edit-profile-head">
-          <button type="button" class="edit-profile-back" data-edit-profile-back>
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>Back to profile</span>
-          </button>
           <div class="edit-profile-head-copy">
             <span class="account-auth-stage-kicker">Edit profile</span>
             <h1>Update everything clients see</h1>
             <p>Keep your WorkLinkUp profile current. Update your identity, services, experience, documents, and media from one page.</p>
           </div>
+          <div class="edit-profile-hero-art" aria-hidden="true">
+            <div class="edit-profile-hero-blob"></div>
+            <div class="edit-profile-hero-board">
+              <i class="fa-solid fa-id-card-clip"></i>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <i class="fa-solid fa-pen edit-profile-hero-pen"></i>
+          </div>
         </div>
 
         <form class="account-provider-form edit-profile-form" data-edit-profile-form novalidate>
-          <div class="account-provider-grid">
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Identity</strong>
-                <span>How you appear to clients</span>
-              </div>
-              <div class="account-provider-fields two-col">
-                <label class="account-setup-field">
-                  <span>Display name</span>
-                  <input type="text" name="fullName" required value="${escapeHtml(existingProvider.displayName || '')}" />
-                </label>
-                <label class="account-setup-field">
-                  <span>Title</span>
-                  <input type="text" name="title" required value="${escapeHtml(existingProvider.title || '')}" placeholder="Hair stylist, Plumber, Tutor..." />
-                </label>
-                <label class="account-setup-field">
-                  <span>WhatsApp number</span>
-                  <input type="tel" name="whatsappNumber" required value="${escapeHtml(existingProvider.whatsappNumber || '')}" placeholder="+263 77 123 4567" />
-                </label>
-                <label class="account-setup-field">
-                  <span>Province</span>
-                  <select name="province" required>${buildSelectOptions(ZIMBABWE_PROVINCES, existingProvider.province || 'Harare')}</select>
-                </label>
-                <label class="account-setup-field">
-                  <span>City / suburb</span>
-                  <input type="text" name="city" required value="${escapeHtml(existingProvider.city || '')}" />
-                </label>
-                <label class="account-setup-field">
-                  <span>Address or service area</span>
-                  <input type="text" name="address" required value="${existingProvider.address ? escapeHtml(existingProvider.address) : ''}" placeholder="City center, North suburbs, etc." />
-                </label>
-                <label class="account-setup-field account-typeahead-field account-setup-field-span">
+          <div class="edit-profile-layout">
+            <aside class="edit-profile-side-nav" aria-label="Profile editor sections">
+              <a href="#edit-section-identity" class="is-active"><i class="fa-regular fa-user"></i><span><strong>Identity</strong><small>How you appear to clients</small></span></a>
+              <a href="#edit-section-services"><i class="fa-solid fa-list-check"></i><span><strong>Services</strong><small>What you offer</small></span></a>
+              <a href="#edit-section-experience"><i class="fa-solid fa-wand-magic-sparkles"></i><span><strong>Experience</strong><small>Your background</small></span></a>
+              <a href="#edit-section-portfolio"><i class="fa-regular fa-file-lines"></i><span><strong>Portfolio & documents</strong><small>Media and credentials</small></span></a>
+            </aside>
+
+            <div class="edit-profile-content">
+              <section class="account-provider-section edit-profile-card" id="edit-section-identity">
+                <div class="account-provider-section-head edit-profile-card-head">
+                  <i class="fa-regular fa-user"></i>
+                  <div>
+                    <strong>Identity</strong>
+                    <span>How you appear to clients</span>
+                  </div>
+                </div>
+                <div class="account-provider-fields two-col edit-profile-field-grid">
+                  <label class="account-setup-field">
+                    <span>Display name</span>
+                    <input type="text" name="fullName" required value="${escapeHtml(existingProvider.displayName || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Title</span>
+                    <input type="text" name="title" required value="${escapeHtml(existingProvider.title || '')}" placeholder="Hair stylist, Plumber, Tutor..." />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>WhatsApp number</span>
+                    <input type="tel" name="whatsappNumber" required value="${escapeHtml(existingProvider.whatsappNumber || '')}" placeholder="+263 77 123 4567" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Province</span>
+                    <select name="province" required>${buildSelectOptions(ZIMBABWE_PROVINCES, existingProvider.province || 'Harare')}</select>
+                  </label>
+                  <label class="account-setup-field">
+                    <span>City / suburb</span>
+                    <input type="text" name="city" required value="${escapeHtml(existingProvider.city || '')}" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Address or service area</span>
+                    <input type="text" name="address" required value="${existingProvider.address ? escapeHtml(existingProvider.address) : ''}" placeholder="City center, North suburbs, etc." />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Experience</span>
+                    <input type="text" name="experience" required value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
+                  </label>
+                  <label class="account-setup-field">
+                    <span>Username</span>
+                    <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
+                  </label>
+                </div>
+              </section>
+
+              <section class="account-provider-section edit-profile-card" id="edit-section-services">
+                <div class="account-provider-section-head edit-profile-card-head">
+                  <i class="fa-solid fa-list-check"></i>
+                  <div>
+                    <strong>Services</strong>
+                    <span>Add every service clients can hire you for</span>
+                  </div>
+                </div>
+                <label class="account-setup-field account-typeahead-field account-setup-field-span edit-profile-service-picker">
                   <span>Services</span>
                   <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
-                  <small>Add all services clients can hire you for. The first service is used as your main search category.</small>
+                  <small>The first service is used as your main search category.</small>
                 </label>
-                <label class="account-setup-field">
-                  <span>Experience</span>
-                  <input type="text" name="experience" required value="${escapeHtml(existingProvider.experience || '')}" placeholder="4 years" />
-                </label>
-                <label class="account-setup-field">
-                  <span>Username</span>
-                  <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
-                </label>
-              </div>
-            </section>
+              </section>
 
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>About</strong>
-                <span>Tell clients what you do best</span>
-              </div>
-              <label class="account-setup-field">
-                <span>About you</span>
-                <textarea name="bio" required minlength="80" placeholder="Share your experience, strengths, and the work you offer.">${escapeHtml(existingProvider.bio || '')}</textarea>
-              </label>
-            </section>
-
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Languages</strong>
-                <span>Choose the languages you work in</span>
-              </div>
-              <div class="account-provider-repeater" data-language-list>
-                ${buildSetupRepeaterRows('language', existingProvider.languages)}
-              </div>
-              <button type="button" class="account-provider-add-row" data-add-language><i class="fa-solid fa-plus"></i><span>Add language</span></button>
-            </section>
-
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Skills and expertise</strong>
-                <span>Add the skills that help clients find you</span>
-              </div>
-              <div class="account-provider-repeater" data-skill-list>
-                ${buildSetupRepeaterRows('skill', existingProvider.skills)}
-              </div>
-              <button type="button" class="account-provider-add-row" data-add-skill><i class="fa-solid fa-plus"></i><span>Add skill</span></button>
-            </section>
-
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Work experience</strong>
-                <span>Optional</span>
-              </div>
-              <div class="account-provider-repeater" data-experience-list>
-                ${buildSetupRepeaterRows('experience', existingProvider.workExperience)}
-              </div>
-              <button type="button" class="account-provider-add-row" data-add-experience><i class="fa-solid fa-plus"></i><span>Add work experience</span></button>
-            </section>
-
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Education and certifications</strong>
-                <span>Optional</span>
-              </div>
-              <div class="account-provider-subgrid">
-                <div>
-                  <div class="account-provider-repeater" data-education-list>
-                    ${buildSetupRepeaterRows('education', existingProvider.education)}
+              <section class="account-provider-section edit-profile-card" id="edit-section-experience">
+                <div class="account-provider-section-head edit-profile-card-head">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  <div>
+                    <strong>Experience</strong>
+                    <span>Your background and expertise</span>
                   </div>
-                  <button type="button" class="account-provider-add-row" data-add-education><i class="fa-solid fa-plus"></i><span>Add education</span></button>
                 </div>
-                <div>
-                  <div class="account-provider-repeater" data-certification-list>
-                    ${buildSetupRepeaterRows('certification', existingProvider.certifications)}
+                <div class="edit-profile-about-grid">
+                  <label class="account-setup-field">
+                    <span>About you</span>
+                    <textarea name="bio" required minlength="80" placeholder="Share your experience, strengths, and the work you offer.">${escapeHtml(existingProvider.bio || '')}</textarea>
+                  </label>
+                  <div class="edit-profile-stack">
+                    <div class="edit-profile-mini-section">
+                      <div class="edit-profile-mini-head">
+                        <strong>Languages</strong>
+                        <small>Choose the languages you work in</small>
+                      </div>
+                      <div class="account-provider-repeater" data-language-list>
+                        ${buildSetupRepeaterRows('language', existingProvider.languages)}
+                      </div>
+                      <button type="button" class="account-provider-add-row" data-add-language><i class="fa-solid fa-plus"></i><span>Add language</span></button>
+                    </div>
+                    <div class="edit-profile-mini-section">
+                      <div class="edit-profile-mini-head">
+                        <strong>Skills and expertise</strong>
+                        <small>Add skills that help clients find you</small>
+                      </div>
+                      <div class="account-provider-repeater" data-skill-list>
+                        ${buildSetupRepeaterRows('skill', existingProvider.skills)}
+                      </div>
+                      <button type="button" class="account-provider-add-row" data-add-skill><i class="fa-solid fa-plus"></i><span>Add skill</span></button>
+                    </div>
                   </div>
-                  <button type="button" class="account-provider-add-row" data-add-certification><i class="fa-solid fa-plus"></i><span>Add certification</span></button>
                 </div>
-              </div>
-            </section>
 
-            <section class="account-provider-section">
-              <div class="account-provider-section-head">
-                <strong>Portfolio and documents</strong>
-                <span>Media, website links, and professional documents</span>
-              </div>
-              <div class="account-provider-repeater" data-link-list>
-                ${buildSetupRepeaterRows('link', existingProvider.portfolioLinks)}
-              </div>
-              <button type="button" class="account-provider-add-row" data-add-link><i class="fa-solid fa-plus"></i><span>Add website link</span></button>
+                <div class="edit-profile-mini-section">
+                  <div class="edit-profile-mini-head">
+                    <strong>Work experience</strong>
+                    <small>Optional</small>
+                  </div>
+                  <div class="account-provider-repeater" data-experience-list>
+                    ${buildSetupRepeaterRows('experience', existingProvider.workExperience)}
+                  </div>
+                  <button type="button" class="account-provider-add-row" data-add-experience><i class="fa-solid fa-plus"></i><span>Add work experience</span></button>
+                </div>
 
-              <div class="edit-profile-upload-grid">
-                <label class="edit-profile-upload-card" data-edit-upload-card="profile">
-                  <span class="account-provider-upload-preview account-provider-upload-preview-avatar edit-profile-upload-preview" data-account-profile-preview></span>
-                  <strong>Profile image</strong>
-                  <p>Drag and drop your profile image here, or use the device uploader below.</p>
-                  <span class="edit-profile-upload-trigger">Upload from device</span>
-                  <input type="file" accept="image/*" data-account-profile-file hidden />
+                <div class="edit-profile-mini-section">
+                  <div class="edit-profile-mini-head">
+                    <strong>Education and certifications</strong>
+                    <small>Optional</small>
+                  </div>
+                  <div class="account-provider-subgrid edit-profile-subgrid">
+                    <div>
+                      <div class="account-provider-repeater" data-education-list>
+                        ${buildSetupRepeaterRows('education', existingProvider.education)}
+                      </div>
+                      <button type="button" class="account-provider-add-row" data-add-education><i class="fa-solid fa-plus"></i><span>Add education</span></button>
+                    </div>
+                    <div>
+                      <div class="account-provider-repeater" data-certification-list>
+                        ${buildSetupRepeaterRows('certification', existingProvider.certifications)}
+                      </div>
+                      <button type="button" class="account-provider-add-row" data-add-certification><i class="fa-solid fa-plus"></i><span>Add certification</span></button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="account-provider-section edit-profile-card" id="edit-section-portfolio">
+                <div class="account-provider-section-head edit-profile-card-head">
+                  <i class="fa-regular fa-file-lines"></i>
+                  <div>
+                    <strong>Portfolio and documents</strong>
+                    <span>Website, media, and professional documents</span>
+                  </div>
+                </div>
+                <div class="account-provider-repeater edit-profile-links" data-link-list>
+                  ${buildSetupRepeaterRows('link', existingProvider.portfolioLinks)}
+                </div>
+                <button type="button" class="account-provider-add-row" data-add-link><i class="fa-solid fa-plus"></i><span>Add website link</span></button>
+
+                <div class="edit-profile-upload-grid">
+                  <label class="edit-profile-upload-card" data-edit-upload-card="profile">
+                    <span class="account-provider-upload-preview account-provider-upload-preview-avatar edit-profile-upload-preview" data-account-profile-preview></span>
+                    <strong>Profile image</strong>
+                    <p>Drag and drop your profile image here, or use the device uploader below.</p>
+                    <span class="edit-profile-upload-trigger">Upload from device</span>
+                    <input type="file" accept="image/*" data-account-profile-file hidden />
+                  </label>
+                  <label class="edit-profile-upload-card edit-profile-upload-card-banner" data-edit-upload-card="banner">
+                    <span class="account-provider-upload-preview account-provider-upload-preview-banner edit-profile-upload-preview" data-account-banner-preview></span>
+                    <strong>Banner image</strong>
+                    <p>Drop a wide banner here, or choose a file from your device.</p>
+                    <span class="edit-profile-upload-trigger">Upload from device</span>
+                    <input type="file" accept="image/*" data-account-banner-file hidden />
+                  </label>
+                </div>
+
+                <label class="account-provider-doc-upload edit-profile-doc-upload">
+                  <span>Professional documents</span>
+                  <input type="file" accept="application/pdf,image/*" multiple data-account-document-files />
+                  <small>Upload CVs, certificates, licenses, or portfolio pages.</small>
                 </label>
-                <label class="edit-profile-upload-card edit-profile-upload-card-banner" data-edit-upload-card="banner">
-                  <span class="account-provider-upload-preview account-provider-upload-preview-banner edit-profile-upload-preview" data-account-banner-preview></span>
-                  <strong>Banner image</strong>
-                  <p>Drop a wide banner here, or choose a file from your device.</p>
-                  <span class="edit-profile-upload-trigger">Upload from device</span>
-                  <input type="file" accept="image/*" data-account-banner-file hidden />
-                </label>
-              </div>
-
-              <label class="account-provider-doc-upload">
-                <span>Professional documents</span>
-                <input type="file" accept="application/pdf,image/*" multiple data-account-document-files />
-                <small>Upload CVs, certificates, licenses, or portfolio pages. Images are converted to AVIF, then stored in base64 for viewing later.</small>
-              </label>
-              <div class="account-provider-doc-list" data-account-document-list></div>
-            </section>
+                <div class="account-provider-doc-list" data-account-document-list></div>
+              </section>
+            </div>
           </div>
 
           <input type="hidden" name="primaryCategory" value="${escapeHtml(existingProvider.primaryCategory || '')}" data-provider-service-category />
@@ -3632,6 +3673,7 @@
     const cancelBtn = page.querySelector('[data-edit-profile-cancel]');
     const profileCard = page.querySelector('[data-edit-upload-card="profile"]');
     const bannerCard = page.querySelector('[data-edit-upload-card="banner"]');
+    const sectionNavLinks = Array.from(page.querySelectorAll('.edit-profile-side-nav a'));
 
     const profileUrl = (() => {
       const url = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
@@ -3645,6 +3687,11 @@
     });
     cancelBtn?.addEventListener('click', () => {
       window.location.href = profileUrl;
+    });
+    sectionNavLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        sectionNavLinks.forEach((item) => item.classList.toggle('is-active', item === link));
+      });
     });
 
     updateUploadPreview(profilePreview, providerMediaState.profileImageData, 'avatar');

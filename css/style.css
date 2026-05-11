@@ -4732,14 +4732,14 @@ body:has(.job-post-page) {
 }
 
 .edit-profile-page {
-  max-width: 1500px;
+  max-width: 1480px;
   margin: 0 auto;
-  padding: 28px 24px 72px;
+  padding: 18px 18px 80px;
 }
 
 .edit-profile-shell {
   display: grid;
-  gap: 24px;
+  gap: 14px;
 }
 
 .edit-profile-loading {
@@ -4762,44 +4762,334 @@ body:has(.job-post-page) {
 }
 
 .edit-profile-head {
+  min-height: 238px;
   display: grid;
-  gap: 18px;
-  padding: 28px 30px;
-  border-radius: 30px;
-  background: linear-gradient(135deg, #11254c 0%, #0a1833 100%);
-  color: #fff;
-  box-shadow: 0 26px 44px rgba(15, 23, 42, 0.16);
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: center;
+  gap: 28px;
+  padding: 42px 44px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ffffff 0%, #fff8f4 58%, #fff0e8 100%);
+  color: #1b163f;
+  border: 1px solid #f0e5df;
+  box-shadow: none;
 }
 
 .edit-profile-back {
   width: fit-content;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ff4b2f;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 800;
+  box-shadow: none;
 }
 
 .edit-profile-head-copy h1 {
-  margin-top: 10px;
-  font-size: clamp(34px, 5vw, 54px);
-  line-height: 1.02;
+  margin-top: 8px;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.05;
+  color: #1b163f;
+}
+
+.edit-profile-head-copy .account-auth-stage-kicker {
+  margin-bottom: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ff4b2f;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .edit-profile-head-copy p {
   margin-top: 12px;
   max-width: 760px;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.7;
+  color: #6d7284;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.edit-profile-hero-art {
+  position: relative;
+  min-height: 190px;
+}
+
+.edit-profile-hero-blob {
+  position: absolute;
+  inset: 14px 18px 0 12px;
+  border-radius: 46% 54% 42% 58%;
+  background: #ffe5dc;
+}
+
+.edit-profile-hero-board {
+  position: absolute;
+  right: 72px;
+  bottom: 8px;
+  width: 150px;
+  height: 180px;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 13px;
+  padding: 30px 24px 0;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ff6a3d 0%, #ff442b 100%);
+  color: #ffffff;
+  box-shadow: 0 22px 38px rgba(255, 68, 43, 0.22);
+}
+
+.edit-profile-hero-board i {
+  font-size: 48px;
+}
+
+.edit-profile-hero-board span {
+  width: 82px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.edit-profile-hero-pen {
+  position: absolute;
+  right: 34px;
+  top: 42px;
+  width: 66px;
+  height: 66px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: #ffb6a2;
+  color: #ff442b;
+  font-size: 30px;
+  transform: rotate(-14deg);
 }
 
 .edit-profile-form {
   display: grid;
+  gap: 0;
+}
+
+.edit-profile-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.edit-profile-side-nav {
+  position: sticky;
+  top: 88px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid #ebeef4;
+  box-shadow: 0 18px 40px rgba(26, 50, 99, 0.06);
+}
+
+.edit-profile-side-nav a {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 4px;
+  color: #6c7283;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.edit-profile-side-nav a.is-active,
+.edit-profile-side-nav a:hover {
+  background: #fff6f2;
+  color: #ff4b2f;
+  border-color: #ffe0d6;
+}
+
+.edit-profile-side-nav i {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #f7f8fb;
+}
+
+.edit-profile-side-nav a.is-active i,
+.edit-profile-side-nav a:hover i {
+  background: #ff4b2f;
+  color: #ffffff;
+}
+
+.edit-profile-side-nav strong,
+.edit-profile-side-nav small {
+  display: block;
+}
+
+.edit-profile-side-nav strong {
+  color: #20233a;
+  font-size: 14px;
+}
+
+.edit-profile-side-nav small {
+  margin-top: 4px;
+  color: #8a91a2;
+  font-size: 12px;
+}
+
+.edit-profile-content {
+  display: grid;
+  gap: 18px;
+}
+
+.edit-profile-card {
+  scroll-margin-top: 96px;
+  padding: 24px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid #ebeef4;
+  box-shadow: 0 18px 40px rgba(26, 50, 99, 0.06);
+}
+
+.edit-profile-card-head {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.edit-profile-card-head > i {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #fff0e8;
+  color: #ff4b2f;
+  font-size: 18px;
+}
+
+.edit-profile-card-head strong {
+  color: #1b163f;
+  font-size: 20px;
+}
+
+.edit-profile-card-head span {
+  display: block;
+  margin-top: 3px;
+  color: #8a91a2;
+}
+
+.edit-profile-field-grid {
+  gap: 16px;
+}
+
+.edit-profile-page .account-setup-field {
+  gap: 8px;
+}
+
+.edit-profile-page .account-setup-field > span,
+.edit-profile-page .account-provider-doc-upload > span {
+  color: #52596c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.edit-profile-page .account-provider-form input,
+.edit-profile-page .account-provider-form select,
+.edit-profile-page .account-provider-form textarea,
+.edit-profile-page .account-setup-field input,
+.edit-profile-page .account-setup-field select,
+.edit-profile-page .account-setup-field textarea,
+.edit-profile-page .account-setup-repeater-row input,
+.edit-profile-page .account-setup-repeater-row select,
+.edit-profile-page .account-setup-repeater-row textarea {
+  min-height: 44px;
+  border-radius: 4px;
+  border: 1px solid #dfe4ee;
+  background: #ffffff;
+  color: #1f2437;
+  box-shadow: none;
+}
+
+.edit-profile-page .account-provider-form textarea,
+.edit-profile-page .account-setup-field textarea {
+  min-height: 132px;
+}
+
+.edit-profile-page .account-provider-add-row {
+  width: fit-content;
+  min-height: 36px;
+  border-radius: 4px;
+  border: 1px solid #ffded4;
+  background: #ffffff;
+  color: #ff4b2f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.edit-profile-page .account-setup-remove-row {
+  border-radius: 4px;
+  color: #ff4b2f;
+}
+
+.edit-profile-page .account-service-chip {
+  border-radius: 4px;
+  background: #fff4ee;
+  border-color: #ffded4;
+}
+
+.edit-profile-about-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0.92fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.edit-profile-stack,
+.edit-profile-mini-section {
+  display: grid;
+  gap: 12px;
+}
+
+.edit-profile-mini-section {
+  margin-top: 18px;
+}
+
+.edit-profile-stack .edit-profile-mini-section {
+  margin-top: 0;
+}
+
+.edit-profile-mini-head strong,
+.edit-profile-mini-head small {
+  display: block;
+}
+
+.edit-profile-mini-head strong {
+  color: #1b163f;
+  font-size: 16px;
+}
+
+.edit-profile-mini-head small {
+  margin-top: 4px;
+  color: #8a91a2;
+  font-size: 12px;
+}
+
+.edit-profile-subgrid {
   gap: 18px;
 }
 
@@ -4807,32 +5097,32 @@ body:has(.job-post-page) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .edit-profile-upload-card {
   position: relative;
   display: grid;
   gap: 12px;
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px dashed rgba(218, 119, 86, 0.28);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(251, 238, 232, 0.9) 100%);
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid #ebeef4;
+  background: #ffffff;
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .edit-profile-upload-card:hover,
 .edit-profile-upload-card.is-dragover {
-  border-color: #da7756;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(247, 218, 205, 0.98) 100%);
-  box-shadow: 0 18px 32px rgba(218, 119, 86, 0.12);
+  border-color: #ff4b2f;
+  background: #fff8f4;
+  box-shadow: 0 18px 32px rgba(255, 75, 47, 0.10);
   transform: translateY(-2px);
 }
 
 .edit-profile-upload-card strong {
-  color: #111827;
-  font-size: 18px;
+  color: #1b163f;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -4843,11 +5133,10 @@ body:has(.job-post-page) {
 }
 
 .edit-profile-upload-preview {
-  min-height: 220px;
-  border-radius: 22px;
-  background:
-    linear-gradient(135deg, rgba(218, 119, 86, 0.08), rgba(15, 23, 42, 0.05)),
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 45%);
+  min-height: 210px;
+  border-radius: 4px;
+  background: #f4f6f9;
+  overflow: hidden;
 }
 
 .edit-profile-upload-card-banner .edit-profile-upload-preview {
@@ -4856,22 +5145,35 @@ body:has(.job-post-page) {
 
 .edit-profile-upload-trigger {
   width: fit-content;
-  min-height: 42px;
+  min-height: 38px;
   padding: 0 16px;
-  border-radius: 999px;
-  background: #11254c;
+  border-radius: 4px;
+  background: #ff4b2f;
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 800;
-  box-shadow: 0 12px 22px rgba(17, 37, 76, 0.18);
+  box-shadow: 0 12px 22px rgba(255, 75, 47, 0.16);
+}
+
+.edit-profile-doc-upload {
+  margin-top: 18px;
+  border-radius: 4px;
 }
 
 .edit-profile-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
+  margin-top: 18px;
+  padding: 16px 0 0;
+  background: linear-gradient(180deg, rgba(252, 250, 247, 0) 0%, #fcfaf7 36%);
 }
 
 .provider-profile-detail-grid {
@@ -5245,12 +5547,43 @@ body:has(.job-post-page) {
   }
 
   .edit-profile-head {
-    padding: 20px 18px;
-    border-radius: 24px;
+    min-height: auto;
+    grid-template-columns: 1fr;
+    padding: 24px 18px;
+    border-radius: 4px;
+  }
+
+  .edit-profile-hero-art {
+    display: none;
+  }
+
+  .edit-profile-layout,
+  .edit-profile-about-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-profile-side-nav {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    padding: 8px;
+    scrollbar-width: none;
+  }
+
+  .edit-profile-side-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .edit-profile-side-nav a {
+    min-width: 210px;
   }
 
   .edit-profile-head-copy h1 {
     font-size: 34px;
+  }
+
+  .edit-profile-card {
+    padding: 18px 16px;
   }
 
   .edit-profile-upload-grid {
@@ -5263,6 +5596,7 @@ body:has(.job-post-page) {
 
   .edit-profile-form-actions {
     flex-direction: column-reverse;
+    padding-top: 12px;
   }
 
   .edit-profile-form-actions > * {
