@@ -918,25 +918,54 @@
     const job = record.job || {};
     const startedAt = getProviderJobStartedAt(record);
     const statusLabel = startedAt ? 'in progress' : 'accepted';
+    const statusCopy = startedAt ? 'In Progress' : 'Accepted';
     const description = getProviderJobDescription(record);
     const ownerName = String(record.jobOwnerName || job.ownerName || 'Client').trim();
     const messageHref = `${getBase()}pages/messages.html?peer=${encodeURIComponent(record.jobOwnerUid || job.ownerUid || '')}`;
+    const jobId = record.jobId || job.id || '';
+    const applicationId = record.id || '';
+    const dateLabel = formatProviderJobDate(startedAt || record.acceptedAtMs || record.createdAtMs || job.createdAtMs);
+    const priceLabel = formatProviderCurrency(record.proposedBudget || job.acceptedApplicationBudget || job.budget);
 
     return `
       <article class="provider-gallery-card provider-current-job-card provider-current-job-card-detailed">
-        <div class="provider-job-status-pill is-${escapeHtml(statusLabel.replace(/\s+/g, '-'))}">${escapeHtml(statusLabel)}</div>
+        <div class="provider-current-job-ribbon" aria-hidden="true"><i class="fa-regular fa-star"></i></div>
+        <div class="provider-job-status-pill is-${escapeHtml(statusLabel.replace(/\s+/g, '-'))}">
+          <i class="fa-regular fa-circle-check"></i>
+          <span>${escapeHtml(statusCopy)}</span>
+        </div>
         <div class="provider-gallery-card-copy">
-          <strong>${escapeHtml(getProviderJobTitle(record))}</strong>
-          <p>${escapeHtml(description)}</p>
-          <div class="provider-current-job-note">${startedAt ? 'This job is now running. Finish it when the work is complete.' : 'This bid was accepted. Start the job from here when you begin working.'}</div>
+          <div class="provider-current-job-hero">
+            <div class="provider-current-job-icon"><i class="fa-solid fa-briefcase"></i></div>
+            <div>
+              <strong>${escapeHtml(getProviderJobTitle(record))}</strong>
+              <p>${escapeHtml(description)}</p>
+            </div>
+          </div>
+          <div class="provider-current-job-note">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <div>
+              <strong>${startedAt ? 'This job is now running.' : 'This bid was accepted.'}</strong>
+              <span>${startedAt ? 'Finish it when the work is complete.' : 'Start the job from here when you begin working.'}</span>
+            </div>
+          </div>
           <div class="provider-job-actions">
-            <button type="button" class="provider-job-action-btn" data-provider-job-start="${escapeHtml(record.jobId || job.id || '')}" data-provider-app-id="${escapeHtml(record.id || '')}" ${startedAt ? 'disabled' : ''}>Start Job</button>
-            <button type="button" class="provider-job-action-btn" data-provider-job-finish="${escapeHtml(record.jobId || job.id || '')}" data-provider-app-id="${escapeHtml(record.id || '')}" ${startedAt ? '' : 'disabled'}>Finish Job</button>
-            <a href="${messageHref}" class="provider-job-action-btn is-secondary">Message</a>
+            <button type="button" class="provider-job-action-btn" data-provider-job-start="${escapeHtml(jobId)}" data-provider-app-id="${escapeHtml(applicationId)}" ${startedAt ? 'disabled' : ''}>
+              <i class="fa-solid fa-play"></i>
+              <span>Start Job</span>
+            </button>
+            <button type="button" class="provider-job-action-btn is-outline" data-provider-job-finish="${escapeHtml(jobId)}" data-provider-app-id="${escapeHtml(applicationId)}" ${startedAt ? '' : 'disabled'}>
+              <i class="fa-regular fa-circle-check"></i>
+              <span>Finish Job</span>
+            </button>
+            <a href="${messageHref}" class="provider-job-action-btn is-secondary">
+              <i class="fa-regular fa-comment-dots"></i>
+              <span>Message</span>
+            </a>
           </div>
           <div class="provider-job-meta">
-            <span><i class="fa-regular fa-calendar"></i>${escapeHtml(formatProviderJobDate(startedAt || record.acceptedAtMs || record.createdAtMs || job.createdAtMs))}</span>
-            <span><i class="fa-solid fa-tag"></i>${escapeHtml(formatProviderCurrency(record.proposedBudget || job.acceptedApplicationBudget || job.budget))}</span>
+            <span><i class="fa-regular fa-calendar"></i>${escapeHtml(dateLabel)}</span>
+            <span><i class="fa-solid fa-tag"></i>${escapeHtml(priceLabel)}</span>
             <span><i class="fa-regular fa-user"></i>${escapeHtml(ownerName)}</span>
           </div>
         </div>
