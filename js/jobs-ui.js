@@ -3481,7 +3481,9 @@
                   toUid: selectedApplication.bidderUid,
                   toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
                   toName: selectedApplication.bidderName || 'Provider',
-                  text: buildAcceptedBidInstructionMessage(job)
+                  text: buildAcceptedBidInstructionMessage(job),
+                  actionType: 'accepted_job_start',
+                  actionJobId: job.id || nextJobId
                 }).catch(() => null);
                 showBrowserJobNotification('Bid accepted', {
                   body: `${selectedApplication.bidderName || 'The provider'} has been notified.`
@@ -3686,7 +3688,9 @@
                 toUid: selectedApplication.bidderUid,
                 toProvinceSlug: selectedApplication.bidderProvinceSlug || '',
                 toName: selectedApplication.bidderName || 'Provider',
-                text: buildAcceptedBidInstructionMessage(selectedJob)
+                text: buildAcceptedBidInstructionMessage(selectedJob),
+                actionType: 'accepted_job_start',
+                actionJobId: selectedJob?.id || jobId
               }).catch(() => null);
               showBrowserJobNotification('Bid accepted', {
                 body: `${selectedApplication.bidderName || 'The provider'} has been notified.`

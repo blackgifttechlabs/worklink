@@ -13353,6 +13353,30 @@ body.home-page-body {
   word-break: break-word;
 }
 
+.message-bubble-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.message-bubble-action-btn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.message-bubble-action-btn:hover {
+  background: #115e59;
+}
+
 .message-bubble-meta {
   display: inline-flex;
   align-items: center;

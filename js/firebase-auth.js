@@ -795,6 +795,8 @@ function normalizeRealtimeMessage(id, data = {}, conversationId = '') {
     toProvinceSlug: String(data.toProvinceSlug || '').trim(),
     text: String(data.text || '').trim(),
     imageData: String(data.imageData || '').trim(),
+    actionType: String(data.actionType || '').trim(),
+    actionJobId: String(data.actionJobId || '').trim(),
     fromIsSupport,
     toIsSupport,
     broadcastId: String(data.broadcastId || '').trim(),
@@ -3381,6 +3383,8 @@ async function sendMessageToProvider(payload = {}) {
     toProvinceSlug: recipientProvinceSlug,
     text: String(payload.text || '').trim(),
     imageData: String(payload.imageData || '').trim(),
+    actionType: String(payload.actionType || '').trim(),
+    actionJobId: String(payload.actionJobId || '').trim(),
     viewedAtMs: 0,
     createdAtMs: now,
     createdAt: serverTimestamp()

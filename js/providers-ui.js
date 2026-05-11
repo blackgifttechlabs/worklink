@@ -4359,11 +4359,25 @@
       .join('');
   }
 
-  function buildMessageBubbleContentMarkup(message, searchQuery = '') {
+  function buildMessageBubbleContentMarkup(message, searchQuery = '', accountUid = '') {
     const hasImage = Boolean(String(message.imageData || '').trim());
     const hasText = Boolean(String(message.text || '').trim());
     const imageSrc = hasImage ? resolveMediaSrc(message.imageData) : '';
     const imageLabel = `Shared image from ${message.fromName || 'WorkLinkUp chat'}`;
+    const text = String(message.text || '').trim();
+    const isAcceptedJobMessage = String(message.toUid || '').trim() === String(accountUid || '').trim()
+      && (
+        String(message.actionType || '').trim() === 'accepted_job_start'
+        || (text.startsWith('Your bid for "') && text.includes('Click Start when you begin the work.'))
+      );
+    const currentJobsParams = new URLSearchParams({
+      uid: String(message.toUid || '').trim(),
+      tab: 'current',
+      scroll: 'current'
+    });
+    const toProvinceSlug = String(message.toProvinceSlug || '').trim();
+    if (toProvinceSlug) currentJobsParams.set('province', toProvinceSlug);
+    const currentJobsHref = `${getBase()}pages/provider-profile.html?${currentJobsParams.toString()}`;
 
     return `
       ${hasImage ? `
@@ -4379,6 +4393,14 @@
         </button>
       ` : ''}
       ${hasText ? `<div class="message-bubble-text">${buildMessageSearchTextMarkup(message.text, searchQuery)}</div>` : ''}
+      ${isAcceptedJobMessage ? `
+        <div class="message-bubble-actions">
+          <a href="${escapeHtml(currentJobsHref)}" class="message-bubble-action-btn">
+            <i class="fa-solid fa-play"></i>
+            <span>Go to Current Jobs</span>
+          </a>
+        </div>
+      ` : ''}
     `;
   }
 
@@ -4392,7 +4414,7 @@
         ${showDay ? `<div class="messages-day-divider"><span>${escapeHtml(dayKey)}</span></div>` : ''}
         <div class="message-row ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'}">
           <div class="message-bubble ${message.fromUid === accountUid ? 'is-mine' : 'is-theirs'} ${message.imageData ? 'has-image' : ''}">
-            ${buildMessageBubbleContentMarkup(message, searchQuery)}
+            ${buildMessageBubbleContentMarkup(message, searchQuery, accountUid)}
             <div class="message-bubble-meta">
               <span>${escapeHtml(new Date(Number(message.createdAtMs || 0)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>
               ${buildMessageStatusMarkup(message, accountUid)}
@@ -4636,10 +4658,14 @@
         conversationId: String(message.conversationId || '').trim(),
         fromUid: String(message.fromUid || '').trim(),
         fromName: String(message.fromName || '').trim(),
+        fromProvinceSlug: String(message.fromProvinceSlug || '').trim(),
         toUid: String(message.toUid || '').trim(),
         toName: String(message.toName || '').trim(),
+        toProvinceSlug: String(message.toProvinceSlug || '').trim(),
         text: String(message.text || '').trim(),
         imageData: String(message.imageData || '').trim(),
+        actionType: String(message.actionType || '').trim(),
+        actionJobId: String(message.actionJobId || '').trim(),
         createdAtMs: Number(message.createdAtMs || 0),
         viewedAtMs: Number(message.viewedAtMs || 0),
         type: String(message.type || '').trim()
