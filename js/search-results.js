@@ -382,6 +382,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${base}pages/messages.html?${params.toString()}`;
   }
 
+  function normalizeWhatsAppDigits(number = '') {
+    let digits = String(number || '').replace(/[^0-9]/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.length === 10 && digits.startsWith('0')) digits = `263${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith('7')) digits = `263${digits}`;
+    return digits;
+  }
+
+  function providerWhatsAppHref(provider = {}) {
+    const raw = provider.raw || provider;
+    const digits = normalizeWhatsAppDigits(raw.whatsappNumber || raw.phone || raw.phoneNumber);
+    if (!digits) return '';
+    const name = raw.displayName || raw.fullName || raw.name || provider.title || '';
+    const text = name ? `Hi ${name}, I found you on WorkLinkUp.` : 'Hi, I found you on WorkLinkUp.';
+    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  }
+
   function providerProfileHref(provider = {}) {
     const uid = String(provider.uid || '').trim();
     const provinceSlug = String(provider.provinceSlug || provider.providerProvinceSlug || provider.province || 'harare')
@@ -426,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
       image: resolveImage(image),
       href: providerProfileHref(provider),
       messageHref: providerMessageHref(provider),
+      whatsappHref: providerWhatsAppHref(provider),
       priceLabel: String(provider.priceLabel || provider.startingPrice || provider.rate || '').trim(),
       terms: [
         displayName,
@@ -806,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="search-result-featured-actions">
             <a href="${escapeHtml(item.messageHref)}" class="search-result-message"><i class="fa-regular fa-comment"></i> Message</a>
+            ${item.whatsappHref ? `<a href="${escapeHtml(item.whatsappHref)}" class="search-result-whatsapp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>` : ''}
             <a href="${escapeHtml(item.href)}" class="search-result-profile">View Profile</a>
           </div>
         </div>
@@ -830,21 +849,27 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     const renderCard = (item) => `
-      <a href="${escapeHtml(item.href)}" class="search-result-card">
+      <article class="search-result-card">
         <div class="search-result-card-image">
-          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
+          <a href="${escapeHtml(item.href)}" aria-label="View ${escapeHtml(item.title)} profile">
+            <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />
+          </a>
           <button type="button" class="search-result-save" aria-label="Save provider"><i class="fa-regular fa-heart"></i></button>
           <span class="search-result-badge">Provider</span>
         </div>
         <div class="search-result-card-copy">
-          <h2>${escapeHtml(item.title)}</h2>
+          <h2><a href="${escapeHtml(item.href)}">${escapeHtml(item.title)}</a></h2>
           <p>${escapeHtml(item.subtitle)}</p>
           <strong>${Number(item.rating || 0).toFixed(1)} <i class="fa-solid fa-star"></i> <small>(${formatNumber(item.reviewCount || 0)})</small></strong>
           <small><i class="fa-solid fa-location-dot"></i>${escapeHtml(item.city || item.location)}</small>
           <em>${Number(item.nearness || 0) >= 45 ? 'Available now' : 'Available soon'}</em>
           <b>${item.priceLabel ? `From ${escapeHtml(item.priceLabel)}` : `${formatNumber(item.nearness || 0)}% match`}</b>
+          <div class="search-result-card-actions">
+            <a href="${escapeHtml(item.messageHref)}" class="search-result-card-message"><i class="fa-regular fa-comment"></i><span>Message</span></a>
+            ${item.whatsappHref ? `<a href="${escapeHtml(item.whatsappHref)}" class="search-result-card-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp ${escapeHtml(item.title)}"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></a>` : ''}
+          </div>
         </div>
-      </a>
+      </article>
     `;
 
     const renderExactCarousel = (items) => `

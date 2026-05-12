@@ -801,7 +801,11 @@
   }
 
   function buildWhatsAppLink(number, providerName = '') {
-    const digits = String(number || '').replace(/[^0-9]/g, '');
+    let digits = String(number || '').replace(/[^0-9]/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.length === 10 && digits.startsWith('0')) digits = `263${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith('7')) digits = `263${digits}`;
+    if (!digits) return '';
     const text = providerName ? `Hi ${providerName}, I found you on WorkLinkUp.` : 'Hi, I found you on WorkLinkUp.';
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
@@ -1152,6 +1156,8 @@
         contact.profileImageData
         || (isSupport ? 'images/logo/joblinks.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
       ).trim(),
+      phone: String(contact.phone || contact.phoneNumber || '').trim(),
+      whatsappNumber: String(contact.whatsappNumber || contact.phone || contact.phoneNumber || '').trim(),
       providerPublicId: String(contact.providerPublicId || '').trim()
     };
   }
@@ -2710,6 +2716,7 @@
     const rating = page.querySelector('[data-provider-rating]');
     const jobs = page.querySelector('[data-provider-jobs]');
     const messageLink = page.querySelector('[data-provider-message-link]');
+    const whatsappLink = page.querySelector('[data-provider-whatsapp-link]');
     const editProfileBtn = page.querySelector('[data-provider-edit-profile]');
     const editSection = page.querySelector('.provider-profile-edit-section');
     const myJobsLink = page.querySelector('[data-provider-my-jobs]');
@@ -2801,6 +2808,16 @@
       if (jobs instanceof HTMLElement) jobs.textContent = String(freshProvider.completedJobs || 0);
       if (messageLink instanceof HTMLAnchorElement) messageLink.href = freshProvider.messageUrl;
       if (messageLink instanceof HTMLElement) messageLink.hidden = isOwner;
+      if (whatsappLink instanceof HTMLAnchorElement) {
+        const whatsappHref = buildWhatsAppLink(phoneNumber, freshProvider.displayName);
+        if (whatsappHref && !isOwner) {
+          whatsappLink.href = whatsappHref;
+          whatsappLink.hidden = false;
+        } else {
+          whatsappLink.removeAttribute('href');
+          whatsappLink.hidden = true;
+        }
+      }
       if (editProfileBtn instanceof HTMLButtonElement) {
         editProfileBtn.hidden = !isOwner;
         editProfileBtn.onclick = () => {
@@ -4571,9 +4588,15 @@
                 <span data-message-thread-status>Select a chat to start</span>
               </div>
             </div>
-            <button type="button" class="messages-thread-search-toggle" data-thread-focus-search aria-label="Search this chat">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
+            <div class="messages-thread-actions">
+              <a href="#" class="messages-thread-whatsapp" data-thread-whatsapp target="_blank" rel="noopener" aria-label="Open this contact on WhatsApp" hidden>
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp</span>
+              </a>
+              <button type="button" class="messages-thread-search-toggle" data-thread-focus-search aria-label="Search this chat">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
           </div>
 
           <label class="messages-thread-search" data-thread-search-shell hidden>
@@ -4630,6 +4653,7 @@
     const threadStatus = page.querySelector('[data-message-thread-status]');
     const threadAvatar = page.querySelector('[data-message-thread-avatar]');
     const threadVerified = page.querySelector('[data-message-thread-verified]');
+    const threadWhatsApp = page.querySelector('[data-thread-whatsapp]');
     const composeForm = page.querySelector('[data-messages-compose]');
     const composeInput = page.querySelector('[data-messages-compose-input]');
     const filterRow = page.querySelector('[data-message-filter-row]');
@@ -4931,6 +4955,19 @@
       return source
         ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(fallbackName)} profile image" />`
         : `<span>${escapeHtml(buildInitials(fallbackName))}</span>`;
+    }
+
+    function refreshThreadWhatsAppButton() {
+      if (!(threadWhatsApp instanceof HTMLAnchorElement)) return;
+      const number = state.activePeerProfile?.whatsappNumber || state.activePeerProfile?.phone || '';
+      const href = state.activePeerUid ? buildWhatsAppLink(number, state.activePeerName) : '';
+      if (href && state.activePeerUid !== 'joblink-support') {
+        threadWhatsApp.href = href;
+        threadWhatsApp.hidden = false;
+      } else {
+        threadWhatsApp.href = '#';
+        threadWhatsApp.hidden = true;
+      }
     }
 
     function clearPendingImage(resetInput = true) {
@@ -5326,6 +5363,7 @@
           threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
           threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
           threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+          refreshThreadWhatsAppButton();
         }
       }
 
@@ -5394,6 +5432,7 @@
       threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile, lastSeenAtMs);
       threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
       threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+      refreshThreadWhatsAppButton();
       threadBody.innerHTML = visibleMessages.length
         ? buildThreadMessagesMarkup(visibleMessages, account.uid, threadQuery)
         : threadQuery
@@ -5428,6 +5467,7 @@
         threadStatus.textContent = 'Select a chat to start';
         threadAvatar.textContent = 'WL';
         threadVerified.hidden = true;
+        refreshThreadWhatsAppButton();
         setThreadSearchOpen(false);
         threadBody.innerHTML = `<div class="messages-empty"><div><h2>Select a chat</h2><p>Your conversations and search results will appear on the left.</p></div></div>`;
         refreshComposerState();
@@ -5449,6 +5489,7 @@
       threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
       threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
       threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+      refreshThreadWhatsAppButton();
 
       ensureContactProfile(currentPeerUid, state.activePeerProvince).then((profile) => {
         if (!profile || state.activePeerUid !== currentPeerUid) return;
@@ -5459,6 +5500,7 @@
         threadStatus.textContent = getConversationStatusLabel(state.activePeerProfile);
         threadVerified.hidden = !(state.activePeerProfile?.isProvider || state.activePeerProfile?.isSupport);
         threadAvatar.innerHTML = getProfileImageMarkup(state.activePeerProfile, state.activePeerName);
+        refreshThreadWhatsAppButton();
         renderChatList();
       }).catch(() => {});
 

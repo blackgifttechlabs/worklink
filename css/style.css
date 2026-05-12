@@ -2228,6 +2228,27 @@ body:has(.job-post-page) {
   font-size: 22px;
 }
 
+.provider-profile-action-compact.provider-profile-whatsapp-action {
+  border-color: #25d366;
+  background: #25d366;
+  color: #ffffff;
+}
+
+.provider-profile-action-compact.provider-profile-whatsapp-action:hover {
+  border-color: #1ebe5d;
+  background: #1ebe5d;
+}
+
+.provider-profile-action-compact.provider-profile-whatsapp-action i {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.provider-profile-action-compact.provider-profile-whatsapp-action span,
+.provider-profile-action-compact.provider-profile-whatsapp-action strong {
+  color: #ffffff;
+}
+
 .provider-profile-action-compact span,
 .provider-profile-action-compact strong {
   color: var(--worklink-ink);
@@ -13742,6 +13763,26 @@ body.home-page-body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.messages-thread-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.messages-thread-whatsapp {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .messages-thread-avatar {
@@ -27462,6 +27503,12 @@ body.home-page-body {
   object-fit: cover;
 }
 
+.search-result-card-image a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .search-result-badge {
   position: absolute;
   right: 8px;
@@ -35238,12 +35285,13 @@ footer {
 
 .search-result-featured-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 6px;
 }
 
 .search-result-message,
+.search-result-whatsapp,
 .search-result-profile {
   min-height: 44px;
   border-radius: 10px;
@@ -35265,6 +35313,21 @@ footer {
 .search-result-profile {
   color: #ffffff;
   background: #ff3b30;
+}
+
+.search-result-whatsapp,
+.search-result-card-whatsapp,
+.messages-thread-whatsapp,
+.provider-profile-whatsapp-action {
+  color: #ffffff;
+  background: #25d366;
+}
+
+.search-result-whatsapp:hover,
+.search-result-card-whatsapp:hover,
+.messages-thread-whatsapp:hover,
+.provider-profile-whatsapp-action:hover {
+  background: #1ebe5d;
 }
 
 .search-results-section-head {
@@ -35449,6 +35512,11 @@ footer {
   font-weight: 900;
 }
 
+.search-result-card-copy h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .search-result-card-copy p {
   color: #667085;
   font-size: 12px;
@@ -35486,6 +35554,32 @@ footer {
   margin-top: 8px;
   color: #111827;
   font-size: 12px;
+}
+
+.search-result-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.search-result-card-message,
+.search-result-card-whatsapp {
+  min-height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.search-result-card-message {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: #111827;
+  background: #ffffff;
 }
 
 .search-results-pagination {
@@ -35643,6 +35737,7 @@ footer {
   }
 
   .search-result-message,
+  .search-result-whatsapp,
   .search-result-profile {
     min-height: 30px;
     border-radius: 7px;
