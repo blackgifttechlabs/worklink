@@ -1,5 +1,5 @@
 (function zimbabweLocationsBootstrap() {
-  window.WorkLinkUpZimbabweLocations = [
+  window.ServiceLoopZimbabweLocations = [
     {
       province: 'Bulawayo',
       cities: ['Bulawayo', 'Cowdray Park', 'Luveve', 'Magwegwe', 'Mpopoma', 'Nkulumane', 'Pumula', 'Tshabalala']

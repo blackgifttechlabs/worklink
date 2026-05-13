@@ -1,5 +1,5 @@
 (function jobsUiBootstrap() {
-  const CATALOG = Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+  const CATALOG = Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [];
   const FILTER_WINDOWS = {
     all: Number.POSITIVE_INFINITY,
     today: 1,
@@ -564,7 +564,7 @@
     }, 1300);
   }
 
-  async function showBrowserJobNotification(title = 'JobLink notification', options = {}) {
+  async function showBrowserJobNotification(title = 'ServiceLoop notification', options = {}) {
     if (!('Notification' in window)) return;
     try {
       let permission = Notification.permission;
@@ -573,8 +573,8 @@
       }
       if (permission !== 'granted') return;
       const notification = new Notification(title, {
-        icon: `${getBase()}images/logo/joblinks.avif`,
-        badge: `${getBase()}images/logo/joblinks.avif`,
+        icon: `${getBase()}images/logo/slicon.avif`,
+        badge: `${getBase()}images/logo/slicon.avif`,
         ...options
       });
       window.setTimeout(() => notification.close(), 6500);
@@ -781,7 +781,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/joblinks.avif`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/sl.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -796,12 +796,12 @@
   }
 
   function getJobOwnerInitials(name = '') {
-    const parts = String(name || 'WorkLinkUp client')
+    const parts = String(name || 'ServiceLoop client')
       .trim()
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2);
-    return parts.map((part) => part[0]).join('').toUpperCase() || 'WL';
+    return parts.map((part) => part[0]).join('').toUpperCase() || 'SL';
   }
 
   function buildJobOwnerSlug(value = '') {
@@ -813,13 +813,13 @@
   }
 
   function getJobOwnerName(job = {}) {
-    return String(job.ownerName || job.ownerProfile?.displayName || job.ownerProfile?.name || 'WorkLinkUp client').trim();
+    return String(job.ownerName || job.ownerProfile?.displayName || job.ownerProfile?.name || 'ServiceLoop client').trim();
   }
 
   function getJobOwnerHandle(job = {}) {
     const rawHandle = String(job.ownerProfile?.username || job.ownerProfile?.handle || '').trim();
     if (rawHandle) return rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
-    const fallback = buildJobOwnerSlug(getJobOwnerName(job)) || 'worklinkup.client';
+    const fallback = buildJobOwnerSlug(getJobOwnerName(job)) || 'serviceloop.client';
     return `@${fallback}`;
   }
 
@@ -1116,7 +1116,7 @@
   }
 
   function getZimbabweLocationData() {
-    return Array.isArray(window.WorkLinkUpZimbabweLocations) ? window.WorkLinkUpZimbabweLocations : [];
+    return Array.isArray(window.ServiceLoopZimbabweLocations) ? window.ServiceLoopZimbabweLocations : [];
   }
 
   function getProvinceItems(query = '') {
@@ -2481,8 +2481,8 @@
       bidModal.querySelector('[data-job-become-provider]')?.addEventListener('click', () => {
         closeModal(bidModal);
         const search = `?${setupParams.toString()}`;
-        if (typeof window.openWorkLinkUpSetupModal === 'function') {
-          window.openWorkLinkUpSetupModal(search, { clearPendingOnClose: true });
+        if (typeof window.openServiceLoopSetupModal === 'function') {
+          window.openServiceLoopSetupModal(search, { clearPendingOnClose: true });
           return;
         }
         window.location.href = `${getBase()}pages/account.html${search}`;
@@ -2508,7 +2508,7 @@
           <p class="job-modal-description">${escapeHtml(job.description)}</p>
           <div class="job-modal-stats">
             <div><strong>${escapeHtml(formatCurrency(job.budget))}</strong><span>Budget</span></div>
-            <div><strong>${escapeHtml(job.ownerName || 'WorkLinkUp client')}</strong><span>Posted by</span></div>
+            <div><strong>${escapeHtml(job.ownerName || 'ServiceLoop client')}</strong><span>Posted by</span></div>
             <div><strong>${escapeHtml(formatDateLabel(job.createdAtMs))}</strong><span>Posted</span></div>
           </div>
           <div class="job-modal-address"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(job.address)}</span></div>
@@ -3033,7 +3033,7 @@
       authHelper.listJobsForUser(account.uid).catch(() => [])
     ]);
     const profile = clientProfile || {
-      displayName: userDoc?.name || account.name || 'WorkLinkUp client',
+      displayName: userDoc?.name || account.name || 'ServiceLoop client',
       phone: userDoc?.phone || account.phone || '',
       address: userDoc?.address || '',
       city: userDoc?.city || '',
@@ -3293,7 +3293,7 @@
                 <h4>Accepted Provider</h4>
                 ${acceptedApp ? `
                   <div class="previous-provider">
-                    <div class="avatar">${acceptedApp.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(acceptedApp.bidderProfileImageData))}" alt="${escapeHtml(acceptedApp.bidderName)}" />` : `<span>${escapeHtml((acceptedApp.bidderName || 'WL').slice(0,2).toUpperCase())}</span>`}</div>
+                    <div class="avatar">${acceptedApp.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(acceptedApp.bidderProfileImageData))}" alt="${escapeHtml(acceptedApp.bidderName)}" />` : `<span>${escapeHtml((acceptedApp.bidderName || 'SL').slice(0,2).toUpperCase())}</span>`}</div>
                     <div>
                       <strong>${escapeHtml(acceptedApp.bidderName || 'Provider')}</strong>
                       <p>${escapeHtml(acceptedApp.bidderMessage || '')}</p>
@@ -3309,7 +3309,7 @@
       }
 
       function buildBidderCardMarkup(job, application) {
-        const bidderLabel = application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'WorkLinkUp member';
+        const bidderLabel = application.bidderSpecialty || application.bidderCategory || application.bidderRoleLabel || 'ServiceLoop member';
         const submittedAt = Number(application.createdAtMs || application.updatedAtMs || 0);
         const status = String(application.status || 'pending').trim().toLowerCase() || 'pending';
         const note = String(application.bidderMessage || '').trim();
@@ -3323,10 +3323,10 @@
         const bidderIdentityMarkup = `
           <div class="job-bids-modal-identity">
             <div class="job-bids-modal-avatar">
-              ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span>`}
+              ${application.bidderProfileImageData ? `<img src="${escapeHtml(resolveMediaSrc(application.bidderProfileImageData))}" alt="${escapeHtml(application.bidderName)}" />` : `<span>${escapeHtml((application.bidderName || 'SL').slice(0, 2).toUpperCase())}</span>`}
             </div>
             <div class="job-bids-modal-head">
-              <strong>${escapeHtml(application.bidderName || 'WorkLinkUp user')}</strong>
+              <strong>${escapeHtml(application.bidderName || 'ServiceLoop user')}</strong>
               <span>${escapeHtml(bidderLabel)}</span>
             </div>
           </div>
@@ -3796,7 +3796,7 @@
               </label>
               <label class="job-form-field is-wide">
                 <span>Short bio</span>
-                <textarea name="bio" placeholder="I use WorkLinkUp to find trusted people for the jobs I post.">${escapeHtml(currentProfile.bio || '')}</textarea>
+                <textarea name="bio" placeholder="I use ServiceLoop to find trusted people for the jobs I post.">${escapeHtml(currentProfile.bio || '')}</textarea>
               </label>
             </div>
 
@@ -3964,7 +3964,7 @@
           <div class="job-review-modal-panel" role="dialog" aria-modal="true">
             <button type="button" class="job-modal-close" data-job-review-close><i class="fa-solid fa-xmark"></i></button>
             <div class="job-review-head">
-              <div class="job-review-provider-icon"><span>${escapeHtml((application.bidderName || 'WL').slice(0, 2).toUpperCase())}</span></div>
+              <div class="job-review-provider-icon"><span>${escapeHtml((application.bidderName || 'SL').slice(0, 2).toUpperCase())}</span></div>
               <div>
                 <strong>${escapeHtml(application.bidderName || application.bidderUid || 'Provider')}</strong>
                 <div class="job-review-meta"><span>${escapeHtml(job.subcategory || job.category || '')}</span></div>

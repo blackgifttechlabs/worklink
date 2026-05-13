@@ -219,7 +219,7 @@ module.exports = async function searchIntent(request, response) {
   }
 
   const prompt = [
-    'You map messy marketplace searches to the best WorkLinkUp service/category/location candidates and rank real providers.',
+    'You map messy marketplace searches to the best ServiceLoop service/category/location candidates and rank real providers.',
     'Return only compact JSON with keys: query, service, category, city, province, suggestions, bestMatches, relatedMatches.',
     'suggestions must be an array of at most 6 candidate titles from the provided candidates.',
     'bestMatches and relatedMatches must be arrays of objects: {uid, matchPercent, reason}.',

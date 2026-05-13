@@ -56,6 +56,7 @@
     providersCategory: 'all',
     messagesSearch: '',
     messagesStatus: 'all',
+    activeUserUid: '',
     activeProviderUid: '',
     activeProviderProvinceSlug: '',
     broadcastScope: 'all',
@@ -320,6 +321,92 @@
     return [...activity, ...adminAudit]
       .filter((entry) => entry.actorUid === uid || entry.subjectUid === uid)
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  }
+
+  function getReviewsReceived(uid) {
+    const reviews = Array.isArray(state.snapshot?.reviews) ? state.snapshot.reviews : [];
+    return reviews.filter((review) => String(review.providerUid || '') === String(uid || ''))
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  }
+
+  function getReviewsGiven(uid) {
+    const reviews = Array.isArray(state.snapshot?.reviews) ? state.snapshot.reviews : [];
+    return reviews.filter((review) => String(review.reviewerUid || '') === String(uid || ''))
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+  }
+
+  function renderReviewRows(reviews, emptyText) {
+    if (!reviews.length) return `<div class="admin-list-empty">${escapeHtml(emptyText)}</div>`;
+    return reviews.slice(0, 20).map((review) => {
+      const isHidden = review.hidden === true || String(review.moderationStatus || '').toLowerCase() === 'hidden';
+      return `
+      <div class="admin-message-log-row admin-review-log-row ${isHidden ? 'is-hidden-review' : ''}">
+        <div class="admin-review-log-head">
+          <strong>Rating ${escapeHtml(Number(review.rating || 0).toFixed(1))}/5 · ${escapeHtml(review.jobTitle || 'Reviewed job')}</strong>
+          <span class="admin-review-status ${isHidden ? 'is-hidden' : 'is-visible'}">${isHidden ? 'Hidden' : 'Visible'}</span>
+        </div>
+        <p>${escapeHtml(review.comment || 'No comment left.')}</p>
+        <small>${escapeHtml(review.reviewerName || 'Unknown reviewer')} · ${formatDateTime(review.createdAtMs)}</small>
+        <div class="admin-review-actions">
+          <button type="button" data-review-edit="${escapeHtml(review.id || review.jobId || '')}" data-provider-uid="${escapeHtml(review.providerUid || '')}" data-province-slug="${escapeHtml(review.provinceSlug || '')}">
+            <i class="fa-solid fa-pen"></i><span>Edit comment</span>
+          </button>
+          <button type="button" data-review-visibility="${isHidden ? 'show' : 'hide'}" data-review-id="${escapeHtml(review.id || review.jobId || '')}" data-provider-uid="${escapeHtml(review.providerUid || '')}" data-province-slug="${escapeHtml(review.provinceSlug || '')}">
+            <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i><span>${isHidden ? 'Show' : 'Hide'}</span>
+          </button>
+          <button type="button" class="is-danger" data-review-delete="${escapeHtml(review.id || review.jobId || '')}" data-provider-uid="${escapeHtml(review.providerUid || '')}" data-province-slug="${escapeHtml(review.provinceSlug || '')}">
+            <i class="fa-solid fa-trash"></i><span>Delete</span>
+          </button>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  async function handleReviewModeration(action, trigger) {
+    const reviewId = trigger.getAttribute('data-review-id') || trigger.getAttribute('data-review-edit') || trigger.getAttribute('data-review-delete') || '';
+    const providerUid = trigger.getAttribute('data-provider-uid') || '';
+    const provinceSlug = trigger.getAttribute('data-province-slug') || '';
+    const review = (Array.isArray(state.snapshot?.reviews) ? state.snapshot.reviews : [])
+      .find((item) => String(item.id || item.jobId || '') === reviewId && String(item.providerUid || '') === providerUid);
+    if (!reviewId || !providerUid || !provinceSlug) return;
+
+    let comment = review?.comment || '';
+    if (action === 'edit') {
+      const nextComment = window.prompt('Edit the public review comment. Leave it blank to show no comment.', comment);
+      if (nextComment === null) return;
+      comment = String(nextComment || '').trim();
+    }
+
+    if (action === 'delete' && !window.confirm('Delete this review permanently? This cannot be undone.')) return;
+
+    trigger.disabled = true;
+    try {
+      const authHelper = await waitForAuthHelper();
+      if (!authHelper || typeof authHelper.moderateProviderReview !== 'function') {
+        throw new Error('Review moderation is not available yet.');
+      }
+      await authHelper.moderateProviderReview({
+        action,
+        reviewId,
+        providerUid,
+        provinceSlug,
+        comment,
+        admin: state.currentAdmin
+      });
+      await loadDashboardData({ showPlaceholders: false });
+      const activeUid = state.activeProviderUid || state.activeUserUid;
+      if (state.activeProviderUid) {
+        const provider = getProviderByUid(activeUid);
+        if (provider) renderProviderDetail(provider);
+      } else if (state.activeUserUid) {
+        const user = getUserByUid(activeUid);
+        if (user) renderUserDetail(user);
+      }
+    } catch (error) {
+      window.alert(error?.message || 'Could not update that review.');
+      trigger.disabled = false;
+    }
   }
 
   function getMostActiveDays(items) {
@@ -856,7 +943,7 @@
     refs.overviewDashboard.innerHTML = `
       <article class="admin-hero-card">
         <div class="admin-hero-copy">
-          <div class="admin-surface-kicker">Live WorkLinkUp pulse</div>
+          <div class="admin-surface-kicker">Live ServiceLoop pulse</div>
           <h3>Marketplace command centre</h3>
           <p>Registrations, provider growth, conversations, and service demand are being pulled directly from your Firebase data.</p>
           <div class="admin-hero-stats">
@@ -1010,7 +1097,7 @@
               <div class="admin-person-main">
                 ${renderAvatar(provider.displayName || provider.providerPublicId || 'Provider', provider.profileImageData)}
                 <div class="admin-person-copy">
-                  <strong>${escapeHtml(provider.displayName || provider.providerPublicId || 'WorkLinkUp Provider')}</strong>
+                  <strong>${escapeHtml(provider.displayName || provider.providerPublicId || 'ServiceLoop Provider')}</strong>
                   <small>${escapeHtml(provider.primaryCategory || provider.specialty || provider.province || 'Provider profile')}</small>
                 </div>
               </div>
@@ -1034,9 +1121,9 @@
           ${recentUsers.length ? recentUsers.slice(0, 5).map((user) => `
             <div class="admin-person-row">
               <div class="admin-person-main">
-                ${renderAvatar(user.name || 'WorkLinkUp User')}
+                ${renderAvatar(user.name || 'ServiceLoop User')}
                 <div class="admin-person-copy">
-                  <strong>${escapeHtml(user.name || 'WorkLinkUp User')}</strong>
+                  <strong>${escapeHtml(user.name || 'ServiceLoop User')}</strong>
                   <small>${escapeHtml(user.email || user.phone || user.uid || 'No contact')}</small>
                 </div>
               </div>
@@ -1062,7 +1149,7 @@
               <div class="admin-activity-badge is-${escapeHtml(getActivityGroup(eventItem.type))}">${escapeHtml(getActivityBadge(eventItem.type))}</div>
               <div class="admin-activity-copy">
                 <strong>${escapeHtml(eventItem.title || 'Activity')}</strong>
-                <p>${escapeHtml(eventItem.description || 'WorkLinkUp event')}</p>
+                <p>${escapeHtml(eventItem.description || 'ServiceLoop event')}</p>
               </div>
               <small>${getRelativeTime(eventItem.createdAtMs)}</small>
             </div>
@@ -1100,7 +1187,7 @@
     refs.usersTotal.textContent = `${formatNumber(filtered.length)} members`;
 
     if (!filtered.length) {
-      refs.usersBody.innerHTML = '<tr><td colspan="6" class="admin-empty-cell">No users match the current filters.</td></tr>';
+      refs.usersBody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">No users match the current filters.</td></tr>';
       return;
     }
 
@@ -1108,7 +1195,7 @@
       <tr>
         <td>
           <div class="admin-table-user">
-            <strong>${escapeHtml(user.name || 'WorkLinkUp User')}</strong>
+            <strong>${escapeHtml(user.name || 'ServiceLoop User')}</strong>
             <span>${escapeHtml(user.userDocumentName || user.userPublicId || user.uid || 'No ID')}</span>
           </div>
         </td>
@@ -1142,6 +1229,12 @@
             <small>${formatNumber(Number(user.wishlistCount || 0))} wishlist saves</small>
           </div>
         </td>
+        <td>
+          <button type="button" class="admin-row-action" data-user-detail="${escapeHtml(user.uid || '')}">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>More</span>
+          </button>
+        </td>
       </tr>
     `).join('');
   }
@@ -1151,9 +1244,104 @@
     refs.providerDetailModal.hidden = !isOpen;
     document.body.classList.toggle('admin-mobile-menu-open', Boolean(isOpen || state.sidebarOpen));
     if (!isOpen) {
+      state.activeUserUid = '';
       state.activeProviderUid = '';
       state.activeProviderProvinceSlug = '';
     }
+  }
+
+  function renderUserDetail(user) {
+    if (!refs.providerDetailBody || !user) return;
+    const messages = getProviderMessages(user.uid);
+    const activities = getProviderActivity(user.uid);
+    const reviewsReceived = getReviewsReceived(user.uid);
+    const reviewsGiven = getReviewsGiven(user.uid);
+    const sentCount = messages.filter((message) => message.fromUid === user.uid).length;
+    const receivedCount = messages.filter((message) => message.toUid === user.uid).length;
+
+    refs.providerDetailBody.innerHTML = `
+      <div class="admin-detail-layout">
+        <section class="admin-detail-hero ${isAccountDeactivated(user) ? 'is-deactivated' : ''}">
+          <div class="admin-person-main">
+            ${renderAvatar(user.name || user.userPublicId || 'User')}
+            <div class="admin-person-copy">
+              <strong>${escapeHtml(user.name || user.userPublicId || 'User')}</strong>
+              <small>${escapeHtml(user.userDocumentName || user.userPublicId || user.uid || 'No user ID')}</small>
+            </div>
+          </div>
+          <span class="admin-badge ${isAccountDeactivated(user) ? 'is-danger' : 'is-member'}">${isAccountDeactivated(user) ? 'Deactivated' : 'Active'}</span>
+        </section>
+
+        <section class="admin-detail-grid">
+          ${[
+            ['Email', user.email || user.authEmail || 'No email'],
+            ['Phone', user.whatsappNumber || user.phone || 'No phone'],
+            ['Username', user.username || 'Not set'],
+            ['Province', user.providerProvince || 'Not set'],
+            ['City', user.city || 'No city'],
+            ['Provider profile', user.providerProfileComplete ? 'Yes' : 'No'],
+            ['Created', formatDateTime(user.createdAtMs)],
+            ['Last login / seen', formatDateTime(user.lastSeenAtMs || user.updatedAtMs)]
+          ].map(([label, value]) => `
+            <div class="admin-detail-field">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `).join('')}
+        </section>
+
+        <section class="admin-detail-grid is-stats">
+          <div class="admin-mini-stat"><span>Messages sent</span><strong>${formatNumber(sentCount)}</strong></div>
+          <div class="admin-mini-stat"><span>Messages received</span><strong>${formatNumber(receivedCount)}</strong></div>
+          <div class="admin-mini-stat"><span>Reviews received</span><strong>${formatNumber(reviewsReceived.length)}</strong></div>
+          <div class="admin-mini-stat"><span>Reviews given</span><strong>${formatNumber(reviewsGiven.length)}</strong></div>
+          <div class="admin-mini-stat"><span>Activities</span><strong>${formatNumber(activities.length)}</strong></div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Reviews received</h4>
+          <div class="admin-stacked-list">
+            ${renderReviewRows(reviewsReceived, 'No reviews have been given to this user yet.')}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Reviews given by this user</h4>
+          <div class="admin-stacked-list">
+            ${renderReviewRows(reviewsGiven, 'This user has not reviewed anyone yet.')}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Recent activity</h4>
+          <div class="admin-stacked-list">
+            ${activities.slice(0, 12).map((entry) => `
+              <div class="admin-activity-feed-row">
+                <div class="admin-activity-badge is-${escapeHtml(getActivityGroup(entry.type))}">${escapeHtml(getActivityBadge(entry.type))}</div>
+                <div class="admin-activity-copy">
+                  <strong>${escapeHtml(entry.title || 'Activity')}</strong>
+                  <p>${escapeHtml(entry.description || 'ServiceLoop event')}</p>
+                </div>
+                <small>${getRelativeTime(entry.createdAtMs)}</small>
+              </div>
+            `).join('') || '<div class="admin-list-empty">No activity has been recorded for this user.</div>'}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function openUserDetail(uid) {
+    const user = getUserByUid(uid);
+    if (!user) return;
+    state.activeUserUid = user.uid || '';
+    renderUserDetail(user);
+    setProviderDetailModal(true);
+    logAdminAction('admin_user_detail_opened', 'User detail opened', `${state.currentAdmin?.name || 'An admin'} opened user details for ${user.name || user.userPublicId || user.uid}.`, {
+      uid: user.uid,
+      name: user.name || user.userPublicId || user.uid,
+      sourceRef: `users/${user.uid}`
+    });
   }
 
   function renderProviderDetail(provider) {
@@ -1163,6 +1351,8 @@
     const isDeactivated = isAccountDeactivated(merged);
     const messages = getProviderMessages(provider.uid);
     const activities = getProviderActivity(provider.uid);
+    const reviewsReceived = getReviewsReceived(provider.uid);
+    const reviewsGiven = getReviewsGiven(provider.uid);
     const posts = (Array.isArray(state.snapshot?.posts) ? state.snapshot.posts : [])
       .filter((post) => post.providerUid === provider.uid || post.uid === provider.uid)
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
@@ -1220,7 +1410,7 @@
           </div>
           <form class="admin-support-form" data-provider-support-form>
             <label class="admin-form-field">
-              <span>Send to inbox as JobLinks Support</span>
+              <span>Send to inbox as ServiceLoop Support</span>
               <textarea rows="4" data-provider-support-text placeholder="Type a direct support message"></textarea>
             </label>
             <button type="submit" class="admin-refresh-btn">
@@ -1235,6 +1425,8 @@
           <div class="admin-mini-stat"><span>Messages sent</span><strong>${formatNumber(sentCount)}</strong></div>
           <div class="admin-mini-stat"><span>Messages received</span><strong>${formatNumber(receivedCount)}</strong></div>
           <div class="admin-mini-stat"><span>Work posts</span><strong>${formatNumber(posts.length)}</strong></div>
+          <div class="admin-mini-stat"><span>Reviews received</span><strong>${formatNumber(reviewsReceived.length)}</strong></div>
+          <div class="admin-mini-stat"><span>Reviews given</span><strong>${formatNumber(reviewsGiven.length)}</strong></div>
           <div class="admin-mini-stat"><span>Activities</span><strong>${formatNumber(activities.length)}</strong></div>
         </section>
 
@@ -1255,11 +1447,25 @@
                 <div class="admin-activity-badge is-${escapeHtml(getActivityGroup(entry.type))}">${escapeHtml(getActivityBadge(entry.type))}</div>
                 <div class="admin-activity-copy">
                   <strong>${escapeHtml(entry.title || 'Activity')}</strong>
-                  <p>${escapeHtml(entry.description || 'WorkLinkUp event')}</p>
+                  <p>${escapeHtml(entry.description || 'ServiceLoop event')}</p>
                 </div>
                 <small>${getRelativeTime(entry.createdAtMs)}</small>
               </div>
             `).join('') || '<div class="admin-list-empty">No activity has been recorded for this provider.</div>'}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Reviews received</h4>
+          <div class="admin-stacked-list">
+            ${renderReviewRows(reviewsReceived, 'No reviews have been given to this provider yet.')}
+          </div>
+        </section>
+
+        <section class="admin-detail-section">
+          <h4>Reviews given by this account</h4>
+          <div class="admin-stacked-list">
+            ${renderReviewRows(reviewsGiven, 'This account has not reviewed anyone yet.')}
           </div>
         </section>
 
@@ -1628,7 +1834,7 @@
     const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
     const providerByUid = new Map(providers.map((provider) => [provider.uid, provider]));
     return users.filter((user) => {
-      if (!user.uid || user.uid === 'joblink-support') return false;
+      if (!user.uid || user.uid === 'serviceloop-support') return false;
       const provider = providerByUid.get(user.uid) || {};
       const province = String(user.providerProvince || provider.province || '').trim();
       const category = String(user.primaryCategory || provider.primaryCategory || '').trim();
@@ -1688,7 +1894,7 @@
             <div class="admin-activity-badge is-message">${entry.type === 'admin_broadcast_sent' ? 'Broadcast' : 'Support'}</div>
             <div class="admin-activity-copy">
               <strong>${escapeHtml(entry.title || 'Admin message')}</strong>
-              <p>${escapeHtml(entry.description || 'Message sent by JobLinks Support.')}</p>
+              <p>${escapeHtml(entry.description || 'Message sent by ServiceLoop Support.')}</p>
             </div>
             <small>${getRelativeTime(entry.createdAtMs)}</small>
           </div>
@@ -1728,7 +1934,7 @@
             ${renderAvatar(admin.name || 'Admin')}
             <div class="admin-person-copy">
               <strong>${escapeHtml(admin.name || 'Admin')}</strong>
-              <small>${escapeHtml(admin.email || admin.role || 'WorkLinkUp admin')}</small>
+              <small>${escapeHtml(admin.email || admin.role || 'ServiceLoop admin')}</small>
             </div>
           </div>
           <div class="admin-person-meta">
@@ -1830,7 +2036,7 @@
   }
 
   function setLoadingTables(copy) {
-    if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.providersBody) refs.providersBody.innerHTML = `<tr><td colspan="8" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.messagesBody) refs.messagesBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.adminActivityBody) refs.adminActivityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
@@ -1969,6 +2175,12 @@
       renderProviders();
     });
 
+    refs.usersBody?.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-user-detail]');
+      if (!trigger) return;
+      openUserDetail(trigger.getAttribute('data-user-detail') || '');
+    });
+
     refs.providersBody?.addEventListener('click', (event) => {
       const trigger = event.target.closest('[data-provider-detail]');
       if (!trigger) return;
@@ -2005,6 +2217,25 @@
       }
     });
 
+    refs.providerDetailBody?.addEventListener('click', (event) => {
+      const editTrigger = event.target.closest('[data-review-edit]');
+      if (editTrigger) {
+        handleReviewModeration('edit', editTrigger);
+        return;
+      }
+
+      const visibilityTrigger = event.target.closest('[data-review-visibility]');
+      if (visibilityTrigger) {
+        handleReviewModeration(visibilityTrigger.getAttribute('data-review-visibility') || 'hide', visibilityTrigger);
+        return;
+      }
+
+      const deleteTrigger = event.target.closest('[data-review-delete]');
+      if (deleteTrigger) {
+        handleReviewModeration('delete', deleteTrigger);
+      }
+    });
+
     refs.providerDetailBody?.addEventListener('submit', async (event) => {
       const form = event.target.closest('[data-provider-support-form]');
       if (!form || !state.activeProviderUid) return;
@@ -2023,7 +2254,7 @@
       try {
         await authHelper.sendSupportMessageToUser({
           toUid: provider.uid,
-          toName: provider.displayName || provider.name || provider.providerPublicId || 'WorkLinkUp user',
+          toName: provider.displayName || provider.name || provider.providerPublicId || 'ServiceLoop user',
           toProvinceSlug: provider.provinceSlug || provider.providerProvinceSlug || '',
           text,
           admin: state.currentAdmin
@@ -2031,7 +2262,7 @@
         if (textarea) textarea.value = '';
         if (messageEl) {
           messageEl.dataset.state = 'success';
-          messageEl.textContent = 'Message sent to their inbox as JobLinks Support.';
+          messageEl.textContent = 'Message sent to their inbox as ServiceLoop Support.';
         }
         await loadDashboardData({ showPlaceholders: false });
       } catch (error) {

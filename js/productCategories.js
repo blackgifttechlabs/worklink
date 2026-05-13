@@ -15,4 +15,4 @@ export const productCategories = [
   { name: 'Other', subcategories: ['Miscellaneous', 'Bundles', 'Free Items'] }
 ];
 
-window.WorkLinkUpProductCategories = productCategories;
+window.ServiceLoopProductCategories = productCategories;

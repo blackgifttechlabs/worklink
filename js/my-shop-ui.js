@@ -1,6 +1,6 @@
 (function myShopPageBootstrap() {
   function market() {
-    return window.WorkLinkUpMarketplace;
+    return window.ServiceLoopMarketplace;
   }
 
   function dayKey(timestamp) {
@@ -227,7 +227,7 @@
                   <article class="shop-save-row">
                     <img src="${api.escapeHtml(api.resolveImage(save.productImageData))}" alt="${api.escapeHtml(save.productTitle || 'Product')}" />
                     <div><strong>${api.escapeHtml(save.productTitle || 'Product')}</strong><span>${api.escapeHtml(save.productLocation || 'Location not shared')}</span></div>
-                    <div><span>Saved by</span><strong>${api.escapeHtml(save.buyerName || 'WorkLinkUp user')}</strong>${save.buyerPhone ? `<small>${api.escapeHtml(save.buyerPhone)}</small>` : ''}</div>
+                    <div><span>Saved by</span><strong>${api.escapeHtml(save.buyerName || 'ServiceLoop user')}</strong>${save.buyerPhone ? `<small>${api.escapeHtml(save.buyerPhone)}</small>` : ''}</div>
                     <em>${api.formatPrice(save.productPrice)}</em>
                   </article>
                 `).join('') : '<div class="market-empty">No wishlist saves on your products yet.</div>'}

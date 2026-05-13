@@ -1,7 +1,7 @@
 (function searchIntelligenceBootstrap(root, factory) {
   const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
-  root.WorkLinkUpSearchIntelligence = api;
+  root.ServiceLoopSearchIntelligence = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window, function searchIntelligenceFactory(root) {
   const FALLBACK_LOCATIONS = [
     { province: 'Bulawayo', cities: ['Bulawayo', 'Cowdray Park', 'Luveve', 'Magwegwe', 'Mpopoma', 'Nkulumane', 'Pumula', 'Tshabalala'] },
@@ -125,11 +125,11 @@
   }
 
   function getCatalog() {
-    return Array.isArray(root.WorkLinkUpServiceCatalog) ? root.WorkLinkUpServiceCatalog : [];
+    return Array.isArray(root.ServiceLoopServiceCatalog) ? root.ServiceLoopServiceCatalog : [];
   }
 
   function getLocations() {
-    return Array.isArray(root.WorkLinkUpZimbabweLocations) ? root.WorkLinkUpZimbabweLocations : FALLBACK_LOCATIONS;
+    return Array.isArray(root.ServiceLoopZimbabweLocations) ? root.ServiceLoopZimbabweLocations : FALLBACK_LOCATIONS;
   }
 
   function buildCatalogEntries(catalog = getCatalog(), locations = getLocations()) {

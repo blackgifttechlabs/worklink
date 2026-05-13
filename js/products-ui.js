@@ -45,11 +45,11 @@
   }
 
   function categories() {
-    return Array.isArray(window.WorkLinkUpProductCategories) ? window.WorkLinkUpProductCategories : fallbackCategories;
+    return Array.isArray(window.ServiceLoopProductCategories) ? window.ServiceLoopProductCategories : fallbackCategories;
   }
 
   function locationOptionsMarkup(selected = '') {
-    const groups = Array.isArray(window.WorkLinkUpZimbabweLocations) ? window.WorkLinkUpZimbabweLocations : [];
+    const groups = Array.isArray(window.ServiceLoopZimbabweLocations) ? window.ServiceLoopZimbabweLocations : [];
     if (!groups.length) {
       return ['Harare', 'Bulawayo', 'Masvingo', 'Chitungwiza', 'Mutare', 'Gweru']
         .map((city) => `<option ${selected === city ? 'selected' : ''}>${escapeHtml(city)}</option>`)
@@ -67,7 +67,7 @@
 
   function resolveImage(src = '') {
     const value = String(src || '').trim();
-    if (!value) return `${getBase()}images/logo/joblinks.avif`;
+    if (!value) return `${getBase()}images/logo/sl.avif`;
     if (/^(data:|https?:|blob:|\/)/i.test(value)) return value;
     return `${getBase()}${value.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, '')}`;
   }
@@ -377,7 +377,7 @@
     const helper = await authHelper();
     if (helper?.createMarketplaceProduct) return helper.createMarketplaceProduct(payload);
     const account = getStoredAccount();
-    const item = { id: `local-${Date.now()}`, sellerUid: account?.uid || 'local', sellerName: account?.name || 'WorkLinkUp seller', createdAtMs: Date.now(), status: 'active', ...payload };
+    const item = { id: `local-${Date.now()}`, sellerUid: account?.uid || 'local', sellerName: account?.name || 'ServiceLoop seller', createdAtMs: Date.now(), status: 'active', ...payload };
     const products = readLocalProducts();
     products.unshift(item);
     writeLocalProducts(products);
@@ -516,7 +516,7 @@
           <h3>${escapeHtml(product.title)}</h3>
           <p>${escapeHtml(product.category || 'Other')} ${product.subcategory ? `· ${escapeHtml(product.subcategory)}` : ''}</p>
           <div><span><i class="fa-solid fa-location-dot"></i>${escapeHtml(product.location || 'Zimbabwe')}</span><span><i class="fa-regular fa-clock"></i>${product.deliveryOption === 'delivery' ? 'Delivery' : 'Pickup'}</span></div>
-          <small>${escapeHtml(product.sellerName || 'WorkLinkUp seller')}${Number(product.wishlistCount || product._saveCount || 0) ? ` · ${escapeHtml(Number(product.wishlistCount || product._saveCount || 0))} saves` : ''}${product._saverPreview ? ` · Saved by ${escapeHtml(product._saverPreview)}` : ''}</small>
+          <small>${escapeHtml(product.sellerName || 'ServiceLoop seller')}${Number(product.wishlistCount || product._saveCount || 0) ? ` · ${escapeHtml(Number(product.wishlistCount || product._saveCount || 0))} saves` : ''}${product._saverPreview ? ` · Saved by ${escapeHtml(product._saverPreview)}` : ''}</small>
           <button type="button" class="market-order-btn" data-product-order="${escapeHtml(product.id)}"><i class="fa-solid fa-cart-shopping"></i> Place Order</button>
         </div>
       </article>
@@ -871,7 +871,7 @@
     });
   }
 
-  window.WorkLinkUpMarketplace = {
+  window.ServiceLoopMarketplace = {
     escapeHtml,
     formatPrice,
     resolveImage,

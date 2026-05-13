@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!displayName && !specialty && !city && !province) return null;
         return {
           kind: 'provider',
-          displayName: displayName || specialty || 'WorkLinkUp specialist',
+          displayName: displayName || specialty || 'ServiceLoop specialist',
           username,
           specialty: specialty || primaryCategory || 'Specialist',
           primaryCategory,
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getServiceCatalog() {
-    return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+    return Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [];
   }
 
   function buildServiceSearchItems() {
@@ -345,8 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {
     const isClone = Boolean(options.isClone);
     return categories.map((category) => `
-      <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
-        ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
+      <a href="${typeof buildServiceLoopSpecialistsHref === 'function'
+        ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, query: category.label })
         : `${base}pages/search-results.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <div class="category-circle-img">
           ${category.image
@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span>${escapeHtml(item.budget || 'Open')}</span>
             </div>
             <h3>${escapeHtml(item.service || item.category || 'Trending job')}</h3>
-            <p>${escapeHtml(item.blurb || 'High-demand work on WorkLinkUp right now.')}</p>
+            <p>${escapeHtml(item.blurb || 'High-demand work on ServiceLoop right now.')}</p>
           </div>
         </a>
       `;
@@ -618,12 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getHomeJobInitials(name = '') {
-    const parts = String(name || 'WorkLinkUp client')
+    const parts = String(name || 'ServiceLoop client')
       .trim()
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2);
-    return parts.map((part) => part[0]).join('').toUpperCase() || 'WL';
+    return parts.map((part) => part[0]).join('').toUpperCase() || 'SL';
   }
 
   function buildHomeJobDetailHref(jobId = '') {
@@ -667,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `
       <article class="home-market-card home-market-available-card home-job-guide-card wl-showcase-card wl-showcase-card--home wl-showcase-card--guide">
         <a class="wl-showcase-card__media" href="${escapeHtml(href)}">
-          <img class="wl-showcase-card__image" src="${escapeHtml(image)}" alt="${escapeHtml(card.title || 'How WorkLinkUp jobs work')}" loading="lazy" decoding="async" />
+          <img class="wl-showcase-card__image" src="${escapeHtml(image)}" alt="${escapeHtml(card.title || 'How ServiceLoop jobs work')}" loading="lazy" decoding="async" />
           <div class="wl-showcase-card__overlay"></div>
         </a>
         <div class="wl-showcase-card__badge-row">
@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildHomeProviderRow(provider = {}) {
-    const name = String(provider.displayName || provider.name || provider.providerPublicId || 'WorkLinkUp provider').trim();
+    const name = String(provider.displayName || provider.name || provider.providerPublicId || 'ServiceLoop provider').trim();
     const image = resolveHomeMediaSrc(provider.profileImageData || provider.imageData || '');
     const href = `${getSiteBasePath()}pages/specialists.html?query=${encodeURIComponent(name)}`;
     const initials = getHomeJobInitials(name);
@@ -1091,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function getSearchMatches(rawQuery) {
     const query = String(rawQuery || '').trim().toLowerCase();
-    const searchIntel = window.WorkLinkUpSearchIntelligence;
+    const searchIntel = window.ServiceLoopSearchIntelligence;
     const [providers, serviceItems] = await Promise.all([
       getSearchProviders(),
       Promise.resolve(getServiceSearchItems())
@@ -1761,7 +1761,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const image = event.target;
     if (!(image instanceof HTMLImageElement) || image.dataset.fallbackApplied === 'true') return;
     image.dataset.fallbackApplied = 'true';
-    image.src = `${getSiteBasePath()}images/logo/joblinks.avif`;
+    image.src = `${getSiteBasePath()}images/logo/sl.avif`;
   }, true);
 
   // Filter chips toggle
@@ -1983,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="job-review-modal-panel worklinkup-review-prompt-panel" role="dialog" aria-modal="true" aria-label="Rate worker">
         <button type="button" class="job-modal-close" data-pending-review-close><i class="fa-solid fa-xmark"></i></button>
         <div class="job-review-head">
-          <div class="job-review-provider-icon"><span>${escapeHtml(workerName.slice(0, 2).toUpperCase() || 'WL')}</span></div>
+          <div class="job-review-provider-icon"><span>${escapeHtml(workerName.slice(0, 2).toUpperCase() || 'SL')}</span></div>
           <div>
             <strong>Rate ${escapeHtml(workerName)}</strong>
             <div class="job-review-meta"><span>${escapeHtml(jobTitle)}</span></div>
@@ -2211,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     accountModeInput.value = mode;
     const isSignup = mode === 'signup';
     if (accountHeading) accountHeading.textContent = 'Welcome';
-    if (accountSubtext) accountSubtext.textContent = 'Create an account or sign in to continue with WorkLinkUp.';
+    if (accountSubtext) accountSubtext.textContent = 'Create an account or sign in to continue with ServiceLoop.';
     if (accountSwitchLabel) accountSwitchLabel.textContent = isSignup ? 'Already have an account?' : 'Joining us for the first time?';
     if (accountModeSwitch) accountModeSwitch.textContent = isSignup ? 'Sign In' : 'Create Account';
     if (accountSubmitBtn) {
@@ -2243,7 +2243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isSignup = mode === 'signup';
     accountPageModeInput.value = mode;
     if (accountPageHeading) accountPageHeading.textContent = isSignup ? 'Create a new account' : 'Sign in to your account';
-    if (accountPageSubtextLabel) accountPageSubtextLabel.textContent = isSignup ? 'Already have an account?' : 'New to WorkLinkUp?';
+    if (accountPageSubtextLabel) accountPageSubtextLabel.textContent = isSignup ? 'Already have an account?' : 'New to ServiceLoop?';
     if (accountPageNameRow) accountPageNameRow.hidden = !isSignup;
     if (accountPageNameInput) {
       accountPageNameInput.disabled = !isSignup;
@@ -2339,7 +2339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function openWorkLinkUpSetupModal(pendingSearch = '', options = {}) {
+  function openServiceLoopSetupModal(pendingSearch = '', options = {}) {
     const normalizedSearch = String(pendingSearch || '').trim()
       ? (String(pendingSearch).startsWith('?') ? String(pendingSearch) : `?${String(pendingSearch)}`)
       : '?setup=1';
@@ -2356,7 +2356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="pending-setup-backdrop"></div>
         <div class="pending-setup-panel" role="dialog" aria-modal="true" aria-label="Complete your account setup">
           <button type="button" class="pending-setup-close" aria-label="Close setup modal">×</button>
-          <iframe class="pending-setup-frame" src="${frameSrc}" title="WorkLinkUp account setup"></iframe>
+          <iframe class="pending-setup-frame" src="${frameSrc}" title="ServiceLoop account setup"></iframe>
         </div>
       </div>
     `);
@@ -2453,7 +2453,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('message', messageHandler);
   }
 
-  window.openWorkLinkUpSetupModal = openWorkLinkUpSetupModal;
+  window.openServiceLoopSetupModal = openServiceLoopSetupModal;
 
   async function handleHomeGetFoundClick() {
     const base = getSiteBasePath();
@@ -2483,11 +2483,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      openWorkLinkUpSetupModal('?setup=provider', {
+      openServiceLoopSetupModal('?setup=provider', {
         clearPendingOnClose: true
       });
     } catch (error) {
-      openWorkLinkUpSetupModal('?setup=provider', {
+      openServiceLoopSetupModal('?setup=provider', {
         clearPendingOnClose: true
       });
     }
@@ -2506,7 +2506,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const account = readAccount();
     if (!account?.loggedIn || !pendingSearch) return;
-    openWorkLinkUpSetupModal(pendingSearch, {
+    openServiceLoopSetupModal(pendingSearch, {
       delayMs: 2000,
       consumeOnceFlag: true
     });
@@ -2525,7 +2525,7 @@ document.addEventListener('DOMContentLoaded', () => {
     accountGuestCard.hidden = isLoggedIn;
     if (!isLoggedIn) return;
 
-    const name = account.name || 'WorkLinkUp User';
+    const name = account.name || 'ServiceLoop User';
     const email = account.email || 'Not set';
     const isProvider = String(account.userRole || '').trim().toLowerCase() === 'provider';
     const jobsAndBidsHref = 'job-giver-profile.html';

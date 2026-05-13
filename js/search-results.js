@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getCatalog() {
-    return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+    return Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [];
   }
 
   function normalizeProfileImage(src = '') {
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/joblinks.avif'
+      normalized === 'images/logo/sl.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getSearchIntel() {
-    return window.WorkLinkUpSearchIntelligence || null;
+    return window.ServiceLoopSearchIntelligence || null;
   }
 
   function getCurrentSearchIntent() {
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resolveImage(src = '') {
     const value = String(src || '').trim();
-    if (!value) return `${base}images/logo/joblinks.avif`;
+    if (!value) return `${base}images/logo/sl.avif`;
     const unescaped = value
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const digits = normalizeWhatsAppDigits(raw.whatsappNumber || raw.phone || raw.phoneNumber);
     if (!digits) return '';
     const name = raw.displayName || raw.fullName || raw.name || provider.title || '';
-    const text = name ? `Hi ${name}, I found you on WorkLinkUp.` : 'Hi, I found you on WorkLinkUp.';
+    const text = name ? `Hi ${name}, I found you on ServiceLoop.` : 'Hi, I found you on ServiceLoop.';
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
 
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function normalizeProvider(provider = {}) {
-    const displayName = String(provider.displayName || provider.fullName || provider.name || provider.username || 'WorkLinkUp provider').trim();
+    const displayName = String(provider.displayName || provider.fullName || provider.name || provider.username || 'ServiceLoop provider').trim();
     const specialty = String(provider.specialty || provider.title || provider.primaryCategory || 'Specialist').trim();
     const category = String(provider.primaryCategory || specialty || 'Specialist').trim();
     const city = String(provider.city || '').trim();
@@ -720,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterDot) filterDot.hidden = !(state.category || state.rating);
     activeFiltersHost.innerHTML = filters.length
       ? `${filters.map((filter) => `<span>${escapeHtml(filter)} ${filter !== `Search: ${state.query}` ? '<button type="button" data-filter-clear aria-label="Clear filter"><i class="fa-solid fa-xmark"></i></button>' : ''}</span>`).join('')}${filters.length > 1 ? '<button type="button" class="search-results-clear-all" data-search-clear-all>Clear all</button>' : ''}`
-      : '<span>All WorkLinkUp providers</span>';
+      : '<span>All ServiceLoop providers</span>';
     activeFiltersHost.querySelectorAll('[data-filter-clear]').forEach((button) => {
       button.addEventListener('click', () => {
         state.category = '';

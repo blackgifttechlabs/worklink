@@ -67,10 +67,10 @@ const ADMIN_BOOTSTRAP_ID = 'primary-admin';
 const ADMIN_BOOTSTRAP_PIN = '1677';
 const MESSAGE_THREADS_PATH = 'messages';
 const MESSAGE_INDEX_PATH = 'conversationIndex';
-const SUPPORT_UID = 'joblink-support';
-const SUPPORT_NAME = 'JobLinks Support';
-const SUPPORT_EMAIL = 'support@joblink.co.zw';
-const SUPPORT_PHONE = '+263788575998';
+const SUPPORT_UID = 'serviceloop-support';
+const SUPPORT_NAME = 'ServiceLoop Support';
+const SUPPORT_EMAIL = 'support@serviceloop.co.zw';
+const SUPPORT_PHONE = '+263774825969';
 const CLIENTS_COLLECTION = 'clients';
 const JOBS_COLLECTION = 'jobs';
 const PRODUCTS_COLLECTION = 'products';
@@ -141,13 +141,13 @@ function normalizeName(value) {
 }
 
 function fallbackNameFromUser(user) {
-  if (!user) return 'WorkLinkUp User';
+  if (!user) return 'ServiceLoop User';
   if (user.displayName) return normalizeName(user.displayName);
   if (user.email) {
     return normalizeName(user.email.split('@')[0].replace(/[._-]+/g, ' '));
   }
   if (user.phoneNumber) return user.phoneNumber;
-  return 'WorkLinkUp User';
+  return 'ServiceLoop User';
 }
 
 function persistUser(user) {
@@ -239,13 +239,13 @@ function normalizeStoredProfileImage(value = '') {
     .split('?')[0]
     .split('#')[0];
 
-  const catalogImages = (Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [])
+  const catalogImages = (Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [])
     .map((category) => String(category?.image || '').trim())
     .filter(Boolean)
     .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
   if (
-    normalized === 'images/logo/joblinks.avif'
+    normalized === 'images/logo/sl.avif'
     || normalized === 'images/sections/findme.avif'
     || normalized.startsWith('images/categories/')
     || catalogImages.includes(normalized)
@@ -440,9 +440,9 @@ function slugifyIdentifier(value) {
 }
 
 function buildUserDocumentName(name, publicId) {
-  const normalizedName = normalizeName(name || 'WorkLinkUp User')
+  const normalizedName = normalizeName(name || 'ServiceLoop User')
     .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'WorkLinkUp-User';
+    .replace(/^-+|-+$/g, '') || 'ServiceLoop-User';
   return `${normalizedName}-${publicId}`;
 }
 
@@ -451,7 +451,7 @@ function getExistingUserPublicFields(existingUser, name = '') {
   return {
     userPublicId: existingUser.userPublicId,
     userPublicNumber: Number(existingUser.userPublicNumber || 0),
-    userDocumentName: buildUserDocumentName(name || existingUser.name || 'WorkLinkUp User', existingUser.userPublicId)
+    userDocumentName: buildUserDocumentName(name || existingUser.name || 'ServiceLoop User', existingUser.userPublicId)
   };
 }
 
@@ -1112,7 +1112,7 @@ async function getOrCreateUserPublicFields(uid, name = '') {
     const userSnapshot = await transaction.get(userRef);
     const existingUser = userSnapshot.exists() ? (userSnapshot.data() || {}) : {};
     const existingNumber = Number(existingUser.userPublicNumber || 0);
-    const effectiveName = name || existingUser.name || existingUser.displayName || 'WorkLinkUp User';
+    const effectiveName = name || existingUser.name || existingUser.displayName || 'ServiceLoop User';
 
     if (existingNumber > 0 && existingUser.userPublicId) {
       const userDocumentName = buildUserDocumentName(effectiveName, existingUser.userPublicId);
@@ -1170,7 +1170,7 @@ async function syncUserDocument(account, extra = {}) {
   const createdAtMs = Number(extra.createdAtMs ?? (existingUser?.createdAtMs || Date.now()));
   const updatedAtMs = Number(extra.updatedAtMs ?? Date.now());
   const lastSeenAtMs = Number(extra.lastSeenAtMs ?? existingUser?.lastSeenAtMs ?? 0);
-  const effectiveName = normalizeName(extra.name || account.name || existingUser?.name || 'WorkLinkUp User');
+  const effectiveName = normalizeName(extra.name || account.name || existingUser?.name || 'ServiceLoop User');
   let userPublicFields = {};
   try {
     userPublicFields = await getOrCreateUserPublicFields(account.uid, effectiveName);
@@ -1272,7 +1272,7 @@ async function syncUserDocument(account, extra = {}) {
       subjectUid: account.uid,
       subjectName: account.name,
       title: 'New user registered',
-      description: `${account.name} created a WorkLinkUp account.`,
+      description: `${account.name} created a ServiceLoop account.`,
       sourceRef: `users/${account.uid}`,
       createdAtMs
     });
@@ -1799,6 +1799,7 @@ async function listProviderReviews(uid, provinceSlug = '') {
   const reviewsSnapshot = await getDocs(collection(db, 'providers', providerProfile.provinceSlug, 'profiles', providerProfile.uid, 'reviews'));
   return reviewsSnapshot.docs
     .map((snapshot) => ({ id: snapshot.id, ...snapshot.data() }))
+    .filter((review) => review.hidden !== true && String(review.moderationStatus || '').toLowerCase() !== 'hidden')
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 }
 
@@ -1813,11 +1814,107 @@ async function subscribeProviderReviews(uid, provinceSlug = '', callback = () =>
   return onSnapshot(reviewsRef, (snapshot) => {
     const reviews = snapshot.docs
       .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+      .filter((review) => review.hidden !== true && String(review.moderationStatus || '').toLowerCase() !== 'hidden')
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
     callback(reviews);
   }, () => {
     callback([]);
   });
+}
+
+async function recalculateProviderReviewStats(providerUid = '', provinceSlug = '') {
+  const normalizedUid = String(providerUid || '').trim();
+  const normalizedProvince = String(provinceSlug || '').trim();
+  if (!normalizedUid || !normalizedProvince) return;
+
+  const reviewsRef = collection(db, 'providers', normalizedProvince, 'profiles', normalizedUid, 'reviews');
+  const reviewsSnapshot = await getDocs(reviewsRef).catch(() => null);
+  if (!reviewsSnapshot) return;
+
+  const ratedReviews = reviewsSnapshot.docs
+    .map((docSnapshot) => docSnapshot.data() || {})
+    .filter((item) => item.hidden !== true && String(item.moderationStatus || '').toLowerCase() !== 'hidden')
+    .filter((item) => Number(item.rating || 0) > 0);
+  const ratingTotal = ratedReviews.reduce((sum, item) => sum + Number(item.rating || 0), 0);
+  const reviewCount = ratedReviews.length;
+  const averageRating = reviewCount ? Number((ratingTotal / reviewCount).toFixed(2)) : 0;
+  const lastReviewedAtMs = ratedReviews.reduce((latest, item) => Math.max(latest, Number(item.createdAtMs || item.completedAtMs || 0)), 0);
+  const payload = {
+    averageRating,
+    reviewCount,
+    ratingTotal,
+    lastReviewedAtMs,
+    updatedAtMs: Date.now(),
+    updatedAt: serverTimestamp()
+  };
+
+  await Promise.all([
+    setDoc(doc(db, 'providers', normalizedProvince, 'profiles', normalizedUid), payload, { merge: true }).catch(() => {}),
+    setDoc(doc(db, 'users', normalizedUid), payload, { merge: true }).catch(() => {})
+  ]);
+}
+
+async function moderateProviderReview(payload = {}) {
+  const providerUid = String(payload.providerUid || '').trim();
+  const provinceSlug = String(payload.provinceSlug || '').trim();
+  const reviewId = String(payload.reviewId || payload.id || '').trim();
+  const action = String(payload.action || '').trim().toLowerCase();
+  if (!providerUid || !provinceSlug || !reviewId) throw new Error('Review details are missing.');
+  if (!['edit', 'hide', 'show', 'delete'].includes(action)) throw new Error('Unsupported review action.');
+
+  const reviewRef = doc(db, 'providers', provinceSlug, 'profiles', providerUid, 'reviews', reviewId);
+  const reviewSnapshot = await getDoc(reviewRef);
+  if (!reviewSnapshot.exists()) throw new Error('Review not found.');
+
+  const reviewData = reviewSnapshot.data() || {};
+  const now = Date.now();
+  if (action === 'delete') {
+    await deleteDoc(reviewRef);
+  } else {
+    const updates = {
+      moderatedAtMs: now,
+      moderatedAt: serverTimestamp(),
+      moderatedBy: String(payload.admin?.id || ''),
+      moderatedByName: String(payload.admin?.name || 'Admin')
+    };
+    if (action === 'edit') {
+      updates.comment = String(payload.comment || '').trim();
+      updates.editedByAdmin = true;
+    }
+    if (action === 'hide') {
+      updates.hidden = true;
+      updates.moderationStatus = 'hidden';
+    }
+    if (action === 'show') {
+      updates.hidden = false;
+      updates.moderationStatus = 'visible';
+    }
+    await setDoc(reviewRef, updates, { merge: true });
+  }
+
+  await recalculateProviderReviewStats(providerUid, provinceSlug);
+
+  const actionPastTense = {
+    edit: 'edited',
+    hide: 'hidden',
+    show: 'shown',
+    delete: 'deleted'
+  }[action] || 'updated';
+
+  await recordAdminActivity(`admin_review_${action}`, {
+    actorScope: 'admin',
+    actorUid: String(payload.admin?.id || ''),
+    actorName: String(payload.admin?.name || 'Admin'),
+    actorEmail: String(payload.admin?.email || ''),
+    subjectUid: providerUid,
+    subjectName: String(reviewData.jobTitle || reviewData.reviewerName || 'Review'),
+    title: `Review ${actionPastTense}`,
+    description: `${payload.admin?.name || 'An admin'} ${actionPastTense} a review for ${reviewData.jobTitle || providerUid}.`,
+    sourceRef: `providers/${provinceSlug}/profiles/${providerUid}/reviews/${reviewId}`,
+    createdAtMs: now
+  }).catch(() => {});
+
+  return { providerUid, provinceSlug, reviewId, action };
 }
 
 function getProviderPostRef(providerProfile, postId) {
@@ -2406,12 +2503,12 @@ async function deleteJobPost(jobId = '') {
 
   await recordAdminActivity('job_post_deleted', {
     actorUid: auth.currentUser.uid,
-    actorName: job.ownerName || auth.currentUser.displayName || 'WorkLinkUp user',
+    actorName: job.ownerName || auth.currentUser.displayName || 'ServiceLoop user',
     actorEmail: auth.currentUser.email || '',
     subjectUid: job.ownerUid || auth.currentUser.uid,
     subjectName: job.ownerName || '',
     title: 'Job deleted',
-    description: `${job.ownerName || 'A client'} deleted a job in ${job.category || 'WorkLinkUp'}.`,
+    description: `${job.ownerName || 'A client'} deleted a job in ${job.category || 'ServiceLoop'}.`,
     sourceRef: `${JOBS_COLLECTION}/${jobId}`,
     createdAtMs: Date.now()
   }).catch(() => {});
@@ -2652,12 +2749,12 @@ async function applyToJob(jobId = '', payload = {}) {
     || clientProfile?.displayName
     || userDoc?.name
     || account.name
-    || 'WorkLinkUp user';
+    || 'ServiceLoop user';
   const bidderRoleLabel = providerProfile
     ? 'Provider'
     : String(userDoc?.userRole || account.userRole || 'client').trim().toLowerCase() === 'client'
       ? 'Client'
-      : 'WorkLinkUp member';
+      : 'ServiceLoop member';
   const applicationPayload = {
     bidderUid: auth.currentUser.uid,
     bidderName,
@@ -3365,7 +3462,7 @@ async function sendMessageToProvider(payload = {}) {
   ]);
   const recipientName = recipientProfile?.displayName
     || String(recipientUserDoc?.name || '').trim()
-    || String(payload.toName || 'WorkLinkUp user').trim();
+    || String(payload.toName || 'ServiceLoop user').trim();
   const recipientProvinceSlug = recipientProfile?.provinceSlug
     || String(recipientUserDoc?.providerProvinceSlug || '').trim()
     || String(payload.toProvinceSlug || '').trim();
@@ -3465,7 +3562,7 @@ async function writeSupportMessageToUser(payload = {}) {
   if (!toUid) throw new Error('Choose a recipient first.');
 
   const recipientUserDoc = await getUserDocument(toUid).catch(() => null);
-  const recipientName = String(payload.toName || recipientUserDoc?.name || recipientUserDoc?.username || 'WorkLinkUp user').trim();
+  const recipientName = String(payload.toName || recipientUserDoc?.name || recipientUserDoc?.username || 'ServiceLoop user').trim();
   const recipientProvinceSlug = String(payload.toProvinceSlug || recipientUserDoc?.providerProvinceSlug || '').trim();
   const text = String(payload.text || '').trim();
   if (!text) throw new Error('Type a message first.');
@@ -3766,7 +3863,7 @@ async function deleteProfile() {
     subjectUid: account.uid,
     subjectName: account.name,
     title: 'Profile deleted',
-    description: `${account.name} deleted their WorkLinkUp profile.`,
+    description: `${account.name} deleted their ServiceLoop profile.`,
     sourceRef: `users/${account.uid}`,
     createdAtMs: Date.now()
   });
@@ -3837,7 +3934,7 @@ async function createMarketplaceProduct(payload = {}) {
   const now = Date.now();
   const productPayload = {
     sellerUid: auth.currentUser.uid,
-    sellerName: userDoc?.name || account.name || 'WorkLinkUp seller',
+    sellerName: userDoc?.name || account.name || 'ServiceLoop seller',
     sellerUsername: userDoc?.username || account.username || '',
     title: String(payload.title || '').trim(),
     price: Number(payload.price || 0),
@@ -3995,7 +4092,7 @@ async function toggleProductWishlist(productId = '') {
     productPrice: Number(product.price || 0),
     productLocation: product.location || '',
     buyerUid: auth.currentUser.uid,
-    buyerName: userDoc?.name || account.name || 'WorkLinkUp user',
+    buyerName: userDoc?.name || account.name || 'ServiceLoop user',
     buyerPhone: userDoc?.phone || account.phone || '',
     createdAtMs: now,
     createdAt: serverTimestamp()
@@ -4131,10 +4228,11 @@ async function listAdminActivity() {
 async function getAdminDashboardData() {
   await ensureRealtimeMessagesMigrated();
 
-  const [users, providerSnapshot, postSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings] = await Promise.all([
+  const [users, providerSnapshot, postSnapshot, reviewSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings] = await Promise.all([
     listUsers(),
     getDocs(collectionGroup(db, 'profiles')),
     getDocs(collectionGroup(db, 'posts')),
+    getDocs(collectionGroup(db, 'reviews')).catch(() => ({ docs: [] })),
     listAllRealtimeMessages(),
     getDocs(collection(db, 'cart')),
     listAdminActivity().catch(() => []),
@@ -4163,6 +4261,21 @@ async function getAdminDashboardData() {
       updatedAtMs: Number(data.updatedAtMs || toMillis(data.updatedAt))
     };
   });
+
+  const reviews = reviewSnapshot.docs.map((docSnapshot) => {
+    const data = docSnapshot.data();
+    const providerProfileRef = docSnapshot.ref?.parent?.parent;
+    const providerProvinceRef = providerProfileRef?.parent?.parent;
+    return {
+      id: docSnapshot.id,
+      providerUid: providerProfileRef?.id || data.providerUid || data.reviewedUid || '',
+      provinceSlug: providerProvinceRef?.id || data.provinceSlug || '',
+      ...data,
+      rating: Number(data.rating || 0),
+      createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+      completedAtMs: Number(data.completedAtMs || 0)
+    };
+  }).sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 
   const carts = cartSnapshot.docs.map((docSnapshot) => {
     const data = docSnapshot.data();
@@ -4239,7 +4352,7 @@ async function getAdminDashboardData() {
       subjectUid: user.uid,
       subjectName: user.name,
       title: 'New user registered',
-      description: `${user.name || 'A user'} created a WorkLinkUp account.`,
+      description: `${user.name || 'A user'} created a ServiceLoop account.`,
       sourceRef: `users/${user.uid}`,
       createdAtMs: Number(user.createdAtMs || 0)
     })),
@@ -4282,10 +4395,10 @@ async function getAdminDashboardData() {
     ...carts.filter((cartDoc) => Number(cartDoc.updatedAtMs || 0)).map((cartDoc) => ({
       type: 'cart_updated',
       actorUid: cartDoc.accountDetails?.uid || '',
-      actorName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'WorkLinkUp user',
+      actorName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'ServiceLoop user',
       actorEmail: cartDoc.accountDetails?.email || '',
       subjectUid: cartDoc.accountDetails?.uid || '',
-      subjectName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'WorkLinkUp user',
+      subjectName: cartDoc.accountDetails?.name || cartDoc.ownerName || 'ServiceLoop user',
       title: 'Cart or wishlist updated',
       description: `${cartDoc.accountDetails?.name || cartDoc.ownerName || 'A user'} changed cart or wishlist items.`,
       sourceRef: `cart/${cartDoc.id}`,
@@ -4331,6 +4444,7 @@ async function getAdminDashboardData() {
     adminAudit,
     providers: providersWithUserDetails,
     posts,
+    reviews,
     jobs,
     products,
     homepageSettings,
@@ -4373,6 +4487,7 @@ window.softGigglesAuth = {
   listProviderPosts,
   listProviderReviews,
   subscribeProviderReviews,
+  moderateProviderReview,
   createProviderPost,
   updateProviderPost,
   deleteProviderPost,

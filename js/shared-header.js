@@ -1,7 +1,7 @@
 // shared-header.js - injected into all pages
 
-if (!Array.isArray(window.WorkLinkUpServiceCatalog) || !window.WorkLinkUpServiceCatalog.length) {
-  window.WorkLinkUpServiceCatalog = [
+if (!Array.isArray(window.ServiceLoopServiceCatalog) || !window.ServiceLoopServiceCatalog.length) {
+  window.ServiceLoopServiceCatalog = [
     { key: 'home-services', label: 'Home Services', icon: 'fa-solid fa-house-chimney', image: 'images/categories/homesrvices_converted.avif', subservices: ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman', 'Tiler', 'Plasterer', 'Ceiling Installer', 'Roof Repairer', 'Gutter Cleaner', 'Waterproofing Specialist', 'Damp Proofer', 'Window & Door Installer', 'Fence Builder', 'Bricklayer / Concreter', 'Floor Polisher', 'Burglar Bar Installer', 'Curtain & Blind Fitter', 'Gate & Garage Door Installer', 'Solar Panel Installer', 'Borehole Driller', 'Water Tank Installer', 'Septic Tank Services', 'Chimney Cleaner', 'Pest Control', 'Pool Cleaner & Maintenance'] },
     { key: 'gardening-landscaping', label: 'Gardening & Landscaping', icon: 'fa-solid fa-seedling', image: 'images/categories/farmer_converted.avif', subservices: ['General Gardener', 'Lawn Mower', 'Tree Feller', 'Tree Trimmer & Pruner', 'Hedge Trimmer', 'Irrigation Installer', 'Landscape Designer', 'Flower Planting', 'Vegetable Garden Setup', 'Weed Control', 'Garden Clean-Up', 'Topsoil & Sand Delivery', 'Compost Supplier'] },
     { key: 'cleaning-services', label: 'Cleaning Services', icon: 'fa-solid fa-broom', image: 'images/categories/cleaning_converted.avif', subservices: ['Domestic Worker / Housekeeper', 'Laundry & Ironing Service', 'Carpet Cleaner', 'Deep House Cleaning', 'Office Cleaning', 'Post-Construction Cleaning', 'Mattress Cleaning', 'Upholstery Cleaning', 'Window Cleaning', 'Move-in / Move-out Cleaning'] },
@@ -33,8 +33,8 @@ if (!Array.isArray(window.WorkLinkUpServiceCatalog) || !window.WorkLinkUpService
   ];
 }
 
-function getWorkLinkUpServiceCatalog() {
-  return Array.isArray(window.WorkLinkUpServiceCatalog) ? window.WorkLinkUpServiceCatalog : [];
+function getServiceLoopServiceCatalog() {
+  return Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [];
 }
 
 const WORKLINKUP_CATEGORY_SHORT_LABELS = {
@@ -68,7 +68,7 @@ const WORKLINKUP_CATEGORY_SHORT_LABELS = {
   'Informal & Street-Level Services': 'Informal'
 };
 
-window.WorkLinkUpServiceCatalog = getWorkLinkUpServiceCatalog().map((category) => ({
+window.ServiceLoopServiceCatalog = getServiceLoopServiceCatalog().map((category) => ({
   ...category,
   shortLabel: category.shortLabel || WORKLINKUP_CATEGORY_SHORT_LABELS[category.label] || category.label
 }));
@@ -83,13 +83,13 @@ function getBasePath() {
 function findCategoryByServiceLabel(serviceLabel = '') {
   const normalized = String(serviceLabel || '').trim().toLowerCase();
   if (!normalized) return null;
-  return getWorkLinkUpServiceCatalog().find((category) => {
+  return getServiceLoopServiceCatalog().find((category) => {
     const services = Array.isArray(category.subservices) ? category.subservices : [];
     return services.some((service) => String(service || '').trim().toLowerCase() === normalized);
   }) || null;
 }
 
-function buildWorkLinkUpSearchHref(searchTerm = '', options = {}) {
+function buildServiceLoopSearchHref(searchTerm = '', options = {}) {
   const base = typeof options.base === 'string' ? options.base : getBasePath();
   const params = new URLSearchParams();
   const category = String(options.category || '').trim();
@@ -104,10 +104,10 @@ function buildWorkLinkUpSearchHref(searchTerm = '', options = {}) {
   return `${base}pages/search-results.html${queryString ? `?${queryString}` : ''}`;
 }
 
-window.buildWorkLinkUpSearchHref = buildWorkLinkUpSearchHref;
+window.buildServiceLoopSearchHref = buildServiceLoopSearchHref;
 // Keep the legacy name for existing callers, but route searches to the search page.
-const buildWorkLinkUpSpecialistsHref = buildWorkLinkUpSearchHref;
-window.buildWorkLinkUpSpecialistsHref = buildWorkLinkUpSpecialistsHref;
+const buildServiceLoopSpecialistsHref = buildServiceLoopSearchHref;
+window.buildServiceLoopSpecialistsHref = buildServiceLoopSpecialistsHref;
 
 function getStoredAccount() {
   try {
@@ -121,7 +121,7 @@ function getStoredAccount() {
 function getInstallPromptUserKey() {
   const account = getStoredAccount();
   const uid = String(account?.loggedIn && account?.uid ? account.uid : 'guest').trim() || 'guest';
-  return `maworks_install_prompt_state_${uid}`;
+  return `serviceloop_install_prompt_state_${uid}`;
 }
 
 function readInstallPromptState() {
@@ -216,19 +216,54 @@ function ensurePwaHeadAssets() {
   });
 }
 
-function registerMaWorksServiceWorker() {
+function registerServiceLoopServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (!(window.isSecureContext || ['localhost', '127.0.0.1'].includes(window.location.hostname))) return;
 
+  let refreshingForServiceLoopUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshingForServiceLoopUpdate) return;
+    refreshingForServiceLoopUpdate = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'serviceloop-sw-activated' && !refreshingForServiceLoopUpdate) {
+      refreshingForServiceLoopUpdate = true;
+      window.location.reload();
+    }
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${getBasePath()}sw.js`).catch(() => {
-      // Leave the site usable even when service worker registration fails.
-    });
+    navigator.serviceWorker.register(`${getBasePath()}sw.js`)
+      .then((registration) => {
+        const activateWaitingWorker = () => {
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'serviceloop-skip-waiting' });
+          }
+        };
+
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              worker.postMessage({ type: 'serviceloop-skip-waiting' });
+            }
+          });
+        });
+
+        activateWaitingWorker();
+        registration.update().catch(() => {});
+      })
+      .catch(() => {
+        // Leave the site usable even when service worker registration fails.
+      });
   }, { once: true });
 }
 
 ensurePwaHeadAssets();
-registerMaWorksServiceWorker();
+registerServiceLoopServiceWorker();
 
 window.worklinkupInstallPrompt = window.worklinkupInstallPrompt || {
   deferredPrompt: null,
@@ -294,15 +329,15 @@ function getPlacedBidNotificationTime(bid = {}) {
   );
 }
 
-async function showHeaderBrowserNotification(title = 'JobLink notification', options = {}) {
+async function showHeaderBrowserNotification(title = 'ServiceLoop notification', options = {}) {
   if (!('Notification' in window)) return;
   try {
     let permission = Notification.permission;
     if (permission === 'default') permission = await Notification.requestPermission();
     if (permission !== 'granted') return;
     const notification = new Notification(title, {
-      icon: `${getBasePath()}images/logo/joblinks.avif`,
-      badge: `${getBasePath()}images/logo/joblinks.avif`,
+      icon: `${getBasePath()}images/logo/slicon.avif`,
+      badge: `${getBasePath()}images/logo/slicon.avif`,
       ...options
     });
     window.setTimeout(() => notification.close(), 6500);
@@ -427,7 +462,7 @@ function getAccountSettingsHref(base = getBasePath()) {
 }
 
 function renderAccountMenuContent({
-  accountName = 'WorkLinkUp User',
+  accountName = 'ServiceLoop User',
   profileHref = '#',
   jobsAndBidsHref = '#',
   settingsHref = '#',
@@ -530,7 +565,7 @@ function getMobileBottomNavActiveKey() {
 function renderMobileBottomNav(base = getBasePath()) {
   const account = getStoredAccount();
   const isLoggedIn = Boolean(account && account.loggedIn);
-  const accountName = account && account.name ? account.name : 'WorkLinkUp User';
+  const accountName = account && account.name ? account.name : 'ServiceLoop User';
   const profileHref = getProviderProfileHref(base);
   const settingsHref = getAccountSettingsHref(base);
   const isProvider = account?.userRole === 'provider';
@@ -602,17 +637,17 @@ function renderHeader() {
   const isMessagesPage = /\/pages\/messages\.html$/.test(window.location.pathname);
   const account = getStoredAccount();
   const isLoggedIn = Boolean(account && account.loggedIn);
-  const accountName = account && account.name ? account.name : 'WorkLinkUp User';
+  const accountName = account && account.name ? account.name : 'ServiceLoop User';
   const firstName = accountName.split(' ')[0];
   const accountInitial = ((accountName.match(/[A-Za-z0-9]/) || [])[0] || 'U').toUpperCase();
   const profileHref = getProviderProfileHref(base);
   const jobsAndBidsHref = getJobsAndBidsHref(base);
   const settingsHref = getAccountSettingsHref(base);
   const isProvider = account?.userRole === 'provider';
-  const categoryHref = (label) => buildWorkLinkUpSpecialistsHref(label, { base, category: label, query: label });
+  const categoryHref = (label) => buildServiceLoopSpecialistsHref(label, { base, category: label, query: label });
   const serviceHref = (label, categoryLabel = '') => {
     const matchedCategory = categoryLabel || findCategoryByServiceLabel(label)?.label || '';
-    return buildWorkLinkUpSpecialistsHref(label, { base, category: matchedCategory, service: label, query: label });
+    return buildServiceLoopSpecialistsHref(label, { base, category: matchedCategory, service: label, query: label });
   };
   const desktopNavLinks = `
     <a href="${base}index.html" class="nav-link">Home</a>
@@ -646,8 +681,8 @@ function renderHeader() {
     <div class="header-inner">
       <div class="mobile-header-left">
         ${isMessagesPage ? `<a href="${base}index.html" class="messages-mobile-back" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></a>` : ''}
-        <a href="${base}index.html" class="logo" aria-label="WorkLinkUp home">
-          <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" class="logo-image" />
+        <a href="${base}index.html" class="logo" aria-label="ServiceLoop home">
+          <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
         </a>
       </div>
       <nav class="header-center-nav" aria-label="Primary navigation">
@@ -723,7 +758,7 @@ function renderHeader() {
         <button type="button" class="mobile-search-close" aria-label="Close search">×</button>
       </div>
       <div class="mobile-search-copy">
-        <h3 id="mobile-search-title">Search WorkLinkUp</h3>
+        <h3 id="mobile-search-title">Search ServiceLoop</h3>
         <p>Find specialists by service, provider name, or city.</p>
       </div>
       <div class="mobile-search-results" id="mobile-search-results"></div>
@@ -736,8 +771,8 @@ function renderHeader() {
         <path d="M6 6l12 12M18 6L6 18"/>
       </svg>
     </button>
-    <a href="${base}index.html" class="mobile-nav-brand" aria-label="WorkLinkUp home">
-      <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" class="logo-image" />
+    <a href="${base}index.html" class="mobile-nav-brand" aria-label="ServiceLoop home">
+      <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
     </a>
     <div class="nav-inner">
       ${mobileNavItems}
@@ -756,10 +791,10 @@ function renderAccountPanel() {
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
         <div class="account-brand-lockup" aria-hidden="true">
-          <img src="${base}images/logo/joblinks.avif" alt="" class="account-brand-logo" />
+          <img src="${base}images/logo/sl.avif" alt="" class="account-brand-logo" />
         </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
-        <p class="account-auth-subtext">Create an account or sign in to continue with WorkLinkUp.</p>
+        <p class="account-auth-subtext">Create an account or sign in to continue with ServiceLoop.</p>
       </div>
       <div class="account-auth-methods">
         <section class="account-auth-method-card account-method-email">
@@ -828,6 +863,7 @@ function renderAccountPanel() {
 
 function renderFooter() {
   const base = getBasePath();
+  const whatsappSupportHref = 'https://wa.me/263774825969';
   return `
   <footer>
     <div class="footer-inner">
@@ -869,7 +905,7 @@ function renderFooter() {
       </div>
       <div class="newsletter-col">
         <h4>Follow the Build</h4>
-        <p>WorkLinkUp starts with profiles and discovery. Reviews, bookings, and safer payments can be added as the platform grows.</p>
+        <p>ServiceLoop starts with profiles and discovery. Reviews, bookings, and safer payments can be added as the platform grows.</p>
         <div class="email-form">
           <input type="email" placeholder="Enter email address" />
           <button>→</button>
@@ -891,10 +927,10 @@ function renderFooter() {
       </div>
       <div class="social-area">
         <div class="social-links">
-          <a href="#" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-          <a href="#" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-          <a href="#" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.facebook.com/profile.php?id=61589679750430" title="Facebook" aria-label="ServiceLoop on Facebook" target="_blank" rel="noopener"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="https://www.instagram.com/serviceloop01?igsh=ZnphYjd0b3VsbWlm" title="Instagram" aria-label="ServiceLoop on Instagram" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@serviceloop01?_r=1&_t=ZS-96K2BxP6aNl" title="TikTok" aria-label="ServiceLoop on TikTok" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a>
+          <a href="${whatsappSupportHref}" title="WhatsApp Support" aria-label="ServiceLoop WhatsApp support" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
         <a href="${base}pages/admin/dashboard.html" class="footer-admin-link" title="Admin console" aria-label="Open admin console">
           <i class="fa-solid fa-key"></i>
@@ -908,7 +944,7 @@ function renderCookieBanner() {
   return `
   <div class="cookie-banner" id="cookie-banner" hidden>
     <p>
-      We use cookies to improve the WorkLinkUp experience. If you continue to use our site, you are agreeing to our
+      We use cookies to improve the ServiceLoop experience. If you continue to use our site, you are agreeing to our
       <a href="#" class="cookie-link">Cookie Policy</a>.
     </p>
     <div class="cookie-actions">
@@ -1037,7 +1073,7 @@ function renderCartDrawer() {
 document.addEventListener('DOMContentLoaded', () => {
   const installPromptState = window.worklinkupInstallPrompt || {};
   const installPromptDelayMs = 10000;
-  const installPromptClosedForSessionKey = 'maworks_install_prompt_closed';
+  const installPromptClosedForSessionKey = 'serviceloop_install_prompt_closed';
   const isIosSafari = /iphone|ipad|ipod/i.test(window.navigator.userAgent || '')
     && /safari/i.test(window.navigator.userAgent || '')
     && !/crios|fxios|edgios|android/i.test(window.navigator.userAgent || '');
@@ -1062,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    installPromptMessage.textContent = 'Download MaWorks for faster access right from your home screen.';
+    installPromptMessage.textContent = 'Install MaWorks for faster access to jobs, providers, and products from your home screen.';
     installPromptButton.textContent = 'Download App';
   }
 
@@ -1116,11 +1152,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="app-install-sheet__brand">
-            <img src="${getBasePath()}images/logo/joblinks.avif" alt="WorkLinkUp logo" class="app-install-sheet__logo" />
+            <img src="${getBasePath()}images/pwa/maworks-icon-192.png" alt="MaWorks logo" class="app-install-sheet__logo" />
             <div class="app-install-sheet__copy">
               <span class="app-install-sheet__eyebrow">Download App</span>
               <h3 id="app-install-sheet-title">Install MaWorks</h3>
-              <p data-install-sheet-message>Download MaWorks for faster access right from your home screen.</p>
+              <p data-install-sheet-message>Install MaWorks for faster access to jobs, providers, and products from your home screen.</p>
             </div>
           </div>
           <div class="app-install-sheet__actions">

@@ -1,6 +1,6 @@
 (function productOrdersPageBootstrap() {
   function market() {
-    return window.WorkLinkUpMarketplace;
+    return window.ServiceLoopMarketplace;
   }
 
   function orderStatusClass(status = '') {
@@ -36,7 +36,7 @@
           <div>
             <span>Product Orders</span>
             <h1>Your placed orders</h1>
-            <p>Track the products you ordered from sellers across WorkLinkUp.</p>
+            <p>Track the products you ordered from sellers across ServiceLoop.</p>
           </div>
           <a href="../pages/products.html"><i class="fa-solid fa-store"></i><span>Keep shopping</span></a>
         </header>

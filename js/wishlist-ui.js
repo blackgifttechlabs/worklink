@@ -1,6 +1,6 @@
 (function wishlistPageBootstrap() {
   function market() {
-    return window.WorkLinkUpMarketplace;
+    return window.ServiceLoopMarketplace;
   }
 
   function signInMarkup() {
@@ -40,7 +40,7 @@
       location: item.productLocation,
       category: 'Saved',
       sellerUid: item.sellerUid || '',
-      sellerName: item.sellerName || 'WorkLinkUp seller',
+      sellerName: item.sellerName || 'ServiceLoop seller',
       deliveryOption: item.deliveryMethod || 'pickup'
     });
 

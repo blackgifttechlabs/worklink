@@ -4,8 +4,8 @@
     return new URLSearchParams(window.location.search).get('embed') === '1';
   };
 
-  const SPECIALIST_CATEGORIES = Array.isArray(window.WorkLinkUpServiceCatalog) && window.WorkLinkUpServiceCatalog.length
-    ? window.WorkLinkUpServiceCatalog
+  const SPECIALIST_CATEGORIES = Array.isArray(window.ServiceLoopServiceCatalog) && window.ServiceLoopServiceCatalog.length
+    ? window.ServiceLoopServiceCatalog
     : [];
 
   const ZIMBABWE_PROVINCES = [
@@ -339,7 +339,7 @@
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/joblinks.avif'
+      normalized === 'images/logo/sl.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -786,7 +786,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/joblinks.avif`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/sl.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -806,7 +806,7 @@
     if (digits.length === 10 && digits.startsWith('0')) digits = `263${digits.slice(1)}`;
     if (digits.length === 9 && digits.startsWith('7')) digits = `263${digits}`;
     if (!digits) return '';
-    const text = providerName ? `Hi ${providerName}, I found you on WorkLinkUp.` : 'Hi, I found you on WorkLinkUp.';
+    const text = providerName ? `Hi ${providerName}, I found you on ServiceLoop.` : 'Hi, I found you on ServiceLoop.';
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
 
@@ -841,10 +841,12 @@
   }
 
   function getProviderJobRating(record = {}) {
+    if (record.review?.hidden === true || String(record.review?.moderationStatus || '').toLowerCase() === 'hidden') return 0;
     return Number(record.review?.rating || record.rating || 0);
   }
 
   function getProviderJobComment(record = {}) {
+    if (record.review?.hidden === true || String(record.review?.moderationStatus || '').toLowerCase() === 'hidden') return '';
     return String(record.review?.comment || record.reviewComment || record.comment || '').trim();
   }
 
@@ -996,7 +998,7 @@
       reviewCount,
       ratingTotal,
       completedJobs: Number(provider.completedJobs || 0),
-      bio: provider.bio || 'WorkLinkUp specialist ready to help.',
+      bio: provider.bio || 'ServiceLoop specialist ready to help.',
       title: normalizeProviderServiceValue(provider.title) || getServiceListLabel(services) || specialty,
       languages: Array.isArray(provider.languages) ? provider.languages : [],
       skills: Array.isArray(provider.skills) ? provider.skills : [],
@@ -1032,8 +1034,8 @@
     return categories.map((category) => {
       const services = Array.isArray(category.subservices) ? category.subservices : [];
       return `
-        <a href="${typeof buildWorkLinkUpSpecialistsHref === 'function'
-          ? buildWorkLinkUpSpecialistsHref(category.label, { base, category: category.label, query: category.label })
+        <a href="${typeof buildServiceLoopSpecialistsHref === 'function'
+          ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, query: category.label })
           : buildSearchResultsHref(category.label, { base, category: category.label })}" class="category-circle categories-directory-circle">
           <div class="category-circle-img">
             ${category.image
@@ -1111,7 +1113,7 @@
 
   function normalizeMessageContact(contact = {}) {
     const uid = String(contact.uid || '').trim();
-    const isSupport = uid === 'joblink-support' || contact.isSupport === true || contact.peerIsSupport === true;
+    const isSupport = uid === 'serviceloop-support' || contact.isSupport === true || contact.peerIsSupport === true;
     const province = String(contact.province || contact.providerProvince || '').trim();
     const city = String(contact.city || contact.address || '').trim();
     const primaryCategory = String(contact.primaryCategory || '').trim();
@@ -1132,9 +1134,9 @@
       contact.displayName
       || contact.name
       || contact.providerPublicId
-      || (isSupport ? 'JobLinks Support' : '')
-      || 'WorkLinkUp user'
-    ).trim() || 'WorkLinkUp user';
+      || (isSupport ? 'ServiceLoop Support' : '')
+      || 'ServiceLoop user'
+    ).trim() || 'ServiceLoop user';
 
     return {
       uid,
@@ -1151,10 +1153,10 @@
       roleLabel: isSupport ? 'Verified support' : (specialty || primaryCategory || (isProvider ? 'Provider' : 'Member')),
       statusLabel: city || province
         ? [city, province].filter(Boolean).join(', ')
-        : (isSupport ? 'Official JobLink account' : (isProvider ? 'Provider on WorkLinkUp' : 'WorkLinkUp member')),
+        : (isSupport ? 'Official ServiceLoop account' : (isProvider ? 'Provider on ServiceLoop' : 'ServiceLoop member')),
       profileImageData: String(
         contact.profileImageData
-        || (isSupport ? 'images/logo/joblinks.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
+        || (isSupport ? 'images/logo/sl.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
       ).trim(),
       phone: String(contact.phone || contact.phoneNumber || '').trim(),
       whatsappNumber: String(contact.whatsappNumber || contact.phone || contact.phoneNumber || '').trim(),
@@ -1297,7 +1299,7 @@
       const heroImage = resolveMediaSrc(normalizeProfileImageFallback(provider.profileImageData), 'images/sections/profileimg.avif');
       const locationLabel = provider.address || `${provider.city}, ${provider.province}`;
       const experienceLabel = provider.experience || 'Experienced';
-      const bioText = String(provider.bio || 'WorkLinkUp specialist ready to help.').trim();
+      const bioText = String(provider.bio || 'ServiceLoop specialist ready to help.').trim();
       const shortBio = `${escapeHtml(bioText.slice(0, 110))}${bioText.length > 110 ? '...' : ''}`;
       const whatsappHref = buildWhatsAppLink(provider.whatsappNumber, provider.displayName);
       const ratingValue = Number(provider.averageRating || 0).toFixed(1);
@@ -1439,12 +1441,12 @@
   function buildEmptyStateMarkup(serviceText = '') {
     const label = serviceText || 'this service';
     const inviteLink = buildProviderInviteLink(label);
-    const shareText = `I searched for ${label} on WorkLinkUp and there are no specialists listed yet. If you know someone who offers this service, invite them to join: ${window.location.origin}${inviteLink}`;
+    const shareText = `I searched for ${label} on ServiceLoop and there are no specialists listed yet. If you know someone who offers this service, invite them to join: ${window.location.origin}${inviteLink}`;
     return `
       <div class="specialists-empty specialists-empty-rich">
         <div class="specialists-empty-icon"><i class="fa-regular fa-compass"></i></div>
         <h3>No specialists yet for ${escapeHtml(label)}</h3>
-        <p>We could not find a provider for this search yet. Share WorkLinkUp with someone who offers ${escapeHtml(label)} so they can list themselves and start getting discovered here.</p>
+        <p>We could not find a provider for this search yet. Share ServiceLoop with someone who offers ${escapeHtml(label)} so they can list themselves and start getting discovered here.</p>
         <div class="specialists-empty-actions">
           <a href="${escapeHtml(inviteLink)}" class="provider-profile-action">List this service</a>
           <button type="button" class="provider-profile-action secondary" data-empty-share="${escapeHtml(shareText)}">
@@ -1463,7 +1465,7 @@
           <img src="${escapeHtml(resolveMediaSrc(normalizeProfileImageFallback(provider.profileImageData), 'images/sections/profileimg.avif'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
           <strong>${escapeHtml(provider.displayName)}</strong>
           <span class="specialists-suggested-meta">${escapeHtml(getServiceListLabel(provider, 2) || provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
-          <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on WorkLinkUp')}</span>
+          <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on ServiceLoop')}</span>
         </a>
         <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-action">View</a>
       </article>
@@ -1519,7 +1521,7 @@
     const cards = items.map((category) => {
       const href = buildSearchResultsHref(category.label, { category: category.label });
       const summary = (category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`;
-      const imageSrc = resolveMediaSrc(category.image || 'images/logo/joblinks.avif');
+      const imageSrc = resolveMediaSrc(category.image || 'images/logo/sl.avif');
 
       return `
         <article class="specialists-suggested-card specialists-suggested-category-card">
@@ -1914,7 +1916,7 @@
     }
 
     syncSteps();
-    window.WorkLinkUpOpenProviderOnboarding = openOnboarding;
+    window.ServiceLoopOpenProviderOnboarding = openOnboarding;
     window.addEventListener('softgiggles-auth-changed', maybePromptOnboarding);
     window.addEventListener('worklinkup:prompt-onboarding', maybePromptOnboarding);
     maybePromptOnboarding();
@@ -2177,7 +2179,7 @@
         if (navigator.share) {
           try {
             await navigator.share({
-              title: `Looking for ${getActiveSearchLabel()} on WorkLinkUp`,
+              title: `Looking for ${getActiveSearchLabel()} on ServiceLoop`,
               text: shareText,
               url: shareUrl
             });
@@ -2380,8 +2382,8 @@
       ].join(' ').toLowerCase();
       card.setAttribute('data-category-search', searchableText);
       if (card instanceof HTMLAnchorElement) {
-        card.href = typeof buildWorkLinkUpSpecialistsHref === 'function'
-          ? buildWorkLinkUpSpecialistsHref(label, { category: label, query: label })
+        card.href = typeof buildServiceLoopSpecialistsHref === 'function'
+          ? buildServiceLoopSpecialistsHref(label, { category: label, query: label })
           : buildSearchResultsHref(label, { category: label });
       }
     });
@@ -2683,8 +2685,8 @@
         `;
         page.querySelector('[data-provider-required-become]')?.addEventListener('click', () => {
           const setupSearch = '?setup=provider';
-          if (typeof window.openWorkLinkUpSetupModal === 'function') {
-            window.openWorkLinkUpSetupModal(setupSearch, { clearPendingOnClose: true });
+          if (typeof window.openServiceLoopSetupModal === 'function') {
+            window.openServiceLoopSetupModal(setupSearch, { clearPendingOnClose: true });
             return;
           }
           window.location.href = `${getBase()}pages/account.html${setupSearch}`;
@@ -2903,7 +2905,7 @@
       if (postCount instanceof HTMLElement) postCount.textContent = String(posts.length);
 
       if (postGrid) {
-        const profileShareText = `Check out ${freshProvider.displayName} on WorkLinkUp: ${window.location.href}`;
+        const profileShareText = `Check out ${freshProvider.displayName} on ServiceLoop: ${window.location.href}`;
         postGrid.innerHTML = posts.length
           ? posts.map((post, index) => `
             <article class="provider-gallery-card">
@@ -3467,7 +3469,7 @@
           <div class="edit-profile-head-copy">
             <span class="account-auth-stage-kicker">Edit profile</span>
             <h1>Update everything clients see</h1>
-            <p>Keep your WorkLinkUp profile current. Update your identity, services, experience, documents, and media from one page.</p>
+            <p>Keep your ServiceLoop profile current. Update your identity, services, experience, documents, and media from one page.</p>
           </div>
           <div class="edit-profile-hero-art" aria-hidden="true">
             <div class="edit-profile-hero-blob"></div>
@@ -3978,8 +3980,8 @@
         </section>
       `;
       page.querySelector('[data-provider-required-become]')?.addEventListener('click', () => {
-        if (typeof window.openWorkLinkUpSetupModal === 'function') {
-          window.openWorkLinkUpSetupModal('?setup=provider', { clearPendingOnClose: true });
+        if (typeof window.openServiceLoopSetupModal === 'function') {
+          window.openServiceLoopSetupModal('?setup=provider', { clearPendingOnClose: true });
           return;
         }
         window.location.href = `${getBase()}pages/account.html?setup=provider`;
@@ -4394,7 +4396,7 @@
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2);
-    return (parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'WL');
+    return (parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'SL');
   }
 
   function buildMessageImageFilename(label, timestamp = Date.now()) {
@@ -4408,7 +4410,7 @@
 
   function getConversationRoleLabel(profile) {
     if (profile?.isSupport) return 'Verified support';
-    return profile?.roleLabel || profile?.specialty || profile?.primaryCategory || 'WorkLinkUp member';
+    return profile?.roleLabel || profile?.specialty || profile?.primaryCategory || 'ServiceLoop member';
   }
 
   function getConversationStatusLabel(profile, lastSeenAtMs = 0) {
@@ -4456,7 +4458,7 @@
     const hasImage = Boolean(String(message.imageData || '').trim());
     const hasText = Boolean(String(message.text || '').trim());
     const imageSrc = hasImage ? resolveMediaSrc(message.imageData) : '';
-    const imageLabel = `Shared image from ${message.fromName || 'WorkLinkUp chat'}`;
+    const imageLabel = `Shared image from ${message.fromName || 'ServiceLoop chat'}`;
     const text = String(message.text || '').trim();
     const isAcceptedJobMessage = String(message.toUid || '').trim() === String(accountUid || '').trim()
       && (
@@ -4527,8 +4529,8 @@
       page.innerHTML = `
         <div class="messages-auth-empty">
           <div class="messages-auth-empty-panel">
-            <img src="${getBase()}images/logo/joblinks.avif" alt="WorkLinkUp" />
-            <h1>Sign in to message people on WorkLinkUp.</h1>
+            <img src="${getBase()}images/logo/sl.avif" alt="ServiceLoop" />
+            <h1>Sign in to message people on ServiceLoop.</h1>
             <a href="${getBase()}pages/account.html" class="messages-auth-empty-action">Sign in</a>
           </div>
         </div>
@@ -4555,7 +4557,7 @@
         <aside class="messages-sidebar">
           <div class="messages-home-head">
             <div>
-              <p class="messages-home-kicker">WorkLinkUp Inbox</p>
+              <p class="messages-home-kicker">ServiceLoop Inbox</p>
               <h1>Messages</h1>
             </div>
             <button type="button" class="messages-home-add" data-message-clear-search aria-label="Start a new chat">
@@ -4579,7 +4581,7 @@
               <button type="button" class="messages-thread-back" data-thread-back aria-label="Back to messages list">
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
-              <div class="messages-thread-avatar" data-message-thread-avatar>WL</div>
+              <div class="messages-thread-avatar" data-message-thread-avatar>SL</div>
               <div class="messages-thread-head-copy">
                 <div class="messages-thread-name-row">
                   <strong data-message-thread-title>Messages</strong>
@@ -4851,7 +4853,7 @@
           peerUid: state.activePeerUid,
           peerName: state.activePeerName || 'Conversation',
           peerProvinceSlug: state.activePeerProvince || '',
-          peerIsSupport: state.activePeerUid === 'joblink-support',
+          peerIsSupport: state.activePeerUid === 'serviceloop-support',
           lastMessage: text,
           lastMessageType,
           createdAtMs: now,
@@ -4961,7 +4963,7 @@
       if (!(threadWhatsApp instanceof HTMLAnchorElement)) return;
       const number = state.activePeerProfile?.whatsappNumber || state.activePeerProfile?.phone || '';
       const href = state.activePeerUid ? buildWhatsAppLink(number, state.activePeerName) : '';
-      if (href && state.activePeerUid !== 'joblink-support') {
+      if (href && state.activePeerUid !== 'serviceloop-support') {
         threadWhatsApp.href = href;
         threadWhatsApp.hidden = false;
       } else {
@@ -5118,9 +5120,9 @@
             });
             if (normalized.uid) contactDirectory.set(normalized.uid, normalized);
           });
-          contactDirectory.set('joblink-support', normalizeMessageContact({
-            uid: 'joblink-support',
-            displayName: 'JobLinks Support',
+          contactDirectory.set('serviceloop-support', normalizeMessageContact({
+            uid: 'serviceloop-support',
+            displayName: 'ServiceLoop Support',
             isSupport: true
           }));
 
@@ -5132,8 +5134,8 @@
 
     async function ensureContactProfile(uid, provinceSlug = '') {
       if (!uid) return null;
-      if (uid === 'joblink-support') {
-        const support = normalizeMessageContact({ uid, displayName: 'JobLinks Support', isSupport: true });
+      if (uid === 'serviceloop-support') {
+        const support = normalizeMessageContact({ uid, displayName: 'ServiceLoop Support', isSupport: true });
         contactDirectory.set(uid, support);
         return support;
       }
@@ -5373,8 +5375,8 @@
     async function applyConversationList(conversations, options = {}) {
       const nextConversations = conversations.map((conversation) => {
         const profile = contactDirectory.get(conversation.peerUid) || conversation.profile || null;
-        const supportProfile = conversation.peerIsSupport || conversation.peerUid === 'joblink-support'
-          ? normalizeMessageContact({ uid: 'joblink-support', displayName: 'JobLinks Support', isSupport: true })
+        const supportProfile = conversation.peerIsSupport || conversation.peerUid === 'serviceloop-support'
+          ? normalizeMessageContact({ uid: 'serviceloop-support', displayName: 'ServiceLoop Support', isSupport: true })
           : null;
         return {
           ...conversation,
@@ -5465,7 +5467,7 @@
         setThreadOpen(false);
         threadTitle.textContent = 'Messages';
         threadStatus.textContent = 'Select a chat to start';
-        threadAvatar.textContent = 'WL';
+        threadAvatar.textContent = 'SL';
         threadVerified.hidden = true;
         refreshThreadWhatsAppButton();
         setThreadSearchOpen(false);
@@ -5920,7 +5922,7 @@
     if (!account?.loggedIn || !account?.uid) {
       page.innerHTML = `
         <section class="client-profile-auth-card">
-          <img src="${base}images/logo/joblinks.avif" alt="WorkLinkUp" />
+          <img src="${base}images/logo/sl.avif" alt="ServiceLoop" />
           <h1>Sign in to view your client profile.</h1>
           <p>Your client profile is separate from provider profiles, so it will not show the provider "no profile found" page.</p>
           <a href="${base}pages/account.html" class="client-profile-primary-link">Sign in</a>
@@ -5967,7 +5969,7 @@
     }
 
     const profile = {
-      displayName: clientProfile.displayName || userDoc.name || userDoc.displayName || account.name || 'WorkLinkUp Client',
+      displayName: clientProfile.displayName || userDoc.name || userDoc.displayName || account.name || 'ServiceLoop Client',
       username: clientProfile.username || userDoc.username || account.username || '',
       email: clientProfile.email || userDoc.email || account.email || '',
       phone: clientProfile.phone || userDoc.phone || account.phone || '',
@@ -6069,7 +6071,7 @@
               <i class="fa-solid fa-chevron-right"></i>
             </div>
 
-            <p class="provider-profile-bio client-profile-note"><i class="fa-solid fa-users"></i>${escapeHtml(profile.bio || 'Use this profile when you post jobs, review bids, and message specialists on WorkLinkUp.')}</p>
+            <p class="provider-profile-bio client-profile-note"><i class="fa-solid fa-users"></i>${escapeHtml(profile.bio || 'Use this profile when you post jobs, review bids, and message specialists on ServiceLoop.')}</p>
           </div>
         </section>
       </section>
@@ -6236,8 +6238,8 @@
         profileImageData: pendingProfileImageData || profile.profileImageData,
         bannerImageData: profile.bannerImageData
       };
-      if (typeof window.WorkLinkUpOpenProviderOnboarding === 'function') {
-        window.WorkLinkUpOpenProviderOnboarding(prefill);
+      if (typeof window.ServiceLoopOpenProviderOnboarding === 'function') {
+        window.ServiceLoopOpenProviderOnboarding(prefill);
         return;
       }
       window.location.href = `${base}pages/account.html?setup=provider`;
@@ -6334,7 +6336,7 @@
       const specialtyEl = document.getElementById('account-profile-specialty');
       const nameEl = document.getElementById('account-profile-name');
       const emailEl = document.getElementById('account-profile-email');
-      const displayName = providerProfile?.displayName || userDoc?.name || account.name || 'WorkLinkUp User';
+      const displayName = providerProfile?.displayName || userDoc?.name || account.name || 'ServiceLoop User';
       const email = account.email || userDoc?.email || 'you@example.com';
 
       if (nameEl) nameEl.textContent = displayName;
@@ -6498,7 +6500,7 @@
             <div class="account-setup-section-item">
               <button type="button" class="account-setup-back-link" data-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
               <h2>Get your profile started</h2>
-              <p>Add a username that is unique to you. This is how you'll appear to others on WorkLinkUp.</p>
+              <p>Add a username that is unique to you. This is how you'll appear to others on ServiceLoop.</p>
             </div>
             <div class="account-setup-section-item">
               <form class="account-setup-compact-form" data-account-username-form>
@@ -6655,7 +6657,7 @@
                 </label>
               </div>
             </div>
-            <input type="hidden" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || userDoc?.username || 'WorkLinkUp Provider')}" />
+            <input type="hidden" name="fullName" value="${escapeHtml(existingProvider.displayName || userDoc?.name || account.name || userDoc?.username || 'ServiceLoop Provider')}" />
             <input type="hidden" name="whatsappNumber" value="${escapeHtml(existingProvider.whatsappNumber || account.phone || '')}" />
             <input type="hidden" name="province" value="${escapeHtml(existingProvider.province || '')}" data-provider-location-province />
             <input type="hidden" name="city" value="${escapeHtml(existingProvider.city || '')}" data-provider-location-city />
@@ -6888,7 +6890,7 @@
           return SPECIALIST_CATEGORIES.find((cat) => cat.label === label) || SPECIALIST_CATEGORIES[0] || { label: 'Specialist', image: '' };
         };
 
-        payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'WorkLinkUp Provider';
+        payload.fullName = userDoc?.name || account.name || existingProvider.displayName || userDoc?.username || 'ServiceLoop Provider';
         payload.username = userDoc?.username || '';
         payload.province = selectedLocation.province;
         payload.city = selectedLocation.city;
@@ -6944,8 +6946,8 @@
         <section class="account-role-choice-stage">
           <div class="account-role-choice-intro">
             <span class="account-role-choice-badge"><i class="fa-regular fa-circle-check"></i> Account created</span>
-            <h2>Welcome to WorkLinkUp!</h2>
-            <p>Let's get started. Choose how you want to use WorkLinkUp.</p>
+            <h2>Welcome to ServiceLoop!</h2>
+            <p>Let's get started. Choose how you want to use ServiceLoop.</p>
             <div class="account-role-choice-illustration" aria-hidden="true">
               <span class="account-role-orb"></span>
               <div class="account-role-window">
@@ -7153,7 +7155,7 @@
     initialize();
   }
 
-  window.WorkLinkUpProviders = {
+  window.ServiceLoopProviders = {
     initializeAccountPageExperience
   };
 })();
