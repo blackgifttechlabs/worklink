@@ -494,6 +494,13 @@
     return Array.isArray(category.subservices) ? category.subservices : [];
   }
 
+  function getCategoryForService(serviceLabel = '') {
+    const normalized = String(serviceLabel || '').trim().toLowerCase();
+    if (!normalized) return null;
+    return CATALOG.find((category) => String(category.label || '').trim().toLowerCase() === normalized
+      || getSubservicesForCategory(category.label).some((service) => String(service || '').trim().toLowerCase() === normalized)) || null;
+  }
+
   function buildSubcategoryOptions(categoryLabel = '', selected = '') {
     return buildSelectOptions(getSubservicesForCategory(categoryLabel), selected, 'Optional subcategory');
   }
@@ -1178,7 +1185,7 @@
     const data = new FormData(form);
     return {
       category: controls.categoryCombobox?.getValue() || controls.categoryCombobox?.getInputValue() || String(data.get('category') || ''),
-      subcategory: '',
+      subcategory: controls.subcategoryCombobox?.getValue() || controls.subcategoryCombobox?.getInputValue() || String(data.get('subcategory') || ''),
       description: String(data.get('description') || ''),
       budget: String(data.get('budget') || ''),
       province: controls.provinceCombobox?.getValue() || controls.provinceCombobox?.getInputValue() || String(data.get('province') || ''),
@@ -1616,8 +1623,11 @@
       ? await authHelper.getClientProfileByUid(account.uid).catch(() => null)
       : null;
     const restoredDraft = readPostJobDraft();
-    const defaultCategory = String(restoredDraft.category || restoredDraft.subcategory || '').trim();
-    const defaultSubcategory = '';
+    const restoredCategoryValue = String(restoredDraft.category || '').trim();
+    const restoredServiceValue = String(restoredDraft.subcategory || '').trim();
+    const restoredCategoryMatch = getCategoryConfig(restoredCategoryValue).label ? getCategoryConfig(restoredCategoryValue) : getCategoryForService(restoredCategoryValue);
+    const defaultCategory = restoredCategoryMatch?.label || '';
+    const defaultSubcategory = restoredServiceValue || (restoredCategoryMatch?.label === restoredCategoryValue ? '' : restoredCategoryValue);
     const defaultProvince = String(restoredDraft.province || clientProfile?.province || userDoc?.province || '').trim();
     const defaultCity = String(restoredDraft.city || clientProfile?.city || userDoc?.city || '').trim();
 
@@ -1686,9 +1696,16 @@
               <div class="job-form-grid">
                 ${buildJobComboboxMarkup({
                   type: 'category',
-                  label: 'Service',
-                  placeholder: 'Example: Plumber, Nail Technician, Solar Installer',
+                  label: 'Category',
+                  placeholder: 'Choose category',
                   value: defaultCategory,
+                  required: true
+                })}
+                ${buildJobComboboxMarkup({
+                  type: 'subcategory',
+                  label: 'Service',
+                  placeholder: defaultCategory ? 'Choose service' : 'Choose category first',
+                  value: defaultSubcategory,
                   required: true
                 })}
                 <label class="job-form-field is-wide">
@@ -1761,7 +1778,7 @@
     const form = page.querySelector('[data-job-post-form]');
     const submitBtn = page.querySelector('[data-job-post-submit]');
     const categoryHost = page.querySelector('[data-job-combobox="category"]');
-    const subcategoryHost = null;
+    const subcategoryHost = page.querySelector('[data-job-combobox="subcategory"]');
     const provinceHost = page.querySelector('[data-job-combobox="province"]');
     const cityHost = page.querySelector('[data-job-combobox="city"]');
     const guideHost = page.querySelector('[data-job-post-guide]');
@@ -1860,7 +1877,12 @@
     }
 
     let activeCategory = defaultCategory;
-    const subcategoryCombobox = null;
+    const subcategoryCombobox = bindJobCombobox(subcategoryHost, {
+      type: 'subcategory',
+      value: defaultSubcategory,
+      defaultIcon: 'fa-solid fa-tag',
+      getItems: (query) => getSubcategoryItems(activeCategory, query)
+    });
     const categoryCombobox = bindJobCombobox(categoryHost, {
       type: 'category',
       value: defaultCategory,
@@ -1868,12 +1890,16 @@
       getItems: getCategoryItems,
       onSelect: (match) => {
         activeCategory = match.value;
+        subcategoryCombobox?.clear();
+        subcategoryCombobox?.setDefaultIcon(getCategoryIcon(activeCategory));
       },
       onInput: () => {
         activeCategory = '';
+        subcategoryCombobox?.clear();
       }
     });
     activeCategory = categoryCombobox?.getValue() || defaultCategory;
+    if (defaultSubcategory) subcategoryCombobox?.setValue(defaultSubcategory);
 
     let activeProvince = defaultProvince;
     const cityCombobox = bindJobCombobox(cityHost, {
@@ -1927,13 +1953,14 @@
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
       const typedCategory = categoryCombobox?.getInputValue() || '';
+      const typedSubcategory = subcategoryCombobox?.getInputValue() || '';
       payload.category = String(payload.category || typedCategory).trim();
-      payload.subcategory = '';
+      payload.subcategory = String(payload.subcategory || typedSubcategory).trim();
       payload.province = String(provinceCombobox?.getValue() || payload.province || '').trim();
       payload.city = String(cityCombobox?.getValue() || payload.city || '').trim();
       payload.streetAddress = String(payload.streetAddress || '').trim();
       payload.address = [payload.streetAddress, payload.city, payload.province].filter(Boolean).join(', ');
-      if (!payload.category || !payload.description || !payload.province || !payload.city || !payload.streetAddress || !payload.budget) {
+      if (!payload.category || !payload.subcategory || !payload.description || !payload.province || !payload.city || !payload.streetAddress || !payload.budget) {
         window.alert('Fill in the job details first.');
         return;
       }

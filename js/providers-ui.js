@@ -569,8 +569,10 @@
     const category = normalizeProviderServiceValue(item.category)
       || normalizeProviderServiceValue(item.primaryCategory)
       || String(getCategoryBySubservice(service)?.label || service).trim();
+    const serviceCategory = getCategoryBySubservice(service)?.label || '';
+    const normalizedCategory = serviceCategory || category || service;
     return {
-      category: category || service,
+      category: normalizedCategory,
       service
     };
   }
@@ -724,7 +726,7 @@
     };
   }
 
-  function bindServiceMultiPicker({ input, list, chipHost, initialServices, emptyText = 'No service found', onChange }) {
+  function bindServiceMultiPicker({ input, list, chipHost, categorySelect, initialServices, emptyText = 'No service found', onChange }) {
     if (!(input instanceof HTMLInputElement) || !(list instanceof HTMLElement) || !(chipHost instanceof HTMLElement)) {
       return {
         getSelections: () => [],
@@ -737,6 +739,19 @@
     let listInteractionTimer = 0;
     let listInteractionUntil = 0;
     const pickerRoot = input.closest('.account-typeahead-field') || input.parentElement;
+    const categoryField = categorySelect instanceof HTMLSelectElement ? categorySelect : null;
+    if (categoryField && selectedServices[0]?.category) {
+      categoryField.value = selectedServices[0].category;
+    }
+
+    function getSelectedCategory() {
+      return String(categoryField?.value || '').trim();
+    }
+
+    function getScopedServiceItems() {
+      const category = getSelectedCategory();
+      return SERVICE_TYPEAHEAD_ITEMS.filter((item) => item.kind === 'service' && (!category || item.category === category));
+    }
 
     function hideSuggestions() {
       list.hidden = true;
@@ -756,8 +771,14 @@
     }
 
     function showSuggestions(query = input.value) {
-      currentItems = getTypeaheadSuggestions(SERVICE_TYPEAHEAD_ITEMS, query, 26);
-      renderSetupTypeaheadList(list, currentItems, emptyText);
+      const category = getSelectedCategory();
+      if (categoryField && !category) {
+        currentItems = [];
+        renderSetupTypeaheadList(list, currentItems, 'Choose a category first');
+      } else {
+        currentItems = getTypeaheadSuggestions(getScopedServiceItems(), query, 26);
+        renderSetupTypeaheadList(list, currentItems, emptyText);
+      }
       list.hidden = false;
       list.classList.add('is-open');
     }
@@ -799,7 +820,7 @@
     });
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
-        const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, input.value);
+        const exact = findExactTypeaheadItem(getScopedServiceItems(), input.value);
         const nextItem = exact || currentItems[0];
         if (nextItem) {
           event.preventDefault();
@@ -811,7 +832,7 @@
     input.addEventListener('blur', () => {
       window.setTimeout(() => {
         if (isListInteractionActive()) return;
-        const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, input.value);
+        const exact = findExactTypeaheadItem(getScopedServiceItems(), input.value);
         if (exact) addService(exact);
         else hideSuggestions();
       }, 140);
@@ -830,10 +851,16 @@
 
     toggle?.addEventListener('click', () => {
       input.focus();
-      currentItems = SERVICE_TYPEAHEAD_ITEMS.slice(0, 80);
+      currentItems = getScopedServiceItems().slice(0, 80);
       renderSetupTypeaheadList(list, currentItems, emptyText);
       list.hidden = false;
       list.classList.add('is-open');
+    });
+
+    categoryField?.addEventListener('change', () => {
+      input.value = '';
+      input.classList.remove('is-invalid');
+      showSuggestions('');
     });
 
     document.addEventListener('pointerdown', (event) => {
@@ -3647,9 +3674,14 @@
                     <span>Add every service clients can hire you for</span>
                   </div>
                 </div>
-                <label class="account-setup-field account-typeahead-field account-setup-field-span edit-profile-service-picker">
-                  <span>Services</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, nail technician, solar installer..." autocomplete="off" data-provider-service-input />
+                <label class="account-setup-field account-typeahead-field account-setup-field-span account-service-picker edit-profile-service-picker">
+                  <span>Category</span>
+                  <select name="serviceCategoryPicker" data-provider-service-category-select>
+                    <option value="">Choose category first</option>
+                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`).join('')}
+                  </select>
+                  <span>Service</span>
+                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input />
                   <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
@@ -3791,6 +3823,7 @@
     const serviceInput = form.querySelector('[data-provider-service-input]');
     const serviceList = form.querySelector('[data-provider-service-list]');
     const serviceChips = form.querySelector('[data-provider-service-chips]');
+    const serviceCategorySelect = form.querySelector('[data-provider-service-category-select]');
     const backBtn = page.querySelector('[data-edit-profile-back]');
     const cancelBtn = page.querySelector('[data-edit-profile-cancel]');
     const profileCard = page.querySelector('[data-edit-upload-card="profile"]');
@@ -3823,6 +3856,7 @@
       input: serviceInput,
       list: serviceList,
       chipHost: serviceChips,
+      categorySelect: serviceCategorySelect,
       initialServices: existingServices,
       emptyText: 'No service found',
       onChange: (services) => syncPrimaryServiceFields(form, services)
@@ -6728,15 +6762,20 @@
                   <input type="text" value="${escapeHtml(userDoc?.username || existingProvider.username || '')}" disabled />
                   <small>Your username was already reserved for this account.</small>
                 </label>
-                <label class="account-setup-field account-typeahead-field">
+                <label class="account-setup-field account-typeahead-field account-service-picker">
                   <span>Location</span>
                   <input type="search" name="locationSearch" required value="${escapeHtml(existingLocationValue)}" placeholder="Type Masvingo, Rujeko, Chivi..." autocomplete="off" data-provider-location-input />
                   <div class="account-typeahead-list" data-provider-location-list hidden></div>
                   <small>Choose a city, suburb, district, or local service area in Zimbabwe.</small>
                 </label>
                 <label class="account-setup-field account-typeahead-field">
+                  <span>Service category</span>
+                  <select name="serviceCategoryPicker" data-provider-service-category-select>
+                    <option value="">Choose category first</option>
+                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`).join('')}
+                  </select>
                   <span>Services you provide</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, nail technician, solar installer..." autocomplete="off" data-provider-service-input />
+                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input />
                   <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
@@ -6777,6 +6816,7 @@
       const serviceInput = form.querySelector('[data-provider-service-input]');
       const serviceList = form.querySelector('[data-provider-service-list]');
       const serviceChips = form.querySelector('[data-provider-service-chips]');
+      const serviceCategorySelect = form.querySelector('[data-provider-service-category-select]');
       const locationAddressField = form.querySelector('[data-provider-location-address]');
 
       const locationPicker = bindSetupTypeahead({
@@ -6799,6 +6839,7 @@
         input: serviceInput,
         list: serviceList,
         chipHost: serviceChips,
+        categorySelect: serviceCategorySelect,
         initialServices: existingServices,
         emptyText: 'No service found',
         onChange: (services) => syncPrimaryServiceFields(form, services)

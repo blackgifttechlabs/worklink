@@ -1,4 +1,4 @@
-const SERVICELOOP_CACHE = 'serviceloop-shell-v10';
+const SERVICELOOP_CACHE = 'serviceloop-shell-v12';
 const SERVICELOOP_ASSETS = [
   './',
   './index.html',

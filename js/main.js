@@ -342,16 +342,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const HOME_TRENDING_JOBS = [
-    { category: 'Plumber', service: 'Plumber', image: 'images/categories/plumber_converted.avif', budget: 'From $25', blurb: 'Leaks, blocked drains, and urgent home call-outs.' },
-    { category: 'Solar Installer', service: 'Solar Installer', image: 'images/categories/electrician_converted.avif', budget: 'From $120', blurb: 'Backup power setups for homes, shops, and offices.' },
-    { category: 'Domestic Cleaner', service: 'Domestic Cleaner', image: 'images/categories/cleaning_converted.avif', budget: 'From $30', blurb: 'Move-ins, weekly resets, and office clean-ups.' },
-    { category: 'Builder', service: 'Builder', image: 'images/categories/construction_converted.avif', budget: 'From $85', blurb: 'Walls, room extensions, repairs, and site work.' },
-    { category: 'Caterer', service: 'Caterer', image: 'images/categories/catering_converted.avif', budget: 'From $60', blurb: 'Weddings, parties, and office platters booking fast.' },
-    { category: 'Graphic Designer', service: 'Graphic Designer', image: 'images/categories/digital_converted.avif', budget: 'From $40', blurb: 'Posters, brand packs, and fast-turnaround content.' },
-    { category: 'Furniture Remover', service: 'Furniture Remover', image: 'images/categories/transport_converted.avif', budget: 'From $50', blurb: 'House moves, furniture runs, and local deliveries.' },
-    { category: 'Photographer', service: 'Photographer', image: 'images/categories/photographer_converted.avif', budget: 'From $150', blurb: 'Events, portraits, edited galleries, and product shoots.' },
-    { category: 'Landscaper', service: 'Landscaper', image: 'images/categories/farmer_converted.avif', budget: 'From $90', blurb: 'Garden design, lawn care, and outdoor maintenance.' },
-    { category: 'Nail Technician', service: 'Nail Technician', image: 'images/categories/beauty_converted.avif', budget: 'From $20', blurb: 'Home appointments, salon shifts, and event styling.' }
+    { category: 'Home, Property & Real Estate', service: 'Plumber', image: 'images/categories/plumber_converted.avif', budget: 'From $25', blurb: 'Leaks, blocked drains, and urgent home call-outs.' },
+    { category: 'Installations, Energy & Appliance Repair', service: 'Solar Panel & Inverter Installer', image: 'images/categories/electrician_converted.avif', budget: 'From $120', blurb: 'Backup power setups for homes, shops, and offices.' },
+    { category: 'Cleaning, Sanitation & Waste Management', service: 'Domestic Cleaner / Maid / Housekeeper', image: 'images/categories/cleaning_converted.avif', budget: 'From $30', blurb: 'Move-ins, weekly resets, and office clean-ups.' },
+    { category: 'Construction, Trades & Architecture', service: 'Builder / Bricklayer', image: 'images/categories/construction_converted.avif', budget: 'From $85', blurb: 'Walls, room extensions, repairs, and site work.' },
+    { category: 'Events & Functions', service: 'Caterer', image: 'images/categories/catering_converted.avif', budget: 'From $60', blurb: 'Weddings, parties, and office platters booking fast.' },
+    { category: 'Creative, Media & Advertising', service: 'Graphic Designer', image: 'images/categories/digital_converted.avif', budget: 'From $40', blurb: 'Posters, brand packs, and fast-turnaround content.' },
+    { category: 'Logistics, Freight & Courier Services', service: 'Furniture Remover', image: 'images/categories/transport_converted.avif', budget: 'From $50', blurb: 'House moves, furniture runs, and local deliveries.' },
+    { category: 'Creative, Media & Advertising', service: 'Photographer & Videographer', image: 'images/categories/photographer_converted.avif', budget: 'From $150', blurb: 'Events, portraits, edited galleries, and product shoots.' },
+    { category: 'Agriculture, Forestry & Water', service: 'Landscaper & Tree Feller', image: 'images/categories/farmer_converted.avif', budget: 'From $90', blurb: 'Garden design, lawn care, and outdoor maintenance.' },
+    { category: 'Beauty, Wellness & Grooming', service: 'Nail Technician', image: 'images/categories/beauty_converted.avif', budget: 'From $20', blurb: 'Home appointments, salon shifts, and event styling.' }
   ];
 
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {

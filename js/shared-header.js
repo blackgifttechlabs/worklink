@@ -1,66 +1,410 @@
 // shared-header.js - injected into all pages
 
-const SERVICELOOP_FLAT_SERVICES = [
-  'Panel Beater',
-  'Auto Body Repairer',
-  'Land Surveyor',
-  'Locksmith',
-  'Nail Technician',
-  'Massage Therapist',
-  'DStv/Satellite Installer',
-  'Starlink Installer',
-  'Builder',
-  'Tiler',
-  'Carpenter',
-  'Refrigeration Technician',
-  'Plumber',
-  'Graphic Designer',
-  'IT Specialist',
-  'Software Programmer',
-  'Personal Trainer',
-  'Painter',
-  'Landscaper',
-  'Roofing Specialist',
-  'Welder',
-  'Metal Fabricator',
-  'Stonemason',
-  'Architect',
-  'Water Engineer',
-  'Motor Mechanic',
-  'Diesel Plant Fitter',
-  'Interior Decorator',
-  'Printer',
-  'Photographer',
-  'Photocopy Specialist',
-  'Tailor/Seamstress',
-  'Event Planner',
-  'Caterer',
-  'Tutor',
-  'Borehole Driller',
-  'Car Rental Agent',
-  'Furniture Remover',
-  'Taxi Driver',
-  'Storage Manager',
-  'Energy Consultant',
-  'Solar Installer',
-  'Gas Installer',
-  'Battery Technician',
-  'Medical Practitioner (Dentist, Optometrist, etc.)',
-  'Domestic Cleaner',
-  'Advertising Agent',
-  'Marketer',
-  'Electronics Technician',
-  'Pest Control Officer',
-  'Animal Control Officer',
-  'Dog Trainer',
-  'Dog Walker',
-  'Babysitter',
-  'Housekeeper',
-  'Loader/Unloader',
-  'Cattle Herder',
-  'Waste Collector',
-  'Handyman'
+const SERVICELOOP_SERVICE_CATEGORIES = [
+  {
+    key: 'automotive-transport',
+    label: 'Automotive & Transport Services',
+    shortLabel: 'Automotive',
+    icon: 'fa-solid fa-car-side',
+    image: 'images/categories/automech_converted.avif',
+    subservices: [
+      'Motor Mechanic / Diesel Plant Fitter',
+      'Auto Electrician',
+      'Panel Beater & Auto Body Repairer (Spray Painter)',
+      'Tyre Fitter & Vulcanizer',
+      'Car Upholsterer & Windscreen Repairer',
+      'Car Wash Attendant',
+      'Taxi Driver (Formal) & Informal Taxi Driver (Mushikashika)',
+      'Commuter Omnibus Driver & Conductor (Kombi / Hwindi)',
+      'Long-Distance Bus Driver',
+      'Tow Truck Operator',
+      'Car Rental Agent',
+      'Driving School Instructor',
+      'Fuel Attendant / Informal Fuel Dealer',
+      'Vehicle Licensing/ZINARA Queue Agent'
+    ]
+  },
+  {
+    key: 'logistics-freight-courier',
+    label: 'Logistics, Freight & Courier Services',
+    shortLabel: 'Logistics',
+    icon: 'fa-solid fa-truck-fast',
+    image: 'images/categories/transport_converted.avif',
+    subservices: [
+      'Cross-border Courier/Transporter (Omalayitsha / Runner)',
+      'Freight Forwarder & Customs Clearing Agent',
+      'Delivery Rider',
+      'Haulage Truck Driver',
+      'Warehouse/Storage Manager',
+      'Furniture Remover',
+      'Loader/Unloader (Marovha / Makorokoza)'
+    ]
+  },
+  {
+    key: 'construction-trades',
+    label: 'Construction, Trades & Architecture',
+    shortLabel: 'Construction',
+    icon: 'fa-solid fa-helmet-safety',
+    image: 'images/categories/construction_converted.avif',
+    subservices: [
+      'Architect & Draughtsman',
+      'Land Surveyor & Quantity Surveyor',
+      'Builder / Bricklayer',
+      'Brickmaker',
+      'Carpenter & Roofer / Thatcher',
+      'Tiler & Paving Specialist',
+      'Plasterer & Rhino-Set/Ceiling Specialist',
+      'Welder & Metal Fabricator',
+      'Aluminum & Glass Fitter (Glazier)',
+      'Stonemason',
+      'Scaffolder',
+      'Painter'
+    ]
+  },
+  {
+    key: 'home-property',
+    label: 'Home, Property & Real Estate',
+    shortLabel: 'Home & Property',
+    icon: 'fa-solid fa-house-chimney',
+    image: 'images/categories/property_converted.avif',
+    subservices: [
+      'Real Estate Agent',
+      'Property Manager',
+      'Locksmith',
+      'Plumber',
+      'Interior Decorator',
+      'Caretaker / Groundsman',
+      'Pool Maintenance Technician',
+      'Septic Tank Emptier (Honeysucker Operator)',
+      'Handyman'
+    ]
+  },
+  {
+    key: 'cleaning-sanitation-waste',
+    label: 'Cleaning, Sanitation & Waste Management',
+    shortLabel: 'Cleaning',
+    icon: 'fa-solid fa-broom',
+    image: 'images/categories/cleaning_converted.avif',
+    subservices: [
+      'Domestic Cleaner / Maid / Housekeeper',
+      'Commercial Cleaning Contractor',
+      'Carpet & Upholstery Cleaner',
+      'Waste Collector',
+      'Scrap Metal / Plastic Recycler & Collector',
+      'Pest Control Officer / Fumigator'
+    ]
+  },
+  {
+    key: 'installations-energy-appliance',
+    label: 'Installations, Energy & Appliance Repair',
+    shortLabel: 'Energy & Repair',
+    icon: 'fa-solid fa-solar-panel',
+    image: 'images/categories/electrician_converted.avif',
+    subservices: [
+      'Solar Panel & Inverter Installer',
+      'Generator Mechanic',
+      'Gas Installer & Gas Refiller',
+      'Biogas Digester Installer',
+      'DStv/Satellite Installer',
+      'Starlink Installer',
+      'Battery Technician',
+      'Refrigeration & Air Conditioning Technician',
+      'Appliance Repairer',
+      'Electronics Technician'
+    ]
+  },
+  {
+    key: 'digital-it-tech',
+    label: 'Digital, IT & Tech Services',
+    shortLabel: 'IT & Tech',
+    icon: 'fa-solid fa-laptop-code',
+    image: 'images/categories/digital_converted.avif',
+    subservices: [
+      'IT Support Specialist / Network Engineer',
+      'Software Programmer / App Developer',
+      'Web Designer',
+      'Cybersecurity Consultant',
+      'Mobile Phone & Laptop Repair Technician',
+      'Data Analyst',
+      'Database Administrator'
+    ]
+  },
+  {
+    key: 'creative-media-advertising',
+    label: 'Creative, Media & Advertising',
+    shortLabel: 'Creative',
+    icon: 'fa-solid fa-camera-retro',
+    image: 'images/categories/photographer_converted.avif',
+    subservices: [
+      'Graphic Designer',
+      'Photographer & Videographer',
+      'Digital Marketer / Social Media Manager',
+      'Content Creator / Influencer',
+      'Copywriter / Blogger',
+      'Advertising Agent',
+      'Signwriter & Billboard Printer',
+      'Sound Engineer & Studio Producer',
+      'DJ (Disc Jockey) & MC (Master of Ceremonies)',
+      'Voiceover Artist / Radio Presenter'
+    ]
+  },
+  {
+    key: 'fashion-textiles-clothing',
+    label: 'Fashion, Textiles & Clothing',
+    shortLabel: 'Fashion',
+    icon: 'fa-solid fa-shirt',
+    image: 'images/categories/clothing_converted.avif',
+    subservices: [
+      'Tailor / Seamstress',
+      'Bridal Gown Maker / Renter',
+      'Shoemaker / Cobbler',
+      'Boutique Owner / Clothing Retailer',
+      'Second-hand Clothing Dealer (Mabhero Seller)',
+      'Leatherworker / Bag Maker'
+    ]
+  },
+  {
+    key: 'beauty-wellness-grooming',
+    label: 'Beauty, Wellness & Grooming',
+    shortLabel: 'Beauty',
+    icon: 'fa-solid fa-spa',
+    image: 'images/categories/beauty_converted.avif',
+    subservices: [
+      'Hairdresser / Hairstylist',
+      'Hair Braider / Weaver',
+      'Barber',
+      'Nail Technician',
+      'Makeup Artist (MUA)',
+      'Massage Therapist',
+      'Personal Trainer / Gym Instructor',
+      'Tattoo Artist'
+    ]
+  },
+  {
+    key: 'health-medical',
+    label: 'Health & Medical Services',
+    shortLabel: 'Health',
+    icon: 'fa-solid fa-user-doctor',
+    image: 'images/categories/health_converted.avif',
+    subservices: [
+      'Medical Practitioner (GP, Surgeon, Specialist)',
+      'Dentist & Orthodontist',
+      'Optometrist',
+      'Pharmacist / Pharmacy Technician',
+      'Nurse & Home-based Care Nurse',
+      'Physiotherapist & Chiropractor',
+      'Midwife',
+      'Traditional Healer / Herbalist (N\'anga / Sangoma)',
+      'Ambulance Driver / EMT'
+    ]
+  },
+  {
+    key: 'education-training-academic',
+    label: 'Education, Training & Academic Services',
+    shortLabel: 'Education',
+    icon: 'fa-solid fa-graduation-cap',
+    image: 'images/categories/tutor_converted.avif',
+    subservices: [
+      'Teacher (Primary/Secondary)',
+      'Tutor / Extra Lessons Teacher',
+      'ECD Teacher / Creche Owner',
+      'University Lecturer / Professor',
+      'Academic Writer / Researcher',
+      'Special Needs Educator',
+      'Corporate Trainer'
+    ]
+  },
+  {
+    key: 'events-functions',
+    label: 'Events & Functions',
+    shortLabel: 'Events',
+    icon: 'fa-solid fa-calendar-check',
+    image: 'images/categories/events_converted.avif',
+    subservices: [
+      'Event Planner / Coordinator',
+      'Event Decorator',
+      'Caterer',
+      'Custom Cake Baker',
+      'Tent, Chair & Mobile Toilet Hire Provider',
+      'PA System & Lighting Hire Provider',
+      'Choreographer / Entertainment Troupe'
+    ]
+  },
+  {
+    key: 'food-beverage-hospitality',
+    label: 'Food, Beverage & Hospitality',
+    shortLabel: 'Hospitality',
+    icon: 'fa-solid fa-utensils',
+    image: 'images/categories/catering_converted.avif',
+    subservices: [
+      'Chef / Cook',
+      'Restaurant / Cafe Manager',
+      'Street Food Vendor',
+      'Tuckshop Owner',
+      'Barista',
+      'Bartender / Mixologist',
+      'Guesthouse / Lodge Operator'
+    ]
+  },
+  {
+    key: 'agriculture-forestry-water',
+    label: 'Agriculture, Forestry & Water',
+    shortLabel: 'Agriculture',
+    icon: 'fa-solid fa-seedling',
+    image: 'images/categories/farmer_converted.avif',
+    subservices: [
+      'Agronomist / Agricultural Consultant',
+      'Water Engineer',
+      'Borehole Driller & Pump Installer',
+      'Bulk Water Delivery Truck Driver',
+      'Landscaper & Tree Feller',
+      'Tractor Driver / Farm Operator',
+      'Poultry Farmer',
+      'Market Gardener / Produce Middleman',
+      'Grain Miller (Chigayo Operator)',
+      'Cattle Herder',
+      'Livestock Vaccinator',
+      'Agro-dealer'
+    ]
+  },
+  {
+    key: 'care-animal-services',
+    label: 'Care & Animal Services',
+    shortLabel: 'Care & Animals',
+    icon: 'fa-solid fa-paw',
+    image: 'images/categories/childcare_converted.avif',
+    subservices: [
+      'Babysitter / Nanny',
+      'Elderly Care Worker',
+      'Veterinary Surgeon / Vet Assistant',
+      'Animal Control Officer & Snake Catcher',
+      'Dog Trainer & Dog Walker',
+      'Pet Groomer',
+      'Animal Rescue Worker'
+    ]
+  },
+  {
+    key: 'financial-investment-trading',
+    label: 'Financial, Investment & Trading Services',
+    shortLabel: 'Finance',
+    icon: 'fa-solid fa-coins',
+    image: 'images/categories/finance_converted.avif',
+    subservices: [
+      'Mobile Money Agent',
+      'Informal Currency Trader (Money Changer / Osiphatheleni)',
+      'Informal Micro-lender (Chimbadzo)',
+      'Savings Club Organizer (Mukando / Round)',
+      'Accountant / Bookkeeper',
+      'Tax Consultant',
+      'Financial Advisor / Wealth Manager',
+      'Debt Collector'
+    ]
+  },
+  {
+    key: 'legal-regulatory-administrative',
+    label: 'Legal, Regulatory & Administrative Services',
+    shortLabel: 'Legal & Admin',
+    icon: 'fa-solid fa-scale-balanced',
+    image: 'images/categories/printing_converted.avif',
+    subservices: [
+      'Legal Practitioner / Lawyer / Advocate',
+      'Notary Public & Commissioner of Oaths',
+      'Company Registration Agent',
+      'Visa & Immigration Consultant',
+      'Virtual Assistant / Secretary',
+      'Photocopy / Printing / Typing Specialist'
+    ]
+  },
+  {
+    key: 'security-protection',
+    label: 'Security & Protection Services',
+    shortLabel: 'Security',
+    icon: 'fa-solid fa-shield-halved',
+    image: 'images/categories/security_converted.avif',
+    subservices: [
+      'Security Guard',
+      'VIP Protection / Bodyguard / Bouncer',
+      'CCTV & Alarm Installer',
+      'Electric Fence Installer',
+      'Private Investigator',
+      'Cash-in-Transit Guard'
+    ]
+  },
+  {
+    key: 'mining-extractive',
+    label: 'Mining & Extractive Services',
+    shortLabel: 'Mining',
+    icon: 'fa-solid fa-mountain',
+    image: 'images/categories/informal_converted.avif',
+    subservices: [
+      'Geologist',
+      'Mine Surveyor',
+      'Artisanal Miner (Makorokoza)',
+      'Claim Pegger',
+      'Gold Miller / Stamp Mill Operator',
+      'Explosives Expert / Blaster',
+      'Heavy Machinery Operator'
+    ]
+  },
+  {
+    key: 'funeral-bereavement',
+    label: 'Funeral & Bereavement Services',
+    shortLabel: 'Funeral',
+    icon: 'fa-solid fa-monument',
+    image: 'images/categories/religion_converted.avif',
+    subservices: [
+      'Undertaker / Mortician',
+      'Repatriation Agent',
+      'Tombstone Fabricator & Engraver',
+      'Grave Digger',
+      'Funeral Policy Agent'
+    ]
+  },
+  {
+    key: 'tourism-travel-leisure',
+    label: 'Tourism, Travel & Leisure',
+    shortLabel: 'Tourism',
+    icon: 'fa-solid fa-route',
+    image: 'images/categories/transport_converted.avif',
+    subservices: [
+      'Travel Agent',
+      'Tour Guide',
+      'Professional Hunter / Safari Guide',
+      'White Water Rafting / Bungee Jumping Instructor',
+      'Translator / Interpreter'
+    ]
+  },
+  {
+    key: 'retail-wholesale-vending',
+    label: 'Retail, Wholesale & Vending',
+    shortLabel: 'Retail',
+    icon: 'fa-solid fa-store',
+    image: 'images/categories/furnicher_converted.avif',
+    subservices: [
+      'Shop Assistant / Cashier',
+      'Airtime Vendor',
+      'Hawker / Mobile Vendor',
+      'Hardware Store Clerk',
+      'Market Stall Operator'
+    ]
+  },
+  {
+    key: 'religion-community-support',
+    label: 'Religion & Community Support',
+    shortLabel: 'Community',
+    icon: 'fa-solid fa-hands-holding-circle',
+    image: 'images/categories/religion_converted.avif',
+    subservices: [
+      'Clergy (Pastor, Priest, Imam)',
+      'Prophet / Faith Healer',
+      'NGO Worker / Community Mobilizer',
+      'Social Worker',
+      'Marriage Counselor / Tete'
+    ]
+  }
 ];
+
+const SERVICELOOP_FLAT_SERVICES = SERVICELOOP_SERVICE_CATEGORIES.flatMap((category) => category.subservices);
 
 const SERVICELOOP_SERVICE_ICONS = {
   'Panel Beater': 'fa-solid fa-car-burst',
@@ -129,13 +473,10 @@ function slugifyService(value = '') {
 }
 
 window.ServiceLoopFlatServices = SERVICELOOP_FLAT_SERVICES.slice();
-window.ServiceLoopServiceCatalog = SERVICELOOP_FLAT_SERVICES.map((label) => ({
-  key: slugifyService(label),
-  label,
-  shortLabel: label,
-  icon: SERVICELOOP_SERVICE_ICONS[label] || 'fa-solid fa-briefcase',
-  image: '',
-  subservices: []
+window.ServiceLoopServiceCatalog = SERVICELOOP_SERVICE_CATEGORIES.map((category) => ({
+  ...category,
+  key: category.key || slugifyService(category.label),
+  subservices: Array.isArray(category.subservices) ? category.subservices.slice() : []
 }));
 
 function getServiceLoopServiceCatalog() {
@@ -752,7 +1093,7 @@ function renderHeader() {
       <div class="mobile-header-left">
         ${isMessagesPage ? `<a href="${base}index.html" class="messages-mobile-back" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></a>` : ''}
         <a href="${base}index.html" class="logo" aria-label="ServiceLoop home">
-          <img src="${base}images/logo/slicon.avif" alt="ServiceLoop" class="logo-image" />
+          <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
         </a>
       </div>
       <nav class="header-center-nav" aria-label="Primary navigation">
@@ -842,7 +1183,7 @@ function renderHeader() {
       </svg>
     </button>
     <a href="${base}index.html" class="mobile-nav-brand" aria-label="ServiceLoop home">
-      <img src="${base}images/logo/slicon.avif" alt="ServiceLoop" class="logo-image" />
+      <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
     </a>
     <div class="nav-inner">
       ${mobileNavItems}
@@ -861,7 +1202,7 @@ function renderAccountPanel() {
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
         <div class="account-brand-lockup" aria-hidden="true">
-          <img src="${base}images/logo/slicon.avif" alt="" class="account-brand-logo" />
+          <img src="${base}images/logo/sl.avif" alt="" class="account-brand-logo" />
         </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
         <p class="account-auth-subtext">Create an account or sign in to continue with ServiceLoop.</p>
@@ -1222,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="app-install-sheet__brand">
-            <img src="${getBasePath()}images/logo/slicon.avif" alt="ServiceLoop logo" class="app-install-sheet__logo" />
+            <img src="${getBasePath()}images/logo/sl.avif" alt="ServiceLoop logo" class="app-install-sheet__logo" />
             <div class="app-install-sheet__copy">
               <span class="app-install-sheet__eyebrow">Download App</span>
               <h3 id="app-install-sheet-title">Install ServiceLoop</h3>

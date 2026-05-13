@@ -4099,6 +4099,10 @@ body:has(.job-post-page) {
   background: rgba(17, 24, 39, 0.14);
 }
 
+.account-service-picker .account-typeahead-toggle {
+  top: 92px;
+}
+
 .account-typeahead-list {
   position: absolute;
   top: calc(100% - 2px);
