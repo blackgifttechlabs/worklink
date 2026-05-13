@@ -752,7 +752,7 @@ function renderHeader() {
       <div class="mobile-header-left">
         ${isMessagesPage ? `<a href="${base}index.html" class="messages-mobile-back" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></a>` : ''}
         <a href="${base}index.html" class="logo" aria-label="ServiceLoop home">
-          <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
+          <img src="${base}images/logo/slicon.avif" alt="ServiceLoop" class="logo-image" />
         </a>
       </div>
       <nav class="header-center-nav" aria-label="Primary navigation">
@@ -842,7 +842,7 @@ function renderHeader() {
       </svg>
     </button>
     <a href="${base}index.html" class="mobile-nav-brand" aria-label="ServiceLoop home">
-      <img src="${base}images/logo/sl.avif" alt="ServiceLoop" class="logo-image" />
+      <img src="${base}images/logo/slicon.avif" alt="ServiceLoop" class="logo-image" />
     </a>
     <div class="nav-inner">
       ${mobileNavItems}
@@ -861,7 +861,7 @@ function renderAccountPanel() {
       <button type="button" class="account-auth-close" aria-label="Close account panel">×</button>
       <div class="account-auth-copy">
         <div class="account-brand-lockup" aria-hidden="true">
-          <img src="${base}images/logo/sl.avif" alt="" class="account-brand-logo" />
+          <img src="${base}images/logo/slicon.avif" alt="" class="account-brand-logo" />
         </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
         <p class="account-auth-subtext">Create an account or sign in to continue with ServiceLoop.</p>
@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="app-install-sheet__brand">
-            <img src="${getBasePath()}images/logo/sl.avif" alt="ServiceLoop logo" class="app-install-sheet__logo" />
+            <img src="${getBasePath()}images/logo/slicon.avif" alt="ServiceLoop logo" class="app-install-sheet__logo" />
             <div class="app-install-sheet__copy">
               <span class="app-install-sheet__eyebrow">Download App</span>
               <h3 id="app-install-sheet-title">Install ServiceLoop</h3>

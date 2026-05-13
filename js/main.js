@@ -1773,7 +1773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const image = event.target;
     if (!(image instanceof HTMLImageElement) || image.dataset.fallbackApplied === 'true') return;
     image.dataset.fallbackApplied = 'true';
-    image.src = `${getSiteBasePath()}images/logo/sl.avif`;
+    image.src = `${getSiteBasePath()}images/logo/slicon.avif`;
   }, true);
 
   // Filter chips toggle

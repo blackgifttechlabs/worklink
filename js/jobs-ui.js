@@ -781,7 +781,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/sl.avif`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/slicon.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')

@@ -1,4 +1,4 @@
-const SERVICELOOP_CACHE = 'serviceloop-shell-v8';
+const SERVICELOOP_CACHE = 'serviceloop-shell-v10';
 const SERVICELOOP_ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ const SERVICELOOP_ASSETS = [
   './js/providers-ui.js',
   './js/jobs-ui.js',
   './js/zimbabwe-locations.js',
-  './images/logo/sl.avif',
+  './images/logo/slicon.avif',
   './images/pwa/sl-icon-180.png',
   './images/pwa/sl-icon-192.png',
   './images/pwa/sl-icon-512.png'

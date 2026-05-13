@@ -245,7 +245,7 @@ function normalizeStoredProfileImage(value = '') {
     .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
   if (
-    normalized === 'images/logo/sl.avif'
+    normalized === 'images/logo/slicon.avif'
     || normalized === 'images/sections/findme.avif'
     || normalized.startsWith('images/categories/')
     || catalogImages.includes(normalized)

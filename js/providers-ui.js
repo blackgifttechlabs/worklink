@@ -374,7 +374,7 @@
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/sl.avif'
+      normalized === 'images/logo/slicon.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -868,7 +868,7 @@
 
   function resolveMediaSrc(value, fallback = '') {
     const source = String(value || '').trim();
-    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/sl.avif`;
+    if (!source) return fallback ? resolveMediaSrc(fallback) : `${getBase()}images/logo/slicon.avif`;
     const unescaped = source
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')
@@ -1240,7 +1240,7 @@
         : (isSupport ? 'Official ServiceLoop account' : (isProvider ? 'Provider on ServiceLoop' : 'ServiceLoop member')),
       profileImageData: String(
         contact.profileImageData
-        || (isSupport ? 'images/logo/sl.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
+        || (isSupport ? 'images/logo/slicon.avif' : (isProvider ? 'images/sections/profileimg.avif' : ''))
       ).trim(),
       phone: String(contact.phone || contact.phoneNumber || '').trim(),
       whatsappNumber: String(contact.whatsappNumber || contact.phone || contact.phoneNumber || '').trim(),
@@ -1620,7 +1620,7 @@
       const href = buildSearchResultsHref(category.label, { category: category.label, service: category.label });
       const services = Array.isArray(category.subservices) ? category.subservices : [];
       const summary = services.length ? services.slice(0, 2).join(' • ') : 'Service';
-      const imageSrc = resolveMediaSrc(category.image || 'images/logo/sl.avif');
+      const imageSrc = resolveMediaSrc(category.image || 'images/logo/slicon.avif');
 
       return `
         <article class="specialists-suggested-card specialists-suggested-category-card">
@@ -4615,7 +4615,7 @@
       page.innerHTML = `
         <div class="messages-auth-empty">
           <div class="messages-auth-empty-panel">
-            <img src="${getBase()}images/logo/sl.avif" alt="ServiceLoop" />
+            <img src="${getBase()}images/logo/slicon.avif" alt="ServiceLoop" />
             <h1>Sign in to message people on ServiceLoop.</h1>
             <a href="${getBase()}pages/account.html" class="messages-auth-empty-action">Sign in</a>
           </div>
@@ -6008,7 +6008,7 @@
     if (!account?.loggedIn || !account?.uid) {
       page.innerHTML = `
         <section class="client-profile-auth-card">
-          <img src="${base}images/logo/sl.avif" alt="ServiceLoop" />
+          <img src="${base}images/logo/slicon.avif" alt="ServiceLoop" />
           <h1>Sign in to view your client profile.</h1>
           <p>Your client profile is separate from provider profiles, so it will not show the provider "no profile found" page.</p>
           <a href="${base}pages/account.html" class="client-profile-primary-link">Sign in</a>

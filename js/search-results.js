@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .map((imagePath) => imagePath.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, ''));
 
     if (
-      normalized === 'images/logo/sl.avif'
+      normalized === 'images/logo/slicon.avif'
       || normalized === 'images/sections/findme.avif'
       || normalized.startsWith('images/categories/')
       || categoryImages.includes(normalized)
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resolveImage(src = '') {
     const value = String(src || '').trim();
-    if (!value) return `${base}images/logo/sl.avif`;
+    if (!value) return `${base}images/logo/slicon.avif`;
     const unescaped = value
       .replace(/&amp;/g, '&')
       .replace(/&#x2F;/g, '/')

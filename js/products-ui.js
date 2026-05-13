@@ -67,7 +67,7 @@
 
   function resolveImage(src = '') {
     const value = String(src || '').trim();
-    if (!value) return `${getBase()}images/logo/sl.avif`;
+    if (!value) return `${getBase()}images/logo/slicon.avif`;
     if (/^(data:|https?:|blob:|\/)/i.test(value)) return value;
     return `${getBase()}${value.replace(/^\.?\//, '').replace(/^(\.\.\/)+/, '')}`;
   }
