@@ -277,6 +277,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const categoryLabel = String(category.label || '').trim();
       const shortLabel = String(category.shortLabel || '').trim();
       const subservices = Array.isArray(category.subservices) ? category.subservices : [];
+      if (!subservices.length) {
+        return [{
+          kind: 'service',
+          title: categoryLabel,
+          subtitle: 'Service',
+          query: categoryLabel,
+          service: categoryLabel,
+          category: categoryLabel,
+          icon: category.icon || 'fa-solid fa-briefcase',
+          terms: normalizeSearchTerms([categoryLabel, shortLabel])
+        }];
+      }
       const categoryTerms = normalizeSearchTerms([categoryLabel, shortLabel, subservices]);
       const categoryItem = {
         kind: 'category',
@@ -330,24 +342,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const HOME_TRENDING_JOBS = [
-    { category: 'Plumbing', service: 'Leak Repairs', image: 'images/categories/plumber_converted.avif', budget: 'From $25', blurb: 'Burst pipes, blocked drains, and urgent home call-outs.' },
-    { category: 'Electrical', service: 'Solar System Installation', image: 'images/categories/electrician_converted.avif', budget: 'From $120', blurb: 'Backup power setups for homes, shops, and offices.' },
-    { category: 'Cleaning Services', service: 'Deep House Cleaning', image: 'images/categories/cleaning_converted.avif', budget: 'From $30', blurb: 'Move-ins, weekly resets, and office clean-ups.' },
-    { category: 'Construction & Building', service: 'Bricklayer', image: 'images/categories/construction_converted.avif', budget: 'From $85', blurb: 'Boundary walls, room extensions, and tank stands.' },
-    { category: 'Food & Catering', service: 'Event Caterer', image: 'images/categories/catering_converted.avif', budget: 'From $60', blurb: 'Weddings, parties, and office platters booking fast.' },
-    { category: 'Digital & Business', service: 'Graphic Designer', image: 'images/categories/digital_converted.avif', budget: 'From $40', blurb: 'Posters, brand packs, and fast-turnaround content.' },
-    { category: 'Transport & Logistics', service: 'Moving & Relocation Services', image: 'images/categories/transport_converted.avif', budget: 'From $50', blurb: 'House moves, furniture runs, and local deliveries.' },
-    { category: 'Photography & Videography', service: 'Wedding Photographer', image: 'images/categories/photographer_converted.avif', budget: 'From $150', blurb: 'Full-day shoots, edited galleries, and reels.' },
-    { category: 'Agriculture & Farming', service: 'Irrigation Setup', image: 'images/categories/farmer_converted.avif', budget: 'From $90', blurb: 'Borehole-fed lines, garden systems, and small plots.' },
-    { category: 'Beauty & Wellness', service: 'Hairdresser', image: 'images/categories/beauty_converted.avif', budget: 'From $20', blurb: 'Home appointments, salon shifts, and event styling.' }
+    { category: 'Plumber', service: 'Plumber', image: 'images/categories/plumber_converted.avif', budget: 'From $25', blurb: 'Leaks, blocked drains, and urgent home call-outs.' },
+    { category: 'Solar Installer', service: 'Solar Installer', image: 'images/categories/electrician_converted.avif', budget: 'From $120', blurb: 'Backup power setups for homes, shops, and offices.' },
+    { category: 'Domestic Cleaner', service: 'Domestic Cleaner', image: 'images/categories/cleaning_converted.avif', budget: 'From $30', blurb: 'Move-ins, weekly resets, and office clean-ups.' },
+    { category: 'Builder', service: 'Builder', image: 'images/categories/construction_converted.avif', budget: 'From $85', blurb: 'Walls, room extensions, repairs, and site work.' },
+    { category: 'Caterer', service: 'Caterer', image: 'images/categories/catering_converted.avif', budget: 'From $60', blurb: 'Weddings, parties, and office platters booking fast.' },
+    { category: 'Graphic Designer', service: 'Graphic Designer', image: 'images/categories/digital_converted.avif', budget: 'From $40', blurb: 'Posters, brand packs, and fast-turnaround content.' },
+    { category: 'Furniture Remover', service: 'Furniture Remover', image: 'images/categories/transport_converted.avif', budget: 'From $50', blurb: 'House moves, furniture runs, and local deliveries.' },
+    { category: 'Photographer', service: 'Photographer', image: 'images/categories/photographer_converted.avif', budget: 'From $150', blurb: 'Events, portraits, edited galleries, and product shoots.' },
+    { category: 'Landscaper', service: 'Landscaper', image: 'images/categories/farmer_converted.avif', budget: 'From $90', blurb: 'Garden design, lawn care, and outdoor maintenance.' },
+    { category: 'Nail Technician', service: 'Nail Technician', image: 'images/categories/beauty_converted.avif', budget: 'From $20', blurb: 'Home appointments, salon shifts, and event styling.' }
   ];
 
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {
     const isClone = Boolean(options.isClone);
     return categories.map((category) => `
       <a href="${typeof buildServiceLoopSpecialistsHref === 'function'
-        ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-        : `${base}pages/search-results.html?category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
+        ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, service: category.label, query: category.label })
+        : `${base}pages/search-results.html?service=${encodeURIComponent(category.label)}&category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -1248,15 +1260,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const terms = [
       'Search plumbers in Harare',
-      'Find electricians near me',
-      'Cleaning services in Bulawayo',
-      'Wedding photographer in Mutare',
-      'Makeup artist for events',
-      'Transport and moving help',
-      'Gardeners in Chitungwiza',
-      'Home repairs this weekend',
+      'Find solar installers near me',
+      'Domestic cleaners in Bulawayo',
+      'Photographer in Mutare',
+      'Nail technician for events',
+      'Furniture remover in Masvingo',
+      'Landscapers in Chitungwiza',
+      'Handyman this weekend',
       'Available jobs for builders',
-      'Tutors for O Level maths'
+      'Tutors for maths'
     ];
 
     let termIndex = 0;

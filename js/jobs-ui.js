@@ -617,8 +617,8 @@
       menu.hidden = true;
     }
 
-    function renderOptions() {
-      const query = String(input.value || '').trim();
+    function renderOptions(forceAll = false) {
+      const query = forceAll ? '' : String(input.value || '').trim();
       options = Array.isArray(config.getItems?.(query)) ? config.getItems(query) : [];
       if (!options.length) {
         menu.innerHTML = `<div class="job-combobox-empty">No matches found.</div>`;
@@ -647,8 +647,8 @@
       });
     }
 
-    function openMenu() {
-      renderOptions();
+    function openMenu(forceAll = false) {
+      renderOptions(forceAll);
       host.classList.add('is-open');
       menu.hidden = false;
     }
@@ -689,7 +689,7 @@
         closeMenu();
       } else {
         input.focus();
-        openMenu();
+        openMenu(true);
       }
     });
 
@@ -1178,7 +1178,7 @@
     const data = new FormData(form);
     return {
       category: controls.categoryCombobox?.getValue() || controls.categoryCombobox?.getInputValue() || String(data.get('category') || ''),
-      subcategory: controls.subcategoryCombobox?.getValue() || controls.subcategoryCombobox?.getInputValue() || String(data.get('subcategory') || ''),
+      subcategory: '',
       description: String(data.get('description') || ''),
       budget: String(data.get('budget') || ''),
       province: controls.provinceCombobox?.getValue() || controls.provinceCombobox?.getInputValue() || String(data.get('province') || ''),
@@ -1616,8 +1616,8 @@
       ? await authHelper.getClientProfileByUid(account.uid).catch(() => null)
       : null;
     const restoredDraft = readPostJobDraft();
-    const defaultCategory = String(restoredDraft.category || '').trim();
-    const defaultSubcategory = String(restoredDraft.subcategory || '').trim();
+    const defaultCategory = String(restoredDraft.category || restoredDraft.subcategory || '').trim();
+    const defaultSubcategory = '';
     const defaultProvince = String(restoredDraft.province || clientProfile?.province || userDoc?.province || '').trim();
     const defaultCity = String(restoredDraft.city || clientProfile?.city || userDoc?.city || '').trim();
 
@@ -1680,22 +1680,16 @@
                   <span class="job-post-section-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></span>
                 <div>
                   <strong>What do you need?</strong>
-                  <span>Start with the broad service, then choose the closest specific job.</span>
+                  <span>Choose one service from the list.</span>
                 </div>
               </div>
               <div class="job-form-grid">
                 ${buildJobComboboxMarkup({
                   type: 'category',
-                  label: 'Type of work',
-                  placeholder: 'Example: Plumbing, Cleaning, Transport',
+                  label: 'Service',
+                  placeholder: 'Example: Plumber, Nail Technician, Solar Installer',
                   value: defaultCategory,
                   required: true
-                })}
-                ${buildJobComboboxMarkup({
-                  type: 'subcategory',
-                  label: 'Specific job',
-                  placeholder: 'Example: Leak repairs or moving service',
-                  value: defaultSubcategory
                 })}
                 <label class="job-form-field is-wide">
                   <span>Explain what is happening</span>
@@ -1767,7 +1761,7 @@
     const form = page.querySelector('[data-job-post-form]');
     const submitBtn = page.querySelector('[data-job-post-submit]');
     const categoryHost = page.querySelector('[data-job-combobox="category"]');
-    const subcategoryHost = page.querySelector('[data-job-combobox="subcategory"]');
+    const subcategoryHost = null;
     const provinceHost = page.querySelector('[data-job-combobox="province"]');
     const cityHost = page.querySelector('[data-job-combobox="city"]');
     const guideHost = page.querySelector('[data-job-post-guide]');
@@ -1841,13 +1835,12 @@
         .filter((category) => {
           if (!normalizedQuery) return true;
           return category.label.toLowerCase().includes(normalizedQuery)
-            || category.shortLabel?.toLowerCase().includes(normalizedQuery)
-            || (Array.isArray(category.subservices) && category.subservices.some((service) => service.toLowerCase().includes(normalizedQuery)));
+            || category.shortLabel?.toLowerCase().includes(normalizedQuery);
         })
         .map((category) => ({
           value: category.label,
           label: category.label,
-          subtitle: `${category.subservices.length} services`,
+          subtitle: 'Service',
           icon: category.icon
         }));
     }
@@ -1867,12 +1860,7 @@
     }
 
     let activeCategory = defaultCategory;
-    const subcategoryCombobox = bindJobCombobox(subcategoryHost, {
-      type: 'subcategory',
-      value: defaultSubcategory,
-      defaultIcon: 'fa-solid fa-list-ul',
-      getItems: (query) => getSubcategoryItems(activeCategory, query)
-    });
+    const subcategoryCombobox = null;
     const categoryCombobox = bindJobCombobox(categoryHost, {
       type: 'category',
       value: defaultCategory,
@@ -1880,21 +1868,12 @@
       getItems: getCategoryItems,
       onSelect: (match) => {
         activeCategory = match.value;
-        subcategoryCombobox?.setDefaultIcon(getCategoryIcon(match.value));
-        subcategoryCombobox?.clear();
       },
       onInput: () => {
         activeCategory = '';
-        subcategoryCombobox?.setDefaultIcon('fa-solid fa-list-ul');
-        subcategoryCombobox?.clear();
       }
     });
     activeCategory = categoryCombobox?.getValue() || defaultCategory;
-    if (defaultSubcategory) {
-      subcategoryCombobox?.setValue(defaultSubcategory);
-    } else {
-      subcategoryCombobox?.clear();
-    }
 
     let activeProvince = defaultProvince;
     const cityCombobox = bindJobCombobox(cityHost, {
@@ -1948,9 +1927,8 @@
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
       const typedCategory = categoryCombobox?.getInputValue() || '';
-      const typedSubcategory = subcategoryCombobox?.getInputValue() || '';
       payload.category = String(payload.category || typedCategory).trim();
-      payload.subcategory = String(payload.subcategory || typedSubcategory).trim();
+      payload.subcategory = '';
       payload.province = String(provinceCombobox?.getValue() || payload.province || '').trim();
       payload.city = String(cityCombobox?.getValue() || payload.city || '').trim();
       payload.streetAddress = String(payload.streetAddress || '').trim();
@@ -3551,8 +3529,8 @@
             <section class="job-owner-posted-section job-owner-posted-details">
               <strong>Job details</strong>
               <div class="job-owner-posted-detail-grid">
-                <span><i class="fa-solid fa-list"></i><small>Category</small><b>${escapeHtml(job.category)}</b></span>
-                <span><i class="fa-regular fa-tag"></i><small>Subcategory</small><b>${escapeHtml(job.subcategory || job.category)}</b></span>
+                <span><i class="fa-solid fa-list"></i><small>Service</small><b>${escapeHtml(job.category)}</b></span>
+                <span><i class="fa-regular fa-tag"></i><small>Work type</small><b>${escapeHtml(job.subcategory || job.category)}</b></span>
                 <span><i class="fa-solid fa-dollar-sign"></i><small>Budget</small><b>${escapeHtml(formatCurrency(job.budget))}</b></span>
                 <span><i class="fa-regular fa-calendar"></i><small>Posted on</small><b>${escapeHtml(formatShortDate(job.createdAtMs))}</b></span>
                 <span><i class="fa-solid fa-location-dot"></i><small>Location</small><b>${escapeHtml(job.address || 'Address not shared')}</b></span>

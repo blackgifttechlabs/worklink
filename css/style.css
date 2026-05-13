@@ -4075,6 +4075,30 @@ body:has(.job-post-page) {
   position: relative;
 }
 
+.account-typeahead-field input[data-provider-service-input] {
+  padding-right: 46px;
+}
+
+.account-typeahead-toggle {
+  position: absolute;
+  top: 32px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.08);
+  color: #111827;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.account-typeahead-toggle:hover,
+.account-typeahead-toggle:focus-visible {
+  background: rgba(17, 24, 39, 0.14);
+}
+
 .account-typeahead-list {
   position: absolute;
   top: calc(100% - 2px);

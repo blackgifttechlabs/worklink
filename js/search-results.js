@@ -660,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (categoryOptionsHost) {
       const categories = getCatalog();
       categoryOptionsHost.innerHTML = [
-        '<button type="button" data-search-category="">All categories</button>',
+        '<button type="button" data-search-category="">All services</button>',
         ...categories.map((category) => `<button type="button" data-search-category="${escapeHtml(category.label)}">${escapeHtml(category.label)}</button>`)
       ].join('');
 
@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (desktopCategorySelect) {
       const categories = getCatalog();
       desktopCategorySelect.innerHTML = [
-        '<option value="">All categories</option>',
+        '<option value="">All services</option>',
         ...categories.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`)
       ].join('');
       desktopCategorySelect.value = state.category || getCurrentSearchIntent().category || '';
@@ -687,9 +687,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (desktopServiceSelect) {
       const category = state.category || getCurrentSearchIntent().category || '';
       const catalogMatch = getCatalog().find((item) => normalizeText(item.label) === normalizeText(category));
-      const services = Array.isArray(catalogMatch?.subservices) ? catalogMatch.subservices : [];
+      const services = Array.isArray(catalogMatch?.subservices) && catalogMatch.subservices.length ? catalogMatch.subservices : getCatalog().map((item) => item.label);
       desktopServiceSelect.innerHTML = [
-        '<option value="">All subcategories</option>',
+        '<option value="">All services</option>',
         ...services.map((service) => `<option value="${escapeHtml(service)}">${escapeHtml(service)}</option>`)
       ].join('');
       desktopServiceSelect.value = services.includes(state.service) ? state.service : '';

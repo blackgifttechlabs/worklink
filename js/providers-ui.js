@@ -352,7 +352,7 @@
 
   function buildSubserviceOptionsMarkup(categoryLabel = '', selectedValue = '', placeholder = 'Choose a service') {
     const subservices = getSubservicesForCategory(categoryLabel);
-    return buildSelectOptions(subservices, selectedValue, placeholder);
+    return buildSelectOptions(subservices.length ? subservices : SPECIALIST_CATEGORIES.map((category) => category.label), selectedValue || categoryLabel, placeholder);
   }
 
   function normalizeTypeaheadTerm(value) {
@@ -467,6 +467,17 @@
       const categoryLabel = String(category.label || '').trim();
       const shortLabel = String(category.shortLabel || '').trim();
       const subservices = Array.isArray(category.subservices) ? category.subservices : [];
+      if (!subservices.length) {
+        return [{
+          kind: 'service',
+          label: categoryLabel,
+          detail: 'Service',
+          category: categoryLabel,
+          service: categoryLabel,
+          icon: category.icon || 'fa-solid fa-briefcase',
+          terms: [categoryLabel, shortLabel].filter(Boolean)
+        }];
+      }
       const categoryItem = {
         kind: 'category',
         label: categoryLabel,
@@ -524,7 +535,7 @@
       || normalizeProviderServiceValue(item.primaryCategory)
       || String(getCategoryBySubservice(service)?.label || service).trim();
     return {
-      category,
+      category: category || service,
       service
     };
   }
@@ -710,7 +721,7 @@
         ? selectedServices.map((item, index) => `
           <span class="account-service-chip">
             <span>${escapeHtml(item.service)}</span>
-            <small>${escapeHtml(item.category)}</small>
+            ${item.category && item.category !== item.service ? `<small>${escapeHtml(item.category)}</small>` : ''}
             <button type="button" data-remove-service="${index}" aria-label="Remove ${escapeHtml(item.service)}"><i class="fa-solid fa-xmark"></i></button>
           </span>
         `).join('')
@@ -730,6 +741,7 @@
       emitChange();
     }
 
+    const toggle = input.parentElement?.querySelector('[data-provider-service-toggle]');
     input.addEventListener('focus', () => showSuggestions());
     input.addEventListener('input', () => {
       input.classList.remove('is-invalid');
@@ -759,6 +771,14 @@
       if (!(button instanceof HTMLElement)) return;
       event.preventDefault();
       addService(currentItems[Number(button.getAttribute('data-typeahead-index') || -1)]);
+    });
+
+    toggle?.addEventListener('click', () => {
+      input.focus();
+      currentItems = SERVICE_TYPEAHEAD_ITEMS.slice(0, 80);
+      renderSetupTypeaheadList(list, currentItems, emptyText);
+      list.hidden = false;
+      list.classList.add('is-open');
     });
 
     chipHost.addEventListener('click', (event) => {
@@ -1033,17 +1053,18 @@
   function buildCategoryDirectoryMarkup(base, categories = []) {
     return categories.map((category) => {
       const services = Array.isArray(category.subservices) ? category.subservices : [];
+      const hrefOptions = { base, category: category.label, service: category.label, query: category.label };
       return `
         <a href="${typeof buildServiceLoopSpecialistsHref === 'function'
-          ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, query: category.label })
-          : buildSearchResultsHref(category.label, { base, category: category.label })}" class="category-circle categories-directory-circle">
+          ? buildServiceLoopSpecialistsHref(category.label, hrefOptions)
+          : buildSearchResultsHref(category.label, hrefOptions)}" class="category-circle categories-directory-circle" data-category-card data-category-label="${escapeHtml(category.label)}">
           <div class="category-circle-img">
             ${category.image
               ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
               : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
           </div>
           <span>${escapeHtml(category.shortLabel || category.label)}</span>
-          <small>${services.length} service${services.length === 1 ? '' : 's'}</small>
+          <small>${services.length ? `${services.length} service${services.length === 1 ? '' : 's'}` : 'Service'}</small>
         </a>
       `;
     }).join('');
@@ -1052,7 +1073,8 @@
   function getCategoryBySubservice(serviceLabel = '') {
     const normalized = String(serviceLabel || '').trim().toLowerCase();
     if (!normalized) return SPECIALIST_CATEGORIES[0];
-    return SPECIALIST_CATEGORIES.find((category) => category.subservices.some((service) => service.toLowerCase() === normalized))
+    return SPECIALIST_CATEGORIES.find((category) => String(category.label || '').toLowerCase() === normalized)
+      || SPECIALIST_CATEGORIES.find((category) => (Array.isArray(category.subservices) ? category.subservices : []).some((service) => service.toLowerCase() === normalized))
       || SPECIALIST_CATEGORIES.find((category) => category.label.toLowerCase() === normalized)
       || SPECIALIST_CATEGORIES[0];
   }
@@ -1179,6 +1201,20 @@
   }
 
   function buildServiceFilterMarkup(selectedCategory, selectedSubservice) {
+    if (SPECIALIST_CATEGORIES.every((category) => !Array.isArray(category.subservices) || !category.subservices.length)) {
+      return `
+        <div class="service-filter-group">
+          <div class="service-filter-links service-filter-links-flat">
+            <button type="button" class="${!selectedCategory && !selectedSubservice ? 'is-active' : ''}" data-filter-category="">All services</button>
+            ${SPECIALIST_CATEGORIES.map((category) => `
+              <button type="button" class="${selectedCategory === category.label || selectedSubservice === category.label ? 'is-active' : ''}" data-filter-subservice="${escapeHtml(category.label)}" data-parent-category="${escapeHtml(category.label)}">
+                ${escapeHtml(category.label)}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
     return SPECIALIST_CATEGORIES.map((category) => {
       const isOpen = selectedCategory === category.label || category.subservices.includes(selectedSubservice);
       return `
@@ -1276,7 +1312,7 @@
   function filterProviders(providers, state) {
     const filtered = providers.filter((provider) => {
       const providerServices = getProviderServiceList(provider);
-      const categoryMatch = !state.category || provider.primaryCategory === state.category || providerServices.some((item) => item.category === state.category);
+      const categoryMatch = !state.category || provider.primaryCategory === state.category || provider.specialty === state.category || providerServices.some((item) => item.category === state.category || item.service === state.category);
       const subserviceQuery = String(state.subservice || '').toLowerCase();
       const subserviceMatch = !state.subservice || providerServices.some((item) => String(item.service || '').toLowerCase().includes(subserviceQuery));
       const ratingMatch = !state.rating || Number(provider.averageRating || 0) >= state.rating;
@@ -1482,7 +1518,7 @@
       ...sortProvidersForSearch(
         allProviders.filter((provider) => {
           if (filteredProviders.some((item) => item.uid === provider.uid)) return false;
-          if (activeCategory && (provider.primaryCategory === activeCategory || getProviderServiceList(provider).some((item) => item.category === activeCategory))) return true;
+          if (activeCategory && (provider.primaryCategory === activeCategory || provider.specialty === activeCategory || getProviderServiceList(provider).some((item) => item.category === activeCategory || item.service === activeCategory))) return true;
           return activeQuery ? scoreProviderMatch(provider, activeQuery) > 0 : true;
         }),
         activeQuery
@@ -1519,8 +1555,9 @@
 
   function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
     const cards = items.map((category) => {
-      const href = buildSearchResultsHref(category.label, { category: category.label });
-      const summary = (category.subservices || []).slice(0, 2).join(' • ') || `${(category.subservices || []).length} services`;
+      const href = buildSearchResultsHref(category.label, { category: category.label, service: category.label });
+      const services = Array.isArray(category.subservices) ? category.subservices : [];
+      const summary = services.length ? services.slice(0, 2).join(' • ') : 'Service';
       const imageSrc = resolveMediaSrc(category.image || 'images/logo/sl.avif');
 
       return `
@@ -1661,16 +1698,16 @@
               <section class="provider-onboarding-step" data-onboarding-step="2">
                 <span class="provider-onboarding-step-tag">Step 3</span>
                 <h3>What you do</h3>
-                <p>Choose the category people should find you under and describe your specialty clearly.</p>
+                <p>Choose the service people should find you under and describe your work clearly.</p>
                 <div class="provider-onboarding-grid">
                   <div class="provider-onboarding-row">
-                    <label for="provider-category">Main category</label>
+                    <label for="provider-category">Main service</label>
                     <select id="provider-category" name="primaryCategory" required>
                       ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}">${category.label}</option>`).join('')}
                     </select>
                   </div>
                   <div class="provider-onboarding-row">
-                    <label for="provider-specialty">Specialty</label>
+                    <label for="provider-specialty">Service</label>
                     <select id="provider-specialty" name="specialty" data-onboarding-specialty required>
                       ${buildSubserviceOptionsMarkup(SPECIALIST_CATEGORIES[0]?.label || '', '', 'Choose a service')}
                     </select>
@@ -2361,6 +2398,9 @@
     const resultsCount = page.querySelector('[data-categories-count]');
     const grid = page.querySelector('[data-categories-grid]');
     const empty = page.querySelector('[data-categories-empty]');
+    if (grid instanceof HTMLElement) {
+      grid.innerHTML = buildCategoryDirectoryMarkup(getBase(), SPECIALIST_CATEGORIES);
+    }
     const cards = Array.from(page.querySelectorAll('[data-category-card]'));
     const params = new URLSearchParams(window.location.search);
     let query = String(params.get('q') || '').trim();
@@ -2408,7 +2448,7 @@
         if (matches) visibleCount += 1;
       });
       if (resultsCount instanceof HTMLElement) {
-        resultsCount.textContent = `${visibleCount} categor${visibleCount === 1 ? 'y' : 'ies'}`;
+        resultsCount.textContent = `${visibleCount} service${visibleCount === 1 ? '' : 's'}`;
       }
       if (empty instanceof HTMLElement) {
         empty.hidden = visibleCount > 0;
@@ -2528,12 +2568,12 @@
               </div>
               <div class="provider-editor-grid">
                 <label><span>Experience</span><input name="experience" type="text" value="${escapeHtml(provider.experience || '')}" required /></label>
-                <label><span>Category</span>
+                <label><span>Service</span>
                   <select name="primaryCategory" required>
                     ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
                   </select>
                 </label>
-                <label class="provider-editor-span"><span>Specialty</span>
+                <label class="provider-editor-span"><span>Service</span>
                   <select name="specialty" data-provider-editor-specialty required>
                     ${buildSubserviceOptionsMarkup(provider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', provider.specialty || '', 'Choose a service')}
                   </select>
@@ -3547,7 +3587,8 @@
                 </div>
                 <label class="account-setup-field account-typeahead-field account-setup-field-span edit-profile-service-picker">
                   <span>Services</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, nail technician, solar installer..." autocomplete="off" data-provider-service-input />
+                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
                   <small>The first service is used as your main search category.</small>
@@ -6650,7 +6691,8 @@
                 </label>
                 <label class="account-setup-field account-typeahead-field">
                   <span>Services you provide</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, hairdresser, cleaning..." autocomplete="off" data-provider-service-input />
+                  <input type="search" name="serviceSearch" value="" placeholder="Type plumber, nail technician, solar installer..." autocomplete="off" data-provider-service-input />
+                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
                   <small>Add every service clients can hire you for. You can remove any service before saving.</small>

@@ -1,77 +1,146 @@
 // shared-header.js - injected into all pages
 
-if (!Array.isArray(window.ServiceLoopServiceCatalog) || !window.ServiceLoopServiceCatalog.length) {
-  window.ServiceLoopServiceCatalog = [
-    { key: 'home-services', label: 'Home Services', icon: 'fa-solid fa-house-chimney', image: 'images/categories/homesrvices_converted.avif', subservices: ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'Handyman', 'Tiler', 'Plasterer', 'Ceiling Installer', 'Roof Repairer', 'Gutter Cleaner', 'Waterproofing Specialist', 'Damp Proofer', 'Window & Door Installer', 'Fence Builder', 'Bricklayer / Concreter', 'Floor Polisher', 'Burglar Bar Installer', 'Curtain & Blind Fitter', 'Gate & Garage Door Installer', 'Solar Panel Installer', 'Borehole Driller', 'Water Tank Installer', 'Septic Tank Services', 'Chimney Cleaner', 'Pest Control', 'Pool Cleaner & Maintenance'] },
-    { key: 'gardening-landscaping', label: 'Gardening & Landscaping', icon: 'fa-solid fa-seedling', image: 'images/categories/farmer_converted.avif', subservices: ['General Gardener', 'Lawn Mower', 'Tree Feller', 'Tree Trimmer & Pruner', 'Hedge Trimmer', 'Irrigation Installer', 'Landscape Designer', 'Flower Planting', 'Vegetable Garden Setup', 'Weed Control', 'Garden Clean-Up', 'Topsoil & Sand Delivery', 'Compost Supplier'] },
-    { key: 'cleaning-services', label: 'Cleaning Services', icon: 'fa-solid fa-broom', image: 'images/categories/cleaning_converted.avif', subservices: ['Domestic Worker / Housekeeper', 'Laundry & Ironing Service', 'Carpet Cleaner', 'Deep House Cleaning', 'Office Cleaning', 'Post-Construction Cleaning', 'Mattress Cleaning', 'Upholstery Cleaning', 'Window Cleaning', 'Move-in / Move-out Cleaning'] },
-    { key: 'plumbing-detailed', label: 'Plumbing', icon: 'fa-solid fa-faucet-drip', image: 'images/categories/plumber_converted.avif', subservices: ['Leak Repairs', 'Blocked Drains', 'Pipe Installation', 'Geyser / Water Heater Installation', 'Toilet & Bathroom Fitting', 'Borehole Pump Repairs', 'Water Tank Plumbing', 'Irrigation Pipe Laying'] },
-    { key: 'electrical-detailed', label: 'Electrical', icon: 'fa-solid fa-bolt', image: 'images/categories/electrician_converted.avif', subservices: ['Wiring & Rewiring', 'DB Board Installation', 'Prepaid Meter Installation', 'Solar System Installation', 'Inverter & Battery Setup', 'Security Lighting', 'Generator Installation & Servicing', 'CCTV & Intercom Wiring', 'Electric Fence Installation', 'Appliance Installation'] },
-    { key: 'beauty-wellness', label: 'Beauty & Wellness', icon: 'fa-solid fa-spa', image: 'images/categories/beauty_converted.avif', subservices: ['Hairdresser', 'Barber', 'Makeup Artist', 'Nail Technician', 'Massage Therapist', 'Eyebrow Threading & Shaping', 'Eyelash Technician', 'Braiding & Hair Weaving', 'Loc / Dreadlock Maintenance', 'Waxing Specialist', 'Facial & Skincare Specialist', 'Body Scrub & Spa Treatments', 'Tattoo Artist', 'Piercing Specialist', 'Henna / Mehendi Artist'] },
-    { key: 'clothing-textiles', label: 'Clothing & Textiles', icon: 'fa-solid fa-shirt', image: 'images/categories/clothing_converted.avif', subservices: ['Tailor / Dressmaker', 'Alterations & Repairs', 'School Uniform Maker', 'Traditional Attire Maker', 'Embroidery Specialist', 'T-shirt Printing', 'Curtain & Upholstery Sewing', 'Shoe Cobbler / Repairs', 'Shoe Polisher', 'Leather Goods Maker', 'Bag Maker & Repairs', 'Hat Maker', 'Knitting & Crochet Services'] },
-    { key: 'food-catering', label: 'Food & Catering', icon: 'fa-solid fa-utensils', image: 'images/categories/catering_converted.avif', subservices: ['Private Chef', 'Event Caterer', 'Wedding Caterer', 'Food Delivery (homemade)', 'Baking & Cake Making', 'Bread Baker', 'Traditional Food Cooking (sadza, muriwo, etc.)', 'Braai / Nyama Choma Service', 'Meal Prep Service', 'Lunch Box Supplier (for offices/schools)', 'Juice & Smoothie Maker', 'Ice Cream Vendor', 'Peanut Butter Maker', 'Jam & Pickle Maker', 'Dried Fish Seller', 'Maheu / Fermented Drink Maker', 'Confectionery & Sweet Maker'] },
-    { key: 'transport-logistics', label: 'Transport & Logistics', icon: 'fa-solid fa-truck-fast', image: 'images/categories/transport_converted.avif', subservices: ['Taxi / Ride-hailing Driver', 'Kombi / Minibus Driver', 'Goods Transport (truck / bakkie)', 'Motorbike Courier / Delivery', 'Bicycle Courier', 'Moving & Relocation Services', 'Car Hire / Chauffeur', 'Airport Transfer Driver', 'School Transport / Pickup', 'Tractor Hire (for farming)', 'Wheelbarrow Transport (market to home)', 'Boat / Canoe Transport (Zambezi, Lake Kariba areas)'] },
-    { key: 'automotive-vehicles', label: 'Automotive & Vehicles', icon: 'fa-solid fa-car-side', image: 'images/categories/automech_converted.avif', subservices: ['Mechanic (general)', 'Auto Electrician', 'Panel Beater & Spray Painter', 'Tyre Fitting & Repair', 'Wheel Alignment', 'Car Wash', 'Interior Car Cleaning / Detailing', 'Windscreen Repair & Replacement', 'Roadside Assist / Breakdown', 'Motorcycle Mechanic', 'Bicycle Repair', 'Truck & Heavy Vehicle Mechanic', 'Fuel Delivery'] },
-    { key: 'agriculture-farming', label: 'Agriculture & Farming', icon: 'fa-solid fa-tractor', image: 'images/categories/farmer_converted.avif', subservices: ['Ploughing / Tractor Operator', 'Crop Planting', 'Weeding', 'Harvesting', 'Irrigation Setup', 'Poultry Farming Consultant', 'Livestock Handler', 'Animal Dipping', 'Veterinary Services', 'Pest & Disease Control (crops)', 'Greenhouse Setup', 'Seed Supplier', 'Fertiliser Distributor', 'Grain Milling', 'Beekeeping / Honey Production', 'Fish Farming Setup', 'Mushroom Farming', 'Market Garden Supplier', 'Tobacco Grading'] },
-    { key: 'construction-building', label: 'Construction & Building', icon: 'fa-solid fa-building', image: 'images/categories/construction_converted.avif', subservices: ['Architect / Drafter', 'Building Contractor', 'Quantity Surveyor', 'Bricklayer', 'Concreter', 'Steel & Structural Fabricator', 'Scaffolding Erector', 'Crane Operator', 'Demolition Specialist', 'Road & Paving Layer', 'Paving & Driveway Installer', 'Swimming Pool Builder', 'Stonemason', 'Tank Stand Builder'] },
-    { key: 'security-services', label: 'Security Services', icon: 'fa-solid fa-shield-halved', image: 'images/categories/security_converted.avif', subservices: ['Security Guard', 'Alarm System Installer', 'CCTV Installation', 'Electric Fence Installer', 'Gate & Access Control Setup', 'Patrol & Response Service', 'VIP Protection / Bodyguard', 'Cash in Transit', 'Event Security', 'Dog Handler / K9 Security'] },
-    { key: 'digital-business', label: 'Digital & Business', icon: 'fa-solid fa-laptop-code', image: 'images/categories/digital_converted.avif', subservices: ['Programmer / Software Developer', 'Web Designer', 'Graphic Designer', 'App Developer', 'Social Media Manager', 'Content Creator', 'Copywriter', 'Data Analyst', 'IT Support / Technician', 'Network & Wi-Fi Setup', 'Laptop & Phone Repairer', 'Printer & Copier Technician', 'CCTV & Networking Technician', 'Digital Marketing Consultant', 'E-commerce Setup', 'SEO Specialist', 'UI/UX Designer', 'Video Editor', 'Podcast Editor'] },
-    { key: 'photography-videography', label: 'Photography & Videography', icon: 'fa-solid fa-camera-retro', image: 'images/categories/photographer_converted.avif', subservices: ['Wedding Photographer', 'Events Photographer', 'Brand & Corporate Shoots', 'Product Photography', 'Portrait Photography', 'School Photography', 'Videographer', 'Drone Photographer', 'Video Production', 'Photo Editing & Retouching', 'Photo Printing Services'] },
-    { key: 'tutoring-education', label: 'Tutoring & Education', icon: 'fa-solid fa-graduation-cap', image: 'images/categories/tutor_converted.avif', subservices: ['Maths Tutor', 'Science Tutor', 'English Tutor', 'Shona / Ndebele Language Tutor', 'History Tutor', 'Exam Prep (O & A Level)', 'Primary School Tutor', 'Special Needs Tutor', 'Music Teacher', 'Art Teacher', 'Computer & Coding Teacher', 'Driving Instructor', 'Sign Language Instructor', 'Adult Literacy Tutor', 'University Assignment Help'] },
-    { key: 'childcare-family', label: 'Childcare & Family', icon: 'fa-solid fa-children', image: 'images/categories/childcare_converted.avif', subservices: ['Babysitter', 'Nanny', 'After-school Care', 'Child Minder (daytime)', 'Au Pair', 'Special Needs Carer', 'Elderly Carer', 'Home Nurse / Caregiver', 'Disability Assistant'] },
-    { key: 'health-medical', label: 'Health & Medical', icon: 'fa-solid fa-heart-pulse', image: 'images/categories/health_converted.avif', subservices: ['Nurse (private visits)', 'Home-based Care Worker', 'Physiotherapist', 'Nutritionist / Dietitian', 'Midwife', "Traditional Healer / N'anga", 'Herbalist', 'First Aid Trainer', 'Mental Health Counsellor', 'HIV Counsellor', 'Optician', 'Hearing Aid Specialist', 'Wheelchair & Mobility Aid Repairer', 'Blood Pressure & Sugar Testing (community)'] },
-    { key: 'events-entertainment', label: 'Events & Entertainment', icon: 'fa-solid fa-music', image: 'images/categories/events_converted.avif', subservices: ['Event Planner / Coordinator', 'Wedding Planner', 'DJ', 'MC / Emcee', 'Live Band', 'Traditional Dancer / Mbira Player', 'Acrobat / Entertainer', 'Sound & PA System Hire', 'Tent & Chair Hire', 'Decor & Floral Arrangement', 'Bouncy Castle Hire', 'Clown / Kids Entertainer', 'Photo Booth Hire', 'Confectionery & Cake Display', 'Event Cleaning Crew'] },
-    { key: 'printing-stationery', label: 'Printing & Stationery', icon: 'fa-solid fa-print', image: 'images/categories/printing_converted.avif', subservices: ['Flyer & Poster Printing', 'Business Card Printing', 'Banner & Signage Printing', 'Branded Merchandise', 'Rubber Stamp Maker', 'Booklet & Brochure Printing', 'Graduation & Certificate Printing', 'ID Badge Printing', 'Vehicle Branding / Wrapping', 'Embroidery & Uniform Branding'] },
-    { key: 'furniture-metalwork', label: 'Furniture & Metalwork', icon: 'fa-solid fa-couch', image: 'images/categories/furnicher_converted.avif', subservices: ['Furniture Maker (wood)', 'Furniture Repairer / Restorer', 'Upholsterer', 'Welder', 'Metal Fabricator', 'Blacksmith', 'Aluminium Fabricator (windows, doors)', 'Mattress Maker & Repairer', 'Second-hand Furniture Dealer'] },
-    { key: 'appliance-electronics-repair', label: 'Appliance & Electronics Repair', icon: 'fa-solid fa-tv', image: 'images/categories/automech_converted.avif', subservices: ['Fridge & Freezer Repair', 'Washing Machine Repair', 'TV & Electronics Repair', 'Phone Screen Replacement', 'Phone Unlocking & Flashing', 'Radio & Satellite Dish Repair', 'Generator Repair', 'Solar Equipment Repair', 'Air Conditioner Service & Repair', 'Water Pump Repair'] },
-    { key: 'financial-legal-services', label: 'Financial & Legal Services', icon: 'fa-solid fa-scale-balanced', image: 'images/categories/finance_converted.avif', subservices: ['Accountant', 'Bookkeeper', 'Tax Consultant', 'Payroll Services', 'Business Registration Consultant', 'Legal Advisor / Paralegal', 'Notary Services', 'Debt Collector', 'Insurance Agent', 'Money Transfer Agent', 'Loan Facilitator (microfinance)', 'Financial Planner'] },
-    { key: 'real-estate-property', label: 'Real Estate & Property', icon: 'fa-solid fa-house-user', image: 'images/categories/property_converted.avif', subservices: ['Property Agent', 'Property Manager', 'Valuer', 'Auctioneer', 'House Sitter', 'Caretaker / Estate Manager', 'Land Surveyor'] },
-    { key: 'religious-community-services', label: 'Religious & Community Services', icon: 'fa-solid fa-hands-praying', image: 'images/categories/religion_converted.avif', subservices: ['Pastor / Preacher for Hire (events)', 'Church Musician / Organist', 'Funeral Director', 'Coffin Maker', 'Grave Digger', 'Mourning & Burial Support Services', 'Memorial Photographer'] },
-    { key: 'animal-pet-services', label: 'Animal & Pet Services', icon: 'fa-solid fa-paw', image: '', subservices: ['Veterinarian', 'Dog Groomer', 'Dog Walker', 'Pet Sitter', 'Animal Trainer', 'Livestock Buyer / Auctioneer', 'Snake / Pest Removal Specialist', 'Poultry Vaccinator', 'Farrier (horse hoof care)'] },
-    { key: 'water-environment', label: 'Water & Environment', icon: 'fa-solid fa-droplet', image: 'images/categories/water_converted.avif', subservices: ['Water Delivery (bowser / tank)', 'Borehole Drilling', 'Water Pump Installation', 'Water Treatment & Purification', 'Refuse Removal', 'Recycling Collector', 'Environmental Consultant', 'Firewood Supplier', 'Charcoal Maker & Supplier'] },
-    { key: 'informal-street-level-services', label: 'Informal & Street-Level Services', icon: 'fa-solid fa-store', image: 'images/categories/informal_converted.avif', subservices: ['Shoe Polisher', 'Street Barber', 'Street Food Vendor', 'Fruit & Vegetable Seller', 'Ice Block Seller', 'Airtime & Data Vendor', 'Phone Charging Station', 'Key Cutter', 'Clothes Ironing (street)', 'Bicycle Taxi (Scotch cart / cycle)', 'Porter / Carrier (market)', 'Trolley Pusher (supermarket areas)', 'Odd Jobs / General Labour', 'Car Guard', 'Parking Attendant', 'Queue Manager', "Form Filler / Scribe (for those who can't write)", 'Photocopying & Scanning (corner shops)', 'Typist / Letter Writer'] }
-  ];
+const SERVICELOOP_FLAT_SERVICES = [
+  'Panel Beater',
+  'Auto Body Repairer',
+  'Land Surveyor',
+  'Locksmith',
+  'Nail Technician',
+  'Massage Therapist',
+  'DStv/Satellite Installer',
+  'Starlink Installer',
+  'Builder',
+  'Tiler',
+  'Carpenter',
+  'Refrigeration Technician',
+  'Plumber',
+  'Graphic Designer',
+  'IT Specialist',
+  'Software Programmer',
+  'Personal Trainer',
+  'Painter',
+  'Landscaper',
+  'Roofing Specialist',
+  'Welder',
+  'Metal Fabricator',
+  'Stonemason',
+  'Architect',
+  'Water Engineer',
+  'Motor Mechanic',
+  'Diesel Plant Fitter',
+  'Interior Decorator',
+  'Printer',
+  'Photographer',
+  'Photocopy Specialist',
+  'Tailor/Seamstress',
+  'Event Planner',
+  'Caterer',
+  'Tutor',
+  'Borehole Driller',
+  'Car Rental Agent',
+  'Furniture Remover',
+  'Taxi Driver',
+  'Storage Manager',
+  'Energy Consultant',
+  'Solar Installer',
+  'Gas Installer',
+  'Battery Technician',
+  'Medical Practitioner (Dentist, Optometrist, etc.)',
+  'Domestic Cleaner',
+  'Advertising Agent',
+  'Marketer',
+  'Electronics Technician',
+  'Pest Control Officer',
+  'Animal Control Officer',
+  'Dog Trainer',
+  'Dog Walker',
+  'Babysitter',
+  'Housekeeper',
+  'Loader/Unloader',
+  'Cattle Herder',
+  'Waste Collector',
+  'Handyman'
+];
+
+const SERVICELOOP_SERVICE_ICONS = {
+  'Panel Beater': 'fa-solid fa-car-burst',
+  'Auto Body Repairer': 'fa-solid fa-car-side',
+  'Land Surveyor': 'fa-solid fa-map-location-dot',
+  'Locksmith': 'fa-solid fa-key',
+  'Nail Technician': 'fa-solid fa-hand-sparkles',
+  'Massage Therapist': 'fa-solid fa-spa',
+  'DStv/Satellite Installer': 'fa-solid fa-satellite-dish',
+  'Starlink Installer': 'fa-solid fa-satellite',
+  Builder: 'fa-solid fa-helmet-safety',
+  Tiler: 'fa-solid fa-border-all',
+  Carpenter: 'fa-solid fa-hammer',
+  'Refrigeration Technician': 'fa-solid fa-snowflake',
+  Plumber: 'fa-solid fa-faucet-drip',
+  'Graphic Designer': 'fa-solid fa-pen-nib',
+  'IT Specialist': 'fa-solid fa-laptop-code',
+  'Software Programmer': 'fa-solid fa-code',
+  'Personal Trainer': 'fa-solid fa-dumbbell',
+  Painter: 'fa-solid fa-paint-roller',
+  Landscaper: 'fa-solid fa-seedling',
+  'Roofing Specialist': 'fa-solid fa-house-chimney',
+  Welder: 'fa-solid fa-fire-flame-simple',
+  'Metal Fabricator': 'fa-solid fa-industry',
+  Stonemason: 'fa-solid fa-mountain',
+  Architect: 'fa-solid fa-drafting-compass',
+  'Water Engineer': 'fa-solid fa-droplet',
+  'Motor Mechanic': 'fa-solid fa-screwdriver-wrench',
+  'Diesel Plant Fitter': 'fa-solid fa-truck-monster',
+  'Interior Decorator': 'fa-solid fa-couch',
+  Printer: 'fa-solid fa-print',
+  Photographer: 'fa-solid fa-camera-retro',
+  'Photocopy Specialist': 'fa-solid fa-copy',
+  'Tailor/Seamstress': 'fa-solid fa-shirt',
+  'Event Planner': 'fa-solid fa-calendar-check',
+  Caterer: 'fa-solid fa-utensils',
+  Tutor: 'fa-solid fa-graduation-cap',
+  'Borehole Driller': 'fa-solid fa-person-digging',
+  'Car Rental Agent': 'fa-solid fa-car',
+  'Furniture Remover': 'fa-solid fa-truck-ramp-box',
+  'Taxi Driver': 'fa-solid fa-taxi',
+  'Storage Manager': 'fa-solid fa-warehouse',
+  'Energy Consultant': 'fa-solid fa-bolt',
+  'Solar Installer': 'fa-solid fa-solar-panel',
+  'Gas Installer': 'fa-solid fa-fire',
+  'Battery Technician': 'fa-solid fa-car-battery',
+  'Medical Practitioner (Dentist, Optometrist, etc.)': 'fa-solid fa-user-doctor',
+  'Domestic Cleaner': 'fa-solid fa-broom',
+  'Advertising Agent': 'fa-solid fa-bullhorn',
+  Marketer: 'fa-solid fa-chart-line',
+  'Electronics Technician': 'fa-solid fa-tv',
+  'Pest Control Officer': 'fa-solid fa-shield-virus',
+  'Animal Control Officer': 'fa-solid fa-paw',
+  'Dog Trainer': 'fa-solid fa-dog',
+  'Dog Walker': 'fa-solid fa-person-walking',
+  Babysitter: 'fa-solid fa-baby',
+  Housekeeper: 'fa-solid fa-house-user',
+  'Loader/Unloader': 'fa-solid fa-boxes-stacked',
+  'Cattle Herder': 'fa-solid fa-cow',
+  'Waste Collector': 'fa-solid fa-recycle',
+  Handyman: 'fa-solid fa-toolbox'
+};
+
+function slugifyService(value = '') {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'service';
 }
+
+window.ServiceLoopFlatServices = SERVICELOOP_FLAT_SERVICES.slice();
+window.ServiceLoopServiceCatalog = SERVICELOOP_FLAT_SERVICES.map((label) => ({
+  key: slugifyService(label),
+  label,
+  shortLabel: label,
+  icon: SERVICELOOP_SERVICE_ICONS[label] || 'fa-solid fa-briefcase',
+  image: '',
+  subservices: []
+}));
 
 function getServiceLoopServiceCatalog() {
   return Array.isArray(window.ServiceLoopServiceCatalog) ? window.ServiceLoopServiceCatalog : [];
 }
-
-const WORKLINKUP_CATEGORY_SHORT_LABELS = {
-  'Home Services': 'Home',
-  'Gardening & Landscaping': 'Gardening',
-  'Cleaning Services': 'Cleaning',
-  'Plumbing': 'Plumbing',
-  'Electrical': 'Electrical',
-  'Beauty & Wellness': 'Beauty',
-  'Clothing & Textiles': 'Clothing',
-  'Food & Catering': 'Catering',
-  'Transport & Logistics': 'Transport',
-  'Automotive & Vehicles': 'Automotive',
-  'Agriculture & Farming': 'Agriculture',
-  'Construction & Building': 'Construction',
-  'Security Services': 'Security',
-  'Digital & Business': 'Digital',
-  'Photography & Videography': 'Photography',
-  'Tutoring & Education': 'Tutoring',
-  'Childcare & Family': 'Childcare',
-  'Health & Medical': 'Health',
-  'Events & Entertainment': 'Events',
-  'Printing & Stationery': 'Printing',
-  'Furniture & Metalwork': 'Furniture',
-  'Appliance & Electronics Repair': 'Repairs',
-  'Financial & Legal Services': 'Finance',
-  'Real Estate & Property': 'Property',
-  'Religious & Community Services': 'Religious',
-  'Animal & Pet Services': 'Pets',
-  'Water & Environment': 'Water',
-  'Informal & Street-Level Services': 'Informal'
-};
-
-window.ServiceLoopServiceCatalog = getServiceLoopServiceCatalog().map((category) => ({
-  ...category,
-  shortLabel: category.shortLabel || WORKLINKUP_CATEGORY_SHORT_LABELS[category.label] || category.label
-}));
 
 function getBasePath() {
   // Determine relative path based on current page location
@@ -85,7 +154,8 @@ function findCategoryByServiceLabel(serviceLabel = '') {
   if (!normalized) return null;
   return getServiceLoopServiceCatalog().find((category) => {
     const services = Array.isArray(category.subservices) ? category.subservices : [];
-    return services.some((service) => String(service || '').trim().toLowerCase() === normalized);
+    return String(category.label || '').trim().toLowerCase() === normalized
+      || services.some((service) => String(service || '').trim().toLowerCase() === normalized);
   }) || null;
 }
 
@@ -644,14 +714,14 @@ function renderHeader() {
   const jobsAndBidsHref = getJobsAndBidsHref(base);
   const settingsHref = getAccountSettingsHref(base);
   const isProvider = account?.userRole === 'provider';
-  const categoryHref = (label) => buildServiceLoopSpecialistsHref(label, { base, category: label, query: label });
+  const categoryHref = (label) => buildServiceLoopSpecialistsHref(label, { base, category: label, service: label, query: label });
   const serviceHref = (label, categoryLabel = '') => {
     const matchedCategory = categoryLabel || findCategoryByServiceLabel(label)?.label || '';
     return buildServiceLoopSpecialistsHref(label, { base, category: matchedCategory, service: label, query: label });
   };
   const desktopNavLinks = `
     <a href="${base}index.html" class="nav-link">Home</a>
-    <a href="${base}pages/categories.html" class="nav-link">Categories</a>
+    <a href="${base}pages/categories.html" class="nav-link">Services</a>
     <a href="${base}pages/specialists.html" class="nav-link">Service Providers</a>
     <a href="${base}pages/products.html" class="nav-link">Products</a>
     <a href="${base}pages/my-shop.html" class="nav-link">My Shop</a>
@@ -664,7 +734,7 @@ function renderHeader() {
         <a href="${base}index.html" class="nav-link">Home</a>
       </div>
       <div class="nav-item">
-        <a href="${base}pages/categories.html" class="nav-link">Categories</a>
+        <a href="${base}pages/categories.html" class="nav-link">Services</a>
       </div>
       <div class="nav-item">
         <a href="${base}pages/specialists.html" class="nav-link">Service Providers</a>

@@ -1044,7 +1044,7 @@
         <div class="admin-card-head">
           <div>
             <span>Provider supply</span>
-            <h3>Top service categories</h3>
+            <h3>Top services</h3>
           </div>
         </div>
         <div class="admin-rank-list">
@@ -1058,7 +1058,7 @@
                 <span style="width:${Math.max(10, Math.round((Number(item.total || 0) / categoryMax) * 100))}%"></span>
               </div>
             </div>
-          `).join('') : '<div class="admin-list-empty">No provider categories found yet.</div>'}
+          `).join('') : '<div class="admin-list-empty">No provider services found yet.</div>'}
         </div>
       </section>
 
@@ -1507,7 +1507,7 @@
     const categoryOptions = uniqueSortedValues(providers.map((provider) => provider.primaryCategory));
 
     syncSelectOptions(refs.providersProvince, provinceOptions, 'All provinces');
-    syncSelectOptions(refs.providersCategory, categoryOptions, 'All categories');
+    syncSelectOptions(refs.providersCategory, categoryOptions, 'All services');
 
     const filtered = providers
       .filter((provider) => {
@@ -1826,7 +1826,7 @@
     ]);
     const categoryOptions = uniqueSortedValues(providers.map((provider) => provider.primaryCategory));
     syncSelectOptions(refs.broadcastProvince, provinceOptions, 'All provinces');
-    syncSelectOptions(refs.broadcastCategory, categoryOptions, 'All categories');
+    syncSelectOptions(refs.broadcastCategory, categoryOptions, 'All services');
   }
 
   function getBroadcastRecipients() {
@@ -1851,8 +1851,8 @@
 
   function getBroadcastScopeLabel() {
     if (state.broadcastScope === 'province') return `Province: ${state.broadcastProvince}`;
-    if (state.broadcastScope === 'category') return `Category: ${state.broadcastCategory}`;
-    if (state.broadcastScope === 'province-category') return `Province: ${state.broadcastProvince}, Category: ${state.broadcastCategory}`;
+    if (state.broadcastScope === 'category') return `Service: ${state.broadcastCategory}`;
+    if (state.broadcastScope === 'province-category') return `Province: ${state.broadcastProvince}, Service: ${state.broadcastCategory}`;
     return 'All users';
   }
 
