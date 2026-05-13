@@ -573,8 +573,8 @@
       }
       if (permission !== 'granted') return;
       const notification = new Notification(title, {
-        icon: `${getBase()}images/logo/slicon.avif`,
-        badge: `${getBase()}images/logo/slicon.avif`,
+        icon: `${getBase()}images/pwa/sl-icon-192.png`,
+        badge: `${getBase()}images/pwa/sl-icon-192.png`,
         ...options
       });
       window.setTimeout(() => notification.close(), 6500);

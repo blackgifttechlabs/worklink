@@ -4107,6 +4107,9 @@ body:has(.job-post-page) {
   z-index: 20;
   max-height: 242px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 6px;
   border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 18px;
@@ -4117,6 +4120,11 @@ body:has(.job-post-page) {
 
 .account-typeahead-list[hidden] {
   display: none !important;
+}
+
+.edit-profile-service-picker .account-typeahead-list {
+  z-index: 90;
+  max-height: min(360px, 48vh);
 }
 
 .account-typeahead-option {
@@ -5005,6 +5013,66 @@ body:has(.job-post-page) {
   background: #ffffff;
   border: 1px solid #ebeef4;
   box-shadow: 0 18px 40px rgba(26, 50, 99, 0.06);
+  overflow: visible;
+}
+
+.wl-saved-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2600;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.54);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.wl-saved-modal.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.wl-saved-modal-card {
+  width: min(390px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.18s ease;
+}
+
+.wl-saved-modal.is-visible .wl-saved-modal-card {
+  transform: translateY(0) scale(1);
+}
+
+.wl-saved-modal-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9f9ef;
+  color: #148f47;
+  font-size: 22px;
+}
+
+.wl-saved-modal-card h2 {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: 24px;
+}
+
+.wl-saved-modal-card p {
+  margin: 0 0 8px;
+  color: #5d6678;
 }
 
 .edit-profile-card-head {

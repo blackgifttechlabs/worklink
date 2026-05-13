@@ -266,7 +266,7 @@ function ensurePwaHeadAssets() {
   });
   ensureLink('link[rel="apple-touch-icon"]', {
     rel: 'apple-touch-icon',
-    href: `${base}images/pwa/maworks-icon-180.png`
+    href: `${base}images/pwa/sl-icon-180.png`
   });
   ensureMeta('meta[name="theme-color"]', {
     name: 'theme-color',
@@ -282,7 +282,7 @@ function ensurePwaHeadAssets() {
   });
   ensureMeta('meta[name="apple-mobile-web-app-title"]', {
     name: 'apple-mobile-web-app-title',
-    content: 'MaWorks'
+    content: 'ServiceLoop'
   });
 }
 
@@ -406,8 +406,8 @@ async function showHeaderBrowserNotification(title = 'ServiceLoop notification',
     if (permission === 'default') permission = await Notification.requestPermission();
     if (permission !== 'granted') return;
     const notification = new Notification(title, {
-      icon: `${getBasePath()}images/logo/slicon.avif`,
-      badge: `${getBasePath()}images/logo/slicon.avif`,
+      icon: `${getBasePath()}images/pwa/sl-icon-192.png`,
+      badge: `${getBasePath()}images/pwa/sl-icon-192.png`,
       ...options
     });
     window.setTimeout(() => notification.close(), 6500);
@@ -1163,12 +1163,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!(installPromptMessage instanceof HTMLElement) || !(installPromptButton instanceof HTMLButtonElement)) return;
 
     if (mode === 'ios') {
-      installPromptMessage.innerHTML = 'Tap <strong>Share</strong> in Safari, then choose <strong>Add to Home Screen</strong> to install MaWorks.';
+      installPromptMessage.innerHTML = 'Tap <strong>Share</strong> in Safari, then choose <strong>Add to Home Screen</strong> to install ServiceLoop.';
       installPromptButton.textContent = 'Got it';
       return;
     }
 
-    installPromptMessage.textContent = 'Install MaWorks for faster access to jobs, providers, and products from your home screen.';
+    installPromptMessage.textContent = 'Install ServiceLoop for faster access to jobs, providers, and products from your home screen.';
     installPromptButton.textContent = 'Download App';
   }
 
@@ -1222,11 +1222,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-xmark"></i>
           </button>
           <div class="app-install-sheet__brand">
-            <img src="${getBasePath()}images/pwa/maworks-icon-192.png" alt="MaWorks logo" class="app-install-sheet__logo" />
+            <img src="${getBasePath()}images/logo/sl.avif" alt="ServiceLoop logo" class="app-install-sheet__logo" />
             <div class="app-install-sheet__copy">
               <span class="app-install-sheet__eyebrow">Download App</span>
-              <h3 id="app-install-sheet-title">Install MaWorks</h3>
-              <p data-install-sheet-message>Install MaWorks for faster access to jobs, providers, and products from your home screen.</p>
+              <h3 id="app-install-sheet-title">Install ServiceLoop</h3>
+              <p data-install-sheet-message>Install ServiceLoop for faster access to jobs, providers, and products from your home screen.</p>
             </div>
           </div>
           <div class="app-install-sheet__actions">

@@ -259,6 +259,41 @@
     }
   }
 
+  function showProfileSavedModal({ onContinue } = {}) {
+    try {
+      document.querySelector('.wl-saved-modal')?.remove();
+      const modal = document.createElement('div');
+      modal.className = 'wl-saved-modal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-labelledby', 'wl-saved-modal-title');
+      modal.innerHTML = `
+        <div class="wl-saved-modal-card">
+          <div class="wl-saved-modal-icon"><i class="fa-solid fa-check"></i></div>
+          <h2 id="wl-saved-modal-title">Profile saved</h2>
+          <p>Your profile changes have been updated.</p>
+          <button type="button" class="provider-profile-action" data-saved-modal-continue>Continue</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      const continueBtn = modal.querySelector('[data-saved-modal-continue]');
+      const continueToProfile = () => {
+        modal.classList.remove('is-visible');
+        window.setTimeout(() => {
+          modal.remove();
+          if (typeof onContinue === 'function') onContinue();
+        }, 180);
+      };
+      continueBtn?.addEventListener('click', continueToProfile);
+      window.setTimeout(() => {
+        if (continueBtn instanceof HTMLElement) continueBtn.focus();
+      }, 220);
+      requestAnimationFrame(() => modal.classList.add('is-visible'));
+    } catch (error) {
+      if (typeof onContinue === 'function') onContinue();
+    }
+  }
+
   function readSessionFlag(key) {
     try {
       return sessionStorage.getItem(key) || '';
@@ -699,10 +734,25 @@
 
     let currentItems = [];
     let selectedServices = normalizeProviderServiceList(initialServices);
+    let listInteractionTimer = 0;
+    let listInteractionUntil = 0;
+    const pickerRoot = input.closest('.account-typeahead-field') || input.parentElement;
 
     function hideSuggestions() {
       list.hidden = true;
       list.classList.remove('is-open');
+    }
+
+    function holdListOpen(duration = 700) {
+      listInteractionUntil = Date.now() + duration;
+      window.clearTimeout(listInteractionTimer);
+      listInteractionTimer = window.setTimeout(() => {
+        if (Date.now() >= listInteractionUntil) listInteractionUntil = 0;
+      }, duration);
+    }
+
+    function isListInteractionActive() {
+      return Date.now() < listInteractionUntil;
     }
 
     function showSuggestions(query = input.value) {
@@ -760,6 +810,7 @@
     });
     input.addEventListener('blur', () => {
       window.setTimeout(() => {
+        if (isListInteractionActive()) return;
         const exact = findExactTypeaheadItem(SERVICE_TYPEAHEAD_ITEMS, input.value);
         if (exact) addService(exact);
         else hideSuggestions();
@@ -767,11 +818,15 @@
     });
 
     list.addEventListener('pointerdown', (event) => {
-      const button = event.target.closest('[data-typeahead-index]');
+      holdListOpen();
+      const target = event.target;
+      const button = target instanceof Element ? target.closest('[data-typeahead-index]') : null;
       if (!(button instanceof HTMLElement)) return;
       event.preventDefault();
       addService(currentItems[Number(button.getAttribute('data-typeahead-index') || -1)]);
     });
+    list.addEventListener('touchstart', () => holdListOpen(900), { passive: true });
+    list.addEventListener('scroll', () => holdListOpen(900), { passive: true });
 
     toggle?.addEventListener('click', () => {
       input.focus();
@@ -781,8 +836,15 @@
       list.classList.add('is-open');
     });
 
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target;
+      if (target instanceof Node && pickerRoot?.contains(target)) return;
+      hideSuggestions();
+    });
+
     chipHost.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-remove-service]');
+      const target = event.target;
+      const button = target instanceof Element ? target.closest('[data-remove-service]') : null;
       if (!(button instanceof HTMLElement)) return;
       const index = Number(button.getAttribute('data-remove-service') || -1);
       if (index < 0) return;
@@ -3892,12 +3954,8 @@
         return name ? { name, level } : null;
       });
 
-      if (!languages.length || !skills.length || !providerMediaState.profileImageData || !providerMediaState.bannerImageData) {
-        hasErrors = true;
-      }
-
       if (hasErrors) {
-        form.querySelector('.is-invalid, input[required], select[required], textarea[required]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        form.querySelector('.is-invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
 
@@ -3949,40 +4007,27 @@
         userDoc = await authHelper.getUserDocument(account.uid).catch(() => userDoc) || userDoc;
         providerProfile = await authHelper.getProviderProfileByUid(account.uid, userDoc?.providerProvinceSlug || account.providerProvinceSlug).catch(() => providerProfile);
         const nextProvince = providerProfile?.provinceSlug || userDoc?.providerProvinceSlug || account.providerProvinceSlug || existingProvider.provinceSlug || '';
-        const pendingJobBid = (() => {
-          try {
-            const raw = sessionStorage.getItem('worklinkup_pending_job_bid');
-            return raw ? JSON.parse(raw) : null;
-          } catch (storageError) {
-            return null;
-          }
-        })();
         
         // Check if we're in embed mode (iframe or modal)
         const isEmbedded = getIsEmbedded();
         
-        if (isEmbedded) {
-          // Notify parent to close and redirect
-          const redirectTarget = 'pages/my-posts.html';
-          if (window !== window.parent) {
-            window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
-          } else {
-            window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+        const nextUrl = new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
+        nextUrl.searchParams.set('uid', account.uid);
+        nextUrl.searchParams.set('province', nextProvince);
+        showProfileSavedModal({
+          onContinue: () => {
+            if (isEmbedded) {
+              const redirectTarget = `${nextUrl.pathname}${nextUrl.search}`;
+              if (window !== window.parent) {
+                window.parent.postMessage({ type: 'worklinkup-setup-complete', redirectUrl: redirectTarget }, '*');
+              } else {
+                window.dispatchEvent(new CustomEvent('worklinkup:setup-complete', { detail: { redirectUrl: redirectTarget } }));
+              }
+              return;
+            }
+            window.location.href = `${nextUrl.pathname}${nextUrl.search}`;
           }
-          return;
-        } else {
-          // Navigate normally in standalone mode
-          const nextUrl = pendingJobBid?.jobId
-            ? new URL(`${getBase()}pages/job-posts.html`, window.location.href)
-            : new URL(`${getBase()}pages/provider-profile.html`, window.location.href);
-          if (pendingJobBid?.jobId) {
-            nextUrl.searchParams.set('resumeJob', pendingJobBid.jobId);
-          } else {
-            nextUrl.searchParams.set('uid', account.uid);
-            nextUrl.searchParams.set('province', nextProvince);
-          }
-          window.location.href = `${nextUrl.pathname}${nextUrl.search}`;
-        }
+        });
       } catch (error) {
         window.alert(error.message || 'Could not save your provider profile.');
       } finally {

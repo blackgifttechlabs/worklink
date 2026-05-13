@@ -1,4 +1,4 @@
-const SERVICELOOP_CACHE = 'serviceloop-shell-v4';
+const SERVICELOOP_CACHE = 'serviceloop-shell-v8';
 const SERVICELOOP_ASSETS = [
   './',
   './index.html',
@@ -12,10 +12,9 @@ const SERVICELOOP_ASSETS = [
   './js/jobs-ui.js',
   './js/zimbabwe-locations.js',
   './images/logo/sl.avif',
-  './images/logo/slicon.avif',
-  './images/pwa/maworks-icon-180.png',
-  './images/pwa/maworks-icon-192.png',
-  './images/pwa/maworks-icon-512.png'
+  './images/pwa/sl-icon-180.png',
+  './images/pwa/sl-icon-192.png',
+  './images/pwa/sl-icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
