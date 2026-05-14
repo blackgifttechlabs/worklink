@@ -1,6 +1,27 @@
 // Nav mega dropdown hover logic
 document.addEventListener('DOMContentLoaded', () => {
   const appLoader = document.getElementById('app-loader');
+  const HOME_SPLASH_SEEN_KEY = 'serviceloop_home_splash_seen_v1';
+
+  function isStandaloneApp() {
+    const params = new URLSearchParams(window.location.search || '');
+    return window.matchMedia?.('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+      || params.get('source') === 'pwa';
+  }
+
+  function shouldShowHomeSplash() {
+    if (!appLoader) return false;
+    if (appLoader.dataset.forceShow === 'true') return true;
+    if (isStandaloneApp()) return true;
+    try {
+      if (localStorage.getItem(HOME_SPLASH_SEEN_KEY) === 'true') return false;
+      localStorage.setItem(HOME_SPLASH_SEEN_KEY, 'true');
+      return true;
+    } catch (error) {
+      return true;
+    }
+  }
 
   function hideAppLoader() {
     if (!appLoader || appLoader.dataset.hidden === 'true') return;
@@ -12,10 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (appLoader) {
-    window.addEventListener('load', () => {
-      window.setTimeout(hideAppLoader, 450);
-    }, { once: true });
-    window.setTimeout(hideAppLoader, 3000);
+    if (shouldShowHomeSplash()) {
+      const durationMs = 2000 + Math.round(Math.random() * 1000);
+      appLoader.hidden = false;
+      window.requestAnimationFrame(() => {
+        appLoader.classList.add('is-visible');
+      });
+      window.setTimeout(hideAppLoader, durationMs);
+    } else {
+      appLoader.remove();
+    }
   }
 
   const cookieBanner = document.getElementById('cookie-banner');

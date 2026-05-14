@@ -259,6 +259,25 @@
     }
   }
 
+  function showServicePickerNotice(message = 'Service already selected') {
+    try {
+      const existing = document.querySelector('.account-service-picker-notice');
+      if (existing) existing.remove();
+      const el = document.createElement('div');
+      el.className = 'account-service-picker-notice';
+      el.setAttribute('role', 'status');
+      el.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${escapeHtml(message)}</span>`;
+      document.body.appendChild(el);
+      window.requestAnimationFrame(() => el.classList.add('is-visible'));
+      window.setTimeout(() => {
+        el.classList.remove('is-visible');
+        window.setTimeout(() => el.remove(), 240);
+      }, 1400);
+    } catch (error) {
+      showSuccessToast(message, 1100);
+    }
+  }
+
   function showProfileSavedModal({ onContinue } = {}) {
     try {
       document.querySelector('.wl-saved-modal')?.remove();
@@ -726,7 +745,7 @@
     };
   }
 
-  function bindServiceMultiPicker({ input, list, chipHost, categorySelect, initialServices, emptyText = 'No service found', onChange }) {
+  function bindServiceMultiPicker({ input, list, chipHost, categorySelect, subcategorySelect, addButton, initialServices, emptyText = 'No service found', onChange }) {
     if (!(input instanceof HTMLInputElement) || !(list instanceof HTMLElement) || !(chipHost instanceof HTMLElement)) {
       return {
         getSelections: () => [],
@@ -740,6 +759,8 @@
     let listInteractionUntil = 0;
     const pickerRoot = input.closest('.account-typeahead-field') || input.parentElement;
     const categoryField = categorySelect instanceof HTMLSelectElement ? categorySelect : null;
+    const subcategoryField = subcategorySelect instanceof HTMLSelectElement ? subcategorySelect : null;
+    const addServiceButton = addButton instanceof HTMLButtonElement ? addButton : null;
     if (categoryField && selectedServices[0]?.category) {
       categoryField.value = selectedServices[0].category;
     }
@@ -751,6 +772,26 @@
     function getScopedServiceItems() {
       const category = getSelectedCategory();
       return SERVICE_TYPEAHEAD_ITEMS.filter((item) => item.kind === 'service' && (!category || item.category === category));
+    }
+
+    function syncSubcategoryOptions(selectedValue = '') {
+      if (!subcategoryField) return;
+      const category = getSelectedCategory();
+      const services = getSubservicesForCategory(category);
+      subcategoryField.innerHTML = [
+        '<option value="">Choose sub category</option>',
+        ...services.map((service) => `<option value="${escapeHtml(service)}" ${service === selectedValue ? 'selected' : ''}>${escapeHtml(service)}</option>`)
+      ].join('');
+      subcategoryField.hidden = !category;
+      subcategoryField.disabled = !category;
+      if (addServiceButton) {
+        addServiceButton.hidden = !category;
+        addServiceButton.disabled = !category;
+      }
+      input.hidden = Boolean(subcategoryField);
+      const toggle = input.parentElement?.querySelector('[data-provider-service-toggle]');
+      if (toggle instanceof HTMLElement) toggle.hidden = Boolean(subcategoryField) || !category;
+      if (!category) hideSuggestions();
     }
 
     function hideSuggestions() {
@@ -804,9 +845,23 @@
     function addService(item) {
       const normalized = normalizeProviderServiceItem(item);
       if (!normalized) return;
+      const exists = selectedServices.some((service) => (
+        normalizeTypeaheadTerm(service.category) === normalizeTypeaheadTerm(normalized.category)
+        && normalizeTypeaheadTerm(service.service) === normalizeTypeaheadTerm(normalized.service)
+      ));
+      if (exists) {
+        showServicePickerNotice('Service already selected');
+        if (subcategoryField) subcategoryField.value = '';
+        input.value = '';
+        hideSuggestions();
+        return;
+      }
       selectedServices = normalizeProviderServiceList([...selectedServices, normalized]);
       input.value = '';
+      if (subcategoryField) subcategoryField.value = '';
       input.classList.remove('is-invalid');
+      categoryField?.classList.remove('is-invalid');
+      subcategoryField?.classList.remove('is-invalid');
       hideSuggestions();
       renderChips();
       emitChange();
@@ -860,7 +915,31 @@
     categoryField?.addEventListener('change', () => {
       input.value = '';
       input.classList.remove('is-invalid');
-      showSuggestions('');
+      categoryField.classList.remove('is-invalid');
+      syncSubcategoryOptions();
+      if (subcategoryField) {
+        subcategoryField.focus();
+      } else {
+        showSuggestions('');
+      }
+    });
+
+    subcategoryField?.addEventListener('change', () => {
+      subcategoryField.classList.remove('is-invalid');
+    });
+
+    addServiceButton?.addEventListener('click', () => {
+      const category = getSelectedCategory();
+      const service = String(subcategoryField?.value || '').trim();
+      if (!category) {
+        categoryField?.classList.add('is-invalid');
+        return;
+      }
+      if (!service) {
+        subcategoryField?.classList.add('is-invalid');
+        return;
+      }
+      addService({ category, service });
     });
 
     document.addEventListener('pointerdown', (event) => {
@@ -882,13 +961,23 @@
     });
 
     renderChips();
+    syncSubcategoryOptions();
     emitChange();
 
     return {
       getSelections: () => selectedServices.slice(),
+      setSelections: (services = []) => {
+        selectedServices = normalizeProviderServiceList(services);
+        if (categoryField) categoryField.value = selectedServices[0]?.category || '';
+        syncSubcategoryOptions();
+        input.value = '';
+        renderChips();
+        emitChange();
+      },
       setInvalid: (invalid) => {
         input.classList.toggle('is-invalid', Boolean(invalid));
         chipHost.classList.toggle('is-invalid', Boolean(invalid));
+        categoryField?.classList.toggle('is-invalid', Boolean(invalid && !selectedServices.length));
       }
     };
   }
@@ -1791,21 +1880,31 @@
                 <p>Choose the service people should find you under and describe your work clearly.</p>
                 <div class="provider-onboarding-grid">
                   <div class="provider-onboarding-row">
-                    <label for="provider-category">Main service</label>
-                    <select id="provider-category" name="primaryCategory" required>
+                    <label for="provider-category">Category</label>
+                    <select id="provider-category" name="serviceCategoryPicker" data-provider-service-category-select>
+                      <option value="">Choose category first</option>
                       ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}">${category.label}</option>`).join('')}
                     </select>
                   </div>
                   <div class="provider-onboarding-row">
-                    <label for="provider-specialty">Service</label>
-                    <select id="provider-specialty" name="specialty" data-onboarding-specialty required>
-                      ${buildSubserviceOptionsMarkup(SPECIALIST_CATEGORIES[0]?.label || '', '', 'Choose a service')}
-                    </select>
+                    <label for="provider-specialty">Sub category</label>
+                    <select id="provider-specialty" name="serviceSubcategoryPicker" data-provider-service-subcategory-select hidden disabled></select>
+                    <input type="search" name="serviceSearch" value="" autocomplete="off" data-provider-service-input hidden />
+                    <button type="button" class="account-service-add-btn provider-onboarding-service-add" data-provider-service-add hidden><i class="fa-solid fa-plus"></i><span>Add service</span></button>
+                    <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                  </div>
+                  <div class="provider-onboarding-row provider-onboarding-row-span">
+                    <label>Selected services</label>
+                    <div class="account-service-chip-list" data-provider-service-chips></div>
+                    <small>Add more than one service if clients can hire you for different work.</small>
                   </div>
                   <div class="provider-onboarding-row provider-onboarding-row-span">
                     <label for="provider-bio">Short bio</label>
                     <textarea id="provider-bio" name="bio" placeholder="What kind of work do you do best?" required></textarea>
                   </div>
+                  <input type="hidden" name="primaryCategory" value="" data-provider-service-category />
+                  <input type="hidden" name="specialty" value="" data-provider-service-name />
+                  <input type="hidden" name="title" value="" data-provider-service-title />
                 </div>
               </section>
               <section class="provider-onboarding-step" data-onboarding-step="3">
@@ -1868,10 +1967,17 @@
     const bannerPreview = overlay.querySelector('[data-banner-image-preview]');
     const profileInput = overlay.querySelector('#provider-profile-image');
     const bannerInput = overlay.querySelector('#provider-banner-image');
+    const serviceInput = form.querySelector('[data-provider-service-input]');
+    const serviceList = form.querySelector('[data-provider-service-list]');
+    const serviceChips = form.querySelector('[data-provider-service-chips]');
+    const serviceCategorySelect = form.querySelector('[data-provider-service-category-select]');
+    const serviceSubcategorySelect = form.querySelector('[data-provider-service-subcategory-select]');
+    const serviceAddButton = form.querySelector('[data-provider-service-add]');
     const uploadState = {
       profileImageData: '',
       bannerImageData: ''
     };
+    let onboardingServicePicker = null;
     let activeStep = 0;
 
     function getField(name) {
@@ -1903,6 +2009,14 @@
           if (!field.reportValidity()) return false;
         }
       }
+      if (currentStep.querySelector('[data-provider-service-chips]')) {
+        const hasServices = Boolean(onboardingServicePicker?.getSelections?.().length);
+        onboardingServicePicker?.setInvalid?.(!hasServices);
+        if (!hasServices) {
+          showServicePickerNotice('Select at least one service');
+          return false;
+        }
+      }
       return true;
     }
 
@@ -1918,8 +2032,8 @@
       const cityField = getField('city');
       const addressField = getField('address');
       const experienceField = getField('experience');
-      const categoryField = getField('primaryCategory');
-      const specialtyField = getField('specialty');
+      const categoryField = form.querySelector('[data-provider-service-category-select]');
+      const specialtyField = form.querySelector('[data-provider-service-subcategory-select]');
       const bioField = getField('bio');
 
       if (fullNameField) fullNameField.value = prefill.displayName || prefill.name || '';
@@ -1928,13 +2042,17 @@
       if (cityField) cityField.value = prefill.city || '';
       if (addressField) addressField.value = prefill.address || '';
       if (experienceField) experienceField.value = prefill.experience || '';
-      if (categoryField) categoryField.value = prefill.primaryCategory || SPECIALIST_CATEGORIES[0].label;
-      if (categoryField instanceof HTMLSelectElement && specialtyField instanceof HTMLSelectElement) {
-        specialtyField.innerHTML = buildSubserviceOptionsMarkup(categoryField.value, prefill.specialty || '', 'Choose a service');
-      } else if (specialtyField) {
-        specialtyField.value = prefill.specialty || '';
+      if (categoryField instanceof HTMLSelectElement) categoryField.value = '';
+      if (specialtyField instanceof HTMLSelectElement) {
+        specialtyField.innerHTML = '<option value="">Choose sub category</option>';
+        specialtyField.hidden = true;
+        specialtyField.disabled = true;
       }
       if (bioField) bioField.value = prefill.bio || '';
+      onboardingServicePicker?.setSelections?.(prefill.services || (prefill.specialty ? [{
+        category: prefill.primaryCategory || '',
+        service: prefill.specialty
+      }] : []));
       uploadState.profileImageData = String(prefill.profileImageData || '').trim();
       uploadState.bannerImageData = String(prefill.bannerImageData || '').trim();
       updateUploadPreview(profilePreview, uploadState.profileImageData, 'avatar');
@@ -1967,11 +2085,16 @@
       syncSteps();
     });
 
-    form.querySelector('select[name="primaryCategory"]')?.addEventListener('change', (event) => {
-      const categoryField = event.currentTarget;
-      const specialtyField = form.querySelector('[data-onboarding-specialty]');
-      if (!(categoryField instanceof HTMLSelectElement) || !(specialtyField instanceof HTMLSelectElement)) return;
-      specialtyField.innerHTML = buildSubserviceOptionsMarkup(categoryField.value, '', 'Choose a service');
+    onboardingServicePicker = bindServiceMultiPicker({
+      input: serviceInput,
+      list: serviceList,
+      chipHost: serviceChips,
+      categorySelect: serviceCategorySelect,
+      subcategorySelect: serviceSubcategorySelect,
+      addButton: serviceAddButton,
+      initialServices: [],
+      emptyText: 'No service found',
+      onChange: (services) => syncPrimaryServiceFields(form, services)
     });
 
     profileInput?.addEventListener('change', async () => {
@@ -2012,6 +2135,17 @@
 
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
+      const selectedServices = onboardingServicePicker?.getSelections?.() || [];
+      if (!selectedServices.length) {
+        onboardingServicePicker?.setInvalid?.(true);
+        serviceChips?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      const primaryService = selectedServices[0];
+      payload.services = selectedServices;
+      payload.primaryCategory = primaryService.category;
+      payload.specialty = primaryService.service || primaryService.category;
+      payload.title = getServiceListLabel(selectedServices) || payload.specialty;
       // attach images only if available (make images optional)
       if (uploadState.profileImageData) payload.profileImageData = uploadState.profileImageData;
       if (uploadState.bannerImageData) payload.bannerImageData = uploadState.bannerImageData;
@@ -2760,17 +2894,24 @@
               </div>
               <div class="provider-editor-grid">
                 <label><span>Experience</span><input name="experience" type="text" value="${escapeHtml(provider.experience || '')}" required /></label>
-                <label><span>Service</span>
-                  <select name="primaryCategory" required>
-                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}" ${category.label === provider.primaryCategory ? 'selected' : ''}>${category.label}</option>`).join('')}
+                <label><span>Category</span>
+                  <select name="serviceCategoryPicker" data-provider-service-category-select>
+                    <option value="">Choose category first</option>
+                    ${SPECIALIST_CATEGORIES.map((category) => `<option value="${category.label}">${category.label}</option>`).join('')}
                   </select>
                 </label>
-                <label class="provider-editor-span"><span>Service</span>
-                  <select name="specialty" data-provider-editor-specialty required>
-                    ${buildSubserviceOptionsMarkup(provider.primaryCategory || SPECIALIST_CATEGORIES[0]?.label || '', provider.specialty || '', 'Choose a service')}
-                  </select>
+                <label class="provider-editor-span account-typeahead-field account-service-picker"><span>Sub category</span>
+                  <select name="serviceSubcategoryPicker" data-provider-service-subcategory-select hidden disabled></select>
+                  <input type="search" name="serviceSearch" value="" autocomplete="off" data-provider-service-input hidden />
+                  <button type="button" class="account-service-add-btn" data-provider-service-add hidden><i class="fa-solid fa-plus"></i><span>Add service</span></button>
+                  <div class="account-typeahead-list" data-provider-service-list hidden></div>
+                  <div class="account-service-chip-list" data-provider-service-chips></div>
+                  <small>Add each service clients can hire you for.</small>
                 </label>
                 <label class="provider-editor-span"><span>Bio</span><textarea name="bio" required>${escapeHtml(provider.bio || '')}</textarea></label>
+                <input type="hidden" name="primaryCategory" value="${escapeHtml(provider.primaryCategory || '')}" data-provider-service-category />
+                <input type="hidden" name="specialty" value="${escapeHtml(provider.specialty || '')}" data-provider-service-name />
+                <input type="hidden" name="title" value="${escapeHtml(provider.title || provider.specialty || '')}" data-provider-service-title />
               </div>
             </section>
 
@@ -2794,19 +2935,41 @@
     `, (body) => {
       const form = body.querySelector('[data-provider-editor-form]');
       const cancelBtn = body.querySelector('[data-provider-dialog-cancel]');
-      const categorySelect = form?.querySelector('select[name="primaryCategory"]');
-      const specialtySelect = form?.querySelector('[data-provider-editor-specialty]');
-      cancelBtn?.addEventListener('click', closeProviderDialog);
-      categorySelect?.addEventListener('change', () => {
-        if (!(categorySelect instanceof HTMLSelectElement) || !(specialtySelect instanceof HTMLSelectElement)) return;
-        specialtySelect.innerHTML = buildSubserviceOptionsMarkup(categorySelect.value, '', 'Choose a service');
+      const serviceInput = form?.querySelector('[data-provider-service-input]');
+      const serviceList = form?.querySelector('[data-provider-service-list]');
+      const serviceChips = form?.querySelector('[data-provider-service-chips]');
+      const categorySelect = form?.querySelector('[data-provider-service-category-select]');
+      const subcategorySelect = form?.querySelector('[data-provider-service-subcategory-select]');
+      const serviceAddButton = form?.querySelector('[data-provider-service-add]');
+      const servicePicker = bindServiceMultiPicker({
+        input: serviceInput,
+        list: serviceList,
+        chipHost: serviceChips,
+        categorySelect,
+        subcategorySelect,
+        addButton: serviceAddButton,
+        initialServices: getProviderServiceList(provider),
+        emptyText: 'No service found',
+        onChange: (services) => syncPrimaryServiceFields(form, services)
       });
+      cancelBtn?.addEventListener('click', closeProviderDialog);
       form?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
         const profileImageFile = formData.get('profileImageFile');
         const bannerImageFile = formData.get('bannerImageFile');
         const payload = Object.fromEntries(Array.from(formData.entries()).filter(([key]) => !key.endsWith('File')));
+        const selectedServices = servicePicker.getSelections();
+        servicePicker.setInvalid(!selectedServices.length);
+        if (!selectedServices.length) {
+          showServicePickerNotice('Select at least one service');
+          return;
+        }
+        const primaryService = selectedServices[0];
+        payload.services = selectedServices;
+        payload.primaryCategory = primaryService.category;
+        payload.specialty = primaryService.service || primaryService.category;
+        payload.title = getServiceListLabel(selectedServices) || payload.specialty;
         payload.profileImageData = provider.profileImageData || '';
         payload.bannerImageData = provider.bannerImageData || '';
 
@@ -3783,9 +3946,11 @@
                     <option value="">Choose category first</option>
                     ${SPECIALIST_CATEGORIES.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`).join('')}
                   </select>
-                  <span>Service</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input />
-                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
+                  <span>Sub category</span>
+                  <select name="serviceSubcategoryPicker" data-provider-service-subcategory-select hidden disabled></select>
+                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input hidden />
+                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services" hidden><i class="fa-solid fa-chevron-down"></i></button>
+                  <button type="button" class="account-service-add-btn" data-provider-service-add hidden><i class="fa-solid fa-plus"></i><span>Add service</span></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
                   <small>The first service is used as your main search category.</small>
@@ -3927,6 +4092,8 @@
     const serviceList = form.querySelector('[data-provider-service-list]');
     const serviceChips = form.querySelector('[data-provider-service-chips]');
     const serviceCategorySelect = form.querySelector('[data-provider-service-category-select]');
+    const serviceSubcategorySelect = form.querySelector('[data-provider-service-subcategory-select]');
+    const serviceAddButton = form.querySelector('[data-provider-service-add]');
     const backBtn = page.querySelector('[data-edit-profile-back]');
     const cancelBtn = page.querySelector('[data-edit-profile-cancel]');
     const profileCard = page.querySelector('[data-edit-upload-card="profile"]');
@@ -3960,6 +4127,8 @@
       list: serviceList,
       chipHost: serviceChips,
       categorySelect: serviceCategorySelect,
+      subcategorySelect: serviceSubcategorySelect,
+      addButton: serviceAddButton,
       initialServices: existingServices,
       emptyText: 'No service found',
       onChange: (services) => syncPrimaryServiceFields(form, services)
@@ -6877,9 +7046,11 @@
                     <option value="">Choose category first</option>
                     ${SPECIALIST_CATEGORIES.map((category) => `<option value="${escapeHtml(category.label)}">${escapeHtml(category.label)}</option>`).join('')}
                   </select>
-                  <span>Services you provide</span>
-                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input />
-                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services"><i class="fa-solid fa-chevron-down"></i></button>
+                  <span>Sub category</span>
+                  <select name="serviceSubcategoryPicker" data-provider-service-subcategory-select hidden disabled></select>
+                  <input type="search" name="serviceSearch" value="" placeholder="Type or choose a service..." autocomplete="off" data-provider-service-input hidden />
+                  <button type="button" class="account-typeahead-toggle" data-provider-service-toggle aria-label="Show all services" hidden><i class="fa-solid fa-chevron-down"></i></button>
+                  <button type="button" class="account-service-add-btn" data-provider-service-add hidden><i class="fa-solid fa-plus"></i><span>Add service</span></button>
                   <div class="account-typeahead-list" data-provider-service-list hidden></div>
                   <div class="account-service-chip-list" data-provider-service-chips></div>
                   <small>Add every service clients can hire you for. You can remove any service before saving.</small>
@@ -6920,6 +7091,8 @@
       const serviceList = form.querySelector('[data-provider-service-list]');
       const serviceChips = form.querySelector('[data-provider-service-chips]');
       const serviceCategorySelect = form.querySelector('[data-provider-service-category-select]');
+      const serviceSubcategorySelect = form.querySelector('[data-provider-service-subcategory-select]');
+      const serviceAddButton = form.querySelector('[data-provider-service-add]');
       const locationAddressField = form.querySelector('[data-provider-location-address]');
 
       const locationPicker = bindSetupTypeahead({
@@ -6943,6 +7116,8 @@
         list: serviceList,
         chipHost: serviceChips,
         categorySelect: serviceCategorySelect,
+        subcategorySelect: serviceSubcategorySelect,
+        addButton: serviceAddButton,
         initialServices: existingServices,
         emptyText: 'No service found',
         onChange: (services) => syncPrimaryServiceFields(form, services)

@@ -12,29 +12,37 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="home-page-body">
-<div class="app-loader-overlay" id="app-loader" role="status" aria-live="polite" aria-label="Loading ServiceLoop">
+<div class="app-loader-overlay" id="app-loader" role="status" aria-live="polite" aria-label="Loading ServiceLoop" hidden>
   <div class="app-loader-mark" aria-hidden="true">
-    <div aria-label="Orange and tan hamster running in a metal wheel" role="img" class="wheel-and-hamster">
-      <div class="wheel"></div>
-      <div class="hamster">
-        <div class="hamster__body">
-          <div class="hamster__head">
-            <div class="hamster__ear"></div>
-            <div class="hamster__eye"></div>
-            <div class="hamster__nose"></div>
-          </div>
-          <div class="hamster__limb hamster__limb--fr"></div>
-          <div class="hamster__limb hamster__limb--fl"></div>
-          <div class="hamster__limb hamster__limb--br"></div>
-          <div class="hamster__limb hamster__limb--bl"></div>
-          <div class="hamster__tail"></div>
-        </div>
-      </div>
-      <div class="spoke"></div>
-    </div>
+    <img src="images/logo/sl.avif" alt="" decoding="async" />
   </div>
+  <div class="app-loader-spinner" aria-hidden="true"></div>
   <span>Loading ServiceLoop</span>
 </div>
+<script>
+  (() => {
+    const loader = document.getElementById('app-loader');
+    if (!loader) return;
+    const seenKey = 'serviceloop_home_splash_seen_v1';
+    const params = new URLSearchParams(window.location.search || '');
+    const isPwa = window.matchMedia?.('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+      || params.get('source') === 'pwa';
+    let shouldShow = isPwa;
+    try {
+      if (!shouldShow && localStorage.getItem(seenKey) !== 'true') {
+        localStorage.setItem(seenKey, 'true');
+        shouldShow = true;
+      }
+    } catch (error) {
+      shouldShow = true;
+    }
+    if (!shouldShow) return;
+    loader.dataset.forceShow = 'true';
+    loader.hidden = false;
+    loader.classList.add('is-visible');
+  })();
+</script>
 
 <div id="site-header"></div>
 
