@@ -3533,37 +3533,70 @@
         skillsModal.addEventListener('click', () => {
           const skillItems = Array.isArray(freshProvider.skills) ? freshProvider.skills : [];
           const languageItems = Array.isArray(freshProvider.languages) ? freshProvider.languages : [];
+          const primaryService = getServiceListLabel(freshProvider, 2) || freshProvider.specialty || freshProvider.primaryCategory || 'Provider';
           
           openProviderDialog(`
-            <div class="provider-skills-modal">
-              <h2>Skills and expertise</h2>
+            <div class="provider-dialog-card provider-skills-modal">
+              <div class="provider-skills-hero">
+                <div class="provider-skills-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div>
+                  <span>Professional profile</span>
+                  <h2>Skills and expertise</h2>
+                  <p>${escapeHtml(primaryService)}${freshProvider.experience ? ` • ${escapeHtml(freshProvider.experience)} experience` : ''}</p>
+                </div>
+              </div>
+              <div class="provider-skills-summary" aria-label="Skills summary">
+                <div><span>Skills</span><strong>${skillItems.length}</strong></div>
+                <div><span>Languages</span><strong>${languageItems.length}</strong></div>
+                <div><span>Rating</span><strong>${Number(freshProvider.averageRating || 0).toFixed(1)}</strong></div>
+              </div>
               ${skillItems.length ? `
-                <div style="margin-bottom: 20px;">
-                  <h3 style="font-size: 14px; font-weight: 700; color: var(--brand-ink); margin-bottom: 10px;">Skills</h3>
+                <section class="provider-skills-section">
+                  <div class="provider-skills-section-head">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    <div>
+                      <h3>Skills</h3>
+                      <p>Areas this provider can be hired for.</p>
+                    </div>
+                  </div>
                   <div class="provider-skills-grid">
                     ${skillItems.map((skill) => `
-                      <div class="provider-skill-badge">
+                      <article class="provider-skill-badge">
+                        <i class="fa-solid fa-check"></i>
                         <strong>${escapeHtml(skill.name)}</strong>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">${escapeHtml(skill.level || 'Experienced')}</div>
-                      </div>
+                        <span>${escapeHtml(skill.level || 'Experienced')}</span>
+                      </article>
                     `).join('')}
                   </div>
-                </div>
+                </section>
               ` : ''}
               ${languageItems.length ? `
-                <div>
-                  <h3 style="font-size: 14px; font-weight: 700; color: var(--brand-ink); margin-bottom: 10px;">Languages</h3>
+                <section class="provider-skills-section">
+                  <div class="provider-skills-section-head">
+                    <i class="fa-solid fa-language"></i>
+                    <div>
+                      <h3>Languages</h3>
+                      <p>Communication options for clients.</p>
+                    </div>
+                  </div>
                   <div class="provider-skills-grid">
                     ${languageItems.map((language) => `
-                      <div class="provider-skill-badge">
+                      <article class="provider-skill-badge">
+                        <i class="fa-solid fa-comment-dots"></i>
                         <strong>${escapeHtml(language.name)}</strong>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">${escapeHtml(language.level || 'Conversational')}</div>
-                      </div>
+                        <span>${escapeHtml(language.level || 'Conversational')}</span>
+                      </article>
                     `).join('')}
                   </div>
+                </section>
+              ` : ''}
+              ${!skillItems.length && !languageItems.length ? `
+                <div class="provider-skills-empty">
+                  <i class="fa-regular fa-folder-open"></i>
+                  <strong>No skills added yet</strong>
+                  <p>This provider has not added skills or languages to their profile.</p>
                 </div>
               ` : ''}
-              ${!skillItems.length && !languageItems.length ? '<p>No skills or languages added yet.</p>' : ''}
             </div>
           `);
         });
