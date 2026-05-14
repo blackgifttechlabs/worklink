@@ -445,7 +445,8 @@
         id: admin.id || '',
         name: admin.name || '',
         email: admin.email || '',
-        role: admin.role || 'Admin'
+        role: admin.role || 'Admin',
+        pin: admin.pin || ''
       }));
     } catch (error) {
       // Ignore storage failures and keep the page usable.
@@ -1298,6 +1299,18 @@
           <div class="admin-mini-stat"><span>Activities</span><strong>${formatNumber(activities.length)}</strong></div>
         </section>
 
+        <section class="admin-detail-actions admin-danger-zone">
+          <div>
+            <span class="admin-panel-kicker">Danger zone</span>
+            <h4>Delete this account</h4>
+            <p>This permanently removes the user from Firebase Authentication and Firestore.</p>
+          </div>
+          <button type="button" class="admin-delete-account-btn" data-user-delete-account="${escapeHtml(user.uid || '')}">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Delete account</span>
+          </button>
+        </section>
+
         <section class="admin-detail-section">
           <h4>Reviews received</h4>
           <div class="admin-stacked-list">
@@ -1342,6 +1355,40 @@
       name: user.name || user.userPublicId || user.uid,
       sourceRef: `users/${user.uid}`
     });
+  }
+
+  async function handleUserAccountDelete(trigger) {
+    const uid = String(trigger?.getAttribute('data-user-delete-account') || '').trim();
+    const user = getUserByUid(uid);
+    if (!uid || !user) return;
+
+    const label = user.name || user.userPublicId || user.email || uid;
+    const confirmed = window.confirm(`Delete ${label} permanently from Firebase Auth and Firestore? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const authHelper = await waitForAuthHelper().catch(() => null);
+    if (!authHelper || typeof authHelper.adminDeleteUserAccount !== 'function') {
+      window.alert('Account deletion is not available right now.');
+      return;
+    }
+
+    trigger.disabled = true;
+    trigger.classList.add('is-loading');
+
+    try {
+      await authHelper.adminDeleteUserAccount({
+        uid,
+        name: label,
+        admin: state.currentAdmin
+      });
+      setProviderDetailModal(false);
+      await loadDashboardData({ showPlaceholders: false });
+      window.alert(`${label} was deleted from Firebase Auth and Firestore.`);
+    } catch (error) {
+      window.alert(error?.message || 'Could not delete the account.');
+      trigger.disabled = false;
+      trigger.classList.remove('is-loading');
+    }
   }
 
   function renderProviderDetail(provider) {
@@ -2218,6 +2265,12 @@
     });
 
     refs.providerDetailBody?.addEventListener('click', (event) => {
+      const deleteTrigger = event.target.closest('[data-user-delete-account]');
+      if (!deleteTrigger) return;
+      handleUserAccountDelete(deleteTrigger);
+    });
+
+    refs.providerDetailBody?.addEventListener('click', (event) => {
       const editTrigger = event.target.closest('[data-review-edit]');
       if (editTrigger) {
         handleReviewModeration('edit', editTrigger);
@@ -2573,6 +2626,7 @@
 
     const savedSession = readAdminSession();
     if (savedSession?.id) {
+      if (!savedSession.pin && savedSession.id === 'primary-admin') savedSession.pin = ADMIN_PIN;
       setCurrentAdmin(savedSession);
       showApp();
       renderCachedAdminData();

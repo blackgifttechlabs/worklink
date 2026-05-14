@@ -3725,6 +3725,26 @@ async function updateUserAccountStatus(payload = {}) {
   };
 }
 
+async function adminDeleteUserAccount(payload = {}) {
+  const uid = String(payload.uid || '').trim();
+  const adminPin = String(payload.admin?.pin || payload.adminPin || '').trim();
+  if (!uid) throw new Error('Choose a user first.');
+  if (!adminPin) throw new Error('Lock and unlock the admin console again before deleting accounts.');
+
+  const response = await fetch('/api/admin-delete-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      uid,
+      name: String(payload.name || '').trim(),
+      adminPin
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Could not delete the account.');
+  return result;
+}
+
 async function listMessagesWithUser(peerUid) {
   if (!auth.currentUser || !peerUid) return [];
   scheduleRealtimeMessagesMigration();
@@ -4529,6 +4549,7 @@ window.softGigglesAuth = {
   sendSupportMessageToUser,
   sendAdminBroadcastMessage,
   updateUserAccountStatus,
+  adminDeleteUserAccount,
   listMessagesWithUser,
   listConversations,
   markConversationViewed,

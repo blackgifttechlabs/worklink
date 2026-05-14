@@ -7266,6 +7266,77 @@ nav {
   gap: 18px;
 }
 
+.admin-danger-zone {
+  align-items: center;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  border-color: rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.admin-danger-zone h4 {
+  margin: 6px 0 4px;
+  color: #991b1b;
+  font-size: 16px;
+}
+
+.admin-danger-zone p {
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.admin-delete-account-btn {
+  position: relative;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: #dc2626;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-delete-account-btn:hover,
+.admin-delete-account-btn:focus-visible {
+  background: #b91c1c;
+}
+
+.admin-delete-account-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.admin-delete-account-btn.is-loading span {
+  visibility: hidden;
+}
+
+.admin-delete-account-btn.is-loading::after {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 999px;
+  content: "";
+  position: absolute;
+  animation: adminSpin 0.7s linear infinite;
+}
+
+@keyframes adminSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .admin-radio-row {
   margin-top: 10px;
   display: flex;
