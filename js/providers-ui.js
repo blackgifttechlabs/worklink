@@ -1152,6 +1152,7 @@
               ? `<img src="${escapeHtml(resolveMediaSrc(category.image))}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
               : `<span class="category-circle-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>`}
           </div>
+          <span class="categories-directory-icon" aria-hidden="true"><i class="${escapeHtml(category.icon || 'fa-solid fa-briefcase')}"></i></span>
           <span>${escapeHtml(category.shortLabel || category.label)}</span>
           <small>${services.length ? `${services.length} service${services.length === 1 ? '' : 's'}` : 'Service'}</small>
         </a>
@@ -1584,19 +1585,19 @@
   }
 
   function buildSuggestedProvidersMarkup(items = [], duplicate = false) {
-    const cards = items.map((provider) => `
-      <article class="specialists-suggested-card">
-        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-card-link">
+    const renderCards = (isClone = false) => items.map((provider) => `
+      <article class="specialists-suggested-card"${isClone ? ' aria-hidden="true" data-loop-clone="1"' : ''}>
+        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-card-link"${isClone ? ' tabindex="-1"' : ''}>
           <img src="${escapeHtml(resolveMediaSrc(normalizeProfileImageFallback(provider.profileImageData), 'images/sections/profileimg.avif'))}" alt="${escapeHtml(provider.displayName)}" class="specialists-suggested-avatar" />
           <strong>${escapeHtml(provider.displayName)}</strong>
           <span class="specialists-suggested-meta">${escapeHtml(getServiceListLabel(provider, 2) || provider.specialty || provider.title || provider.primaryCategory || 'Specialist')}</span>
           <span class="specialists-suggested-place">${escapeHtml(provider.city || provider.address || provider.province || 'Available on ServiceLoop')}</span>
         </a>
-        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-action">View</a>
+        <a href="${escapeHtml(provider.profileUrl)}" class="specialists-suggested-action"${isClone ? ' tabindex="-1"' : ''}>View</a>
       </article>
     `).join('');
 
-    return duplicate ? `${cards}${cards}` : cards;
+    return duplicate ? `${renderCards(false)}${renderCards(true)}` : renderCards(false);
   }
 
   function getSuggestedProviders(allProviders = [], filteredProviders = [], state = {}) {
@@ -1632,36 +1633,36 @@
   }
 
   function buildRelatedServicesMarkup(items = [], duplicate = false) {
-    const cards = items.map((item) => `
-      <a href="${buildSearchResultsHref(item.label, { service: item.label })}" class="specialists-related-card">
+    const renderCards = (isClone = false) => items.map((item) => `
+      <a href="${buildSearchResultsHref(item.label, { service: item.label })}" class="specialists-related-card"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <strong>${escapeHtml(item.label)}</strong>
         <span>${escapeHtml(item.address)}</span>
       </a>
     `).join('');
 
-    return duplicate ? `${cards}${cards}` : cards;
+    return duplicate ? `${renderCards(false)}${renderCards(true)}` : renderCards(false);
   }
 
   function buildSuggestedCategoriesMarkup(items = [], duplicate = false) {
-    const cards = items.map((category) => {
+    const renderCards = (isClone = false) => items.map((category) => {
       const href = buildSearchResultsHref(category.label, { category: category.label, service: category.label });
       const services = Array.isArray(category.subservices) ? category.subservices : [];
       const summary = services.length ? services.slice(0, 2).join(' • ') : 'Service';
       const imageSrc = resolveMediaSrc(category.image || 'images/logo/slicon.avif');
 
       return `
-        <article class="specialists-suggested-card specialists-suggested-category-card">
-          <a href="${escapeHtml(href)}" class="specialists-suggested-card-link">
+        <article class="specialists-suggested-card specialists-suggested-category-card"${isClone ? ' aria-hidden="true" data-loop-clone="1"' : ''}>
+          <a href="${escapeHtml(href)}" class="specialists-suggested-card-link"${isClone ? ' tabindex="-1"' : ''}>
             <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(category.label)}" class="specialists-suggested-avatar" loading="lazy" decoding="async" />
             <strong>${escapeHtml(category.shortLabel || category.label)}</strong>
             <span class="specialists-suggested-meta">${escapeHtml(summary)}</span>
           </a>
-          <a href="${escapeHtml(href)}" class="specialists-suggested-action">Explore</a>
+          <a href="${escapeHtml(href)}" class="specialists-suggested-action"${isClone ? ' tabindex="-1"' : ''}>Explore</a>
         </article>
       `;
     }).join('');
 
-    return duplicate ? `${cards}${cards}` : cards;
+    return duplicate ? `${renderCards(false)}${renderCards(true)}` : renderCards(false);
   }
 
   async function readImageAsBase64(file, options = {}) {
@@ -2487,18 +2488,102 @@
     const resultsCount = page.querySelector('[data-categories-count]');
     const grid = page.querySelector('[data-categories-grid]');
     const empty = page.querySelector('[data-categories-empty]');
+    let modal = document.querySelector('[data-category-services-modal]');
     if (grid instanceof HTMLElement) {
       grid.innerHTML = buildCategoryDirectoryMarkup(getBase(), SPECIALIST_CATEGORIES);
+    }
+    if (!(modal instanceof HTMLElement)) {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div class="category-services-modal" data-category-services-modal hidden>
+          <div class="category-services-modal-backdrop" data-category-services-close></div>
+          <section class="category-services-panel" role="dialog" aria-modal="true" aria-labelledby="category-services-title">
+            <button type="button" class="category-services-close" data-category-services-close aria-label="Close services">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="category-services-head">
+              <span data-category-services-kicker>ServiceLoop services</span>
+              <h2 id="category-services-title" data-category-services-title>Choose a service</h2>
+              <p data-category-services-copy>Select a service to search matching providers.</p>
+            </div>
+            <div class="category-services-list" data-category-services-list></div>
+          </section>
+        </div>
+      `);
+      modal = document.querySelector('[data-category-services-modal]');
     }
     const cards = Array.from(page.querySelectorAll('[data-category-card]'));
     const params = new URLSearchParams(window.location.search);
     let query = String(params.get('q') || '').trim();
+    const requestedCategory = String(params.get('category') || '').trim();
+    const shouldOpenRequestedCategory = params.get('modal') === '1' && requestedCategory;
+    let lastFocusedCategory = null;
 
     if (searchInput instanceof HTMLInputElement) {
       searchInput.autocomplete = 'off';
       searchInput.spellcheck = false;
       searchInput.setAttribute('autocapitalize', 'off');
       searchInput.setAttribute('aria-autocomplete', 'none');
+      searchInput.setAttribute('role', 'searchbox');
+    }
+
+    function closeServicesModal() {
+      if (!(modal instanceof HTMLElement)) return;
+      modal.hidden = true;
+      modal.classList.remove('is-visible');
+      document.body.classList.remove('category-services-modal-open');
+      if (lastFocusedCategory instanceof HTMLElement) lastFocusedCategory.focus({ preventScroll: true });
+    }
+
+    function openServicesModal(categoryLabel = '', trigger = null) {
+      if (!(modal instanceof HTMLElement)) return;
+      const category = SPECIALIST_CATEGORIES.find((item) => item.label === categoryLabel);
+      if (!category) return;
+      lastFocusedCategory = trigger instanceof HTMLElement ? trigger : null;
+      const services = Array.isArray(category.subservices) ? category.subservices : [];
+      const title = modal.querySelector('[data-category-services-title]');
+      const kicker = modal.querySelector('[data-category-services-kicker]');
+      const copy = modal.querySelector('[data-category-services-copy]');
+      const list = modal.querySelector('[data-category-services-list]');
+      if (kicker instanceof HTMLElement) kicker.textContent = category.shortLabel || 'ServiceLoop services';
+      if (title instanceof HTMLElement) title.textContent = category.label;
+      if (copy instanceof HTMLElement) {
+        copy.textContent = services.length
+          ? 'Choose one service to search matching providers.'
+          : 'Search all providers in this category.';
+      }
+      if (list instanceof HTMLElement) {
+        const allHref = buildSearchResultsHref(category.label, {
+          category: category.label,
+          service: category.label,
+          query: category.label
+        });
+        const serviceButtons = services.map((service) => {
+          const href = buildSearchResultsHref(service, {
+            category: category.label,
+            service,
+            query: service
+          });
+          return `
+            <a href="${escapeHtml(href)}" class="category-services-item">
+              <span>${escapeHtml(service)}</span>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </a>
+          `;
+        }).join('');
+        list.innerHTML = `
+          <a href="${escapeHtml(allHref)}" class="category-services-item is-primary">
+            <span>All ${escapeHtml(category.shortLabel || category.label)} providers</span>
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </a>
+          ${serviceButtons}
+        `;
+      }
+      modal.hidden = false;
+      document.body.classList.add('category-services-modal-open');
+      window.requestAnimationFrame(() => {
+        modal.classList.add('is-visible');
+        modal.querySelector('.category-services-close')?.focus({ preventScroll: true });
+      });
     }
 
     cards.forEach((card) => {
@@ -2514,6 +2599,11 @@
         card.href = typeof buildServiceLoopSpecialistsHref === 'function'
           ? buildServiceLoopSpecialistsHref(label, { category: label, query: label })
           : buildSearchResultsHref(label, { category: label });
+        card.setAttribute('aria-haspopup', 'dialog');
+        card.addEventListener('click', (event) => {
+          event.preventDefault();
+          openServicesModal(label, card);
+        });
       }
     });
 
@@ -2550,7 +2640,20 @@
       render();
     });
 
+    modal?.querySelectorAll('[data-category-services-close]').forEach((trigger) => {
+      trigger.addEventListener('click', closeServicesModal);
+    });
+    modal?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeServicesModal();
+    });
+
     render();
+    if (shouldOpenRequestedCategory) {
+      const requestedCard = cards.find((card) => String(card.getAttribute('data-category-label') || '').trim() === requestedCategory);
+      window.setTimeout(() => {
+        openServicesModal(requestedCategory, requestedCard || null);
+      }, 80);
+    }
   }
 
   function buildProviderWorkSkeleton(count = 4) {

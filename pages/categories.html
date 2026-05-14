@@ -11,25 +11,26 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
   <link rel="stylesheet" href="../css/style.css" />
 </head>
-<body>
+<body class="categories-page-body">
   <div id="site-header"></div>
 
   <main class="categories-directory-page" data-categories-page>
     <section class="categories-directory-hero">
-      <span class="categories-directory-kicker">All Services</span>
       <h1>Browse every ServiceLoop service</h1>
       <p>Search services and jump straight into specialists filtered by the work you need.</p>
-    </section>
 
-    <section class="categories-directory-toolbar">
       <div class="search-bar categories-directory-search">
         <span class="search-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path>
           </svg>
         </span>
-        <input type="text" placeholder="Search services" data-categories-search />
+        <input type="search" name="serviceloop-category-filter" placeholder="Search services" data-categories-search autocomplete="off" autocapitalize="off" spellcheck="false" aria-autocomplete="none" />
       </div>
+    </section>
+
+    <section class="categories-directory-toolbar">
+      <h2>Popular Categories</h2>
       <p class="categories-directory-count" data-categories-count>Loading services</p>
     </section>
 
@@ -39,6 +40,20 @@
       <h2>No services matched that search</h2>
       <p>Try another service or trade name to narrow the list.</p>
     </div>
+
+    <section class="categories-directory-cta" aria-label="Become a ServiceLoop professional">
+      <div class="categories-directory-cta-icon" aria-hidden="true">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <h2>Find trusted professionals for any job, big or small.</h2>
+        <p>ServiceLoop connects you with verified specialists ready to help.</p>
+      </div>
+      <a href="specialists.html" class="categories-directory-cta-btn">
+        <span>View Service Providers</span>
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </a>
+    </section>
   </main>
 
   <div id="site-footer"></div>

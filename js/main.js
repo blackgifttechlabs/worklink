@@ -357,9 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildHomepageCategoryMarkup(base = getSiteBasePath(), categories = [], options = {}) {
     const isClone = Boolean(options.isClone);
     return categories.map((category) => `
-      <a href="${typeof buildServiceLoopSpecialistsHref === 'function'
-        ? buildServiceLoopSpecialistsHref(category.label, { base, category: category.label, service: category.label, query: category.label })
-        : `${base}pages/search-results.html?service=${encodeURIComponent(category.label)}&category=${encodeURIComponent(category.label)}&query=${encodeURIComponent(category.label)}`}" class="category-circle home-category-circle"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
+      <a href="${base}pages/categories.html?category=${encodeURIComponent(category.label)}&modal=1" class="category-circle home-category-circle" data-home-category-link="${escapeHtml(category.label)}"${isClone ? ' aria-hidden="true" tabindex="-1" data-loop-clone="1"' : ''}>
         <div class="category-circle-img">
           ${category.image
             ? `<img src="${escapeHtml(`${base}${category.image}`)}" alt="${escapeHtml(category.label)}" loading="lazy" decoding="async" />`
@@ -368,6 +366,55 @@ document.addEventListener('DOMContentLoaded', () => {
         <span>${escapeHtml(category.shortLabel || category.label)}</span>
       </a>
     `).join('');
+  }
+
+  function bindHomepageCategoryNavigation(categoryRow, base = getSiteBasePath()) {
+    if (!(categoryRow instanceof HTMLElement) || categoryRow.dataset.homeCategoryNavBound === '1') return;
+    const navHost = categoryRow.closest('[data-scroll-rail]') || categoryRow;
+    let pointerStartX = 0;
+    let pointerStartY = 0;
+    let pointerStartedOnCategory = false;
+
+    function getCategoryLinkFromPoint(event) {
+      const directLink = event.target?.closest?.('[data-home-category-link]');
+      if (directLink instanceof HTMLAnchorElement) return directLink;
+      const pointedElement = document.elementFromPoint(event.clientX, event.clientY);
+      const pointedLink = pointedElement?.closest?.('[data-home-category-link]');
+      return pointedLink instanceof HTMLAnchorElement ? pointedLink : null;
+    }
+
+    function goToCategory(link) {
+      const label = String(link.getAttribute('data-home-category-link') || '').trim();
+      if (!label) return;
+      window.location.href = `${base}pages/categories.html?category=${encodeURIComponent(label)}&modal=1`;
+    }
+
+    navHost.addEventListener('pointerdown', (event) => {
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+      pointerStartedOnCategory = Boolean(getCategoryLinkFromPoint(event));
+    }, { passive: true });
+
+    navHost.addEventListener('pointerup', (event) => {
+      if (event.pointerType !== 'mouse') return;
+      const link = getCategoryLinkFromPoint(event);
+      if (!link) return;
+      const moved = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY);
+      if (pointerStartedOnCategory && moved > 8) return;
+      event.preventDefault();
+      goToCategory(link);
+    });
+
+    navHost.addEventListener('click', (event) => {
+      const link = getCategoryLinkFromPoint(event);
+      if (!(link instanceof HTMLAnchorElement)) return;
+      const moved = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY);
+      if (pointerStartedOnCategory && moved > 8) return;
+      event.preventDefault();
+      goToCategory(link);
+    });
+
+    categoryRow.dataset.homeCategoryNavBound = '1';
   }
 
   function splitHomepageCategoriesIntoRows(categories = [], rowCount = 3) {
@@ -469,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!categories.length) return;
     const base = getSiteBasePath();
     categoryRow.innerHTML = buildHomepageCategoryRailsMarkup(base, categories);
+    bindHomepageCategoryNavigation(categoryRow, base);
     initHomeMobileCategoryRailTouch();
     initScrollableRails(document);
   }

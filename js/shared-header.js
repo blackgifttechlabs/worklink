@@ -99,7 +99,7 @@ const SERVICELOOP_SERVICE_CATEGORIES = [
     label: 'Installations, Energy & Appliance Repair',
     shortLabel: 'Energy & Repair',
     icon: 'fa-solid fa-solar-panel',
-    image: 'images/categories/electrician_converted.avif',
+    image: 'images/categories/installations.avif',
     subservices: [
       'Solar Panel & Inverter Installer',
       'Generator Mechanic',
@@ -272,7 +272,7 @@ const SERVICELOOP_SERVICE_CATEGORIES = [
     label: 'Care & Animal Services',
     shortLabel: 'Care & Animals',
     icon: 'fa-solid fa-paw',
-    image: 'images/categories/childcare_converted.avif',
+    image: 'images/categories/animalsandcare.avif',
     subservices: [
       'Babysitter / Nanny',
       'Elderly Care Worker',
@@ -335,7 +335,7 @@ const SERVICELOOP_SERVICE_CATEGORIES = [
     label: 'Mining & Extractive Services',
     shortLabel: 'Mining',
     icon: 'fa-solid fa-mountain',
-    image: 'images/categories/informal_converted.avif',
+    image: 'images/categories/mining.avif',
     subservices: [
       'Geologist',
       'Mine Surveyor',
@@ -869,7 +869,7 @@ function getJobsAndBidsHref(base = getBasePath()) {
 }
 
 function getAccountSettingsHref(base = getBasePath()) {
-  return `${base}pages/account.html#account-settings`;
+  return getProviderProfileHref(base);
 }
 
 function renderAccountMenuContent({
