@@ -7513,6 +7513,218 @@ nav {
   line-height: 1.5;
 }
 
+.admin-dialog-shell[hidden] {
+  display: none !important;
+}
+
+.admin-dialog-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.admin-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.admin-dialog-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.32);
+  display: grid;
+  gap: 18px;
+}
+
+.admin-dialog-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.admin-dialog-shell[data-variant="danger"] .admin-dialog-icon {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.admin-dialog-shell[data-variant="success"] .admin-dialog-icon {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.admin-dialog-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-dialog-copy span,
+.admin-dialog-input-wrap span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-dialog-copy h3 {
+  color: #0f172a;
+  font-size: 25px;
+  line-height: 1.05;
+}
+
+.admin-dialog-copy p {
+  color: #475569;
+  line-height: 1.55;
+}
+
+.admin-dialog-input-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-dialog-input-wrap[hidden] {
+  display: none !important;
+}
+
+.admin-dialog-input-wrap textarea {
+  width: 100%;
+  min-height: 116px;
+  padding: 12px 14px;
+  border: 1px solid rgba(100, 116, 139, 0.28);
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.admin-dialog-input-wrap textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.admin-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-dialog-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-dialog-btn.is-secondary {
+  border-color: rgba(100, 116, 139, 0.28);
+  background: #ffffff;
+  color: #334155;
+}
+
+.admin-dialog-btn.is-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.admin-dialog-shell[data-variant="danger"] .admin-dialog-btn.is-primary {
+  background: #dc2626;
+}
+
+.admin-dialog-shell[data-variant="success"] .admin-dialog-btn.is-primary {
+  background: #16a34a;
+}
+
+.admin-page-body {
+  --yellow: #2563eb;
+  --brand-gold: #2563eb;
+}
+
+.admin-page-body *,
+.admin-page-body *::before,
+.admin-page-body *::after,
+.admin-dialog-shell *,
+.admin-dialog-shell *::before,
+.admin-dialog-shell *::after {
+  border-radius: 0 !important;
+}
+
+.admin-page-body .admin-gate-submit,
+.admin-page-body .admin-refresh-btn,
+.admin-page-body .admin-nav-link.is-active,
+.admin-page-body .admin-nav-link:hover,
+.admin-page-body .admin-nav-link:focus-visible,
+.admin-page-body .admin-avatar,
+.admin-page-body .admin-bottom-nav-link.is-active {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  color: #fff !important;
+}
+
+.admin-page-body .admin-gate-badge,
+.admin-page-body .admin-gate-back,
+.admin-page-body .admin-empty-state i,
+.admin-page-body .admin-kpi-icon,
+.admin-page-body .admin-activity-badge.is-provider,
+.admin-page-body .admin-activity-badge.is-post,
+.admin-page-body .admin-badge.is-unread,
+.admin-page-body .admin-row-action {
+  color: #93c5fd !important;
+}
+
+.admin-page-body .admin-kpi-icon,
+.admin-page-body .admin-status-pill[data-state="loading"],
+.admin-page-body .admin-badge.is-unread,
+.admin-page-body .admin-row-action,
+.admin-page-body .admin-gate-badge {
+  background: rgba(37, 99, 235, 0.16) !important;
+}
+
+.admin-page-body .admin-gate-form input:focus,
+.admin-page-body .admin-form-field input:focus,
+.admin-page-body .admin-form-field select:focus,
+.admin-page-body .admin-form-field textarea:focus {
+  border-color: rgba(37, 99, 235, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16) !important;
+}
+
+.admin-page-body .admin-bar-primary,
+.admin-page-body .admin-legend-swatch.is-primary,
+.admin-page-body .admin-bubble-bar,
+.admin-page-body .admin-rank-meter span {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+.admin-page-body .admin-bar-secondary,
+.admin-page-body .admin-legend-swatch.is-secondary,
+.admin-page-body .admin-bubble-bars.is-cyan .admin-bubble-bar,
+.admin-page-body .admin-rank-meter.is-cyan span {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%) !important;
+}
+
+.admin-page-body .admin-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+}
+
 .admin-message-log-row small {
   color: #64748b;
 }
@@ -41770,4 +41982,70 @@ body.marketplace-page-body #site-header > header {
   background: #eef2ff;
   color: #3730a3;
   font-weight: 800;
+}
+
+/* Final admin skin overrides: square corners and blue accent. */
+.admin-page-body *,
+.admin-page-body *::before,
+.admin-page-body *::after,
+.admin-dialog-shell *,
+.admin-dialog-shell *::before,
+.admin-dialog-shell *::after {
+  border-radius: 0 !important;
+}
+
+.admin-page-body .admin-gate-submit,
+.admin-page-body .admin-refresh-btn,
+.admin-page-body .admin-nav-link.is-active,
+.admin-page-body .admin-nav-link:hover,
+.admin-page-body .admin-nav-link:focus-visible,
+.admin-page-body .admin-avatar,
+.admin-page-body .admin-bottom-nav-link.is-active {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  color: #fff !important;
+}
+
+.admin-page-body .admin-gate-badge,
+.admin-page-body .admin-gate-back,
+.admin-page-body .admin-empty-state i,
+.admin-page-body .admin-kpi-icon,
+.admin-page-body .admin-activity-badge.is-provider,
+.admin-page-body .admin-activity-badge.is-post,
+.admin-page-body .admin-badge.is-unread,
+.admin-page-body .admin-row-action {
+  color: #93c5fd !important;
+}
+
+.admin-page-body .admin-kpi-icon,
+.admin-page-body .admin-status-pill[data-state="loading"],
+.admin-page-body .admin-badge.is-unread,
+.admin-page-body .admin-row-action,
+.admin-page-body .admin-gate-badge {
+  background: rgba(37, 99, 235, 0.16) !important;
+}
+
+.admin-page-body .admin-gate-form input:focus,
+.admin-page-body .admin-form-field input:focus,
+.admin-page-body .admin-form-field select:focus,
+.admin-page-body .admin-form-field textarea:focus {
+  border-color: rgba(37, 99, 235, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16) !important;
+}
+
+.admin-page-body .admin-bar-primary,
+.admin-page-body .admin-legend-swatch.is-primary,
+.admin-page-body .admin-bubble-bar,
+.admin-page-body .admin-rank-meter span {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+}
+
+.admin-page-body .admin-bar-secondary,
+.admin-page-body .admin-legend-swatch.is-secondary,
+.admin-page-body .admin-bubble-bars.is-cyan .admin-bubble-bar,
+.admin-page-body .admin-rank-meter.is-cyan span {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%) !important;
+}
+
+.admin-page-body .admin-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
 }

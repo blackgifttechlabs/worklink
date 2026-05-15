@@ -1,9 +1,12 @@
 const admin = require('firebase-admin');
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'worklink-5e1ff';
+const DATABASE_URL = process.env.FIREBASE_DATABASE_URL || 'https://worklink-5e1ff-default-rtdb.firebaseio.com';
 const BOOTSTRAP_ADMIN_PIN = process.env.ADMIN_BOOTSTRAP_PIN || '1677';
 const ADMINS_COLLECTION = 'admins';
 const ADMIN_ACTIVITY_COLLECTION = 'adminActivity';
+const MESSAGE_THREADS_PATH = 'messages';
+const MESSAGE_INDEX_PATH = 'conversationIndex';
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -46,6 +49,15 @@ function getServiceAccountCredential() {
     });
   }
 
+  const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  if (serviceAccountBase64) {
+    const parsed = JSON.parse(Buffer.from(serviceAccountBase64, 'base64').toString('utf8'));
+    return admin.credential.cert({
+      ...parsed,
+      private_key: String(parsed.private_key || '').replace(/\\n/g, '\n')
+    });
+  }
+
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
   if (clientEmail && privateKey) {
@@ -56,14 +68,15 @@ function getServiceAccountCredential() {
     });
   }
 
-  return admin.credential.applicationDefault();
+  throw new Error('Firebase Admin credentials are not configured. Add FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64 in the server environment.');
 }
 
 function getFirebaseApp() {
   if (admin.apps.length) return admin.apps[0];
   return admin.initializeApp({
     credential: getServiceAccountCredential(),
-    projectId: PROJECT_ID
+    projectId: PROJECT_ID,
+    databaseURL: DATABASE_URL
   });
 }
 
@@ -124,7 +137,62 @@ async function deleteFirestoreAccountData(db, uid, userDoc) {
     deleteQuery(db, db.collection('productOrders').where('buyerUid', '==', uid), deletedRefs),
     deleteQuery(db, db.collection('productOrders').where('sellerUid', '==', uid), deletedRefs),
     deleteQuery(db, db.collection('productWishlists').where('buyerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('productWishlists').where('sellerUid', '==', uid), deletedRefs)
+    deleteQuery(db, db.collection('productWishlists').where('sellerUid', '==', uid), deletedRefs),
+    deleteQuery(db, db.collection('searchQueries').where('userUid', '==', uid), deletedRefs)
+  ]);
+
+  return Array.from(new Set(deletedRefs.filter(Boolean)));
+}
+
+function getPeerUidFromConversationId(conversationId, uid) {
+  return String(conversationId || '')
+    .split('__')
+    .find((part) => part && part !== uid) || '';
+}
+
+async function removeRealtimePath(database, path, deletedRefs) {
+  await database.ref(path).remove();
+  deletedRefs.push(path);
+}
+
+async function deleteRealtimeAccountData(database, uid) {
+  const deletedRefs = [];
+  const userIndexSnapshot = await database.ref(`${MESSAGE_INDEX_PATH}/${uid}`).get().catch(() => null);
+  const indexedConversations = userIndexSnapshot?.exists()
+    ? Object.values(userIndexSnapshot.val() || {})
+    : [];
+  const conversationIds = new Set(indexedConversations
+    .map((entry) => String(entry?.conversationId || '').trim())
+    .filter(Boolean));
+
+  const allMessagesSnapshot = await database.ref(MESSAGE_THREADS_PATH).get().catch(() => null);
+  if (allMessagesSnapshot?.exists()) {
+    const conversations = allMessagesSnapshot.val() || {};
+    Object.entries(conversations).forEach(([conversationId, messages]) => {
+      if (String(conversationId).split('__').includes(uid)) {
+        conversationIds.add(conversationId);
+        return;
+      }
+
+      const hasUserMessage = Object.values(messages || {}).some((message) => (
+        message?.fromUid === uid || message?.toUid === uid
+      ));
+      if (hasUserMessage) conversationIds.add(conversationId);
+    });
+  }
+
+  await Promise.all([
+    removeRealtimePath(database, `${MESSAGE_INDEX_PATH}/${uid}`, deletedRefs).catch(() => {}),
+    ...Array.from(conversationIds).flatMap((conversationId) => {
+      const peerUid = indexedConversations.find((entry) => entry?.conversationId === conversationId)?.peerUid
+        || getPeerUidFromConversationId(conversationId, uid);
+      return [
+        removeRealtimePath(database, `${MESSAGE_THREADS_PATH}/${conversationId}`, deletedRefs).catch(() => {}),
+        peerUid
+          ? removeRealtimePath(database, `${MESSAGE_INDEX_PATH}/${peerUid}/${conversationId}`, deletedRefs).catch(() => {})
+          : Promise.resolve()
+      ];
+    })
   ]);
 
   return Array.from(new Set(deletedRefs.filter(Boolean)));
@@ -138,8 +206,9 @@ module.exports = async function adminDeleteAccount(request, response) {
   }
 
   try {
-    getFirebaseApp();
+    const app = getFirebaseApp();
     const db = admin.firestore();
+    const database = admin.database(app);
     const body = await readBody(request);
     const uid = String(body.uid || '').trim();
     const pin = String(body.adminPin || '').trim();
@@ -169,6 +238,7 @@ module.exports = async function adminDeleteAccount(request, response) {
     }
 
     const firestoreDeletedRefs = await deleteFirestoreAccountData(db, uid, userDoc);
+    const realtimeDeletedRefs = await deleteRealtimeAccountData(database, uid);
 
     await db.collection(ADMIN_ACTIVITY_COLLECTION).add({
       type: 'admin_user_account_deleted',
@@ -182,6 +252,7 @@ module.exports = async function adminDeleteAccount(request, response) {
       description: `${actingAdmin.name} permanently deleted ${subjectName} from Authentication and Firestore.`,
       sourceRef: `users/${uid}`,
       deletedFirestoreRefs: firestoreDeletedRefs.slice(0, 100),
+      deletedRealtimeRefs: realtimeDeletedRefs.slice(0, 100),
       authDeleted,
       createdAtMs: now,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -191,9 +262,12 @@ module.exports = async function adminDeleteAccount(request, response) {
       deleted: true,
       uid,
       authDeleted,
-      firestoreDeletedCount: firestoreDeletedRefs.length
+      firestoreDeletedCount: firestoreDeletedRefs.length,
+      realtimeDeletedCount: realtimeDeletedRefs.length
     });
   } catch (error) {
-    sendJson(response, 500, { error: error?.message || 'Could not delete the account.' });
+    const message = error?.message || 'Could not delete the account.';
+    const statusCode = message.includes('Firebase Admin credentials are not configured') ? 503 : 500;
+    sendJson(response, statusCode, { error: message });
   }
 };

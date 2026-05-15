@@ -320,6 +320,110 @@
       .replace(/'/g, '&#39;');
   }
 
+  function ensureAdminDialog() {
+    if (refs.dialogShell) return refs.dialogShell;
+
+    const shell = document.createElement('div');
+    shell.className = 'admin-dialog-shell';
+    shell.hidden = true;
+    shell.innerHTML = `
+      <div class="admin-dialog-backdrop" data-admin-dialog-cancel></div>
+      <section class="admin-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
+        <div class="admin-dialog-icon" data-admin-dialog-icon><i class="fa-solid fa-circle-info"></i></div>
+        <div class="admin-dialog-copy">
+          <span data-admin-dialog-kicker>Admin notice</span>
+          <h3 id="admin-dialog-title" data-admin-dialog-title>Notice</h3>
+          <p data-admin-dialog-message></p>
+        </div>
+        <label class="admin-dialog-input-wrap" data-admin-dialog-input-wrap hidden>
+          <span data-admin-dialog-input-label>Value</span>
+          <textarea data-admin-dialog-input rows="4"></textarea>
+        </label>
+        <div class="admin-dialog-actions">
+          <button type="button" class="admin-dialog-btn is-secondary" data-admin-dialog-cancel>Cancel</button>
+          <button type="button" class="admin-dialog-btn is-primary" data-admin-dialog-confirm>OK</button>
+        </div>
+      </section>
+    `;
+    document.body.appendChild(shell);
+    refs.dialogShell = shell;
+    return shell;
+  }
+
+  function showAdminDialog(options = {}) {
+    const shell = ensureAdminDialog();
+    const panel = shell.querySelector('.admin-dialog-panel');
+    const icon = shell.querySelector('[data-admin-dialog-icon]');
+    const kicker = shell.querySelector('[data-admin-dialog-kicker]');
+    const title = shell.querySelector('[data-admin-dialog-title]');
+    const message = shell.querySelector('[data-admin-dialog-message]');
+    const inputWrap = shell.querySelector('[data-admin-dialog-input-wrap]');
+    const inputLabel = shell.querySelector('[data-admin-dialog-input-label]');
+    const input = shell.querySelector('[data-admin-dialog-input]');
+    const cancelButtons = Array.from(shell.querySelectorAll('[data-admin-dialog-cancel]'));
+    const confirmButton = shell.querySelector('[data-admin-dialog-confirm]');
+    const cancelButton = shell.querySelector('.admin-dialog-btn.is-secondary');
+    const variant = options.variant || 'default';
+    const mode = options.mode || 'alert';
+
+    shell.dataset.variant = variant;
+    panel.dataset.mode = mode;
+    icon.innerHTML = `<i class="fa-solid ${options.icon || (variant === 'danger' ? 'fa-triangle-exclamation' : variant === 'success' ? 'fa-circle-check' : 'fa-circle-info')}"></i>`;
+    kicker.textContent = options.kicker || (variant === 'danger' ? 'Requires confirmation' : 'Admin notice');
+    title.textContent = options.title || 'Notice';
+    message.textContent = options.message || '';
+    confirmButton.textContent = options.confirmLabel || (mode === 'confirm' ? 'Confirm' : 'OK');
+    cancelButton.textContent = options.cancelLabel || 'Cancel';
+    cancelButton.hidden = mode === 'alert';
+    inputWrap.hidden = mode !== 'prompt';
+    inputLabel.textContent = options.inputLabel || 'Value';
+    input.value = options.defaultValue || '';
+
+    shell.hidden = false;
+    document.body.classList.add('admin-mobile-menu-open');
+
+    return new Promise((resolve) => {
+      const cleanup = (value) => {
+        shell.hidden = true;
+        document.body.classList.toggle('admin-mobile-menu-open', Boolean(state.sidebarOpen));
+        confirmButton.removeEventListener('click', handleConfirm);
+        cancelButtons.forEach((button) => button.removeEventListener('click', handleCancel));
+        document.removeEventListener('keydown', handleKeydown);
+        resolve(value);
+      };
+      const handleConfirm = () => cleanup(mode === 'prompt' ? input.value : true);
+      const handleCancel = () => cleanup(mode === 'alert' ? true : null);
+      const handleKeydown = (event) => {
+        if (event.key === 'Escape') handleCancel();
+      };
+
+      confirmButton.addEventListener('click', handleConfirm);
+      cancelButtons.forEach((button) => button.addEventListener('click', handleCancel));
+      document.addEventListener('keydown', handleKeydown);
+
+      window.setTimeout(() => {
+        if (mode === 'prompt') {
+          input.focus();
+          input.select();
+        } else {
+          confirmButton.focus();
+        }
+      }, 40);
+    });
+  }
+
+  function showAdminAlert(title, message, variant = 'default') {
+    return showAdminDialog({ mode: 'alert', title, message, variant });
+  }
+
+  function showAdminConfirm(title, message, options = {}) {
+    return showAdminDialog({ mode: 'confirm', title, message, ...options });
+  }
+
+  function showAdminPrompt(title, message, options = {}) {
+    return showAdminDialog({ mode: 'prompt', title, message, ...options });
+  }
+
   function getUserByUid(uid) {
     const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
     return users.find((user) => String(user.uid || '') === String(uid || '')) || null;
@@ -399,12 +503,22 @@
 
     let comment = review?.comment || '';
     if (action === 'edit') {
-      const nextComment = window.prompt('Edit the public review comment. Leave it blank to show no comment.', comment);
+      const nextComment = await showAdminPrompt('Edit review comment', 'Leave the field blank to show no public comment.', {
+        inputLabel: 'Review comment',
+        defaultValue: comment,
+        confirmLabel: 'Save comment'
+      });
       if (nextComment === null) return;
       comment = String(nextComment || '').trim();
     }
 
-    if (action === 'delete' && !window.confirm('Delete this review permanently? This cannot be undone.')) return;
+    if (action === 'delete') {
+      const confirmed = await showAdminConfirm('Delete review', 'Delete this review permanently? This cannot be undone.', {
+        variant: 'danger',
+        confirmLabel: 'Delete review'
+      });
+      if (!confirmed) return;
+    }
 
     trigger.disabled = true;
     try {
@@ -430,7 +544,7 @@
         if (user) renderUserDetail(user);
       }
     } catch (error) {
-      window.alert(error?.message || 'Could not update that review.');
+      await showAdminAlert('Review update failed', error?.message || 'Could not update that review.', 'danger');
       trigger.disabled = false;
     }
   }
@@ -962,7 +1076,7 @@
     const activityMix = [
       { label: 'Registrations', value: userSeries[userSeries.length - 1] || 0, color: '#22c55e' },
       { label: 'Profiles', value: providerSeries[providerSeries.length - 1] || 0, color: '#38bdf8' },
-      { label: 'Posts', value: postSeries[postSeries.length - 1] || 0, color: '#da7756' },
+      { label: 'Posts', value: postSeries[postSeries.length - 1] || 0, color: '#2563eb' },
       { label: 'Messages', value: messageSeries[messageSeries.length - 1] || 0, color: '#f43f5e' },
       { label: 'Commerce', value: commerceSeries[commerceSeries.length - 1] || 0, color: '#a855f7' }
     ];
@@ -1029,7 +1143,7 @@
         detail: `${formatNumber(metrics.postsToday)} posted today`,
         icon: 'fa-solid fa-image',
         trend: getSeriesTrend(postSeries),
-        sparkline: renderSparkline(postSeries, '#da7756', 'rgba(218, 119, 86,0.28)')
+        sparkline: renderSparkline(postSeries, '#2563eb', 'rgba(37, 99, 235, 0.24)')
       })}
 
       ${renderMetricCard({
@@ -1052,7 +1166,7 @@
         ${renderGroupedBars(labels, userSeries, messageSeries, 'Signups', 'Messages')}
         <div class="admin-mini-gauges">
           ${renderGauge(metrics.providerCompletionRate, 'Provider Completion', `${formatNumber(metrics.providerCount)} profiles live`, '#22c55e')}
-          ${renderGauge(readRate, 'Message Read Rate', `${formatNumber(metrics.unreadMessageCount)} unread messages`, '#da7756')}
+          ${renderGauge(readRate, 'Message Read Rate', `${formatNumber(metrics.unreadMessageCount)} unread messages`, '#2563eb')}
         </div>
       </section>
 
@@ -1427,12 +1541,16 @@
     if (!uid || !user) return;
 
     const label = user.name || user.userPublicId || user.email || uid;
-    const confirmed = window.confirm(`Delete ${label} permanently from Firebase Auth and Firestore? This cannot be undone.`);
+    const confirmed = await showAdminConfirm('Delete user account', `Delete ${label} permanently from Firebase Authentication, Firestore, and realtime messages? This cannot be undone.`, {
+      variant: 'danger',
+      confirmLabel: 'Delete account',
+      icon: 'fa-trash-can'
+    });
     if (!confirmed) return;
 
     const authHelper = await waitForAuthHelper().catch(() => null);
     if (!authHelper || typeof authHelper.adminDeleteUserAccount !== 'function') {
-      window.alert('Account deletion is not available right now.');
+      await showAdminAlert('Deletion unavailable', 'Account deletion is not available right now.', 'danger');
       return;
     }
 
@@ -1447,9 +1565,9 @@
       });
       setProviderDetailModal(false);
       await loadDashboardData({ showPlaceholders: false });
-      window.alert(`${label} was deleted from Firebase Auth and Firestore.`);
+      await showAdminAlert('Account deleted', `${label} was deleted from Firebase Authentication, Firestore, and realtime messages.`, 'success');
     } catch (error) {
-      window.alert(error?.message || 'Could not delete the account.');
+      await showAdminAlert('Account deletion failed', error?.message || 'Could not delete the account.', 'danger');
       trigger.disabled = false;
       trigger.classList.remove('is-loading');
     }
@@ -2431,7 +2549,7 @@
         state.activeProviderUid = provider.uid;
         renderProviderDetail(refreshedProvider);
       } catch (error) {
-        window.alert(error?.message || 'Could not update account status.');
+        await showAdminAlert('Status update failed', error?.message || 'Could not update account status.', 'danger');
         renderProviderDetail(provider);
       }
     });
