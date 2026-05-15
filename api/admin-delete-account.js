@@ -112,8 +112,19 @@ async function deleteQuery(db, query, deletedRefs) {
   await Promise.all(snapshot.docs.map((docSnapshot) => recursiveDelete(db, docSnapshot.ref, deletedRefs)));
 }
 
+async function runDeleteStep(label, action, warnings) {
+  try {
+    await action();
+  } catch (error) {
+    const message = error?.message || String(error || 'Unknown delete error');
+    warnings.push(`${label}: ${message}`);
+    console.warn(`Admin account delete skipped ${label}:`, message);
+  }
+}
+
 async function deleteFirestoreAccountData(db, uid, userDoc) {
   const deletedRefs = [];
+  const warnings = [];
   const knownCartDocIds = [
     uid,
     userDoc.userPublicId,
@@ -124,24 +135,31 @@ async function deleteFirestoreAccountData(db, uid, userDoc) {
     userDoc.phone
   ].filter(Boolean).map((value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
 
-  await Promise.all([
-    recursiveDelete(db, db.collection('users').doc(uid), deletedRefs),
-    recursiveDelete(db, db.collection('clients').doc(uid), deletedRefs),
-    ...Array.from(new Set(knownCartDocIds)).map((cartId) => recursiveDelete(db, db.collection('cart').doc(cartId), deletedRefs).catch(() => {})),
-    deleteQuery(db, db.collection('cart').where('accountDetails.uid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collectionGroup('profiles').where('uid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('jobs').where('ownerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collectionGroup('applications').where('bidderUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collectionGroup('applications').where('jobOwnerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('products').where('sellerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('productOrders').where('buyerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('productOrders').where('sellerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('productWishlists').where('buyerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('productWishlists').where('sellerUid', '==', uid), deletedRefs),
-    deleteQuery(db, db.collection('searchQueries').where('userUid', '==', uid), deletedRefs)
-  ]);
+  const deleteSteps = [
+    ['users document', () => recursiveDelete(db, db.collection('users').doc(uid), deletedRefs)],
+    ['client document', () => recursiveDelete(db, db.collection('clients').doc(uid), deletedRefs)],
+    ...Array.from(new Set(knownCartDocIds)).map((cartId) => [`cart document ${cartId}`, () => recursiveDelete(db, db.collection('cart').doc(cartId), deletedRefs)]),
+    ['cart owner query', () => deleteQuery(db, db.collection('cart').where('accountDetails.uid', '==', uid), deletedRefs)],
+    ['provider profiles query', () => deleteQuery(db, db.collectionGroup('profiles').where('uid', '==', uid), deletedRefs)],
+    ['owned jobs query', () => deleteQuery(db, db.collection('jobs').where('ownerUid', '==', uid), deletedRefs)],
+    ['bidder applications query', () => deleteQuery(db, db.collectionGroup('applications').where('bidderUid', '==', uid), deletedRefs)],
+    ['job owner applications query', () => deleteQuery(db, db.collectionGroup('applications').where('jobOwnerUid', '==', uid), deletedRefs)],
+    ['seller products query', () => deleteQuery(db, db.collection('products').where('sellerUid', '==', uid), deletedRefs)],
+    ['buyer product orders query', () => deleteQuery(db, db.collection('productOrders').where('buyerUid', '==', uid), deletedRefs)],
+    ['seller product orders query', () => deleteQuery(db, db.collection('productOrders').where('sellerUid', '==', uid), deletedRefs)],
+    ['buyer wishlist query', () => deleteQuery(db, db.collection('productWishlists').where('buyerUid', '==', uid), deletedRefs)],
+    ['seller wishlist query', () => deleteQuery(db, db.collection('productWishlists').where('sellerUid', '==', uid), deletedRefs)],
+    ['search query history', () => deleteQuery(db, db.collection('searchQueries').where('userUid', '==', uid), deletedRefs)]
+  ];
 
-  return Array.from(new Set(deletedRefs.filter(Boolean)));
+  for (const [label, action] of deleteSteps) {
+    await runDeleteStep(label, action, warnings);
+  }
+
+  return {
+    refs: Array.from(new Set(deletedRefs.filter(Boolean))),
+    warnings
+  };
 }
 
 function getPeerUidFromConversationId(conversationId, uid) {
@@ -237,7 +255,8 @@ module.exports = async function adminDeleteAccount(request, response) {
       authDeleted = false;
     }
 
-    const firestoreDeletedRefs = await deleteFirestoreAccountData(db, uid, userDoc);
+    const firestoreDeleteResult = await deleteFirestoreAccountData(db, uid, userDoc);
+    const firestoreDeletedRefs = firestoreDeleteResult.refs;
     const realtimeDeletedRefs = await deleteRealtimeAccountData(database, uid);
 
     await db.collection(ADMIN_ACTIVITY_COLLECTION).add({
@@ -253,6 +272,7 @@ module.exports = async function adminDeleteAccount(request, response) {
       sourceRef: `users/${uid}`,
       deletedFirestoreRefs: firestoreDeletedRefs.slice(0, 100),
       deletedRealtimeRefs: realtimeDeletedRefs.slice(0, 100),
+      deleteWarnings: firestoreDeleteResult.warnings.slice(0, 50),
       authDeleted,
       createdAtMs: now,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -263,9 +283,11 @@ module.exports = async function adminDeleteAccount(request, response) {
       uid,
       authDeleted,
       firestoreDeletedCount: firestoreDeletedRefs.length,
-      realtimeDeletedCount: realtimeDeletedRefs.length
+      realtimeDeletedCount: realtimeDeletedRefs.length,
+      warnings: firestoreDeleteResult.warnings.slice(0, 10)
     });
   } catch (error) {
+    console.error('Admin account delete failed:', error);
     const message = error?.message || 'Could not delete the account.';
     const statusCode = message.includes('Firebase Admin credentials are not configured') ? 503 : 500;
     sendJson(response, statusCode, { error: message });
