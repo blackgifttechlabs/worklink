@@ -41984,7 +41984,12 @@ body.marketplace-page-body #site-header > header {
   font-weight: 800;
 }
 
-/* Final admin skin overrides: square corners and blue accent. */
+/* Final admin skin overrides: square corners and orange-red accent. */
+.admin-page-body {
+  --yellow: #da7756;
+  --brand-gold: #da7756;
+}
+
 .admin-page-body *,
 .admin-page-body *::before,
 .admin-page-body *::after,
@@ -42001,7 +42006,7 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-nav-link:focus-visible,
 .admin-page-body .admin-avatar,
 .admin-page-body .admin-bottom-nav-link.is-active {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%) !important;
   color: #fff !important;
 }
 
@@ -42013,7 +42018,7 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-activity-badge.is-post,
 .admin-page-body .admin-badge.is-unread,
 .admin-page-body .admin-row-action {
-  color: #93c5fd !important;
+  color: #f0b08f !important;
 }
 
 .admin-page-body .admin-kpi-icon,
@@ -42021,31 +42026,56 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-badge.is-unread,
 .admin-page-body .admin-row-action,
 .admin-page-body .admin-gate-badge {
-  background: rgba(37, 99, 235, 0.16) !important;
+  background: rgba(218, 119, 86, 0.16) !important;
 }
 
 .admin-page-body .admin-gate-form input:focus,
 .admin-page-body .admin-form-field input:focus,
 .admin-page-body .admin-form-field select:focus,
 .admin-page-body .admin-form-field textarea:focus {
-  border-color: rgba(37, 99, 235, 0.72) !important;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16) !important;
+  border-color: rgba(218, 119, 86, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.16) !important;
 }
 
 .admin-page-body .admin-bar-primary,
 .admin-page-body .admin-legend-swatch.is-primary,
 .admin-page-body .admin-bubble-bar,
 .admin-page-body .admin-rank-meter span {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%) !important;
 }
 
 .admin-page-body .admin-bar-secondary,
 .admin-page-body .admin-legend-swatch.is-secondary,
 .admin-page-body .admin-bubble-bars.is-cyan .admin-bubble-bar,
 .admin-page-body .admin-rank-meter.is-cyan span {
-  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%) !important;
+  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%) !important;
 }
 
 .admin-page-body .admin-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.08) !important;
+  background: rgba(218, 119, 86, 0.08) !important;
+}
+
+.admin-page-body .admin-row-action {
+  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 22px rgba(184, 95, 67, 0.28);
+}
+
+.admin-page-body .admin-row-action:hover,
+.admin-page-body .admin-row-action:focus-visible {
+  background: linear-gradient(135deg, #e78362 0%, #9f4f38 100%) !important;
+}
+
+.admin-dialog-icon {
+  background: rgba(218, 119, 86, 0.14) !important;
+  color: #b85f43 !important;
+}
+
+.admin-dialog-btn.is-primary {
+  background: #da7756 !important;
+}
+
+.admin-dialog-input-wrap textarea:focus {
+  border-color: #da7756 !important;
+  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.16) !important;
 }
