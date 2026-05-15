@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Users – ServiceLoop</title>
+  <title>Admin Search Queries - ServiceLoop</title>
   <link rel="icon" type="image/avif" href="../../images/logo/slicon.avif" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
   <link rel="stylesheet" href="../../css/style.css" />
 </head>
-<body class="admin-page-body" data-admin-view="users">
+<body class="admin-page-body" data-admin-view="searchqueries">
   <div class="admin-gate" id="admin-gate">
     <div class="admin-gate-card">
       <div class="admin-gate-badge"><i class="fa-solid fa-key"></i> Admin Access</div>
@@ -71,7 +71,7 @@
           </button>
           <div>
             <p class="admin-topbar-kicker">ServiceLoop Admin</p>
-            <h1 id="admin-view-title">Users</h1>
+            <h1 id="admin-view-title">Search Queries</h1>
           </div>
         </div>
         <div class="admin-topbar-right">
@@ -87,19 +87,19 @@
       </header>
 
       <main class="admin-content">
-        <section class="admin-panel" data-admin-panel="users">
+        <section class="admin-panel" data-admin-panel="searchqueries">
           <div class="admin-panel-head">
             <div>
-              <p class="admin-panel-kicker">Member records</p>
-              <h2>Registered users</h2>
+              <p class="admin-panel-kicker">Search history</p>
+              <h2>Search queries</h2>
             </div>
-            <div class="admin-inline-total" id="admin-users-total">0 users</div>
+            <div class="admin-inline-total" id="admin-searchqueries-total">0 searches</div>
           </div>
 
           <div class="admin-toolbar">
             <label class="admin-search-field">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="search" id="admin-users-search" placeholder="Search member by name, email, phone, or location" />
+              <input type="search" id="admin-searchqueries-search" placeholder="Search query, user, result, service, or location" />
             </label>
           </div>
 
@@ -107,39 +107,21 @@
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th>Search</th>
                   <th>User</th>
-                  <th>Contact</th>
-                  <th>Location</th>
-                  <th>Registered</th>
-                  <th>Last seen</th>
-                  <th>Commercial intent</th>
-                  <th>Actions</th>
+                  <th>Results shown</th>
+                  <th>Top result</th>
+                  <th>Searched</th>
                 </tr>
               </thead>
-              <tbody id="admin-users-body">
-                <tr><td colspan="7" class="admin-empty-cell">Loading users...</td></tr>
+              <tbody id="admin-searchqueries-body">
+                <tr><td colspan="5" class="admin-empty-cell">Loading search queries...</td></tr>
               </tbody>
             </table>
           </div>
         </section>
       </main>
     </div>
-  </div>
-
-  <div class="admin-modal-shell admin-full-modal-shell" id="admin-provider-detail-modal" hidden>
-    <div class="admin-modal-backdrop" data-provider-detail-close></div>
-    <section class="admin-modal-panel admin-full-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-user-detail-title">
-      <div class="admin-modal-head">
-        <div>
-          <span>User information</span>
-          <h3 id="admin-user-detail-title">User details</h3>
-        </div>
-        <button type="button" class="admin-modal-close" data-provider-detail-close aria-label="Close user details">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div id="admin-provider-detail-body"></div>
-    </section>
   </div>
 
   <script type="module" src="../../js/firebase-auth.js"></script>

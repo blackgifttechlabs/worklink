@@ -8,6 +8,7 @@
     providers: 'Providers',
     engagement: 'Engagement',
     messages: 'Messages',
+    searchqueries: 'Search Queries',
     'admin-activity': 'Admin Activity'
   };
   const VIEW_ROUTES = {
@@ -16,6 +17,7 @@
     providers: 'providers.html',
     engagement: 'engagement.html',
     messages: 'messages.html',
+    searchqueries: 'searchqueries.html',
     'admin-activity': 'admin-activity.html'
   };
   const ADMIN_MOBILE_NAV_ITEMS = [
@@ -24,6 +26,7 @@
     { view: 'providers', label: 'Providers', icon: 'fa-solid fa-id-badge' },
     { view: 'engagement', label: 'Stats', icon: 'fa-solid fa-chart-column' },
     { view: 'messages', label: 'Messages', icon: 'fa-solid fa-envelope' },
+    { view: 'searchqueries', label: 'Searches', icon: 'fa-solid fa-magnifying-glass-chart' },
     { view: 'admin-activity', label: 'Activity', icon: 'fa-solid fa-user-shield' }
   ];
   const DEFAULT_HOMEPAGE_SETTINGS = {
@@ -56,6 +59,7 @@
     providersCategory: 'all',
     messagesSearch: '',
     messagesStatus: 'all',
+    searchQueriesSearch: '',
     activeUserUid: '',
     activeProviderUid: '',
     activeProviderProvinceSlug: '',
@@ -1864,6 +1868,84 @@
 
   }
 
+  function renderSearchQueries() {
+    if (!refs.searchQueriesBody || !refs.searchQueriesTotal) return;
+    const query = state.searchQueriesSearch.trim().toLowerCase();
+    const searchQueries = Array.isArray(state.snapshot?.searchQueries) ? state.snapshot.searchQueries.slice() : [];
+    const filtered = searchQueries
+      .filter((entry) => {
+        if (!query) return true;
+        return [
+          entry.query,
+          entry.service,
+          entry.category,
+          entry.userName,
+          entry.userEmail,
+          entry.userPhone,
+          entry.userUid,
+          entry.topResultTitle,
+          entry.topResultCategory,
+          ...(Array.isArray(entry.results) ? entry.results.map((item) => `${item.title} ${item.category} ${item.location}`) : [])
+        ].join(' ').toLowerCase().includes(query);
+      })
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+
+    refs.searchQueriesTotal.textContent = `${formatNumber(filtered.length)} searches`;
+
+    if (!filtered.length) {
+      refs.searchQueriesBody.innerHTML = '<tr><td colspan="5" class="admin-empty-cell">No search queries have been recorded yet.</td></tr>';
+      return;
+    }
+
+    refs.searchQueriesBody.innerHTML = filtered.map((entry) => {
+      const resultItems = Array.isArray(entry.results) ? entry.results : [];
+      const relatedItems = Array.isArray(entry.relatedResults) ? entry.relatedResults : [];
+      const visibleResults = resultItems.length ? resultItems : relatedItems;
+      const resultSummary = visibleResults.length
+        ? visibleResults.slice(0, 3).map((item) => {
+          const match = Number(item.matchPercent || 0);
+          return `${item.title || 'Provider'}${item.category ? ` (${item.category})` : ''}${match ? ` - ${match}%` : ''}`;
+        }).join(', ')
+        : 'No providers returned';
+      const searchedFor = entry.query || entry.service || entry.category || 'All services';
+
+      return `
+        <tr>
+          <td>
+            <div class="admin-table-stack">
+              <span>${escapeHtml(searchedFor)}</span>
+              <small>${escapeHtml([entry.service, entry.category].filter(Boolean).join(' · ') || 'No service filter')}</small>
+            </div>
+          </td>
+          <td>
+            <div class="admin-table-stack">
+              <span>${escapeHtml(entry.userName || 'Guest user')}</span>
+              <small>${escapeHtml(entry.userEmail || entry.userPhone || entry.userUid || 'No account captured')}</small>
+            </div>
+          </td>
+          <td>
+            <div class="admin-table-stack">
+              <span>${formatNumber(entry.resultCount || 0)} exact, ${formatNumber(entry.relatedCount || 0)} related</span>
+              <small>${escapeHtml(resultSummary)}</small>
+            </div>
+          </td>
+          <td>
+            <div class="admin-table-stack">
+              <span>${escapeHtml(entry.topResultTitle || 'No top result')}</span>
+              <small>${escapeHtml([entry.topResultCategory, entry.topResultLocation].filter(Boolean).join(' · ') || 'No result detail')}</small>
+            </div>
+          </td>
+          <td>
+            <div class="admin-table-stack">
+              <span>${formatDateTime(entry.createdAtMs)}</span>
+              <small>${getRelativeTime(entry.createdAtMs)}</small>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
   function hydrateBroadcastFilters() {
     const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
     const providers = Array.isArray(state.snapshot?.providers) ? state.snapshot.providers : [];
@@ -2064,6 +2146,7 @@
     renderProviders();
     renderEngagement();
     renderMessages();
+    renderSearchQueries();
     renderAdminActivity();
   }
 
@@ -2086,6 +2169,7 @@
     if (refs.usersBody) refs.usersBody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.providersBody) refs.providersBody.innerHTML = `<tr><td colspan="8" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.messagesBody) refs.messagesBody.innerHTML = `<tr><td colspan="6" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
+    if (refs.searchQueriesBody) refs.searchQueriesBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
     if (refs.adminActivityBody) refs.adminActivityBody.innerHTML = `<tr><td colspan="5" class="admin-empty-cell">${escapeHtml(copy)}</td></tr>`;
   }
 
@@ -2336,6 +2420,11 @@
       renderMessages();
     });
 
+    refs.searchQueriesSearch?.addEventListener('input', (event) => {
+      state.searchQueriesSearch = String(event.target.value || '');
+      renderSearchQueries();
+    });
+
     refs.broadcastOpen?.addEventListener('click', () => {
       setBroadcastMessage('');
       setBroadcastModal(true);
@@ -2576,6 +2665,9 @@
     refs.messagesStatus = document.getElementById('admin-messages-status');
     refs.messagesTotal = document.getElementById('admin-messages-total');
     refs.messagesBody = document.getElementById('admin-messages-body');
+    refs.searchQueriesSearch = document.getElementById('admin-searchqueries-search');
+    refs.searchQueriesTotal = document.getElementById('admin-searchqueries-total');
+    refs.searchQueriesBody = document.getElementById('admin-searchqueries-body');
     refs.broadcastOpen = document.getElementById('admin-broadcast-open');
     refs.broadcastHistory = document.getElementById('admin-broadcast-history');
     refs.broadcastModal = document.getElementById('admin-broadcast-modal');

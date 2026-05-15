@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let allResults = [];
   let rawProviders = [];
   let providersLoaded = false;
+  let lastLoggedSearchKey = '';
 
   if (searchInput) searchInput.value = state.query || state.service || state.category || '';
   if (sortSelect) sortSelect.value = state.sort;
@@ -410,6 +411,79 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${base}pages/provider-profile.html?uid=${encodeURIComponent(uid)}&province=${encodeURIComponent(provinceSlug)}`;
   }
 
+  function summarizeLoggedResult(item = {}) {
+    return {
+      uid: String(item.uid || '').trim(),
+      title: String(item.title || '').trim(),
+      category: String(item.category || '').trim(),
+      service: String(item.subtitle || '').trim(),
+      location: String(item.city || item.location || '').trim(),
+      matchPercent: Number(item.nearness || 0),
+      rating: Number(item.rating || 0),
+      href: String(item.href || '').trim()
+    };
+  }
+
+  function getSearchLogKey(exactResults = [], relatedResults = []) {
+    return JSON.stringify({
+      query: state.query,
+      service: state.service,
+      category: state.category,
+      rating: state.rating,
+      sort: state.sort,
+      resultCount: exactResults.length,
+      relatedCount: relatedResults.length,
+      topResultUid: exactResults[0]?.uid || ''
+    });
+  }
+
+  function recordRenderedSearch(buckets = {}) {
+    const rawSearch = [state.query, state.service, state.category].map((value) => String(value || '').trim()).filter(Boolean).join(' ');
+    if (!providersLoaded || !rawSearch) return;
+
+    const exactResults = Array.isArray(buckets.exact) ? buckets.exact : [];
+    const relatedResults = Array.isArray(buckets.related) ? buckets.related : [];
+    const logKey = getSearchLogKey(exactResults, relatedResults);
+    if (logKey === lastLoggedSearchKey) return;
+    lastLoggedSearchKey = logKey;
+
+    const topResult = exactResults[0] || relatedResults[0] || {};
+    const logPayload = {
+      query: state.query || rawSearch,
+      service: state.service,
+      category: state.category,
+      sort: state.sort,
+      filters: {
+        rating: Number(state.rating || 0),
+        intentService: buckets.intent?.service || '',
+        intentCategory: buckets.intent?.category || '',
+        intentCity: buckets.intent?.city || '',
+        intentProvince: buckets.intent?.province || ''
+      },
+      resultCount: exactResults.length,
+      relatedCount: relatedResults.length,
+      results: exactResults.slice(0, 12).map(summarizeLoggedResult),
+      relatedResults: relatedResults.slice(0, 12).map(summarizeLoggedResult),
+      topResultTitle: topResult.title || '',
+      topResultUid: topResult.uid || '',
+      topResultCategory: topResult.category || '',
+      topResultLocation: topResult.city || topResult.location || '',
+      pagePath: window.location.pathname,
+      pageUrl: window.location.href
+    };
+
+    const record = async () => {
+      const authHelper = typeof window.ensureWorkLinkAuth === 'function'
+        ? await window.ensureWorkLinkAuth().catch(() => null)
+        : window.softGigglesAuth || null;
+      if (authHelper && typeof authHelper.recordSearchQuery === 'function') {
+        await authHelper.recordSearchQuery(logPayload).catch(() => {});
+      }
+    };
+
+    record();
+  }
+
   function normalizeProvider(provider = {}) {
     const displayName = String(provider.displayName || provider.fullName || provider.name || provider.username || 'ServiceLoop provider').trim();
     const specialty = String(provider.specialty || provider.title || provider.primaryCategory || 'Specialist').trim();
@@ -745,6 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const buckets = getSearchBuckets();
     const exactResults = buckets.exact;
     const relatedResults = buckets.related.filter((item) => !exactResults.some((exact) => exact.href === item.href));
+    recordRenderedSearch({ ...buckets, exact: exactResults, related: relatedResults });
     const label = state.query || state.service || state.category || 'all services';
     if (titleHost) titleHost.innerHTML = `Results for <span>"${escapeHtml(label)}"</span>`;
     if (countHost) {

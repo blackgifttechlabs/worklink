@@ -76,6 +76,7 @@ const JOBS_COLLECTION = 'jobs';
 const PRODUCTS_COLLECTION = 'products';
 const PRODUCT_ORDERS_COLLECTION = 'productOrders';
 const PRODUCT_WISHLISTS_COLLECTION = 'productWishlists';
+const SEARCH_QUERIES_COLLECTION = 'searchQueries';
 const HOMEPAGE_SETTINGS_COLLECTION = 'homepageSettings';
 const HOMEPAGE_SETTINGS_DOC_ID = 'home';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
@@ -4245,10 +4246,68 @@ async function listAdminActivity() {
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 }
 
+async function recordSearchQuery(payload = {}) {
+  const queryText = String(payload.query || payload.search || '').trim();
+  const service = String(payload.service || '').trim();
+  const category = String(payload.category || '').trim();
+  if (!queryText && !service && !category) return null;
+
+  const account = getAccountPayload(auth.currentUser);
+  const userDoc = account.uid
+    ? await getUserDocument(account.uid).catch(() => null)
+    : null;
+  const searchPayload = {
+    query: queryText,
+    service,
+    category,
+    sort: String(payload.sort || '').trim(),
+    filters: payload.filters && typeof payload.filters === 'object' ? payload.filters : {},
+    userUid: account.uid || '',
+    userName: userDoc?.name || (account.uid ? account.name || 'ServiceLoop user' : 'Guest user'),
+    userEmail: userDoc?.email || account.email || account.authEmail || '',
+    userPhone: userDoc?.phone || account.phone || '',
+    userRole: userDoc?.userRole || account.userRole || '',
+    resultCount: Number(payload.resultCount || 0),
+    relatedCount: Number(payload.relatedCount || 0),
+    results: Array.isArray(payload.results) ? payload.results.slice(0, 12) : [],
+    relatedResults: Array.isArray(payload.relatedResults) ? payload.relatedResults.slice(0, 12) : [],
+    topResultTitle: String(payload.topResultTitle || '').trim(),
+    topResultUid: String(payload.topResultUid || '').trim(),
+    topResultCategory: String(payload.topResultCategory || '').trim(),
+    topResultLocation: String(payload.topResultLocation || '').trim(),
+    pagePath: String(payload.pagePath || window.location.pathname || '').trim(),
+    pageUrl: String(payload.pageUrl || window.location.href || '').trim(),
+    userAgent: String(navigator.userAgent || '').slice(0, 240),
+    createdAtMs: Date.now(),
+    createdAt: serverTimestamp()
+  };
+
+  const created = await addDoc(collection(db, SEARCH_QUERIES_COLLECTION), searchPayload);
+  return { id: created.id, ...searchPayload };
+}
+
+async function listSearchQueries() {
+  const snapshot = await getDocs(collection(db, SEARCH_QUERIES_COLLECTION));
+  return snapshot.docs
+    .map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        ...data,
+        createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt)),
+        resultCount: Number(data.resultCount || 0),
+        relatedCount: Number(data.relatedCount || 0),
+        results: Array.isArray(data.results) ? data.results : [],
+        relatedResults: Array.isArray(data.relatedResults) ? data.relatedResults : []
+      };
+    })
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
 async function getAdminDashboardData() {
   await ensureRealtimeMessagesMigrated();
 
-  const [users, providerSnapshot, postSnapshot, reviewSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings] = await Promise.all([
+  const [users, providerSnapshot, postSnapshot, reviewSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings, searchQueries] = await Promise.all([
     listUsers(),
     getDocs(collectionGroup(db, 'profiles')),
     getDocs(collectionGroup(db, 'posts')),
@@ -4259,7 +4318,8 @@ async function getAdminDashboardData() {
     listAdmins().catch(() => [getBootstrapAdminRecord()]),
     listJobPosts({ includeApplicationCounts: true }).catch(() => []),
     listMarketplaceProducts({ includeInactive: true }).catch(() => []),
-    getHomepageSettings().catch(() => normalizeHomepageSettings(DEFAULT_HOMEPAGE_SETTINGS))
+    getHomepageSettings().catch(() => normalizeHomepageSettings(DEFAULT_HOMEPAGE_SETTINGS)),
+    listSearchQueries().catch(() => [])
   ]);
 
   const providers = providerSnapshot.docs.map((docSnapshot) => {
@@ -4468,6 +4528,7 @@ async function getAdminDashboardData() {
     jobs,
     products,
     homepageSettings,
+    searchQueries,
     messages,
     carts,
     activity: activityFeed,
@@ -4538,6 +4599,8 @@ window.softGigglesAuth = {
   toggleProductWishlist,
   listProductWishlistForUser,
   listProductWishlistSaves,
+  recordSearchQuery,
+  listSearchQueries,
   getHomepageSettings,
   updateHomepageSettings,
   resolveAdminByPin,
