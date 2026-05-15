@@ -101,6 +101,10 @@
               <i class="fa-solid fa-magnifying-glass"></i>
               <input type="search" id="admin-users-search" placeholder="Search member by name, email, phone, or location" />
             </label>
+            <button type="button" class="admin-refresh-btn admin-compact-action" id="admin-guest-visits-open">
+              <i class="fa-solid fa-eye"></i>
+              <span>Guest visitors</span>
+            </button>
           </div>
 
           <div class="admin-table-shell">
@@ -139,6 +143,53 @@
         </button>
       </div>
       <div id="admin-provider-detail-body"></div>
+    </section>
+  </div>
+
+  <div class="admin-modal-shell admin-full-modal-shell" id="admin-guest-visits-modal" hidden>
+    <div class="admin-modal-backdrop" data-guest-visits-close></div>
+    <section class="admin-modal-panel admin-full-modal-panel" role="dialog" aria-modal="true" aria-labelledby="admin-guest-visits-title">
+      <div class="admin-modal-head">
+        <div>
+          <span>Anonymous traffic</span>
+          <h3 id="admin-guest-visits-title">Guest visitors</h3>
+        </div>
+        <button type="button" class="admin-modal-close" data-guest-visits-close aria-label="Close guest visitors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="admin-toolbar admin-activity-filters">
+        <label class="admin-filter-field">
+          <span>Date</span>
+          <select id="admin-guest-visits-date-filter">
+            <option value="all">All dates</option>
+            <option value="today">Today</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+            <option value="custom">Custom day</option>
+          </select>
+        </label>
+        <label class="admin-filter-field" id="admin-guest-visits-custom-wrap" hidden>
+          <span>Day</span>
+          <input type="date" id="admin-guest-visits-custom-date" />
+        </label>
+        <div class="admin-inline-total" id="admin-guest-visits-total">0 visits</div>
+      </div>
+      <div class="admin-table-shell">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Page</th>
+              <th>Session</th>
+              <th>Referrer</th>
+              <th>Visited</th>
+            </tr>
+          </thead>
+          <tbody id="admin-guest-visits-body">
+            <tr><td colspan="4" class="admin-empty-cell">Loading guest visits...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 

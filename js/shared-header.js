@@ -19,6 +19,7 @@ const SERVICELOOP_SERVICE_CATEGORIES = [
       'Long-Distance Bus Driver',
       'Tow Truck Operator',
       'Car Rental Agent',
+      'Car Dealer (Car Sale)',
       'Driving School Instructor',
       'Fuel Attendant / Informal Fuel Dealer',
       'Vehicle Licensing/ZINARA Queue Agent'
@@ -1206,6 +1207,10 @@ function renderAccountPanel() {
         </div>
         <h2 id="account-auth-title" class="account-auth-heading">Welcome</h2>
         <p class="account-auth-subtext">Create an account or sign in to continue with ServiceLoop.</p>
+        <button type="button" class="account-help-inline" data-account-help-open>
+          <i class="fa-solid fa-circle-question"></i>
+          <span>Help</span>
+        </button>
       </div>
       <div class="account-auth-methods">
         <section class="account-auth-method-card account-method-email">

@@ -41624,3 +41624,150 @@ body.marketplace-page-body #site-header > header {
     border: 1px solid rgba(26, 50, 99, 0.1) !important;
   }
 }
+.account-help-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(31, 117, 103, 0.18);
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.account-help-modal.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.account-help-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.54);
+}
+
+.account-help-panel {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(720px, calc(100vh - 32px));
+  overflow: auto;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+  padding: 22px;
+}
+
+.account-help-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.account-help-hero {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding-right: 42px;
+}
+
+.account-help-hero > span {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #14b8a6, #f59e0b);
+  color: #ffffff;
+  font-size: 22px;
+}
+
+.account-help-hero h2 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.account-help-hero p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.account-help-steps {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.account-help-steps div {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  column-gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.account-help-steps i {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #ecfeff;
+  color: #0891b2;
+}
+
+.account-help-steps strong {
+  color: #0f172a;
+}
+
+.account-help-steps span {
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.account-help-done {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-mini-role {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 800;
+}

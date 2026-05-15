@@ -101,6 +101,20 @@
               <i class="fa-solid fa-magnifying-glass"></i>
               <input type="search" id="admin-searchqueries-search" placeholder="Search query, user, result, service, or location" />
             </label>
+            <label class="admin-filter-field">
+              <span>Date</span>
+              <select id="admin-searchqueries-date-filter">
+                <option value="all">All dates</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+                <option value="custom">Custom day</option>
+              </select>
+            </label>
+            <label class="admin-filter-field" id="admin-searchqueries-custom-wrap" hidden>
+              <span>Day</span>
+              <input type="date" id="admin-searchqueries-custom-date" />
+            </label>
           </div>
 
           <div class="admin-table-shell">

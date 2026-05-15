@@ -2017,6 +2017,50 @@ document.addEventListener('DOMContentLoaded', () => {
     return window.softGigglesAuth || null;
   }
 
+  function openAccountHelpModal() {
+    document.querySelector('[data-account-help-modal]')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'account-help-modal';
+    modal.setAttribute('data-account-help-modal', '');
+    modal.innerHTML = `
+      <div class="account-help-backdrop" data-account-help-close></div>
+      <section class="account-help-panel" role="dialog" aria-modal="true" aria-labelledby="account-help-title">
+        <button type="button" class="account-help-close" data-account-help-close aria-label="Close help"><i class="fa-solid fa-xmark"></i></button>
+        <div class="account-help-hero">
+          <span><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+          <div>
+            <h2 id="account-help-title">Quick setup help</h2>
+            <p>Use these simple steps to finish your ServiceLoop account.</p>
+          </div>
+        </div>
+        <div class="account-help-steps">
+          <div><i class="fa-solid fa-user-plus"></i><strong>Create or sign in</strong><span>Use your phone, email, username, or Google account.</span></div>
+          <div><i class="fa-solid fa-at"></i><strong>Pick a username</strong><span>This creates your public profile link.</span></div>
+          <div><i class="fa-solid fa-people-arrows"></i><strong>Choose your role</strong><span>Client if you hire. Provider if you offer services.</span></div>
+          <div><i class="fa-solid fa-location-dot"></i><strong>Complete details</strong><span>Add location and services so people can find you.</span></div>
+        </div>
+        <button type="button" class="account-help-done" data-account-help-close>Got it</button>
+      </section>
+    `;
+    document.body.appendChild(modal);
+    document.body.classList.add('job-modal-open');
+    requestAnimationFrame(() => modal.classList.add('is-visible'));
+  }
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-account-help-open]')) {
+      event.preventDefault();
+      openAccountHelpModal();
+      return;
+    }
+    if (event.target.closest('[data-account-help-close]')) {
+      const modal = document.querySelector('[data-account-help-modal]');
+      modal?.classList.remove('is-visible');
+      document.body.classList.remove('job-modal-open');
+      setTimeout(() => modal?.remove(), 180);
+    }
+  });
+
   async function getAuthHelperReady() {
     const existing = getAuthHelper();
     if (existing) return existing;

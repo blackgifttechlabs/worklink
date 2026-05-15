@@ -6924,6 +6924,7 @@
           <div class="account-setup-section">
             <div class="account-setup-section-item">
               <button type="button" class="account-setup-back-link" data-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+              <button type="button" class="account-help-inline" data-account-help-open><i class="fa-solid fa-circle-question"></i><span>Help</span></button>
               <h2>Get your profile started</h2>
               <p>Add a username that is unique to you. This is how you'll appear to others on ServiceLoop.</p>
             </div>
@@ -7047,9 +7048,10 @@
 
       setupBody.innerHTML = `
         <section class="account-provider-setup-stage">
-          ${isEmbedded ? '' : `
+          ${isEmbedded ? `<button type="button" class="account-help-inline" data-account-help-open><i class="fa-solid fa-circle-question"></i><span>Help</span></button>` : `
             <div class="account-provider-setup-head">
               <span class="account-auth-stage-kicker">Service provider profile</span>
+              <button type="button" class="account-help-inline" data-account-help-open><i class="fa-solid fa-circle-question"></i><span>Help</span></button>
               <h2>Complete your provider account</h2>
               <p>Choose your location and the service clients should find you for. Start typing, then choose the best match.</p>
             </div>
@@ -7385,6 +7387,7 @@
         <section class="account-role-choice-stage">
           <div class="account-role-choice-intro">
             <span class="account-role-choice-badge"><i class="fa-regular fa-circle-check"></i> Account created</span>
+            <button type="button" class="account-help-inline" data-account-help-open><i class="fa-solid fa-circle-question"></i><span>Help</span></button>
             <h2>Welcome to ServiceLoop!</h2>
             <p>Let's get started. Choose how you want to use ServiceLoop.</p>
             <div class="account-role-choice-illustration" aria-hidden="true">
@@ -7481,6 +7484,7 @@
       content.classList.remove('is-role-choice');
       content.innerHTML = `
         <button type="button" class="account-setup-back-link" data-modal-back-home><i class="fa-solid fa-arrow-left"></i><span>Back</span></button>
+        <button type="button" class="account-help-inline" data-account-help-open><i class="fa-solid fa-circle-question"></i><span>Help</span></button>
         <h2>Get your profile started</h2>
         <p>Add a username that is unique to you.</p>
         <form class="account-setup-compact-form" data-account-username-form-modal>

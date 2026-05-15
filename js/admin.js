@@ -60,6 +60,10 @@
     messagesSearch: '',
     messagesStatus: 'all',
     searchQueriesSearch: '',
+    searchQueriesDate: 'all',
+    searchQueriesCustomDate: '',
+    guestVisitsDate: 'all',
+    guestVisitsCustomDate: '',
     activeUserUid: '',
     activeProviderUid: '',
     activeProviderProvinceSlug: '',
@@ -250,6 +254,24 @@
       return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     }
     return 0;
+  }
+
+  function getDateRange(period, customDate = '') {
+    if (period === 'custom' && customDate) {
+      const date = new Date(`${customDate}T00:00:00`);
+      if (!Number.isNaN(date.getTime())) {
+        return { startMs: date.getTime(), endMs: date.getTime() + (24 * 60 * 60 * 1000) };
+      }
+    }
+    const startMs = getPeriodStartMs(period);
+    return startMs ? { startMs, endMs: Infinity } : { startMs: 0, endMs: Infinity };
+  }
+
+  function isWithinDateRange(timestamp, period, customDate = '') {
+    const value = Number(timestamp || 0);
+    if (!value) return false;
+    const range = getDateRange(period, customDate);
+    return value >= range.startMs && value < range.endMs;
   }
 
   function formatDateTime(value) {
@@ -1168,7 +1190,6 @@
     if (!refs.usersBody || !refs.usersTotal) return;
     const users = Array.isArray(state.snapshot?.users) ? state.snapshot.users : [];
     const members = users
-      .filter((user) => !user.providerProfileComplete)
       .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
     const query = state.usersSearch.trim().toLowerCase();
 
@@ -1189,7 +1210,7 @@
       return haystack.includes(query);
     });
 
-    refs.usersTotal.textContent = `${formatNumber(filtered.length)} members`;
+    refs.usersTotal.textContent = `${formatNumber(filtered.length)} users`;
 
     if (!filtered.length) {
       refs.usersBody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">No users match the current filters.</td></tr>';
@@ -1202,6 +1223,7 @@
           <div class="admin-table-user">
             <strong>${escapeHtml(user.name || 'ServiceLoop User')}</strong>
             <span>${escapeHtml(user.userDocumentName || user.userPublicId || user.uid || 'No ID')}</span>
+            <small class="admin-mini-role">${escapeHtml(user.providerProfileComplete || user.userRole === 'provider' ? 'Provider' : 'Client')}</small>
           </div>
         </td>
         <td>
@@ -1239,6 +1261,44 @@
             <i class="fa-solid fa-circle-info"></i>
             <span>More</span>
           </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderGuestVisits() {
+    if (!refs.guestVisitsBody || !refs.guestVisitsTotal) return;
+    const visits = Array.isArray(state.snapshot?.guestVisits) ? state.snapshot.guestVisits.slice() : [];
+    const filtered = visits
+      .filter((visit) => state.guestVisitsDate === 'all' || isWithinDateRange(visit.createdAtMs, state.guestVisitsDate, state.guestVisitsCustomDate))
+      .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+
+    refs.guestVisitsTotal.textContent = `${formatNumber(filtered.length)} visits`;
+    if (!filtered.length) {
+      refs.guestVisitsBody.innerHTML = '<tr><td colspan="4" class="admin-empty-cell">No guest visits match this filter.</td></tr>';
+      return;
+    }
+
+    refs.guestVisitsBody.innerHTML = filtered.slice(0, 250).map((visit) => `
+      <tr>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(visit.title || visit.pagePath || 'Guest page view')}</span>
+            <small>${escapeHtml(visit.pagePath || visit.pageUrl || '')}</small>
+          </div>
+        </td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${escapeHtml(String(visit.sessionId || '').slice(0, 18) || 'No session')}</span>
+            <small>${escapeHtml(String(visit.userAgent || '').slice(0, 70) || 'No browser')}</small>
+          </div>
+        </td>
+        <td>${escapeHtml(visit.referrer || 'Direct')}</td>
+        <td>
+          <div class="admin-table-stack">
+            <span>${formatDateTime(visit.createdAtMs)}</span>
+            <small>${getRelativeTime(visit.createdAtMs)}</small>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -1873,6 +1933,7 @@
     const query = state.searchQueriesSearch.trim().toLowerCase();
     const searchQueries = Array.isArray(state.snapshot?.searchQueries) ? state.snapshot.searchQueries.slice() : [];
     const filtered = searchQueries
+      .filter((entry) => state.searchQueriesDate === 'all' || isWithinDateRange(entry.createdAtMs, state.searchQueriesDate, state.searchQueriesCustomDate))
       .filter((entry) => {
         if (!query) return true;
         return [
@@ -2143,6 +2204,7 @@
     renderHomepageManager();
     renderOverview();
     renderUsers();
+    renderGuestVisits();
     renderProviders();
     renderEngagement();
     renderMessages();
@@ -2291,6 +2353,32 @@
       renderUsers();
     });
 
+    refs.guestVisitsOpen?.addEventListener('click', () => {
+      if (refs.guestVisitsModal) {
+        refs.guestVisitsModal.hidden = false;
+        document.body.classList.add('admin-mobile-menu-open');
+      }
+      renderGuestVisits();
+    });
+
+    document.querySelectorAll('[data-guest-visits-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (refs.guestVisitsModal) refs.guestVisitsModal.hidden = true;
+        document.body.classList.toggle('admin-mobile-menu-open', Boolean(state.sidebarOpen));
+      });
+    });
+
+    refs.guestVisitsDate?.addEventListener('change', (event) => {
+      state.guestVisitsDate = String(event.target.value || 'all');
+      if (refs.guestVisitsCustomWrap) refs.guestVisitsCustomWrap.hidden = state.guestVisitsDate !== 'custom';
+      renderGuestVisits();
+    });
+
+    refs.guestVisitsCustomDate?.addEventListener('change', (event) => {
+      state.guestVisitsCustomDate = String(event.target.value || '');
+      renderGuestVisits();
+    });
+
     refs.providersSearch?.addEventListener('input', (event) => {
       state.providersSearch = String(event.target.value || '');
       renderProviders();
@@ -2422,6 +2510,17 @@
 
     refs.searchQueriesSearch?.addEventListener('input', (event) => {
       state.searchQueriesSearch = String(event.target.value || '');
+      renderSearchQueries();
+    });
+
+    refs.searchQueriesDate?.addEventListener('change', (event) => {
+      state.searchQueriesDate = String(event.target.value || 'all');
+      if (refs.searchQueriesCustomWrap) refs.searchQueriesCustomWrap.hidden = state.searchQueriesDate !== 'custom';
+      renderSearchQueries();
+    });
+
+    refs.searchQueriesCustomDate?.addEventListener('change', (event) => {
+      state.searchQueriesCustomDate = String(event.target.value || '');
       renderSearchQueries();
     });
 
@@ -2616,6 +2715,7 @@
         setAdminModal('create', false);
         setAdminModal('admins', false);
         setProviderDetailModal(false);
+        if (refs.guestVisitsModal) refs.guestVisitsModal.hidden = true;
         setBroadcastModal(false);
       }
     });
@@ -2651,6 +2751,13 @@
     refs.usersSearch = document.getElementById('admin-users-search');
     refs.usersTotal = document.getElementById('admin-users-total');
     refs.usersBody = document.getElementById('admin-users-body');
+    refs.guestVisitsOpen = document.getElementById('admin-guest-visits-open');
+    refs.guestVisitsModal = document.getElementById('admin-guest-visits-modal');
+    refs.guestVisitsDate = document.getElementById('admin-guest-visits-date-filter');
+    refs.guestVisitsCustomWrap = document.getElementById('admin-guest-visits-custom-wrap');
+    refs.guestVisitsCustomDate = document.getElementById('admin-guest-visits-custom-date');
+    refs.guestVisitsTotal = document.getElementById('admin-guest-visits-total');
+    refs.guestVisitsBody = document.getElementById('admin-guest-visits-body');
     refs.providersSearch = document.getElementById('admin-providers-search');
     refs.providersProvince = document.getElementById('admin-providers-province');
     refs.providersCategory = document.getElementById('admin-providers-category');
@@ -2666,6 +2773,9 @@
     refs.messagesTotal = document.getElementById('admin-messages-total');
     refs.messagesBody = document.getElementById('admin-messages-body');
     refs.searchQueriesSearch = document.getElementById('admin-searchqueries-search');
+    refs.searchQueriesDate = document.getElementById('admin-searchqueries-date-filter');
+    refs.searchQueriesCustomWrap = document.getElementById('admin-searchqueries-custom-wrap');
+    refs.searchQueriesCustomDate = document.getElementById('admin-searchqueries-custom-date');
     refs.searchQueriesTotal = document.getElementById('admin-searchqueries-total');
     refs.searchQueriesBody = document.getElementById('admin-searchqueries-body');
     refs.broadcastOpen = document.getElementById('admin-broadcast-open');

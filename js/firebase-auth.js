@@ -77,6 +77,7 @@ const PRODUCTS_COLLECTION = 'products';
 const PRODUCT_ORDERS_COLLECTION = 'productOrders';
 const PRODUCT_WISHLISTS_COLLECTION = 'productWishlists';
 const SEARCH_QUERIES_COLLECTION = 'searchQueries';
+const GUEST_VISITS_COLLECTION = 'guestVisits';
 const HOMEPAGE_SETTINGS_COLLECTION = 'homepageSettings';
 const HOMEPAGE_SETTINGS_DOC_ID = 'home';
 const GOOGLE_REDIRECT_PENDING_KEY = 'worklinkup_google_redirect_pending';
@@ -116,6 +117,18 @@ let jobListCache = null;
 let jobListInFlight = null;
 const userJobListCache = new Map();
 const userJobListInFlight = new Map();
+const guestVisitSessionId = (() => {
+  try {
+    const key = 'serviceloop_guest_visit_session';
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const next = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(key, next);
+    return next;
+  } catch (error) {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+})();
 
 const DEFAULT_HOMEPAGE_SETTINGS = {
   products: {
@@ -4156,6 +4169,9 @@ getRedirectResult(auth)
 
 onAuthStateChanged(auth, (user) => {
   persistUser(user);
+  if (!user) {
+    recordGuestVisit().catch(() => {});
+  }
   if (user) {
     const account = getAccountPayload(user);
     syncUserDocument(account, { lastSeenAtMs: Date.now() }).catch(() => {});
@@ -4304,10 +4320,41 @@ async function listSearchQueries() {
     .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
 }
 
+async function recordGuestVisit(extra = {}) {
+  const stored = getStoredAccount();
+  if (auth.currentUser || stored?.loggedIn) return null;
+  const payload = {
+    sessionId: guestVisitSessionId,
+    pagePath: String(extra.pagePath || window.location.pathname || '').trim(),
+    pageUrl: String(extra.pageUrl || window.location.href || '').trim(),
+    referrer: String(document.referrer || '').slice(0, 400),
+    title: String(document.title || '').slice(0, 160),
+    userAgent: String(navigator.userAgent || '').slice(0, 240),
+    createdAtMs: Date.now(),
+    createdAt: serverTimestamp()
+  };
+  const created = await addDoc(collection(db, GUEST_VISITS_COLLECTION), payload);
+  return { id: created.id, ...payload };
+}
+
+async function listGuestVisits() {
+  const snapshot = await getDocs(collection(db, GUEST_VISITS_COLLECTION));
+  return snapshot.docs
+    .map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        ...data,
+        createdAtMs: Number(data.createdAtMs || toMillis(data.createdAt))
+      };
+    })
+    .sort((first, second) => Number(second.createdAtMs || 0) - Number(first.createdAtMs || 0));
+}
+
 async function getAdminDashboardData() {
   await ensureRealtimeMessagesMigrated();
 
-  const [users, providerSnapshot, postSnapshot, reviewSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings, searchQueries] = await Promise.all([
+  const [users, providerSnapshot, postSnapshot, reviewSnapshot, messages, cartSnapshot, adminActivity, admins, jobs, products, homepageSettings, searchQueries, guestVisits] = await Promise.all([
     listUsers(),
     getDocs(collectionGroup(db, 'profiles')),
     getDocs(collectionGroup(db, 'posts')),
@@ -4319,7 +4366,8 @@ async function getAdminDashboardData() {
     listJobPosts({ includeApplicationCounts: true }).catch(() => []),
     listMarketplaceProducts({ includeInactive: true }).catch(() => []),
     getHomepageSettings().catch(() => normalizeHomepageSettings(DEFAULT_HOMEPAGE_SETTINGS)),
-    listSearchQueries().catch(() => [])
+    listSearchQueries().catch(() => []),
+    listGuestVisits().catch(() => [])
   ]);
 
   const providers = providerSnapshot.docs.map((docSnapshot) => {
@@ -4529,6 +4577,7 @@ async function getAdminDashboardData() {
     products,
     homepageSettings,
     searchQueries,
+    guestVisits,
     messages,
     carts,
     activity: activityFeed,
@@ -4600,6 +4649,8 @@ window.softGigglesAuth = {
   listProductWishlistForUser,
   listProductWishlistSaves,
   recordSearchQuery,
+  recordGuestVisit,
+  listGuestVisits,
   listSearchQueries,
   getHomepageSettings,
   updateHomepageSettings,
