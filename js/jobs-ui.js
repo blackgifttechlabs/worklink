@@ -521,6 +521,12 @@
     return getCategoryConfig(categoryLabel).icon || 'fa-solid fa-layer-group';
   }
 
+  function getJobCategoryImage(job = {}) {
+    const categoryMatch = getCategoryConfig(job.category);
+    const serviceMatch = getCategoryForService(job.subcategory);
+    return resolveMediaSrc(categoryMatch.image || serviceMatch?.image || 'images/categories/digital_converted.avif');
+  }
+
   function buildJobComboboxMarkup({ type, label, placeholder, value = '', required = false }) {
     return `
       <label class="job-form-field">
@@ -2626,10 +2632,15 @@
               const ownerName = getJobOwnerName(job);
               const ownerHandle = getJobOwnerHandle(job);
               const ownerAvatar = getJobOwnerAvatarSrc(job);
+              const categoryImage = getJobCategoryImage(job);
               const isNewPost = isNewJobPost(job.createdAtMs);
 
               return `
               <article class="job-card ${viewMode === 'list' ? 'is-list-item' : ''} ${hasPlacedBid ? 'is-bid-placed' : ''} ${isAcceptedByMe ? 'is-accepted-by-me' : ''} ${isAcceptedBySomeone && !isAcceptedByMe ? 'is-job-unavailable' : ''}" data-job-card-open="${escapeHtml(jobId)}" tabindex="0">
+                <div class="job-card-media">
+                  <img src="${escapeHtml(categoryImage)}" alt="${escapeHtml(job.category || 'Job category')}" loading="lazy" decoding="async" />
+                </div>
+                <div class="job-card-content">
                 <div class="job-card-top">
                   <div class="job-card-tag-row">
                     <span class="job-card-tag">${escapeHtml(job.category)}</span>
@@ -2684,6 +2695,7 @@
                 <div class="job-card-actions">
                   <button type="button" class="${bidWarning ? 'btn-primary job-accepted-action' : bidDisabled ? 'btn-secondary fleece-secondary' : 'btn-primary'}" data-job-bid="${escapeHtml(jobId)}" ${bidDisabled ? 'disabled' : ''} ${bidWarning ? 'data-job-accepted-bid="1"' : ''} ${ownBidWarning ? 'data-job-own-bid="1"' : ''}>${escapeHtml(bidText)}</button>
                   <button type="button" class="btn-secondary fleece-secondary" data-job-view-more="${escapeHtml(jobId)}">View Details</button>
+                </div>
                 </div>
               </article>
             `;}).join('')}
@@ -3520,8 +3532,12 @@
           const bidCount = Array.isArray(job.applications) ? job.applications.length : 0;
           const jobCode = String(job.publicId || job.jobPublicId || job.id || '').slice(0, 12).toUpperCase();
           const expiresAtMs = Number(job.expiresAtMs || 0) || (Number(job.createdAtMs || 0) + (7 * 24 * 60 * 60 * 1000));
+          const categoryImage = getJobCategoryImage(job);
           return `
           <article class="job-owner-card job-owner-posted-card">
+            <section class="job-owner-posted-media">
+              <img src="${escapeHtml(categoryImage)}" alt="${escapeHtml(job.category || 'Job category')}" loading="lazy" decoding="async" />
+            </section>
             <section class="job-owner-posted-section job-owner-posted-main">
               <div class="job-owner-posted-code">Job ID: ${escapeHtml(jobCode || 'JOB')}</div>
               <div class="job-owner-card-head">
