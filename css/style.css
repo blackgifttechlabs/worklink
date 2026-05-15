@@ -8,11 +8,11 @@
   --text-dark: #1c2f53;
   --text-muted: #5c6d83;
   --pink: #f9a8d4;
-  --yellow: #da7756;
+  --yellow: #DC143C;
   --blue: #f6c8b9;
   --brand-ink: #1A3263;
   --brand-slate: #547792;
-  --brand-gold: #da7756;
+  --brand-gold: #DC143C;
   --brand-cream: #E8E2DB;
   --brand-cream-soft: #f4efe9;
   --brand-border: rgba(26, 50, 99, 0.12);
@@ -976,7 +976,7 @@ body:has(.job-post-page) {
   padding: 8px 14px;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(180deg, var(--brand-gold) 0%, #b85f43 100%);
+  background: linear-gradient(180deg, var(--brand-gold) 0%, #A30F2D 100%);
   color: #ffffff;
   font-weight: 800;
   cursor: pointer;
@@ -2870,7 +2870,7 @@ body:has(.job-post-page) {
   padding: 52px 28px;
   border-style: solid;
   background:
-    radial-gradient(circle at top left, rgba(218, 119, 86, 0.08), transparent 36%),
+    radial-gradient(circle at top left, rgba(220, 20, 60, 0.08), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
 }
 
@@ -2881,8 +2881,8 @@ body:has(.job-post-page) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
   font-size: 30px;
 }
 
@@ -2921,7 +2921,7 @@ body:has(.job-post-page) {
 .specialists-related-kicker {
   display: inline-block;
   margin-bottom: 6px;
-  color: #da7756;
+  color: #DC143C;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -3174,7 +3174,7 @@ body:has(.job-post-page) {
 
 .animated-button:active {
   scale: 0.95;
-  box-shadow: 0 0 0 4px #da7756;
+  box-shadow: 0 0 0 4px #DC143C;
 }
 
 .animated-button:hover .circle {
@@ -3287,7 +3287,7 @@ body:has(.job-post-page) {
 .job-review-provider-icon img, .job-review-provider-icon span { width: 52px; height: 52px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
 .job-review-stars { display: flex; gap: 6px; margin: 12px 0; }
 .job-review-stars .star { background: transparent; border: 0; font-size: 22px; color: #d1d5db; cursor: pointer; }
-.job-review-stars .star.is-selected { color: #da7756; }
+.job-review-stars .star.is-selected { color: #DC143C; }
 .job-review-body textarea { width: 100%; min-height: 110px; padding: 10px; border: 1px solid rgba(17,17,17,0.06); border-radius: 8px; resize: vertical; }
 .job-review-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .worklinkup-review-prompt-copy { margin: 0 0 8px; color: #475569; line-height: 1.55; }
@@ -3404,7 +3404,7 @@ body:has(.job-post-page) {
   padding: 0;
   min-height: calc(100vh - 86px);
   background:
-    radial-gradient(circle at top left, rgba(218, 119, 86, 0.08), transparent 30%),
+    radial-gradient(circle at top left, rgba(220, 20, 60, 0.08), transparent 30%),
     linear-gradient(180deg, #fcfbf8 0%, #f5efe7 100%);
 }
 
@@ -3973,8 +3973,8 @@ body:has(.job-post-page) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
   font-size: 28px;
 }
 
@@ -3990,8 +3990,8 @@ body:has(.job-post-page) {
 }
 
 .account-setup-role-card.is-selected {
-  border-color: #da7756;
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.12);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.12);
 }
 
 .account-setup-role-card.is-loading {
@@ -4132,7 +4132,7 @@ body:has(.job-post-page) {
 
 .account-service-add-btn:hover,
 .account-service-add-btn:focus-visible {
-  background: #da7756;
+  background: #DC143C;
 }
 
 .provider-onboarding-service-add {
@@ -4147,7 +4147,7 @@ body:has(.job-post-page) {
   min-height: 48px;
   max-width: min(420px, calc(100vw - 28px));
   padding: 12px 15px;
-  border: 1px solid rgba(218, 119, 86, 0.28);
+  border: 1px solid rgba(220, 20, 60, 0.28);
   border-radius: 16px;
   background: #fff;
   color: #111827;
@@ -4168,7 +4168,7 @@ body:has(.job-post-page) {
 }
 
 .account-service-picker-notice i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .account-typeahead-list {
@@ -4408,9 +4408,9 @@ body:has(.job-post-page) {
 
 .account-provider-add-row,
 .account-setup-remove-row {
-  border: 1px solid rgba(218, 119, 86, 0.12);
-  background: rgba(218, 119, 86, 0.05);
-  color: #da7756;
+  border: 1px solid rgba(220, 20, 60, 0.12);
+  background: rgba(220, 20, 60, 0.05);
+  color: #DC143C;
   border-radius: 14px;
   min-height: 46px;
   display: inline-flex;
@@ -4447,7 +4447,7 @@ body:has(.job-post-page) {
   place-items: center;
   min-height: 150px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(218, 119, 86, 0.08) 0%, rgba(15, 23, 42, 0.04) 100%);
+  background: linear-gradient(180deg, rgba(220, 20, 60, 0.08) 0%, rgba(15, 23, 42, 0.04) 100%);
   overflow: hidden;
 }
 
@@ -4804,7 +4804,7 @@ body:has(.job-post-page) {
   padding: 16px;
   border: 1px dashed rgba(26, 50, 99, 0.22);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(84, 119, 146, 0.08), rgba(218, 119, 86, 0.1));
+  background: linear-gradient(135deg, rgba(84, 119, 146, 0.08), rgba(220, 20, 60, 0.1));
   cursor: pointer;
 }
 
@@ -5412,7 +5412,7 @@ body:has(.job-post-page) {
 }
 
 .provider-profile-links a {
-  color: #da7756;
+  color: #DC143C;
   word-break: break-word;
 }
 
@@ -5826,8 +5826,8 @@ nav {
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  border: 1px solid rgba(218, 119, 86, 0.4);
-  background: rgba(218, 119, 86, 0.14);
+  border: 1px solid rgba(220, 20, 60, 0.4);
+  background: rgba(220, 20, 60, 0.14);
   color: var(--brand-gold);
   display: inline-flex;
   align-items: center;
@@ -5837,8 +5837,8 @@ nav {
 
 .footer-admin-link:hover,
 .footer-admin-link:focus-visible {
-  background: rgba(218, 119, 86, 0.24);
-  border-color: rgba(218, 119, 86, 0.72);
+  background: rgba(220, 20, 60, 0.24);
+  border-color: rgba(220, 20, 60, 0.72);
   transform: translateY(-2px);
 }
 
@@ -5898,7 +5898,7 @@ nav {
   min-height: 34px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: #f6c8b9;
   display: inline-flex;
   align-items: center;
@@ -5953,8 +5953,8 @@ nav {
 
 .admin-gate-form input:focus {
   outline: none;
-  border-color: rgba(218, 119, 86, 0.66);
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.18);
+  border-color: rgba(220, 20, 60, 0.66);
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.18);
 }
 
 .admin-gate-submit,
@@ -5975,7 +5975,7 @@ nav {
 
 .admin-gate-submit,
 .admin-refresh-btn {
-  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%);
   color: #fff;
 }
 
@@ -5997,7 +5997,7 @@ nav {
   display: inline-flex;
   align-items: center;
   margin-top: 18px;
-  color: #f0b08f;
+  color: #F45C7D;
   font-weight: 700;
 }
 
@@ -6066,7 +6066,7 @@ nav {
 .admin-nav-link.is-active,
 .admin-nav-link:hover,
 .admin-nav-link:focus-visible {
-  background: linear-gradient(135deg, rgba(218, 119, 86, 0.28), rgba(168, 85, 247, 0.22));
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.28), rgba(168, 85, 247, 0.22));
   color: #fff;
   box-shadow: inset 0 0 0 1px rgba(240, 176, 143, 0.18);
 }
@@ -6199,8 +6199,8 @@ nav {
 }
 
 .admin-status-pill[data-state="loading"] {
-  background: rgba(218, 119, 86, 0.14);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.14);
+  color: #DC143C;
 }
 
 .admin-dashboard-grid {
@@ -6252,7 +6252,7 @@ nav {
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(218, 119, 86, 0.34) 0%, rgba(218, 119, 86, 0) 70%);
+  background: radial-gradient(circle, rgba(220, 20, 60, 0.34) 0%, rgba(220, 20, 60, 0) 70%);
 }
 
 .admin-hero-copy,
@@ -6306,7 +6306,7 @@ nav {
 
 .admin-empty-state i {
   font-size: 28px;
-  color: #f0b08f;
+  color: #F45C7D;
 }
 
 .admin-hero-copy h3 {
@@ -6374,7 +6374,7 @@ nav {
   padding: 24px;
   border-radius: 28px;
   background:
-    radial-gradient(circle at top, rgba(218, 119, 86, 0.18) 0%, rgba(218, 119, 86, 0) 52%),
+    radial-gradient(circle at top, rgba(220, 20, 60, 0.18) 0%, rgba(220, 20, 60, 0) 52%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.86) 0%, rgba(15, 23, 42, 0.36) 100%);
 }
 
@@ -6395,8 +6395,8 @@ nav {
   width: 48px;
   height: 48px;
   border-radius: 16px;
-  background: rgba(218, 119, 86, 0.16);
-  color: #f0b08f;
+  background: rgba(220, 20, 60, 0.16);
+  color: #F45C7D;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6476,11 +6476,11 @@ nav {
 }
 
 .admin-bar-primary {
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
 }
 
 .admin-bar-secondary {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
 }
 
 .admin-bars-column small,
@@ -6515,11 +6515,11 @@ nav {
 }
 
 .admin-legend-swatch.is-primary {
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
 }
 
 .admin-legend-swatch.is-secondary {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
 }
 
 .admin-mini-gauges {
@@ -6690,12 +6690,12 @@ nav {
 .admin-bubble-bar {
   width: 100%;
   border-radius: 18px 18px 10px 10px;
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   display: block;
 }
 
 .admin-bubble-bars.is-cyan .admin-bubble-bar {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
 }
 
 .admin-bubble-bars.is-pink .admin-bubble-bar {
@@ -6740,11 +6740,11 @@ nav {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(90deg, #DC143C 0%, #DC143C 100%);
 }
 
 .admin-rank-meter.is-cyan span {
-  background: linear-gradient(90deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(90deg, #F45C7D 0%, #DC143C 100%);
 }
 
 .admin-person-row,
@@ -6767,7 +6767,7 @@ nav {
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%);
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -6825,12 +6825,12 @@ nav {
 
 .admin-activity-badge.is-provider {
   background: rgba(239, 154, 121, 0.16);
-  color: #f0b08f;
+  color: #F45C7D;
 }
 
 .admin-activity-badge.is-post {
-  background: rgba(218, 119, 86, 0.16);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.16);
+  color: #DC143C;
 }
 
 .admin-activity-badge.is-message {
@@ -7027,8 +7027,8 @@ nav {
 .admin-form-field select:focus,
 .admin-form-field textarea:focus {
   outline: none;
-  border-color: rgba(218, 119, 86, 0.66);
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.18);
+  border-color: rgba(220, 20, 60, 0.66);
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.18);
 }
 
 .admin-form-grid {
@@ -7046,8 +7046,8 @@ nav {
 
 .admin-form-field input:focus {
   outline: none;
-  border-color: rgba(218, 119, 86, 0.66);
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.18);
+  border-color: rgba(220, 20, 60, 0.66);
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.18);
 }
 
 .admin-form-message {
@@ -7169,7 +7169,7 @@ nav {
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(218, 119, 86, 0.08);
+  background: rgba(220, 20, 60, 0.08);
 }
 
 .admin-table-user,
@@ -7212,8 +7212,8 @@ nav {
 }
 
 .admin-badge.is-unread {
-  background: rgba(218, 119, 86, 0.16);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.16);
+  color: #DC143C;
 }
 
 .admin-badge.is-danger {
@@ -7240,8 +7240,8 @@ nav {
   padding: 0 12px;
   border: 0;
   border-radius: 12px;
-  background: rgba(218, 119, 86, 0.16);
-  color: #f0b08f;
+  background: rgba(220, 20, 60, 0.16);
+  color: #F45C7D;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -7900,7 +7900,7 @@ nav {
 .previous-review {
   margin-top: 0.5rem;
   padding: 0.6rem;
-  border-left: 3px solid #da7756;
+  border-left: 3px solid #DC143C;
   background: rgba(0,0,0,0.03);
 }
   .admin-refresh-btn,
@@ -7953,8 +7953,8 @@ nav {
 }
 
 .admin-gate-badge {
-  background: rgba(218, 119, 86, 0.10);
-  color: #b85f43;
+  background: rgba(220, 20, 60, 0.10);
+  color: #A30F2D;
 }
 
 .admin-gate-card p,
@@ -8048,9 +8048,9 @@ nav {
 .admin-nav-link.is-active,
 .admin-nav-link:hover,
 .admin-nav-link:focus-visible {
-  background: linear-gradient(135deg, rgba(218, 119, 86, 0.12), rgba(168, 85, 247, 0.10));
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.12), rgba(168, 85, 247, 0.10));
   color: #111827;
-  box-shadow: inset 0 0 0 1px rgba(218, 119, 86, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(220, 20, 60, 0.18);
 }
 
 .admin-topbar {
@@ -8093,13 +8093,13 @@ nav {
 
 .admin-hero-orbit {
   background:
-    radial-gradient(circle at top, rgba(218, 119, 86, 0.12) 0%, rgba(218, 119, 86, 0) 52%),
+    radial-gradient(circle at top, rgba(220, 20, 60, 0.12) 0%, rgba(220, 20, 60, 0) 52%),
     linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(226, 232, 240, 0.42) 100%);
 }
 
 .admin-kpi-icon {
-  background: rgba(218, 119, 86, 0.10);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.10);
+  color: #DC143C;
 }
 
 .admin-list-empty,
@@ -8126,7 +8126,7 @@ nav {
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(218, 119, 86, 0.06);
+  background: rgba(220, 20, 60, 0.06);
 }
 
 .admin-form-message[data-state="success"] {
@@ -8227,11 +8227,11 @@ nav {
   .admin-nav-link i {
     width: 20px;
     text-align: center;
-    color: #da7756;
+    color: #DC143C;
   }
 
   .admin-nav-link.is-active {
-    background: linear-gradient(135deg, rgba(218, 119, 86, 0.14), rgba(124, 58, 237, 0.12));
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.14), rgba(124, 58, 237, 0.12));
     color: #111827;
   }
 
@@ -8368,9 +8368,9 @@ nav {
   }
 
   .admin-bottom-nav-link.is-active {
-    background: linear-gradient(135deg, #da7756 0%, #b85f43 100%);
+    background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%);
     color: #fff;
-    box-shadow: 0 12px 22px rgba(218, 119, 86, 0.26);
+    box-shadow: 0 12px 22px rgba(220, 20, 60, 0.26);
   }
 
   .admin-content {
@@ -8681,7 +8681,7 @@ nav {
 
 .search-bar:focus-within {
   border-color: var(--brand-gold);
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.2);
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.2);
 }
 
 .search-match,
@@ -8763,7 +8763,7 @@ nav {
 }
 
 .account-dropdown-item:hover {
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: var(--brand-ink) !important;
 }
 
@@ -8783,13 +8783,13 @@ nav {
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, var(--brand-gold) 0%, #da7756 100%);
+  background: linear-gradient(180deg, var(--brand-gold) 0%, #DC143C 100%);
   color: var(--brand-ink);
 }
 
 .account-form-row input:focus {
   border-color: var(--brand-gold);
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.18);
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.18);
 }
 
 .work-auth-hero {
@@ -8797,7 +8797,7 @@ nav {
   padding: 18px;
   border-radius: 22px;
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.68) 0%, rgba(218, 119, 86, 0) 46%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.68) 0%, rgba(220, 20, 60, 0) 46%),
     linear-gradient(135deg, rgba(26, 50, 99, 0.98) 0%, rgba(84, 119, 146, 0.98) 100%);
   color: #fff;
   display: flex;
@@ -8849,7 +8849,7 @@ nav {
   padding: 64px 24px 72px;
   border-radius: 0 0 34px 34px;
   background:
-    radial-gradient(circle at top left, rgba(218, 119, 86, 0.4) 0%, rgba(218, 119, 86, 0) 34%),
+    radial-gradient(circle at top left, rgba(220, 20, 60, 0.4) 0%, rgba(220, 20, 60, 0) 34%),
     radial-gradient(circle at bottom right, rgba(232, 226, 219, 0.18) 0%, rgba(232, 226, 219, 0) 32%),
     linear-gradient(135deg, rgba(26, 50, 99, 0.98) 0%, rgba(84, 119, 146, 0.96) 48%, rgba(26, 50, 99, 0.98) 100%);
 }
@@ -8861,7 +8861,7 @@ nav {
   left: -60px;
   width: 360px;
   height: 360px;
-  background: radial-gradient(circle, rgba(218, 119, 86, 0.16) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(220, 20, 60, 0.16) 0%, transparent 72%);
 }
 
 .work-hero::after {
@@ -8896,7 +8896,7 @@ nav {
   min-height: 34px;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: var(--brand-gold);
   font-size: 12px;
   font-weight: 800;
@@ -8968,7 +8968,7 @@ nav {
 }
 
 .hero-tags a:hover {
-  background: rgba(218, 119, 86, 0.2);
+  background: rgba(220, 20, 60, 0.2);
   transform: translateY(-2px);
 }
 
@@ -9020,7 +9020,7 @@ nav {
   min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.2);
+  background: rgba(220, 20, 60, 0.2);
   color: var(--brand-gold);
   font-size: 12px;
   font-weight: 800;
@@ -9137,20 +9137,20 @@ nav {
   position: absolute;
   inset: auto 0 0 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--brand-gold) 0%, rgba(218, 119, 86, 0) 100%);
+  background: linear-gradient(90deg, var(--brand-gold) 0%, rgba(220, 20, 60, 0) 100%);
 }
 
 .service-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 24px 46px rgba(26, 50, 99, 0.12);
-  border-color: rgba(218, 119, 86, 0.4);
+  border-color: rgba(220, 20, 60, 0.4);
 }
 
 .service-icon {
   width: 60px;
   height: 60px;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(218, 119, 86, 0.2) 0%, rgba(84, 119, 146, 0.18) 100%);
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.2) 0%, rgba(84, 119, 146, 0.18) 100%);
   color: var(--brand-ink);
   display: inline-flex;
   align-items: center;
@@ -9335,7 +9335,7 @@ nav {
   padding: 34px 32px;
   border-radius: 32px;
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.28) 0%, rgba(218, 119, 86, 0) 34%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.28) 0%, rgba(220, 20, 60, 0) 34%),
     linear-gradient(135deg, rgba(232, 226, 219, 0.94) 0%, rgba(255, 255, 255, 0.98) 100%);
   display: flex;
   align-items: center;
@@ -9474,7 +9474,7 @@ footer {
   padding: 28px;
   border-radius: 28px;
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.34) 0%, rgba(218, 119, 86, 0) 34%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.34) 0%, rgba(220, 20, 60, 0) 34%),
     linear-gradient(135deg, rgba(26, 50, 99, 0.96) 0%, rgba(84, 119, 146, 0.96) 100%);
 }
 
@@ -9519,7 +9519,7 @@ footer {
 
 .account-side-link:hover,
 .account-side-logout:hover {
-  border-color: rgba(218, 119, 86, 0.44);
+  border-color: rgba(220, 20, 60, 0.44);
 }
 
 @media (max-width: 1100px) {
@@ -9778,14 +9778,14 @@ body.home-page-body {
   width: min(100%, 620px);
   max-width: 620px;
   margin: 34px auto 0;
-  border: 1px solid rgba(218, 119, 86, 0.2);
+  border: 1px solid rgba(220, 20, 60, 0.2);
   background: rgba(5, 5, 5, 0.92);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
 }
 
 .home-copy-search:focus-within {
-  border-color: rgba(218, 119, 86, 0.56);
-  box-shadow: 0 18px 42px rgba(218, 119, 86, 0.16);
+  border-color: rgba(220, 20, 60, 0.56);
+  box-shadow: 0 18px 42px rgba(220, 20, 60, 0.16);
 }
 
 .home-copy-search .search-icon {
@@ -10170,7 +10170,7 @@ body.home-page-body {
   margin: 0 calc(50% - 50vw) 0;
   padding: 8px 0 44px;
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.1), transparent 28%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.1), transparent 28%),
     linear-gradient(180deg, #05070b 0%, #0a1019 100%);
 }
 
@@ -10557,7 +10557,7 @@ body.home-page-body {
   justify-content: center;
   gap: 9px;
   margin: 0 auto 14px;
-  color: #da7756;
+  color: #DC143C;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -10594,7 +10594,7 @@ body.home-page-body {
 .job-auth-card--bid .job-auth-bid-switch button {
   border: 0;
   background: transparent;
-  color: #da7756;
+  color: #DC143C;
   font: inherit;
   font-weight: 800;
 }
@@ -10656,8 +10656,8 @@ body.home-page-body {
 }
 
 .job-auth-card--bid .job-auth-input-shell:focus-within {
-  border-color: rgba(218, 119, 86, 0.62);
-  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.12);
+  border-color: rgba(220, 20, 60, 0.62);
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.12);
 }
 
 .job-auth-card--bid .job-auth-input-shell i {
@@ -10707,7 +10707,7 @@ body.home-page-body {
 }
 
 .job-auth-card--bid .job-auth-note i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .job-posts-page .job-auth-card--bid .job-auth-submit {
@@ -10720,9 +10720,9 @@ body.home-page-body {
   margin-top: 0;
   border: 0;
   border-radius: 8px;
-  background: linear-gradient(135deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(135deg, #DC143C 0%, #DC143C 100%);
   color: #ffffff;
-  box-shadow: 0 12px 26px rgba(218, 119, 86, 0.24);
+  box-shadow: 0 12px 26px rgba(220, 20, 60, 0.24);
   font-size: 15px;
   font-weight: 900;
 }
@@ -10802,7 +10802,7 @@ body.home-page-body {
   gap: 12px;
   padding: 0 0 18px;
   margin-bottom: 18px;
-  border-bottom: 1px solid rgba(218, 119, 86, 0.32);
+  border-bottom: 1px solid rgba(220, 20, 60, 0.32);
 }
 
 .job-post-page .job-post-form-hero-icon {
@@ -10813,8 +10813,8 @@ body.home-page-body {
   align-items: center;
   justify-content: center;
   background: #111111;
-  color: #da7756;
-  border: 1px solid rgba(218, 119, 86, 0.55);
+  color: #DC143C;
+  border: 1px solid rgba(220, 20, 60, 0.55);
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.10);
 }
 
@@ -10840,7 +10840,7 @@ body.home-page-body {
   height: 52px;
   justify-self: end;
   opacity: 0.75;
-  background-image: radial-gradient(circle, #da7756 1.4px, transparent 1.6px);
+  background-image: radial-gradient(circle, #DC143C 1.4px, transparent 1.6px);
   background-size: 9px 9px;
 }
 
@@ -10870,7 +10870,7 @@ body.home-page-body {
 .job-post-page .job-post-section-head::after {
   content: "";
   height: 1px;
-  background: rgba(218, 119, 86, 0.32);
+  background: rgba(220, 20, 60, 0.32);
 }
 
 .job-post-page .job-post-section-icon {
@@ -10879,7 +10879,7 @@ body.home-page-body {
   flex: 0 0 28px;
   border-radius: 999px;
   background: transparent;
-  color: #da7756;
+  color: #DC143C;
   font-size: 18px;
 }
 
@@ -10914,7 +10914,7 @@ body.home-page-body {
 .job-post-page .job-form-field > span::after,
 .job-post-page .job-auth-field > span::after {
   content: " *";
-  color: #da7756;
+  color: #DC143C;
 }
 
 .job-post-page .job-form-field:has([data-job-combobox="subcategory"]) > span::after {
@@ -10949,7 +10949,7 @@ body.home-page-body {
 .job-post-page .job-form-field-icon,
 .job-post-page .job-combobox-leading,
 .job-post-page .job-combobox-toggle {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .job-post-page .job-form-input-shell input,
@@ -11038,7 +11038,7 @@ body.home-page-body {
 .job-post-page .job-post-form .btn-primary {
   background: #050505;
   border-color: #050505;
-  color: #da7756;
+  color: #DC143C;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
 }
 
@@ -11046,7 +11046,7 @@ body.home-page-body {
 .job-post-page .job-post-form .btn-primary:focus-visible {
   background: #111111;
   border-color: #111111;
-  color: #da7756;
+  color: #DC143C;
 }
 
 @media (min-width: 769px) {
@@ -11175,7 +11175,7 @@ body.home-page-body {
 .categories-page-body {
   background:
     radial-gradient(circle at -4% -8%, rgba(84, 119, 146, 0.2) 0 140px, transparent 142px),
-    radial-gradient(circle at 98% 16%, rgba(218, 119, 86, 0.14) 0 150px, transparent 152px),
+    radial-gradient(circle at 98% 16%, rgba(220, 20, 60, 0.14) 0 150px, transparent 152px),
     linear-gradient(180deg, #fbfcff 0%, #ffffff 28%, #f9fbff 100%);
 }
 
@@ -11295,7 +11295,7 @@ body.home-page-body {
 .categories-directory-circle:hover,
 .categories-directory-circle:focus-visible {
   background: #fff;
-  border-color: rgba(218, 119, 86, 0.38);
+  border-color: rgba(220, 20, 60, 0.38);
   box-shadow: 0 16px 30px rgba(26, 50, 99, 0.12);
 }
 
@@ -11326,7 +11326,7 @@ body.home-page-body {
 
 .categories-directory-circle:nth-child(3n + 2) .categories-directory-icon {
   color: var(--brand-gold);
-  border-color: rgba(218, 119, 86, 0.25);
+  border-color: rgba(220, 20, 60, 0.25);
 }
 
 .categories-directory-circle:nth-child(3n + 3) .categories-directory-icon {
@@ -11498,7 +11498,7 @@ body.home-page-body {
   padding: 26px 30px 18px;
   border-bottom: 1px solid rgba(26, 50, 99, 0.08);
   background:
-    radial-gradient(circle at 92% 10%, rgba(218, 119, 86, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 10%, rgba(220, 20, 60, 0.16), transparent 28%),
     linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
@@ -11555,8 +11555,8 @@ body.home-page-body {
 
 .category-services-item:hover,
 .category-services-item:focus-visible {
-  border-color: rgba(218, 119, 86, 0.4);
-  background: rgba(218, 119, 86, 0.08);
+  border-color: rgba(220, 20, 60, 0.4);
+  background: rgba(220, 20, 60, 0.08);
   outline: none;
 }
 
@@ -11743,17 +11743,17 @@ body.home-page-body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 14px 26px rgba(218, 119, 86, 0.18);
+  box-shadow: 0 14px 26px rgba(220, 20, 60, 0.18);
 }
 
 .homepage-categories-view-more:hover,
 .homepage-categories-view-more:focus-visible {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
 }
 
 .pending-setup-open {
@@ -12075,7 +12075,7 @@ body.home-page-body {
 .provider-profile-action,
 .provider-onboarding-next,
 .provider-onboarding-submit {
-  background: #da7756;
+  background: #DC143C;
   border-color: transparent;
   color: #fff;
 }
@@ -12327,8 +12327,8 @@ body.home-page-body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -12346,7 +12346,7 @@ body.home-page-body {
 }
 
 .service-filter-toggle.is-active .service-filter-toggle-icon {
-  background: #da7756;
+  background: #DC143C;
   color: #fff;
 }
 
@@ -12371,8 +12371,8 @@ body.home-page-body {
 
 .service-filter-links button.is-active,
 .service-filter-links button:hover {
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
 }
 
 .specialists-layout.is-sidebar-collapsed .specialists-sidebar-head {
@@ -12561,7 +12561,7 @@ body.home-page-body {
 .specialist-card-fact i {
   width: 16px;
   margin-top: 2px;
-  color: #da7756;
+  color: #DC143C;
   text-align: center;
 }
 
@@ -12590,8 +12590,8 @@ body.home-page-body {
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
   font-size: 12px;
   font-weight: 800;
 }
@@ -12663,7 +12663,7 @@ body.home-page-body {
 .provider-profile-hero {
   position: relative;
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.14), transparent 34%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(247, 249, 252, 1) 100%);
 }
 
@@ -12830,7 +12830,7 @@ body.home-page-body {
   height: 170px;
   padding: 6px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(218, 119, 86, 0.16) 0%, rgba(218, 119, 86, 0.28) 100%);
+  background: linear-gradient(180deg, rgba(220, 20, 60, 0.16) 0%, rgba(220, 20, 60, 0.28) 100%);
   box-shadow: 0 24px 38px rgba(26, 50, 99, 0.18);
 }
 
@@ -12961,7 +12961,7 @@ body.home-page-body {
 
 .provider-profile-meta-item i {
   width: 18px;
-  color: #da7756;
+  color: #DC143C;
   text-align: center;
 }
 
@@ -13107,8 +13107,8 @@ body.home-page-body {
   margin-bottom: 8px;
   font-size: 12px;
   font-weight: 800;
-  color: #da7756;
-  background: rgba(218, 119, 86, 0.10);
+  color: #DC143C;
+  background: rgba(220, 20, 60, 0.10);
 }
 
 .provider-current-job-card .provider-job-status-pill {
@@ -13162,7 +13162,7 @@ body.home-page-body {
 
 .provider-job-status-pill.is-pending {
   color: #92400e;
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
 }
 
 .provider-job-meta {
@@ -13232,7 +13232,7 @@ body.home-page-body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #da7756;
+  color: #DC143C;
 }
 
 .provider-rating-stars .fa-regular.fa-star {
@@ -13333,19 +13333,19 @@ body.home-page-body {
 .provider-job-action-btn {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid rgba(218, 119, 86, 0.16);
+  border: 1px solid rgba(220, 20, 60, 0.16);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #da7756;
+  background: #DC143C;
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-  box-shadow: 0 10px 22px rgba(218, 119, 86, 0.14);
+  box-shadow: 0 10px 22px rgba(220, 20, 60, 0.14);
 }
 
 .provider-current-job-card .provider-job-action-btn {
@@ -13487,7 +13487,7 @@ body.home-page-body {
 }
 
 .provider-post-menu button:hover {
-  background: rgba(218, 119, 86, 0.08);
+  background: rgba(220, 20, 60, 0.08);
 }
 
 .provider-gallery-card img {
@@ -13810,7 +13810,7 @@ body.home-page-body {
 .provider-rating-value {
   font-size: 16px;
   font-weight: 900;
-  color: #da7756;
+  color: #DC143C;
 }
 
 .provider-rating-provider {
@@ -13874,7 +13874,7 @@ body.home-page-body {
 }
 
 .provider-job-worked-rating .rating-stars {
-  color: #da7756;
+  color: #DC143C;
   font-weight: 700;
 }
 
@@ -13915,7 +13915,7 @@ body.home-page-body {
   padding: 18px;
   border: 1px solid rgba(26, 50, 99, 0.1);
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(26, 50, 99, 0.08), rgba(218, 119, 86, 0.1));
+  background: linear-gradient(135deg, rgba(26, 50, 99, 0.08), rgba(220, 20, 60, 0.1));
 }
 
 .provider-skills-icon {
@@ -13994,7 +13994,7 @@ body.home-page-body {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(218, 119, 86, 0.12);
+  background: rgba(220, 20, 60, 0.12);
   color: #c45f3f;
   display: grid;
   place-items: center;
@@ -14038,10 +14038,10 @@ body.home-page-body {
   height: 34px;
   border-radius: 11px;
   background: #fff;
-  color: #da7756;
+  color: #DC143C;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 1px rgba(218, 119, 86, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(220, 20, 60, 0.14);
 }
 
 .provider-skill-badge strong,
@@ -14150,7 +14150,7 @@ body.home-page-body {
   justify-content: center;
   border-radius: 20px;
   border: 1px dashed rgba(26, 50, 99, 0.18);
-  background: rgba(218, 119, 86, 0.04);
+  background: rgba(220, 20, 60, 0.04);
   color: #64748b;
   overflow: hidden;
 }
@@ -15269,8 +15269,8 @@ body.home-page-body {
 .provider-onboarding-help {
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
 }
 
 .provider-onboarding-close {
@@ -15309,7 +15309,7 @@ body.home-page-body {
   width: 25%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
   transition: width 220ms ease;
 }
 
@@ -15339,7 +15339,7 @@ body.home-page-body {
 }
 
 .provider-onboarding-progress-dots span.is-active {
-  background: #da7756;
+  background: #DC143C;
 }
 
 .provider-onboarding-form {
@@ -15367,8 +15367,8 @@ body.home-page-body {
   min-height: 30px;
   padding: 0 10px;
   border-radius: 10px;
-  background: rgba(218, 119, 86, 0.08);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.08);
+  color: #DC143C;
   align-items: center;
   font-size: 12px;
   font-weight: 800;
@@ -15440,7 +15440,7 @@ body.home-page-body {
 .provider-onboarding-upload-preview {
   display: block;
   overflow: hidden;
-  background: rgba(218, 119, 86, 0.04);
+  background: rgba(220, 20, 60, 0.04);
   border-radius: 14px;
   border: 1px dashed rgba(26, 50, 99, 0.14);
 }
@@ -15530,7 +15530,7 @@ body.home-page-body {
   min-height: 48px;
   border: 0;
   border-radius: 14px;
-  background: rgba(218, 119, 86, 0.06);
+  background: rgba(220, 20, 60, 0.06);
   color: var(--brand-ink);
   text-align: left;
   padding: 0 16px;
@@ -15539,8 +15539,8 @@ body.home-page-body {
 }
 
 .specialists-rating-option.is-active {
-  background: rgba(218, 119, 86, 0.14);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.14);
+  color: #DC143C;
 }
 
 .providers-mobile-sheet-handle {
@@ -16334,18 +16334,18 @@ nav {
 }
 
 .search-bar {
-  border-color: rgba(218, 119, 86, 0.14);
+  border-color: rgba(220, 20, 60, 0.14);
   background: rgba(255, 255, 255, 0.86);
 }
 
 .search-bar:focus-within {
-  border-color: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.18);
 }
 
 .search-match {
-  color: #da7756;
-  background: rgba(218, 119, 86, 0.12);
+  color: #DC143C;
+  background: rgba(220, 20, 60, 0.12);
 }
 
 .header-actions {
@@ -16360,7 +16360,7 @@ nav {
 
 .header-actions a:hover,
 .mobile-search-trigger:hover {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .header-how-link {
@@ -16372,13 +16372,13 @@ nav {
 }
 
 .a-plus-btn {
-  background: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.22);
+  background: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.22);
 }
 
 .a-plus-btn:hover,
 .a-plus-btn:focus-visible {
-  background: #b85f43 !important;
+  background: #A30F2D !important;
 }
 
 .account-auth-panel {
@@ -16417,11 +16417,11 @@ nav {
 }
 
 .account-submit-btn.account-submit-signin {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
   color: #fff;
 }
 
@@ -16525,18 +16525,18 @@ nav {
 }
 
 .search-bar {
-  border-color: rgba(218, 119, 86, 0.14);
+  border-color: rgba(220, 20, 60, 0.14);
   background: rgba(255, 255, 255, 0.86);
 }
 
 .search-bar:focus-within {
-  border-color: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.18);
 }
 
 .search-match {
-  color: #da7756;
-  background: rgba(218, 119, 86, 0.12);
+  color: #DC143C;
+  background: rgba(220, 20, 60, 0.12);
 }
 
 .header-actions {
@@ -16551,7 +16551,7 @@ nav {
 
 .header-actions a:hover,
 .mobile-search-trigger:hover {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .header-how-link {
@@ -16563,13 +16563,13 @@ nav {
 }
 
 .a-plus-btn {
-  background: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.22);
+  background: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.22);
 }
 
 .a-plus-btn:hover,
 .a-plus-btn:focus-visible {
-  background: #b85f43 !important;
+  background: #A30F2D !important;
 }
 
 .account-auth-panel {
@@ -16608,11 +16608,11 @@ nav {
 }
 
 .account-submit-btn.account-submit-signin {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
   color: #fff;
 }
 
@@ -16717,18 +16717,18 @@ nav {
 }
 
 .search-bar {
-  border-color: rgba(218, 119, 86, 0.14);
+  border-color: rgba(220, 20, 60, 0.14);
   background: rgba(255, 255, 255, 0.86);
 }
 
 .search-bar:focus-within {
-  border-color: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.18);
 }
 
 .search-match {
-  color: #da7756;
-  background: rgba(218, 119, 86, 0.12);
+  color: #DC143C;
+  background: rgba(220, 20, 60, 0.12);
 }
 
 .header-actions {
@@ -16743,7 +16743,7 @@ nav {
 
 .header-actions a:hover,
 .mobile-search-trigger:hover {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .header-how-link {
@@ -16755,13 +16755,13 @@ nav {
 }
 
 .a-plus-btn {
-  background: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.22);
+  background: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.22);
 }
 
 .a-plus-btn:hover,
 .a-plus-btn:focus-visible {
-  background: #b85f43 !important;
+  background: #A30F2D !important;
 }
 
 .account-auth-panel {
@@ -16800,11 +16800,11 @@ nav {
 }
 
 .account-submit-btn.account-submit-signin {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
   color: #fff;
 }
 
@@ -16910,13 +16910,13 @@ nav {
 }
 
 .search-bar {
-  border-color: rgba(218, 119, 86, 0.14);
+  border-color: rgba(220, 20, 60, 0.14);
   background: rgba(255, 255, 255, 0.86);
 }
 
 .search-bar:focus-within {
-  border-color: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.18);
 }
 
 .search-bar input::placeholder {
@@ -16935,7 +16935,7 @@ nav {
 
 .header-actions a:hover,
 .mobile-search-trigger:hover {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .header-how-link {
@@ -16957,13 +16957,13 @@ nav {
 }
 
 .a-plus-btn {
-  background: #da7756;
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.22);
+  background: #DC143C;
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.22);
 }
 
 .a-plus-btn:hover,
 .a-plus-btn:focus-visible {
-  background: #b85f43 !important;
+  background: #A30F2D !important;
 }
 
 .search-suggestions {
@@ -16988,7 +16988,7 @@ nav {
 }
 
 .search-suggestion:hover {
-  background: rgba(218, 119, 86, 0.06);
+  background: rgba(220, 20, 60, 0.06);
 }
 
 .search-result-icon {
@@ -16998,8 +16998,8 @@ nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(218, 119, 86, 0.1);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.1);
+  color: #DC143C;
   flex-shrink: 0;
 }
 
@@ -17022,9 +17022,9 @@ nav {
 }
 
 .search-match {
-  color: #da7756;
+  color: #DC143C;
   font-weight: 800;
-  background: rgba(218, 119, 86, 0.12);
+  background: rgba(220, 20, 60, 0.12);
   border-radius: 5px;
   padding: 0 2px;
 }
@@ -17111,7 +17111,7 @@ nav {
 }
 
 .mobile-search-result:hover {
-  border-color: rgba(218, 119, 86, 0.24);
+  border-color: rgba(220, 20, 60, 0.24);
   background: #f8fbff;
 }
 
@@ -17193,12 +17193,12 @@ nav {
 }
 
 .account-submit-btn.account-submit-signin {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%);
   color: #fff;
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%);
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%);
   color: #fff;
 }
 
@@ -17233,7 +17233,7 @@ nav {
 .jimu-primary-loading:before,
 .jimu-primary-loading:after,
 .jimu-primary-loading {
-  background: #da7756;
+  background: #DC143C;
   animation: loading-keys-app-loading 0.8s infinite ease-in-out;
   width: 13.6px;
   height: 32px;
@@ -17253,13 +17253,13 @@ nav {
   80%,
   100% {
     opacity: 0.75;
-    box-shadow: 0 0 #da7756;
+    box-shadow: 0 0 #DC143C;
     height: 32px;
   }
 
   40% {
     opacity: 1;
-    box-shadow: 0 -8px #da7756;
+    box-shadow: 0 -8px #DC143C;
     height: 40px;
   }
 }
@@ -17372,7 +17372,7 @@ header .logo {
 }
 
 .homepage-categories .category-circle:hover {
-  background: rgba(218, 119, 86, 0.08);
+  background: rgba(220, 20, 60, 0.08);
 }
 
 .homepage-categories .category-circle span {
@@ -17569,7 +17569,7 @@ header .logo {
 }
 
 .homepage-categories .category-circle:hover {
-  background: rgba(218, 119, 86, 0.08);
+  background: rgba(220, 20, 60, 0.08);
 }
 
 .homepage-categories .category-circle span {
@@ -18622,7 +18622,7 @@ header {
 }
 .search-result-icon.is-provider {
   background: #e8f0fe;
-  color: #da7756;
+  color: #DC143C;
 }
 .search-result-icon.is-service {
   background: #eef7ef;
@@ -18658,7 +18658,7 @@ header {
   flex-shrink: 0;
 }
 .search-match {
-  color: #da7756;
+  color: #DC143C;
   font-weight: 800;
   background: transparent;
 }
@@ -19323,7 +19323,7 @@ header {
 
 .homepage-categories-view-more.secondary {
   background: #eef4ff;
-  color: #b85f43;
+  color: #A30F2D;
 }
 
 .home-job-cta {
@@ -19333,7 +19333,7 @@ header {
   border-radius: 36px;
   background:
     radial-gradient(circle at top left, rgba(61, 169, 252, 0.14), transparent 34%),
-    linear-gradient(135deg, #0f1f45 0%, #b85f43 52%, #0d2349 100%);
+    linear-gradient(135deg, #0f1f45 0%, #A30F2D 52%, #0d2349 100%);
   color: #fff;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -19412,7 +19412,7 @@ header {
 .home-job-cta .btn-secondary.home-job-cta-btn:focus-visible {
   background: #fff;
   border-color: #fff;
-  color: #b85f43;
+  color: #A30F2D;
   transform: translateY(-2px);
 }
 
@@ -19440,7 +19440,7 @@ header {
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(23, 50, 108, 0.08);
-  color: #b85f43;
+  color: #A30F2D;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -19724,7 +19724,7 @@ header {
 
 .job-combobox:focus-within .job-combobox-shell,
 .job-combobox.is-open .job-combobox-shell {
-  border-color: #b85f43;
+  border-color: #A30F2D;
   box-shadow: 0 0 0 4px rgba(23, 50, 108, 0.1);
 }
 
@@ -19733,7 +19733,7 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #b85f43;
+  color: #A30F2D;
 }
 
 .job-combobox-leading {
@@ -19799,7 +19799,7 @@ header {
   height: 42px;
   border-radius: 14px;
   background: rgba(23, 50, 108, 0.08);
-  color: #b85f43;
+  color: #A30F2D;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -19977,7 +19977,7 @@ header {
   border-radius: 999px;
   border: 1px solid rgba(23, 50, 108, 0.12);
   background: #f5f7fb;
-  color: #b85f43;
+  color: #A30F2D;
   font-weight: 700;
 }
 
@@ -19985,9 +19985,9 @@ header {
 .job-auth-id-switch button.is-active,
 .job-board-filters button.is-active,
 .job-board-view-toggle button.is-active {
-  background: #b85f43;
+  background: #A30F2D;
   color: #fff;
-  border-color: #b85f43;
+  border-color: #A30F2D;
 }
 
 .job-board-view-toggle button {
@@ -20155,13 +20155,13 @@ header {
 }
 
 .job-card-tag {
-  background: #b85f43;
+  background: #A30F2D;
   color: #fff;
 }
 
 .job-card-subtag {
   background: #eef4ff;
-  color: #b85f43;
+  color: #A30F2D;
 }
 
 .job-card-newtag {
@@ -20208,7 +20208,7 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #b85f43 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #A30F2D 0%, #4f46e5 100%);
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
@@ -20326,7 +20326,7 @@ header {
 .job-card-bids-trigger {
   min-height: 70px;
   padding: 11px 14px;
-  border: 1px solid rgba(218, 119, 86, 0.12);
+  border: 1px solid rgba(220, 20, 60, 0.12);
   border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.96) 100%);
@@ -20343,7 +20343,7 @@ header {
 .job-card-bids-trigger:hover,
 .job-card-bids-trigger:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(218, 119, 86, 0.24);
+  border-color: rgba(220, 20, 60, 0.24);
   box-shadow: 0 22px 42px rgba(15, 23, 42, 0.12);
 }
 
@@ -20360,8 +20360,8 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(218, 119, 86, 0.14), rgba(239, 154, 121, 0.14));
-  color: #b85f43;
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.14), rgba(239, 154, 121, 0.14));
+  color: #A30F2D;
   flex: 0 0 auto;
   font-size: 16px;
 }
@@ -20382,7 +20382,7 @@ header {
 }
 
 .job-card-bids-trigger-eyebrow {
-  color: #da7756;
+  color: #DC143C;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -20600,13 +20600,13 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(218, 119, 86, 0.1);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.1);
+  color: #DC143C;
   font-size: 28px;
 }
 
 .provider-required-card > span {
-  color: #da7756;
+  color: #DC143C;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
@@ -20648,7 +20648,7 @@ header {
 
 .provider-required-action:hover,
 .provider-required-action:focus-visible {
-  background: #da7756;
+  background: #DC143C;
 }
 
 .provider-required-modal {
@@ -20866,9 +20866,9 @@ header {
 
 .job-dashboard-tabs button.is-active {
   background: #fff;
-  color: #da7756;
-  border-color: rgba(218, 119, 86, 0.12);
-  box-shadow: 0 4px 12px rgba(218, 119, 86, 0.08);
+  color: #DC143C;
+  border-color: rgba(220, 20, 60, 0.12);
+  box-shadow: 0 4px 12px rgba(220, 20, 60, 0.08);
 }
 
 .job-giver-main {
@@ -21000,7 +21000,7 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #b85f43 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #A30F2D 0%, #4f46e5 100%);
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
@@ -21017,8 +21017,8 @@ header {
   max-width: 260px;
   padding: 8px 12px;
   border-radius: 14px;
-  background: rgba(218, 119, 86, 0.08);
-  color: #b85f43;
+  background: rgba(220, 20, 60, 0.08);
+  color: #A30F2D;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.5;
@@ -21170,7 +21170,7 @@ header {
   height: 64px;
   border-radius: 18px;
   overflow: hidden;
-  background: #b85f43;
+  background: #A30F2D;
   color: #fff;
   display: flex;
   align-items: center;
@@ -21202,7 +21202,7 @@ header {
 
 .job-bidder-status.is-pending {
   background: #eef4ff;
-  color: #b85f43;
+  color: #A30F2D;
 }
 
 .job-bidder-status.is-accepted {
@@ -21230,7 +21230,7 @@ header {
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.18), transparent 28%),
     linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 34px 80px rgba(15, 23, 42, 0.24);
 }
@@ -21243,7 +21243,7 @@ header {
   gap: 18px;
   padding: 28px 28px 22px;
   background:
-    linear-gradient(135deg, #0f172a 0%, #b85f43 55%, #da7756 100%);
+    linear-gradient(135deg, #0f172a 0%, #A30F2D 55%, #DC143C 100%);
   color: #ffffff;
 }
 
@@ -21407,11 +21407,11 @@ header {
 
 .job-bids-modal-identity-link:hover .job-bids-modal-head strong,
 .job-bids-modal-identity-link:focus-visible .job-bids-modal-head strong {
-  color: #b85f43;
+  color: #A30F2D;
 }
 
 .job-bids-modal-identity-link:focus-visible {
-  outline: 3px solid rgba(218, 119, 86, 0.22);
+  outline: 3px solid rgba(220, 20, 60, 0.22);
   outline-offset: 4px;
   border-radius: 22px;
 }
@@ -21421,7 +21421,7 @@ header {
   height: 56px;
   border-radius: 18px;
   overflow: hidden;
-  background: linear-gradient(135deg, #b85f43 0%, #da7756 100%);
+  background: linear-gradient(135deg, #A30F2D 0%, #DC143C 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -21612,7 +21612,7 @@ header {
 }
 
 .job-media-dropzone.is-dragover {
-  border-color: #b85f43;
+  border-color: #A30F2D;
   background: #eef4ff;
 }
 
@@ -21624,7 +21624,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #b85f43;
+  color: #A30F2D;
   font-weight: 700;
 }
 
@@ -21679,14 +21679,14 @@ header {
 .job-posts-page .job-page-kicker,
 .job-posts-page .job-page-kicker-jobs-count {
   border-radius: 8px;
-  background: rgba(218, 119, 86, 0.14);
-  border: 1px solid rgba(218, 119, 86, 0.3);
+  background: rgba(220, 20, 60, 0.14);
+  border: 1px solid rgba(220, 20, 60, 0.3);
   color: #111111;
 }
 
 .job-posts-page .job-page-kicker-jobs-count strong {
   border-radius: 6px;
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
 }
 
@@ -21860,7 +21860,7 @@ header {
 .job-board-time-toggle:focus-visible,
 .job-board-filter-toggle:hover,
 .job-board-filter-toggle:focus-visible {
-  border-color: rgba(218, 119, 86, 0.36);
+  border-color: rgba(220, 20, 60, 0.36);
   background: #fbfaf7;
 }
 
@@ -21868,8 +21868,8 @@ header {
 .job-board-location-toggle[aria-expanded="true"],
 .job-board-time-toggle[aria-expanded="true"],
 .job-board-filter-toggle[aria-expanded="true"] {
-  border-color: rgba(218, 119, 86, 0.5);
-  background: rgba(218, 119, 86, 0.16);
+  border-color: rgba(220, 20, 60, 0.5);
+  background: rgba(220, 20, 60, 0.16);
   color: #111111;
 }
 
@@ -22099,8 +22099,8 @@ header {
 }
 
 .job-posts-page .job-board-search:focus-within .job-board-search-box {
-  border-color: rgba(218, 119, 86, 0.46);
-  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.14);
+  border-color: rgba(220, 20, 60, 0.46);
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.14);
 }
 
 .job-location-dropdown {
@@ -22112,7 +22112,7 @@ header {
   display: grid;
   gap: 4px;
   padding: 6px;
-  border: 1px solid rgba(218, 119, 86, 0.24);
+  border: 1px solid rgba(220, 20, 60, 0.24);
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 18px 34px rgba(17, 17, 17, 0.14);
@@ -22140,11 +22140,11 @@ header {
 
 .job-location-dropdown button:hover,
 .job-location-dropdown button:focus-visible {
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
 }
 
 .job-location-dropdown i {
-  color: #da7756;
+  color: #DC143C;
   font-size: 11px;
 }
 
@@ -22202,8 +22202,8 @@ header {
 }
 
 .job-posts-page .job-board-filters button.is-active {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -22212,7 +22212,7 @@ header {
 .job-posts-page .job-board-view-toggle button:hover,
 .job-posts-page .job-board-view-toggle button:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(218, 119, 86, 0.36);
+  border-color: rgba(220, 20, 60, 0.36);
 }
 
 .job-posts-page .job-card [data-job-bid].job-accepted-action,
@@ -22295,7 +22295,7 @@ header {
 }
 
 .job-posts-page .job-card:focus-visible {
-  outline: 3px solid rgba(218, 119, 86, 0.45);
+  outline: 3px solid rgba(220, 20, 60, 0.45);
   outline-offset: 2px;
 }
 
@@ -22309,7 +22309,7 @@ header {
 }
 
 .job-posts-page .job-card-subtag {
-  background: rgba(218, 119, 86, 0.16);
+  background: rgba(220, 20, 60, 0.16);
   color: #111111;
 }
 
@@ -22367,7 +22367,7 @@ header {
 .job-posts-page .job-card-meta-item.is-location i,
 .job-posts-page .job-card-meta-item.is-date i,
 .job-posts-page .job-card-meta-item.is-bids i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .job-posts-page .job-card [data-job-bid],
@@ -22458,7 +22458,7 @@ header {
 
 .job-posts-page .job-modal-panel {
   border-radius: 10px;
-  border-color: rgba(218, 119, 86, 0.22);
+  border-color: rgba(220, 20, 60, 0.22);
   background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
   box-shadow: 24px 0 56px rgba(17, 17, 17, 0.18);
 }
@@ -22514,8 +22514,8 @@ header {
 
 .job-posts-page .job-auth-mode-switch button.is-active,
 .job-posts-page .job-auth-id-switch button.is-active {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -22601,8 +22601,8 @@ header {
 .provider-posts-page .provider-posts-kicker,
 .job-post-page .job-page-kicker {
   border-radius: 8px;
-  background: rgba(218, 119, 86, 0.14);
-  border: 1px solid rgba(218, 119, 86, 0.3);
+  background: rgba(220, 20, 60, 0.14);
+  border: 1px solid rgba(220, 20, 60, 0.3);
   color: #111111;
 }
 
@@ -22743,7 +22743,7 @@ header {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
   font-size: 12px;
   font-weight: 900;
@@ -22815,8 +22815,8 @@ header {
 
 .job-post-page .job-combobox:focus-within .job-combobox-shell,
 .job-post-page .job-combobox.is-open .job-combobox-shell {
-  border-color: #da7756;
-  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.18);
 }
 
 .job-post-page .job-combobox-leading,
@@ -22833,7 +22833,7 @@ header {
 
 .job-post-page .job-combobox-menu {
   border-radius: 8px;
-  border-color: rgba(218, 119, 86, 0.22);
+  border-color: rgba(220, 20, 60, 0.22);
 }
 
 .job-post-page .job-combobox-option {
@@ -22843,14 +22843,14 @@ header {
 }
 
 .job-post-page .job-combobox-option:hover {
-  background: rgba(218, 119, 86, 0.1);
+  background: rgba(220, 20, 60, 0.1);
 }
 
 .job-post-page .job-combobox-option-icon {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: #9c741f;
   font-size: 13px;
 }
@@ -22860,7 +22860,7 @@ header {
   margin-top: 14px;
   padding: 14px;
   border-radius: 8px;
-  border-color: rgba(218, 119, 86, 0.18);
+  border-color: rgba(220, 20, 60, 0.18);
   background: #fbfaf7;
   box-shadow: none;
 }
@@ -22876,8 +22876,8 @@ header {
 
 .job-post-page .job-auth-mode-switch button.is-active,
 .job-post-page .job-auth-id-switch button.is-active {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -22917,8 +22917,8 @@ header {
 .job-post-page .job-post-form .btn-primary:focus-visible,
 .provider-posts-page .provider-post-submit:hover,
 .provider-posts-page .provider-post-submit:focus-visible {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -22974,7 +22974,7 @@ header {
   align-items: center;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: #7a5b18;
   font-size: 11px;
   font-weight: 800;
@@ -23029,7 +23029,7 @@ header {
 
 .job-post-page .job-post-topbar-link:hover,
 .job-post-page .job-post-topbar-link:focus-visible {
-  border-color: rgba(218, 119, 86, 0.36);
+  border-color: rgba(220, 20, 60, 0.36);
   background: #fbfaf7;
   transform: translateY(-1px);
 }
@@ -23117,16 +23117,16 @@ header {
   grid-template-columns: 28px minmax(0, 1fr);
   gap: 10px;
   padding: 8px 12px;
-  border: 1px solid rgba(218, 119, 86, 0.2);
+  border: 1px solid rgba(220, 20, 60, 0.2);
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.12);
+  background: rgba(220, 20, 60, 0.12);
 }
 
 .job-post-page .job-post-guide-list strong {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #da7756;
+  background: #DC143C;
 }
 
 .job-post-page .job-post-guide-link {
@@ -23241,8 +23241,8 @@ header {
 
 .job-post-page .job-form-input-shell:focus-within,
 .job-post-page .job-form-textarea-shell:focus-within {
-  border-color: #da7756;
-  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.14);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.14);
 }
 
 .job-post-page .job-form-input-shell input,
@@ -23292,7 +23292,7 @@ header {
   margin-top: 0;
   padding: 18px;
   border-radius: 20px;
-  border-color: rgba(218, 119, 86, 0.22);
+  border-color: rgba(220, 20, 60, 0.22);
   background: #fcfaf4;
 }
 
@@ -23340,10 +23340,10 @@ header {
 }
 
 .job-post-page .job-post-form .btn-primary {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
-  box-shadow: 0 12px 24px rgba(218, 119, 86, 0.2);
+  box-shadow: 0 12px 24px rgba(220, 20, 60, 0.2);
 }
 
 .job-post-page .job-post-form .btn-primary:hover,
@@ -23406,7 +23406,7 @@ header {
   width: 100%;
   height: 1px;
   display: block;
-  background: linear-gradient(90deg, rgba(17, 17, 17, 0.18), rgba(218, 119, 86, 0.56), rgba(17, 17, 17, 0.04));
+  background: linear-gradient(90deg, rgba(17, 17, 17, 0.18), rgba(220, 20, 60, 0.56), rgba(17, 17, 17, 0.04));
 }
 
 .provider-posts-page .provider-post-form {
@@ -23466,7 +23466,7 @@ header {
 
 .provider-post-wave.is-second {
   bottom: -48%;
-  background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(218, 119, 86, 0.16));
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(220, 20, 60, 0.16));
   animation-duration: 8.2s;
   animation-direction: reverse;
 }
@@ -24239,9 +24239,9 @@ header {
   }
 
   .job-posts-page .job-card-actions [data-job-bid] {
-    background: #da7756;
+    background: #DC143C;
     color: #111111;
-    border-color: #da7756;
+    border-color: #DC143C;
   }
 
   .job-posts-page .job-card-actions [data-job-bid]:hover {
@@ -26625,7 +26625,7 @@ nav {
 
 .search-bar:focus-within {
   border-color: var(--brand-gold);
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.2);
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.2);
 }
 
 .search-match,
@@ -26714,7 +26714,7 @@ nav {
 }
 
 .account-dropdown-item:hover {
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: var(--brand-ink) !important;
 }
 
@@ -26734,13 +26734,13 @@ nav {
 }
 
 .account-submit-btn.account-submit-signup {
-  background: linear-gradient(180deg, var(--brand-gold) 0%, #da7756 100%);
+  background: linear-gradient(180deg, var(--brand-gold) 0%, #DC143C 100%);
   color: var(--brand-ink);
 }
 
 .account-form-row input:focus {
   border-color: var(--brand-gold);
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.18);
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.18);
 }
 
 .hero-btns {
@@ -26755,7 +26755,7 @@ nav {
   padding: 64px 24px 72px;
   border-radius: 0 0 34px 34px;
   background:
-    radial-gradient(circle at top left, rgba(218, 119, 86, 0.4) 0%, rgba(218, 119, 86, 0) 34%),
+    radial-gradient(circle at top left, rgba(220, 20, 60, 0.4) 0%, rgba(220, 20, 60, 0) 34%),
     radial-gradient(circle at bottom right, rgba(232, 226, 219, 0.18) 0%, rgba(232, 226, 219, 0) 32%),
     linear-gradient(135deg, rgba(26, 50, 99, 0.98) 0%, rgba(84, 119, 146, 0.96) 48%, rgba(26, 50, 99, 0.98) 100%);
 }
@@ -26767,7 +26767,7 @@ nav {
   left: -60px;
   width: 360px;
   height: 360px;
-  background: radial-gradient(circle, rgba(218, 119, 86, 0.16) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(220, 20, 60, 0.16) 0%, transparent 72%);
 }
 
 .work-hero::after {
@@ -26814,7 +26814,7 @@ nav {
   min-height: 34px;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: var(--brand-gold);
   font-size: 12px;
   font-weight: 800;
@@ -26929,7 +26929,7 @@ footer {
 
 .account-side-link:hover,
 .account-side-logout:hover {
-  border-color: rgba(218, 119, 86, 0.44);
+  border-color: rgba(220, 20, 60, 0.44);
 }
 
 @media (max-width: 1100px) {
@@ -27001,7 +27001,7 @@ body.home-page-body {
   color: var(--brand-ink);
   background:
     radial-gradient(circle at 18% 18%, rgba(61, 169, 252, 0.12), transparent 26%),
-    radial-gradient(circle at 82% 14%, rgba(218, 119, 86, 0.16), transparent 28%),
+    radial-gradient(circle at 82% 14%, rgba(220, 20, 60, 0.16), transparent 28%),
     linear-gradient(180deg, #ffffff 0%, #f7fbff 58%, #eef6ff 100%);
 }
 
@@ -27074,9 +27074,9 @@ body.home-page-body {
 }
 
 .home-hero-search-submit {
-  background: linear-gradient(180deg, var(--brand-gold) 0%, #da7756 100%);
+  background: linear-gradient(180deg, var(--brand-gold) 0%, #DC143C 100%);
   color: var(--brand-ink);
-  box-shadow: 0 10px 22px rgba(218, 119, 86, 0.24);
+  box-shadow: 0 10px 22px rgba(220, 20, 60, 0.24);
 }
 
 .home-stream-row-title,
@@ -27145,7 +27145,7 @@ body.home-page-body {
 
 .home-trending-section {
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.12), transparent 28%),
     linear-gradient(180deg, #eef6ff 0%, #ffffff 100%);
 }
 
@@ -27170,7 +27170,7 @@ body.home-page-body {
 
 .home-trending-job-icon {
   background:
-    radial-gradient(circle at top, rgba(218, 119, 86, 0.24), transparent 28%),
+    radial-gradient(circle at top, rgba(220, 20, 60, 0.24), transparent 28%),
     linear-gradient(135deg, #ffffff 0%, #eaf3ff 100%);
   color: var(--brand-slate);
 }
@@ -27218,7 +27218,7 @@ body.home-page-body {
 }
 
 .home-job-cta-kicker {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: var(--brand-ink);
 }
 
@@ -27283,7 +27283,7 @@ body.home-page-body {
 }
 
 .home-page-body .footer-admin-link {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: var(--brand-ink);
 }
 
@@ -27695,7 +27695,7 @@ body.home-page-body {
 }
 
 .home-guide-step {
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
 }
 
@@ -27763,7 +27763,7 @@ body.home-page-body {
 
 .home-available-job-copy small i {
   flex: 0 0 auto;
-  color: #da7756;
+  color: #DC143C;
 }
 
 .home-available-job-cta {
@@ -27784,12 +27784,12 @@ body.home-page-body {
 
 .home-available-job-cta:hover,
 .home-available-job-cta:focus-visible {
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
 }
 
 .home-job-guide-card .home-available-job-meta strong {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .home-market-hot-picks {
@@ -28618,7 +28618,7 @@ body.home-page-body {
 }
 
 .search-result-card-copy strong i {
-  color: #da7756;
+  color: #DC143C;
   font-size: 13px;
 }
 
@@ -28639,7 +28639,7 @@ body.home-page-body {
 }
 
 .search-results-empty i {
-  color: #da7756;
+  color: #DC143C;
   font-size: 36px;
 }
 
@@ -28864,7 +28864,7 @@ body.home-page-body {
 
 /* Home page white / black / gold palette */
 body.home-page-body {
-  --green: #da7756;
+  --green: #DC143C;
   --green-dark: #111111;
   --black: #111111;
   --white: #ffffff;
@@ -28874,7 +28874,7 @@ body.home-page-body {
   --text-muted: #5f5f5f;
   --brand-ink: #111111;
   --brand-slate: #3f3f3f;
-  --brand-gold: #da7756;
+  --brand-gold: #DC143C;
   --brand-cream: #f5efe2;
   --brand-cream-soft: #fbfaf7;
   --brand-border: rgba(17, 17, 17, 0.12);
@@ -28904,12 +28904,12 @@ body.home-page-body {
 .home-page-body .header-actions a:hover,
 .home-page-body .mobile-search-trigger:hover,
 .home-page-body .search-match {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .home-page-body .nav-link::after,
 .home-page-body .cart-badge {
-  background: #da7756;
+  background: #DC143C;
 }
 
 .home-page-body .search-bar {
@@ -28918,8 +28918,8 @@ body.home-page-body {
 }
 
 .home-page-body .search-bar:focus-within {
-  border-color: rgba(218, 119, 86, 0.72);
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.16);
+  border-color: rgba(220, 20, 60, 0.72);
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.16);
 }
 
 .home-page-body .a-plus-btn {
@@ -28930,13 +28930,13 @@ body.home-page-body {
 
 .home-page-body .a-plus-btn:hover,
 .home-page-body .a-plus-btn:focus-visible {
-  background: #da7756 !important;
+  background: #DC143C !important;
   color: #111111 !important;
 }
 
 .home-page-body .account-trigger-icon,
 .home-page-body .search-icon {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .home-page-body .mega-dropdown {
@@ -28958,7 +28958,7 @@ body.home-page-body {
   color: #111111;
   background:
     radial-gradient(circle at 18% 18%, rgba(17, 17, 17, 0.06), transparent 28%),
-    radial-gradient(circle at 82% 14%, rgba(218, 119, 86, 0.2), transparent 30%),
+    radial-gradient(circle at 82% 14%, rgba(220, 20, 60, 0.2), transparent 30%),
     linear-gradient(180deg, #ffffff 0%, #fbfaf7 58%, #f6f0e3 100%);
 }
 
@@ -29001,7 +29001,7 @@ body.home-page-body {
 .home-page-body .home-stream-actions .btn-primary:focus-visible,
 .home-page-body .home-job-cta .btn-primary.home-job-cta-btn:hover,
 .home-page-body .home-job-cta .btn-primary.home-job-cta-btn:focus-visible {
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   color: #111111;
 }
 
@@ -29017,8 +29017,8 @@ body.home-page-body {
 .home-page-body .home-stream-actions .btn-secondary:focus-visible,
 .home-page-body .home-job-cta .btn-secondary.home-job-cta-btn:hover,
 .home-page-body .home-job-cta .btn-secondary.home-job-cta-btn:focus-visible {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -29158,10 +29158,10 @@ body.home-page-body {
 
 .home-page-body .home-hero-search-submit:hover,
 .home-page-body .home-hero-search-submit:focus-visible {
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   color: #111111;
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(218, 119, 86, 0.26);
+  box-shadow: 0 14px 28px rgba(220, 20, 60, 0.26);
 }
 
 .home-page-body .home-hero-search-submit i {
@@ -29183,12 +29183,12 @@ body.home-page-body {
 }
 
 .home-page-body .home-stream-category-panel .home-category-circle:hover .category-circle-img {
-  border-color: rgba(218, 119, 86, 0.64);
+  border-color: rgba(220, 20, 60, 0.64);
 }
 
 .home-page-body .home-trending-section {
   background:
-    radial-gradient(circle at top right, rgba(218, 119, 86, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(220, 20, 60, 0.14), transparent 28%),
     linear-gradient(180deg, #fbf7ec 0%, #ffffff 100%);
 }
 
@@ -29205,7 +29205,7 @@ body.home-page-body {
 
 .home-page-body .home-trending-job-icon {
   background:
-    radial-gradient(circle at top, rgba(218, 119, 86, 0.26), transparent 28%),
+    radial-gradient(circle at top, rgba(220, 20, 60, 0.26), transparent 28%),
     linear-gradient(135deg, #ffffff 0%, #fbf7ec 100%);
   color: #111111;
 }
@@ -29300,7 +29300,7 @@ body.home-page-body {
 
 .home-page-body .home-carousel-dot.is-active,
 .home-page-body .home-market-wide-promo a {
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
 }
 
@@ -29326,7 +29326,7 @@ body.home-page-body {
 }
 
 .home-page-body .home-market-wide-promo li::before {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .home-page-body .home-market-product-card {
@@ -29361,14 +29361,14 @@ body.home-page-body {
 .home-page-body .home-job-cta {
   border-color: rgba(17, 17, 17, 0.1);
   background:
-    radial-gradient(circle at top left, rgba(218, 119, 86, 0.18), transparent 34%),
+    radial-gradient(circle at top left, rgba(220, 20, 60, 0.18), transparent 34%),
     linear-gradient(135deg, #ffffff 0%, #fbf7ec 100%);
   color: #111111;
   box-shadow: 0 28px 60px rgba(17, 17, 17, 0.1);
 }
 
 .home-page-body .home-job-cta-kicker {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: #111111;
 }
 
@@ -29401,7 +29401,7 @@ body.home-page-body {
 .home-page-body .footer-col ul li a:hover,
 .home-page-body .footer-links a:hover,
 .home-page-body .newsletter-col a:hover {
-  color: #da7756 !important;
+  color: #DC143C !important;
 }
 
 .home-page-body .email-form {
@@ -29417,7 +29417,7 @@ body.home-page-body {
 .home-page-body .work-footer-highlight,
 .home-page-body .social-links a,
 .home-page-body .footer-admin-link {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: #111111;
 }
 
@@ -29559,7 +29559,7 @@ body.account-embed-mode {
 
 /* Find specialists white / black / gold palette */
 body.specialists-page-body {
-  --green: #da7756;
+  --green: #DC143C;
   --green-dark: #111111;
   --black: #111111;
   --white: #ffffff;
@@ -29569,12 +29569,12 @@ body.specialists-page-body {
   --text-muted: #5f5f5f;
   --brand-ink: #111111;
   --brand-slate: #3f3f3f;
-  --brand-gold: #da7756;
+  --brand-gold: #DC143C;
   --brand-cream: #f5efe2;
   --brand-cream-soft: #fbfaf7;
   --brand-border: rgba(17, 17, 17, 0.12);
   background:
-    radial-gradient(circle at 82% 8%, rgba(218, 119, 86, 0.16), transparent 28%),
+    radial-gradient(circle at 82% 8%, rgba(220, 20, 60, 0.16), transparent 28%),
     linear-gradient(180deg, #ffffff 0%, #fbfaf7 56%, #f6f0e3 100%);
   color: #111111;
 }
@@ -29610,12 +29610,12 @@ body.specialists-page-body {
 .specialists-page-body .specialists-suggested-all,
 .specialists-page-body .specialist-card-location i,
 .specialists-page-body .specialist-card-fact i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .specialists-page-body .nav-link::after,
 .specialists-page-body .cart-badge {
-  background: #da7756;
+  background: #DC143C;
 }
 
 .specialists-page-body .specialists-page {
@@ -29650,8 +29650,8 @@ body.specialists-page-body {
 }
 
 .specialists-page-body .search-bar:focus-within {
-  border-color: rgba(218, 119, 86, 0.72);
-  box-shadow: 0 14px 30px rgba(218, 119, 86, 0.16);
+  border-color: rgba(220, 20, 60, 0.72);
+  box-shadow: 0 14px 30px rgba(220, 20, 60, 0.16);
 }
 
 .specialists-page-body .specialists-search-line .search-bar input,
@@ -29694,8 +29694,8 @@ body.specialists-page-body {
 
 .specialists-page-body .provider-contact-btn,
 .specialists-page-body .whatsapp-btn {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -29707,8 +29707,8 @@ body.specialists-page-body {
 .specialists-page-body .specialists-suggested-action:focus-visible,
 .specialists-page-body .homepage-categories-view-more:hover,
 .specialists-page-body .homepage-categories-view-more:focus-visible {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #111111;
 }
 
@@ -29724,14 +29724,14 @@ body.specialists-page-body {
 
 .specialists-page-body .service-filter-toggle-icon,
 .specialists-page-body .provider-meta-chip {
-  background: rgba(218, 119, 86, 0.16);
+  background: rgba(220, 20, 60, 0.16);
   color: #111111;
 }
 
 .specialists-page-body .service-filter-links button.is-active,
 .specialists-page-body .service-filter-links button:hover,
 .specialists-page-body .specialists-rating-option.is-active {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: #111111;
 }
 
@@ -29757,7 +29757,7 @@ body.specialists-page-body {
 
 .specialists-page-body .specialist-category-chip:hover span,
 .specialists-page-body .specialist-category-chip:focus-visible span {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .specialists-page-body .specialists-categories-row {
@@ -29796,7 +29796,7 @@ body.specialists-page-body {
 
 .specialists-page-body .home-all-categories-link:hover,
 .specialists-page-body .home-all-categories-link:focus-visible {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .specialists-page-body .specialist-card-avatar {
@@ -29805,7 +29805,7 @@ body.specialists-page-body {
 }
 
 .specialists-page-body .specialist-card-rating {
-  background: rgba(218, 119, 86, 0.92);
+  background: rgba(220, 20, 60, 0.92);
   color: #111111;
 }
 
@@ -29857,7 +29857,7 @@ body.specialists-page-body {
 .specialists-page-body .footer-col ul li a:hover,
 .specialists-page-body .footer-links a:hover,
 .specialists-page-body .newsletter-col a:hover {
-  color: #da7756 !important;
+  color: #DC143C !important;
 }
 
 .specialists-page-body .email-form {
@@ -29873,7 +29873,7 @@ body.specialists-page-body {
 .specialists-page-body .work-footer-highlight,
 .specialists-page-body .social-links a,
 .specialists-page-body .footer-admin-link {
-  background: rgba(218, 119, 86, 0.18);
+  background: rgba(220, 20, 60, 0.18);
   color: #111111;
 }
 
@@ -30062,7 +30062,7 @@ body.specialists-page-body {
     margin: 0 0 10px;
     padding: 10px 12px 12px;
     border: 0;
-    border-bottom: 1px solid rgba(218, 119, 86, 0.22);
+    border-bottom: 1px solid rgba(220, 20, 60, 0.22);
     border-radius: 0 0 22px 22px;
     background: rgba(0, 0, 0, 0.74);
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
@@ -31259,7 +31259,7 @@ body.specialists-page-body {
 .messages-search-bar,
 .messages-thread-search,
 .messages-compose-input {
-  border: 1px solid rgba(218, 119, 86, 0.34);
+  border: 1px solid rgba(220, 20, 60, 0.34);
   background: #ffffff;
   color: #0b0b0b;
   box-shadow: none;
@@ -31268,8 +31268,8 @@ body.specialists-page-body {
 .messages-search-bar:focus-within,
 .messages-thread-search:focus-within,
 .messages-compose-input:focus {
-  border-color: #da7756;
-  box-shadow: 0 0 0 2px rgba(218, 119, 86, 0.18);
+  border-color: #DC143C;
+  box-shadow: 0 0 0 2px rgba(220, 20, 60, 0.18);
 }
 
 .messages-search-bar input,
@@ -31290,7 +31290,7 @@ body.specialists-page-body {
 .messages-search-bar input::selection,
 .messages-thread-search input::selection,
 .messages-compose-input::selection {
-  background: rgba(218, 119, 86, 0.28);
+  background: rgba(220, 20, 60, 0.28);
 }
 
 .messages-search-bar i,
@@ -31347,12 +31347,12 @@ body.specialists-page-body {
 .messages-filter-chip strong,
 .messages-chat-preview.is-mine .message-status,
 .message-status.is-viewed {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .messages-filter-chip.is-active {
-  background: #da7756;
-  border-color: #da7756;
+  background: #DC143C;
+  border-color: #DC143C;
   color: #0b0b0b;
 }
 
@@ -31385,8 +31385,8 @@ body.specialists-page-body {
 }
 
 .messages-chat-item.is-active {
-  background: rgba(218, 119, 86, 0.14);
-  border-color: rgba(218, 119, 86, 0.42);
+  background: rgba(220, 20, 60, 0.14);
+  border-color: rgba(220, 20, 60, 0.42);
 }
 
 .messages-chat-item:hover {
@@ -31396,18 +31396,18 @@ body.specialists-page-body {
 .messages-chat-avatar,
 .messages-suggestion-avatar,
 .messages-thread-avatar {
-  background: linear-gradient(135deg, #da7756 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #DC143C 0%, #ffffff 100%);
   color: #0b0b0b;
 }
 
 .messages-verified-tick,
 .messages-chat-unread {
-  background: #da7756;
+  background: #DC143C;
   color: #0b0b0b;
 }
 
 .messages-suggestion-cta {
-  background: rgba(218, 119, 86, 0.16);
+  background: rgba(220, 20, 60, 0.16);
   color: #7c5815;
 }
 
@@ -31433,7 +31433,7 @@ body.specialists-page-body {
 .messages-attach-btn {
   background: #ffffff;
   color: #0b0b0b;
-  border-color: rgba(218, 119, 86, 0.28);
+  border-color: rgba(220, 20, 60, 0.28);
 }
 
 .messages-thread-body {
@@ -31445,7 +31445,7 @@ body.specialists-page-body {
 .messages-day-divider span {
   background: rgba(255, 255, 255, 0.86);
   color: #7c5815;
-  border: 1px solid rgba(218, 119, 86, 0.24);
+  border: 1px solid rgba(220, 20, 60, 0.24);
 }
 
 .message-bubble.is-mine {
@@ -31567,16 +31567,16 @@ body.specialists-page-body {
 footer {
   background: #0b0b0b !important;
   color: #efefef !important;
-  border-top: 1px solid rgba(218, 119, 86, 0.2);
+  border-top: 1px solid rgba(220, 20, 60, 0.2);
 }
 
 .footer-inner {
-  border-bottom-color: rgba(218, 119, 86, 0.15) !important;
+  border-bottom-color: rgba(220, 20, 60, 0.15) !important;
 }
 
 .footer-col h4,
 .newsletter-col h4 {
-  color: #da7756 !important;
+  color: #DC143C !important;
 }
 
 .footer-col ul li a,
@@ -31587,11 +31587,11 @@ footer {
 
 .footer-col ul li a:hover,
 .footer-links a:hover {
-  color: #da7756 !important;
+  color: #DC143C !important;
 }
 
 .email-form {
-  border-color: rgba(218, 119, 86, 0.3) !important;
+  border-color: rgba(220, 20, 60, 0.3) !important;
   background: rgba(255, 255, 255, 0.05) !important;
 }
 
@@ -31600,34 +31600,34 @@ footer {
 }
 
 .email-form button {
-  background: #da7756 !important;
+  background: #DC143C !important;
   color: #0b0b0b !important;
 }
 
 .work-footer-highlight {
-  background: rgba(218, 119, 86, 0.1) !important;
+  background: rgba(220, 20, 60, 0.1) !important;
   color: #fff !important;
-  border: 1px solid rgba(218, 119, 86, 0.1);
+  border: 1px solid rgba(220, 20, 60, 0.1);
 }
 
 .work-footer-highlight i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .social-links a {
-  background: rgba(218, 119, 86, 0.15) !important;
-  color: #da7756 !important;
+  background: rgba(220, 20, 60, 0.15) !important;
+  color: #DC143C !important;
 }
 
 .social-links a:hover {
-  background: #da7756 !important;
+  background: #DC143C !important;
   color: #0b0b0b !important;
 }
 
 .footer-admin-link {
-  border-color: rgba(218, 119, 86, 0.3) !important;
-  background: rgba(218, 119, 86, 0.1) !important;
-  color: #da7756 !important;
+  border-color: rgba(220, 20, 60, 0.3) !important;
+  background: rgba(220, 20, 60, 0.1) !important;
+  color: #DC143C !important;
 }
 
 /* Homepage primary intent actions */
@@ -31749,10 +31749,10 @@ footer {
 }
 
 .home-page-body .home-intent-action.btn-31.is-gold {
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   color: #17110a;
-  border-color: rgba(218, 119, 86, 0.32);
-  box-shadow: 0 18px 34px rgba(218, 119, 86, 0.22);
+  border-color: rgba(220, 20, 60, 0.32);
+  box-shadow: 0 18px 34px rgba(220, 20, 60, 0.22);
 }
 
 .home-page-body .home-intent-action.btn-31.is-ink {
@@ -32906,7 +32906,7 @@ footer {
   border-radius: 22px;
   padding: 26px 22px 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 239, 233, 0.98) 100%);
-  border: 1px solid rgba(218, 119, 86, 0.28);
+  border: 1px solid rgba(220, 20, 60, 0.28);
   box-shadow: 0 30px 70px rgba(26, 50, 99, 0.26);
   transform: translateY(22px) scale(0.96);
   transition: transform 0.55s cubic-bezier(0.2, 0.9, 0.2, 1);
@@ -32919,7 +32919,7 @@ footer {
   position: absolute;
   inset: 0 0 auto;
   height: 7px;
-  background: linear-gradient(90deg, #da7756 0%, #f0b08f 100%);
+  background: linear-gradient(90deg, #DC143C 0%, #F45C7D 100%);
 }
 
 .app-install-sheet.is-visible .app-install-sheet__panel {
@@ -32934,7 +32934,7 @@ footer {
   height: 34px;
   border: 0;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.12);
+  background: rgba(220, 20, 60, 0.12);
   color: var(--brand-ink);
 }
 
@@ -32967,8 +32967,8 @@ footer {
   min-height: 28px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.12);
-  color: #b85f43;
+  background: rgba(220, 20, 60, 0.12);
+  color: #A30F2D;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -32998,11 +32998,11 @@ footer {
   min-height: 52px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%);
+  background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
-  box-shadow: 0 18px 30px rgba(218, 119, 86, 0.28);
+  box-shadow: 0 18px 30px rgba(220, 20, 60, 0.28);
 }
 
 .app-install-sheet__button:hover,
@@ -33045,7 +33045,7 @@ footer {
   --wl-card-muted: rgba(255, 255, 255, 0.74);
   --wl-card-soft: rgba(255, 255, 255, 0.9);
   --wl-card-shadow: 0 24px 44px rgba(17, 17, 17, 0.18);
-  --wl-card-accent: #da7756;
+  --wl-card-accent: #DC143C;
   position: relative;
   border: 0;
   border-radius: 32px;
@@ -33113,8 +33113,8 @@ footer {
 }
 
 .wl-showcase-card__badge--accent {
-  background: rgba(218, 119, 86, 0.24);
-  border-color: rgba(218, 119, 86, 0.3);
+  background: rgba(220, 20, 60, 0.24);
+  border-color: rgba(220, 20, 60, 0.3);
 }
 
 .wl-showcase-card__owner {
@@ -33319,8 +33319,8 @@ footer {
 }
 
 .home-page-body .wl-showcase-card--guide .wl-showcase-card__owner {
-  background: rgba(218, 119, 86, 0.9);
-  border-color: rgba(218, 119, 86, 0.96);
+  background: rgba(220, 20, 60, 0.9);
+  border-color: rgba(220, 20, 60, 0.96);
   color: #111111;
 }
 
@@ -33346,7 +33346,7 @@ footer {
   overflow: hidden;
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.42), transparent 30%),
-    linear-gradient(180deg, rgba(218, 119, 86, 0.12) 0%, rgba(17, 17, 17, 0.04) 100%);
+    linear-gradient(180deg, rgba(220, 20, 60, 0.12) 0%, rgba(17, 17, 17, 0.04) 100%);
 }
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__content--split {
@@ -33384,7 +33384,7 @@ footer {
 }
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__detail i {
-  color: #da7756;
+  color: #DC143C;
 }
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__actions {
@@ -33404,21 +33404,21 @@ footer {
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__action--split:hover,
 .specialists-page-body .provider-showcase-card .wl-showcase-card__action--split:focus-visible {
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
 }
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__icon-action {
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: #111111;
   border: 1px solid rgba(17, 17, 17, 0.1);
 }
 
 .specialists-page-body .provider-showcase-card .wl-showcase-card__icon-action:hover,
 .specialists-page-body .provider-showcase-card .wl-showcase-card__icon-action:focus-visible {
-  background: #da7756;
+  background: #DC143C;
   color: #111111;
-  border-color: #da7756;
+  border-color: #DC143C;
 }
 
 .specialists-page-body .provider-showcase-card .specialists-view-btn,
@@ -33858,7 +33858,7 @@ footer {
 }
 
 .home-page-body .wl-showcase-card--home .wl-showcase-card__badge--accent {
-  background: rgba(218, 119, 86, 0.82);
+  background: rgba(220, 20, 60, 0.82);
   color: #ffffff;
 }
 
@@ -34008,7 +34008,7 @@ footer {
   align-content: center;
   gap: 18px;
   background:
-    radial-gradient(circle at 50% 18%, rgba(218, 119, 86, 0.16), transparent 30%),
+    radial-gradient(circle at 50% 18%, rgba(220, 20, 60, 0.16), transparent 30%),
     linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   color: #111827;
   opacity: 0;
@@ -34057,7 +34057,7 @@ footer {
   width: 46px;
   height: 46px;
   border: 4px solid rgba(26, 50, 99, 0.14);
-  border-top-color: #da7756;
+  border-top-color: #DC143C;
   border-radius: 999px;
   animation: appLoaderSpin 0.84s linear infinite;
 }
@@ -34825,10 +34825,10 @@ footer {
 }
 
 .job-posts-page .job-board-filters button.is-active {
-  border-color: #da7756;
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  border-color: #DC143C;
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   color: #ffffff;
-  box-shadow: 0 10px 22px rgba(218, 119, 86, 0.24);
+  box-shadow: 0 10px 22px rgba(220, 20, 60, 0.24);
 }
 
 .job-posts-page .job-board-view-toggle {
@@ -34840,10 +34840,10 @@ footer {
 }
 
 .job-posts-page .job-board-view-toggle button.is-active {
-  border-color: #da7756;
+  border-color: #DC143C;
   color: #111827;
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(218, 119, 86, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(220, 20, 60, 0.48);
 }
 
 .job-posts-page .job-board-post-link {
@@ -34852,9 +34852,9 @@ footer {
   padding: 0 17px;
   border: 0;
   border-radius: 9px;
-  background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+  background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
   color: #ffffff;
-  box-shadow: 0 12px 24px rgba(218, 119, 86, 0.22);
+  box-shadow: 0 12px 24px rgba(220, 20, 60, 0.22);
 }
 
 .job-posts-page .job-board-market-panel {
@@ -34886,8 +34886,8 @@ footer {
 }
 
 .job-posts-page .job-market-live-dot {
-  background: #da7756;
-  box-shadow: 0 0 0 5px rgba(218, 119, 86, 0.14);
+  background: #DC143C;
+  box-shadow: 0 0 0 5px rgba(220, 20, 60, 0.14);
 }
 
 .job-posts-page .job-market-overview strong {
@@ -34928,8 +34928,8 @@ footer {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: rgba(218, 119, 86, 0.10);
-  color: #da7756;
+  background: rgba(220, 20, 60, 0.10);
+  color: #DC143C;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -35062,7 +35062,7 @@ footer {
 }
 
 .job-posts-page .job-card-subtag {
-  background: rgba(218, 119, 86, 0.14);
+  background: rgba(220, 20, 60, 0.14);
   color: #111827;
 }
 
@@ -35092,7 +35092,7 @@ footer {
   grid-row: 2;
   justify-self: end;
   margin-top: 10px;
-  color: #da7756;
+  color: #DC143C;
   font-size: 17px;
   font-weight: 950;
   white-space: nowrap;
@@ -35191,9 +35191,9 @@ footer {
 }
 
 .job-posts-page .job-card [data-job-view-more] {
-  border-color: rgba(218, 119, 86, 0.48);
+  border-color: rgba(220, 20, 60, 0.48);
   background: #ffffff;
-  color: #da7756;
+  color: #DC143C;
 }
 
 @media (min-width: 1180px) {
@@ -35256,7 +35256,7 @@ footer {
   }
 
   .job-posts-page .job-board-post-link {
-    background: linear-gradient(180deg, #da7756 0%, #da7756 100%);
+    background: linear-gradient(180deg, #DC143C 0%, #DC143C 100%);
     color: #ffffff;
   }
 
@@ -35590,7 +35590,7 @@ footer {
   .job-board-mobile-market-body .job-market-live-dot {
     width: 8px;
     height: 8px;
-    box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.12);
+    box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.12);
   }
 
   .job-board-mobile-market-body .job-market-sparkline {
@@ -35769,7 +35769,7 @@ footer {
   .job-post-page {
     padding: 18px 0 72px;
     background:
-      radial-gradient(circle at 18% 0%, rgba(218, 119, 86, 0.10), transparent 28%),
+      radial-gradient(circle at 18% 0%, rgba(220, 20, 60, 0.10), transparent 28%),
       linear-gradient(180deg, #f8fafc 0%, #ffffff 62%);
   }
 
@@ -35818,7 +35818,7 @@ footer {
   }
 
   .job-post-page .job-post-topbar-kicker {
-    color: #da7756;
+    color: #DC143C;
     font-size: 11px;
     font-weight: 900;
     letter-spacing: 0.1em;
@@ -35846,9 +35846,9 @@ footer {
 
   .job-post-page .job-post-topbar-link:hover,
   .job-post-page .job-post-topbar-link:focus-visible {
-    border-color: rgba(218, 119, 86, 0.42);
+    border-color: rgba(220, 20, 60, 0.42);
     color: #111827;
-    box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.12);
+    box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.12);
   }
 
   .job-post-page .job-post-composer-shell {
@@ -35891,17 +35891,17 @@ footer {
     min-height: 0;
     margin: 0 0 16px;
     padding: 18px;
-    border: 1px solid rgba(218, 119, 86, 0.16);
+    border: 1px solid rgba(220, 20, 60, 0.16);
     border-radius: 16px;
-    background: linear-gradient(135deg, rgba(218, 119, 86, 0.08), rgba(255, 255, 255, 0.92));
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.08), rgba(255, 255, 255, 0.92));
   }
 
   .job-post-page .job-post-form-hero-icon {
     width: 64px;
     height: 64px;
     background: #111827;
-    color: #da7756;
-    border-color: rgba(218, 119, 86, 0.28);
+    color: #DC143C;
+    border-color: rgba(220, 20, 60, 0.28);
   }
 
   .job-post-page .job-post-form-hero h1 {
@@ -35935,8 +35935,8 @@ footer {
   }
 
   .job-post-page .job-post-section-icon {
-    background: rgba(218, 119, 86, 0.12);
-    color: #da7756;
+    background: rgba(220, 20, 60, 0.12);
+    color: #DC143C;
   }
 
   .job-post-page .job-form-grid {
@@ -35953,14 +35953,14 @@ footer {
   .job-post-page .job-form-textarea-shell:focus-within,
   .job-post-page .job-combobox:focus-within .job-combobox-shell,
   .job-post-page .job-combobox.is-open .job-combobox-shell {
-    border-color: rgba(218, 119, 86, 0.62);
-    box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.12);
+    border-color: rgba(220, 20, 60, 0.62);
+    box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.12);
   }
 
   .job-post-page .job-form-field-icon,
   .job-post-page .job-combobox-leading,
   .job-post-page .job-combobox-toggle {
-    color: #da7756;
+    color: #DC143C;
   }
 
   .job-post-page .job-post-form-actions {
@@ -35973,10 +35973,10 @@ footer {
   }
 
   .job-post-page .job-post-form .btn-primary {
-    background: #da7756;
-    border-color: #da7756;
+    background: #DC143C;
+    border-color: #DC143C;
     color: #ffffff;
-    box-shadow: 0 16px 32px rgba(218, 119, 86, 0.24);
+    box-shadow: 0 16px 32px rgba(220, 20, 60, 0.24);
   }
 
   .job-post-page .job-post-form .btn-primary:hover,
@@ -40526,7 +40526,7 @@ body.marketplace-page-body .market-main {
 
 .home-marketplace-head span,
 .home-managed-panel-head span {
-  color: #da7756;
+  color: #DC143C;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -40574,7 +40574,7 @@ body.marketplace-page-body .market-main {
 
 .home-marketplace-actions a:hover,
 .home-marketplace-actions a:focus-visible {
-  border-color: rgba(218, 119, 86, 0.28);
+  border-color: rgba(220, 20, 60, 0.28);
   color: #8f432c;
   transform: translateY(-1px);
 }
@@ -40660,7 +40660,7 @@ body.marketplace-page-body .market-main {
 
 .home-managed-product-card:hover,
 .home-managed-product-card:focus-visible {
-  border-color: rgba(218, 119, 86, 0.35);
+  border-color: rgba(220, 20, 60, 0.35);
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.11);
   transform: translateY(-2px);
 }
@@ -40740,7 +40740,7 @@ body.marketplace-page-body .market-main {
 .home-managed-job-row:focus-visible,
 .home-managed-provider-row:focus-visible {
   background: #f8fafc;
-  border-color: rgba(218, 119, 86, 0.3);
+  border-color: rgba(220, 20, 60, 0.3);
 }
 
 .home-managed-job-row > span,
@@ -40758,7 +40758,7 @@ body.marketplace-page-body .market-main {
 
 .home-managed-provider-avatar {
   border-radius: 999px;
-  background: linear-gradient(135deg, #da7756, #1f2937);
+  background: linear-gradient(135deg, #DC143C, #1f2937);
 }
 
 .home-managed-provider-avatar img {
@@ -41729,7 +41729,7 @@ body.marketplace-page-body #site-header > header {
     min-height: 24px !important;
     padding: 0 9px !important;
     border-radius: 7px !important;
-    background: rgba(218, 119, 86, 0.12) !important;
+    background: rgba(220, 20, 60, 0.12) !important;
     color: #e04f54 !important;
     font-size: 9px !important;
     font-weight: 900 !important;
@@ -41984,10 +41984,10 @@ body.marketplace-page-body #site-header > header {
   font-weight: 800;
 }
 
-/* Final admin skin overrides: square corners and orange-red accent. */
+/* Final admin skin overrides: square corners and crimson accent. */
 .admin-page-body {
-  --yellow: #da7756;
-  --brand-gold: #da7756;
+  --yellow: #DC143C;
+  --brand-gold: #DC143C;
 }
 
 .admin-page-body *,
@@ -42006,7 +42006,7 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-nav-link:focus-visible,
 .admin-page-body .admin-avatar,
 .admin-page-body .admin-bottom-nav-link.is-active {
-  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%) !important;
+  background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%) !important;
   color: #fff !important;
 }
 
@@ -42018,7 +42018,7 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-activity-badge.is-post,
 .admin-page-body .admin-badge.is-unread,
 .admin-page-body .admin-row-action {
-  color: #f0b08f !important;
+  color: #F45C7D !important;
 }
 
 .admin-page-body .admin-kpi-icon,
@@ -42026,56 +42026,80 @@ body.marketplace-page-body #site-header > header {
 .admin-page-body .admin-badge.is-unread,
 .admin-page-body .admin-row-action,
 .admin-page-body .admin-gate-badge {
-  background: rgba(218, 119, 86, 0.16) !important;
+  background: rgba(220, 20, 60, 0.16) !important;
 }
 
 .admin-page-body .admin-gate-form input:focus,
 .admin-page-body .admin-form-field input:focus,
 .admin-page-body .admin-form-field select:focus,
 .admin-page-body .admin-form-field textarea:focus {
-  border-color: rgba(218, 119, 86, 0.72) !important;
-  box-shadow: 0 0 0 4px rgba(218, 119, 86, 0.16) !important;
+  border-color: rgba(220, 20, 60, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.16) !important;
 }
 
 .admin-page-body .admin-bar-primary,
 .admin-page-body .admin-legend-swatch.is-primary,
 .admin-page-body .admin-bubble-bar,
 .admin-page-body .admin-rank-meter span {
-  background: linear-gradient(180deg, #da7756 0%, #b85f43 100%) !important;
+  background: linear-gradient(180deg, #DC143C 0%, #A30F2D 100%) !important;
 }
 
 .admin-page-body .admin-bar-secondary,
 .admin-page-body .admin-legend-swatch.is-secondary,
 .admin-page-body .admin-bubble-bars.is-cyan .admin-bubble-bar,
 .admin-page-body .admin-rank-meter.is-cyan span {
-  background: linear-gradient(180deg, #ef9a79 0%, #da7756 100%) !important;
+  background: linear-gradient(180deg, #F45C7D 0%, #DC143C 100%) !important;
 }
 
 .admin-page-body .admin-table tbody tr:hover {
-  background: rgba(218, 119, 86, 0.08) !important;
+  background: rgba(220, 20, 60, 0.08) !important;
 }
 
 .admin-page-body .admin-row-action {
-  background: linear-gradient(135deg, #da7756 0%, #b85f43 100%) !important;
+  background: linear-gradient(135deg, #DC143C 0%, #A30F2D 100%) !important;
   color: #fff !important;
-  box-shadow: 0 10px 22px rgba(184, 95, 67, 0.28);
+  box-shadow: 0 10px 22px rgba(163, 15, 45, 0.28);
 }
 
 .admin-page-body .admin-row-action:hover,
 .admin-page-body .admin-row-action:focus-visible {
-  background: linear-gradient(135deg, #e78362 0%, #9f4f38 100%) !important;
+  background: linear-gradient(135deg, #F21D4B 0%, #8F0D28 100%) !important;
 }
 
 .admin-dialog-icon {
-  background: rgba(218, 119, 86, 0.14) !important;
-  color: #b85f43 !important;
+  background: rgba(220, 20, 60, 0.14) !important;
+  color: #A30F2D !important;
 }
 
 .admin-dialog-btn.is-primary {
-  background: #da7756 !important;
+  background: #DC143C !important;
 }
 
 .admin-dialog-input-wrap textarea:focus {
-  border-color: #da7756 !important;
-  box-shadow: 0 0 0 3px rgba(218, 119, 86, 0.16) !important;
+  border-color: #DC143C !important;
+  box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.16) !important;
+}
+
+/* Jobs pages use the same crimson accent. */
+.job-post-page {
+  --post-job-accent: #DC143C;
+  --post-job-accent-dark: #A30F2D;
+  --post-job-accent-soft: #FFE4EA;
+}
+
+body:has(.job-posts-page),
+body:has(.job-giver-page),
+body:has(.job-post-page) {
+  --brand-gold: #DC143C;
+  --yellow: #DC143C;
+}
+
+.job-posts-page [class*="btn"]:not(.job-delete-btn),
+.job-posts-page button[type="submit"],
+.job-posts-page .job-card-actions a,
+.job-giver-page [class*="btn"]:not(.job-delete-btn),
+.job-giver-page button[type="submit"],
+.job-post-page button[type="submit"],
+.job-post-page .job-post-primary-action {
+  border-color: #DC143C;
 }
