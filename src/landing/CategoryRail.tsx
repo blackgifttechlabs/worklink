@@ -86,8 +86,8 @@ export function CategoryRail({ categories, onSelect }: CategoryRailProps) {
       </button>
 
       {/* Mist effect left/right */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#f6f7f9] to-transparent z-20 pointer-events-none"></div>
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#f6f7f9] to-transparent z-20 pointer-events-none"></div>
+      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-20 pointer-events-none"></div>
+      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-20 pointer-events-none"></div>
 
       <div 
         ref={scrollRef}

@@ -143,15 +143,6 @@ export function LandingPage() {
           </div>
         </div>
         
-        {/* Bottom Category Ribbon */}
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-           className="w-full h-[65px] absolute bottom-0 left-0 right-0 z-20"
-        >
-          <CategoryRail categories={categories} />
-        </motion.div>
       </div>
       
       {/* Marketplace Conversation Animation Section */}
@@ -160,9 +151,19 @@ export function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative z-30 mt-[100px] w-full bg-white pt-8 pb-16 md:pt-12 md:pb-24"
+        className="relative z-30 w-full bg-white pb-16 md:pb-24"
       >
-        <MarketplaceConversation />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+          className="w-full border-b border-gray-100 bg-white py-3"
+        >
+          <CategoryRail categories={categories} />
+        </motion.div>
+        <div className="pt-12 md:pt-16">
+          <MarketplaceConversation />
+        </div>
       </motion.div>
 
       <motion.div

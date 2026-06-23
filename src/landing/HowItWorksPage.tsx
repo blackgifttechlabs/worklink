@@ -126,7 +126,7 @@ export function HowItWorksPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8f9fb] font-sans">
+    <div className="flex min-h-screen flex-col bg-white font-sans">
       <SiteHeader />
 
       {/* Hero */}
@@ -184,7 +184,7 @@ export function HowItWorksPage() {
       </section>
 
       {/* Core steps */}
-      <section className="relative -mt-12 px-5 md:px-8">
+      <section className="relative -mt-12 bg-[#f8f9fb] px-5 pb-20 md:px-8 md:pb-28">
         <div className="mx-auto max-w-5xl space-y-8">
           {steps.map((step, index) => (
             <motion.article
@@ -248,7 +248,7 @@ export function HowItWorksPage() {
         whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.65, ease: 'easeOut' }}
-        className="mt-20 w-full bg-white py-16 md:py-24"
+        className="w-full bg-white py-16 md:py-24"
       >
         <div className="mx-auto mb-10 max-w-3xl px-5 text-center md:px-8">
           <p className="text-[13px] font-bold uppercase tracking-[0.2em] text-[#fb7152]">See it in action</p>

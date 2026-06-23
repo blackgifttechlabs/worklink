@@ -142,13 +142,16 @@ export function MarketplaceConversation() {
       <div
         className={`sl-market-stage ${currentStep.spotlight ? 'is-worker-spotlight' : ''}`}
       >
-        <img
-          className="sl-market-person sl-market-seller"
-          src="https://i.postimg.cc/jdLzwCJs/man-selling.png"
-          alt="ServiceLoop worker ready to help"
-          loading="lazy"
-          decoding="async"
-        />
+        <div className="sl-market-person-wrap sl-market-seller-wrap">
+          <span className="sl-market-float-shadow" aria-hidden="true" />
+          <img
+            className="sl-market-person sl-market-seller"
+            src="https://i.postimg.cc/jdLzwCJs/man-selling.png"
+            alt="ServiceLoop worker ready to help"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
         <SpeechBubble
           tone="buyer"
@@ -175,13 +178,16 @@ export function MarketplaceConversation() {
           <span>Paid</span>
         </div>
 
-        <img
-          className="sl-market-person sl-market-buyer"
-          src="https://i.postimg.cc/ZKCrB0vs/woman-lending-money.png"
-          alt="ServiceLoop client paying for local work"
-          loading="lazy"
-          decoding="async"
-        />
+        <div className="sl-market-person-wrap sl-market-buyer-wrap">
+          <span className="sl-market-float-shadow" aria-hidden="true" />
+          <img
+            className="sl-market-person sl-market-buyer"
+            src="https://i.postimg.cc/ZKCrB0vs/woman-lending-money.png"
+            alt="ServiceLoop client paying for local work"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
     </section>
   );
