@@ -86,10 +86,10 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-wrap items-center gap-6 text-gray-500 text-[12px]">
-            <a href={`${appUrl}/home`} className="hover:text-white transition-colors">Terms & Conditions</a>
-            <a href={`${appUrl}/home`} className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href={`${appUrl}/home`} className="hover:text-white transition-colors">Cookie Policy</a>
-            <a href={`${appUrl}/home`} className="hover:text-white transition-colors">Community Guidelines</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms & Conditions</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Cookie Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Community Guidelines</a>
           </div>
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center hover:bg-black/50 border border-gray-800 transition-colors cursor-pointer text-[#e23f3f]">
