@@ -172,7 +172,7 @@ export function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="bg-white pt-8 pb-16 md:pt-12 md:pb-24 relative z-30 w-full"
+        className="relative z-30 mt-[100px] w-full bg-white pt-8 pb-16 md:pt-12 md:pb-24"
       >
         <MarketplaceConversation />
       </motion.div>
