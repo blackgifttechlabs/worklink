@@ -50,9 +50,23 @@ export function LandingPage() {
 
   return (
     <div className="flex flex-col font-sans">
+      <header className="sticky top-0 z-50 h-[76px] border-b border-gray-100 bg-white/95 px-4 shadow-sm backdrop-blur md:px-8">
+        <div className="mx-auto flex h-full max-w-screen-2xl items-center justify-between gap-5">
+          <a href="#top" className="flex items-center gap-2 text-[18px] font-black tracking-tight text-[#1a232c]">
+            <img src={`${appUrl}/icons/service-loop-192.png`} alt="" className="h-9 w-9 rounded-full" />
+            Service Loop
+          </a>
+          <nav className="hidden items-center gap-7 md:flex" aria-label="Landing navigation">
+            <a href="#how-it-works" className="text-[14px] font-bold text-gray-600 transition-colors hover:text-[#fb7152]">How it works</a>
+            <a href={`${appUrl}/providers`} className="text-[14px] font-bold text-gray-600 transition-colors hover:text-[#fb7152]">Find services</a>
+            <a href={`${appUrl}/register`} className="text-[14px] font-bold text-gray-600 transition-colors hover:text-[#fb7152]">Become a provider</a>
+          </nav>
+          <Button onClick={() => window.location.assign(`${appUrl}/home`)} className="h-10 px-5 text-[13px]">Enter Service Loop <span className="material-symbols-outlined ml-1 text-[17px]">arrow_forward</span></Button>
+        </div>
+      </header>
       
       {/* Hero Section Container */}
-      <div className="flex flex-col min-h-[calc(100vh-80px)] bg-[#1a232c] overflow-hidden relative">
+      <div id="top" className="flex flex-col min-h-[calc(100vh-76px)] bg-[#1a232c] overflow-hidden relative">
         {/* Background Grid Pattern */}
         <div 
           className="absolute inset-0 pointer-events-none opacity-20"
@@ -153,7 +167,7 @@ export function LandingPage() {
       </div>
       
       {/* Marketplace Conversation Animation Section */}
-      <motion.div 
+      <motion.div id="how-it-works"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
