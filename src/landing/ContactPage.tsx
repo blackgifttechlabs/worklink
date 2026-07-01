@@ -255,11 +255,11 @@ export function ContactPage() {
           <motion.p variants={itemVariants} className="mt-3 text-gray-600">
             Jump into Service Loop or learn how the marketplace works before reaching out.
           </motion.p>
-          <motion.div variants={itemVariants} className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button onClick={() => window.location.assign(`${appUrl}/home`)} className="h-12 border-none px-8">
+          <motion.div variants={itemVariants} className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center gap-4 sm:max-w-none sm:flex-row">
+            <Button onClick={() => window.location.assign(`${appUrl}/home`)} className="h-12 w-full border-none px-8 sm:w-auto">
               Enter Service Loop
             </Button>
-            <Button variant="ghost" onClick={() => window.location.assign('/how-it-works')} className="h-12 px-8">
+            <Button variant="ghost" onClick={() => window.location.assign('/how-it-works')} className="h-12 w-full px-8 sm:w-auto">
               How it works
             </Button>
           </motion.div>
