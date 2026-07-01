@@ -6,7 +6,7 @@ export function SiteHeader() {
   return <header className="sticky top-0 z-50 h-[76px] border-b border-gray-100 bg-white/95 px-4 shadow-sm backdrop-blur md:px-8">
     <div className="mx-auto flex h-full max-w-screen-2xl items-center justify-between gap-5">
       <a href="/" className="flex items-center gap-2 text-[18px] font-black tracking-tight text-[#1a232c]">
-        <img src={`${appUrl}/icons/service-loop-192.png`} alt="" className="h-9 w-9 rounded-full" />
+        <img src="/logo.png" alt="Service Loop" className="h-9 w-9 rounded-full" />
         Service Loop
       </a>
       <nav className="hidden items-center gap-7 md:flex" aria-label="Landing navigation">

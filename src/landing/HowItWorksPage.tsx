@@ -303,7 +303,7 @@ export function HowItWorksPage() {
                 </ul>
                 <Button
                   onClick={() => window.location.assign(audience.href)}
-                  className="mt-8 h-12 w-full justify-center gap-2 border-none text-[15px] md:w-auto"
+                  className="mt-8 h-12 w-full justify-center gap-2 border-none text-[15px] sm:w-auto"
                 >
                   {audience.cta}
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -403,7 +403,7 @@ export function HowItWorksPage() {
           <motion.p variants={itemVariants} className="mt-4 text-gray-300">
             Join Service Loop and discover local work the simpler way.
           </motion.p>
-          <motion.div variants={itemVariants} className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <motion.div variants={itemVariants} className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center gap-4 sm:max-w-none sm:flex-row">
             <Button
               onClick={() => window.location.assign(`${appUrl}/home`)}
               className="h-14 w-full border-none px-8 text-[16px] shadow-lg sm:w-auto"

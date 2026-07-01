@@ -87,9 +87,9 @@ export function LandingPage() {
                 ServiceLoop brings verified providers, job posts, local shops, messages, wishlists, and profiles into one clear marketplace for everyday work.
               </motion.p>
               
-              <motion.div variants={itemVariants} className="mt-8 lg:mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+              <motion.div variants={itemVariants} className="mt-8 lg:mt-10 flex flex-col sm:flex-row items-center gap-4 w-full max-w-[300px] sm:max-w-none mx-auto lg:mx-0">
                 <div className="w-full sm:w-auto">
-                  <Button onClick={() => window.location.assign(`${appUrl}/home`)} className="w-full h-[56px] px-8 bg-[#fb7152] hover:bg-[#e86043] text-white rounded-full font-semibold text-[16px] shadow-lg flex items-center justify-center gap-2 transition-transform border-none">
+                  <Button onClick={() => window.location.assign(`${appUrl}/home`)} className="w-full sm:w-auto h-[56px] px-8 bg-[#fb7152] hover:bg-[#e86043] text-white rounded-full font-semibold text-[16px] shadow-lg flex items-center justify-center gap-2 transition-transform border-none">
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                       arrow_forward
                     </span>
@@ -97,7 +97,7 @@ export function LandingPage() {
                   </Button>
                 </div>
                 <div className="w-full sm:w-auto">
-                  <Button variant="outline" onClick={() => window.location.assign(`${appUrl}/providers`)} className="w-full h-[56px] px-8 rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 border-white/30 hover:bg-white/10 text-white">
+                  <Button variant="outline" onClick={() => window.location.assign(`${appUrl}/providers`)} className="w-full sm:w-auto h-[56px] px-8 rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 border-white/30 hover:bg-white/10 text-white">
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>search</span>
                     Explore services
                   </Button>
